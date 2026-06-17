@@ -19,8 +19,10 @@ function brlCompact(v: number): string {
 }
 
 function progressoMeta(m: Meta): number {
-  const p = m.direcao_melhor === "alta" ? (m.valor_atual / m.valor_alvo) * 100 : (m.valor_alvo / m.valor_atual) * 100;
-  return Math.max(0, Math.min(100, p));
+  const total = m.direcao_melhor === "alta" ? m.valor_alvo - m.valor_base : m.valor_base - m.valor_alvo;
+  const feito = m.direcao_melhor === "alta" ? m.valor_atual - m.valor_base : m.valor_base - m.valor_atual;
+  if (total <= 0) return 100;
+  return Math.max(0, Math.min(100, (feito / total) * 100));
 }
 
 const SEV: Record<Severidade, { label: string; cor: string }> = {

@@ -161,27 +161,43 @@ async function main() {
     }
   }
 
-  console.log("Inserindo metas (2025)...");
+  console.log("Inserindo metas (PPA 2022–2025)...");
   const indByCod = Object.fromEntries(indicadores.map((i) => [i.codigo, i.id]));
   const metasCfg = [
-    ["ideb_iniciais", 1.05, "Elevar o IDEB dos anos iniciais"],
-    ["mortalidade_infantil", 0.9, "Reduzir a mortalidade infantil"],
-    ["homicidios_100mil", 0.85, "Reduzir homicídios"],
-    ["receita_propria_pct", 1.1, "Ampliar a arrecadação própria"],
-    ["investimento_per_capita", 1.15, "Ampliar o investimento per capita"],
+    ["ideb_iniciais", "alta", "Elevar o IDEB dos anos iniciais"],
+    ["mortalidade_infantil", "baixa", "Reduzir a mortalidade infantil"],
+    ["homicidios_100mil", "baixa", "Reduzir homicídios"],
+    ["receita_propria_pct", "alta", "Ampliar a arrecadação própria"],
+    ["investimento_per_capita", "alta", "Ampliar o investimento per capita"],
   ];
+  const PROG = [1.12, 0.98, 0.8, 0.52, 0.3];
+  let ei = 0;
   for (const [uf] of ESTADOS) {
     const { id } = estId[uf];
-    for (const [codigo, fator, desc] of metasCfg) {
-      const last = await client.query(
-        `SELECT valor FROM estado_indicador_valores WHERE estado_id=$1 AND indicador_id=$2 AND ano=2024`,
-        [id, indByCod[codigo]],
-      );
+    let mi = 0;
+    for (const [codigo, dir, desc] of metasCfg) {
+      const q = async (ano) =>
+        Number(
+          (
+            await client.query(
+              `SELECT valor FROM estado_indicador_valores WHERE estado_id=$1 AND indicador_id=$2 AND ano=$3`,
+              [id, indByCod[codigo], ano],
+            )
+          ).rows[0].valor,
+        );
+      const atual = await q(2024);
+      const base = await q(2022);
+      const p = PROG[(ei + mi) % PROG.length];
+      const mag = Math.max(Math.abs(atual - base), Math.abs(base) * 0.04 + 0.02);
+      let alvo = dir === "alta" ? base + mag / p : base - mag / p;
+      alvo = Math.max(0, round(alvo, 2));
       await client.query(
         `INSERT INTO metas_estados (estado_id, indicador_id, ano_alvo, valor_alvo, descricao) VALUES ($1,$2,2025,$3,$4)`,
-        [id, indByCod[codigo], round(Number(last.rows[0].valor) * fator, 2), desc],
+        [id, indByCod[codigo], alvo, desc],
       );
+      mi++;
     }
+    ei++;
   }
 
   const c = await client.query(

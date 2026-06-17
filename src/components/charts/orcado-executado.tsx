@@ -19,7 +19,7 @@ export function OrcadoExecutado({
           formatter={(v) => [fmtBRLCompact(Number(v)), ""]}
         />
         <Legend wrapperStyle={{ fontSize: 11 }} iconType="circle" />
-        <Bar dataKey="orcado" name="Orçado" fill="#cbd5e1" radius={[0, 3, 3, 0]} isAnimationActive={false} />
+        <Bar dataKey="orcado" name="Orçado" fill="#94a3b8" radius={[0, 3, 3, 0]} isAnimationActive={false} />
         <Bar dataKey="executado" name="Executado" fill="#0f766e" radius={[0, 3, 3, 0]} isAnimationActive={false} />
       </BarChart>
     </ResponsiveContainer>

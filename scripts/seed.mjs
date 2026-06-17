@@ -198,26 +198,43 @@ async function main() {
     }
   }
 
-  console.log("Inserindo metas (2025)...");
+  console.log("Inserindo metas (PPA 2022–2025)...");
+  // [codigo, direção, descrição] — alvo medido como avanço desde a linha de base (2022)
   const metasCfg = [
-    ["ideb_iniciais", 1.05, "Elevar o IDEB dos anos iniciais"],
-    ["mortalidade_infantil", 0.9, "Reduzir a mortalidade infantil"],
-    ["cobertura_aps", 1.06, "Ampliar a cobertura da Atenção Primária"],
-    ["homicidios_100mil", 0.85, "Reduzir homicídios"],
-    ["investimento_per_capita", 1.15, "Ampliar o investimento per capita"],
+    ["ideb_iniciais", "alta", "Elevar o IDEB dos anos iniciais"],
+    ["mortalidade_infantil", "baixa", "Reduzir a mortalidade infantil"],
+    ["cobertura_aps", "alta", "Ampliar a cobertura da Atenção Primária"],
+    ["homicidios_100mil", "baixa", "Reduzir homicídios"],
+    ["investimento_per_capita", "alta", "Ampliar o investimento per capita"],
   ];
+  // ambição-alvo do percurso base→meta (cicla p/ cobrir atingida/no caminho/atenção/risco)
+  const PROG = [1.12, 0.98, 0.8, 0.52, 0.3];
+  let ei = 0;
   for (const [cod, { id: mid }] of Object.entries(munId)) {
-    for (const [codigo, fator, desc] of metasCfg) {
-      const last = await client.query(
-        `SELECT valor FROM indicador_valores WHERE municipio_id=$1 AND indicador_id=$2 AND ano=2024`,
-        [mid, indId[codigo]],
-      );
-      const base = Number(last.rows[0].valor);
+    let mi = 0;
+    for (const [codigo, dir, desc] of metasCfg) {
+      const q = async (ano) =>
+        Number(
+          (
+            await client.query(
+              `SELECT valor FROM indicador_valores WHERE municipio_id=$1 AND indicador_id=$2 AND ano=$3`,
+              [mid, indId[codigo], ano],
+            )
+          ).rows[0].valor,
+        );
+      const atual = await q(2024);
+      const base = await q(2022);
+      const p = PROG[(ei + mi) % PROG.length];
+      const mag = Math.max(Math.abs(atual - base), Math.abs(base) * 0.04 + 0.02);
+      let alvo = dir === "alta" ? base + mag / p : base - mag / p;
+      alvo = Math.max(0, round(alvo, 2));
       await client.query(
         `INSERT INTO metas (municipio_id, indicador_id, ano_alvo, valor_alvo, descricao) VALUES ($1,$2,2025,$3,$4)`,
-        [mid, indId[codigo], round(base * fator, 2), desc],
+        [mid, indId[codigo], alvo, desc],
       );
+      mi++;
     }
+    ei++;
   }
 
   const counts = await client.query(

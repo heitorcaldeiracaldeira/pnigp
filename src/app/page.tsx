@@ -63,6 +63,12 @@ export default async function Home() {
         >
           É cidadão? <span className="font-semibold text-teal-700">Veja como está sua cidade →</span>
         </a>
+        <a
+          href="/real"
+          className="text-sm text-slate-500 transition hover:text-teal-700"
+        >
+          🔎 <span className="font-semibold text-teal-700">Dados oficiais de Santa Catarina (SICONFI) →</span>
+        </a>
       </section>
     </main>
   );

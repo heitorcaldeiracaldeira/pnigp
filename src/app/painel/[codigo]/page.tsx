@@ -12,7 +12,7 @@ import { FinancasPanel } from "@/components/financas-panel";
 import { IndexTrend } from "@/components/charts/index-trend";
 import { IndicatorsSection } from "@/components/indicators-section";
 import { InsightsPanel } from "@/components/insights-panel";
-import { MetasSection } from "@/components/metas-section";
+import { PlanejamentoSection } from "@/components/planejamento-section";
 import { MunicipioSelector } from "@/components/municipio-selector";
 import { PanelTabs } from "@/components/panel-tabs";
 import { PanoramaCard } from "@/components/panorama-card";
@@ -264,13 +264,19 @@ export default async function PainelPage({
     },
     {
       id: "metas",
-      label: "Metas",
+      label: "Planejamento",
       content: (
-        <section aria-label="Metas da gestão">
+        <section aria-label="Planejamento da gestão">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Metas da gestão · 2025
+            Planejamento da gestão · PPA · LDO · LOA
           </h2>
-          <MetasSection metas={metas} />
+          <PlanejamentoSection
+            metas={metas}
+            financas={financas.atual}
+            fiscal={indicadores.filter((i) => i.area === "fiscal")}
+            seed={codigo}
+            tipo="M"
+          />
         </section>
       ),
     },

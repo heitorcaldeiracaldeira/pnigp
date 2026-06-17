@@ -2,6 +2,7 @@ import "server-only";
 import { query } from "./db";
 
 export const ANO_ATUAL = 2024;
+export const ANO_BASE = 2022; // linha de base do PPA (2022–2025)
 export const ANO_ANTERIOR = 2023;
 
 export type Municipio = {
@@ -154,6 +155,7 @@ export type Meta = {
   direcao_melhor: "alta" | "baixa";
   valor_atual: number;
   valor_alvo: number;
+  valor_base: number;
   ano_alvo: number;
   descricao: string;
 };
@@ -162,14 +164,17 @@ export async function getMetas(municipioId: number): Promise<Meta[]> {
   const rows = await query<Record<string, unknown>>(
     `SELECT i.codigo, i.nome, i.area, i.unidade, i.direcao_melhor,
             mt.valor_alvo, mt.ano_alvo, mt.descricao,
-            atual.valor AS valor_atual
+            atual.valor AS valor_atual,
+            base.valor  AS valor_base
        FROM metas mt
        JOIN indicadores i ON i.id = mt.indicador_id
        JOIN indicador_valores atual
          ON atual.indicador_id = i.id AND atual.municipio_id = mt.municipio_id AND atual.ano = $2
+       JOIN indicador_valores base
+         ON base.indicador_id = i.id AND base.municipio_id = mt.municipio_id AND base.ano = $3
       WHERE mt.municipio_id = $1
       ORDER BY i.area`,
-    [municipioId, ANO_ATUAL],
+    [municipioId, ANO_ATUAL, ANO_BASE],
   );
   return rows.map((r) => ({
     codigo: String(r.codigo),
@@ -179,6 +184,7 @@ export async function getMetas(municipioId: number): Promise<Meta[]> {
     direcao_melhor: r.direcao_melhor as "alta" | "baixa",
     valor_atual: num(r.valor_atual),
     valor_alvo: num(r.valor_alvo),
+    valor_base: num(r.valor_base),
     ano_alvo: num(r.ano_alvo),
     descricao: String(r.descricao),
   }));
@@ -462,14 +468,17 @@ export async function getMetasEstado(estadoId: number): Promise<Meta[]> {
   const rows = await query<Record<string, unknown>>(
     `SELECT i.codigo, i.nome, i.area, i.unidade, i.direcao_melhor,
             mt.valor_alvo, mt.ano_alvo, mt.descricao,
-            atual.valor AS valor_atual
+            atual.valor AS valor_atual,
+            base.valor  AS valor_base
        FROM metas_estados mt
        JOIN indicadores i ON i.id = mt.indicador_id
        JOIN estado_indicador_valores atual
          ON atual.indicador_id = i.id AND atual.estado_id = mt.estado_id AND atual.ano = $2
+       JOIN estado_indicador_valores base
+         ON base.indicador_id = i.id AND base.estado_id = mt.estado_id AND base.ano = $3
       WHERE mt.estado_id = $1
       ORDER BY i.area`,
-    [estadoId, ANO_ATUAL],
+    [estadoId, ANO_ATUAL, ANO_BASE],
   );
   return rows.map((r) => ({
     codigo: String(r.codigo),
@@ -479,6 +488,7 @@ export async function getMetasEstado(estadoId: number): Promise<Meta[]> {
     direcao_melhor: r.direcao_melhor as "alta" | "baixa",
     valor_atual: num(r.valor_atual),
     valor_alvo: num(r.valor_alvo),
+    valor_base: num(r.valor_base),
     ano_alvo: num(r.ano_alvo),
     descricao: String(r.descricao),
   }));
@@ -501,4 +511,44 @@ export async function getHistoricoIndicadoresEstado(
     (out[cod] ??= []).push({ ano: num(r.ano), valor: num(r.valor) });
   }
   return out;
+}
+
+/* ====================== DADOS OFICIAIS — SANTA CATARINA (SICONFI) ============ */
+
+export const FONTE_SICONFI =
+  "SICONFI / Tesouro Nacional (RREO 6º bimestre) — base oficial usada pelo TCE/SC";
+
+export type EnteSC = { cod_ibge: string; nome: string; tipo: "M" | "E"; populacao: number };
+export type FuncaoSC = { nome: string; dotacao: number; empenhado: number };
+export type FinancaSCAno = {
+  ano: number;
+  receita: number; receita_prevista: number; tributaria: number; transferencias: number; outras: number;
+  despesa: number; resultado: number; pessoal: number; custeio: number; investimento: number; divida: number;
+  saude: number; educacao: number; seguranca: number; assistencia: number; infraestrutura: number; administracao: number;
+};
+
+export async function getEntesSC(): Promise<EnteSC[]> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT cod_ibge, nome, tipo, populacao FROM entes_sc ORDER BY (tipo = 'E') DESC, nome`,
+  );
+  return rows.map((r) => ({ cod_ibge: String(r.cod_ibge), nome: String(r.nome), tipo: r.tipo as "M" | "E", populacao: num(r.populacao) }));
+}
+
+export async function getFinancasSC(
+  cod: string,
+): Promise<{ ente: EnteSC; serie: FinancaSCAno[]; funcoesLatest: FuncaoSC[] } | null> {
+  const er = await query<Record<string, unknown>>(`SELECT cod_ibge, nome, tipo, populacao FROM entes_sc WHERE cod_ibge = $1`, [cod]);
+  if (!er.length) return null;
+  const ente: EnteSC = { cod_ibge: String(er[0].cod_ibge), nome: String(er[0].nome), tipo: er[0].tipo as "M" | "E", populacao: num(er[0].populacao) };
+  const rows = await query<Record<string, unknown>>(`SELECT * FROM financas_sc WHERE cod_ibge = $1 ORDER BY ano`, [cod]);
+  const serie: FinancaSCAno[] = rows.map((r) => ({
+    ano: num(r.ano), receita: num(r.receita), receita_prevista: num(r.receita_prevista), tributaria: num(r.tributaria),
+    transferencias: num(r.transferencias), outras: num(r.outras), despesa: num(r.despesa), resultado: num(r.resultado),
+    pessoal: num(r.pessoal), custeio: num(r.custeio), investimento: num(r.investimento), divida: num(r.divida),
+    saude: num(r.saude), educacao: num(r.educacao), seguranca: num(r.seguranca), assistencia: num(r.assistencia),
+    infraestrutura: num(r.infraestrutura), administracao: num(r.administracao),
+  }));
+  const last = rows[rows.length - 1];
+  const funcoesLatest = last && Array.isArray(last.funcoes) ? (last.funcoes as FuncaoSC[]) : [];
+  return { ente, serie, funcoesLatest };
 }
