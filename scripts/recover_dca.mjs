@@ -4,7 +4,7 @@ import fs from "fs"; import path from "path"; import { fileURLToPath } from "url
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const env = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8");
 const DATABASE_URL = env.match(/^DATABASE_URL=(.+)$/m)[1].trim();
-const ANOS = [2021, 2022, 2023, 2024];
+const ANOS = process.env.ANOS ? process.env.ANOS.split(",").map(Number) : [2021, 2022, 2023, 2024, 2025];
 const norm = (s) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 const r2 = (n) => Math.round((n || 0) * 100) / 100;
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));

@@ -12,7 +12,7 @@ const DATABASE_URL = env.match(/^DATABASE_URL=(.+)$/m)[1].trim();
 
 const norm = (s) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 const r2 = (n) => Math.round((n || 0) * 100) / 100;
-const ANOS = [2021, 2022, 2023, 2024];
+const ANOS = process.env.ANOS ? process.env.ANOS.split(",").map(Number) : [2021, 2022, 2023, 2024, 2025];
 const FUNCS = ["Legislativa","Judiciária","Administração","Segurança Pública","Assistência Social","Previdência Social","Saúde","Educação","Cultura","Urbanismo","Habitação","Saneamento","Gestão Ambiental","Agricultura","Comércio e Serviços","Transporte","Desporto e Lazer","Encargos Especiais"];
 const SIC = "https://apidatalake.tesouro.gov.br/ords/siconfi/tt/rreo";
 
