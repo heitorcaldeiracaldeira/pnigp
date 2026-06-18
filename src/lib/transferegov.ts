@@ -16,8 +16,16 @@ export type TransferenciasSC = {
   valor_liberado: number;
   por_situacao: { situacao: string; n: number; valor: number }[];
   por_orgao: { orgao: string; n: number; valor: number }[];
+  por_ano: { ano: number; n: number; valor: number; liberado: number }[];
   top: { objeto: string; orgao: string; convenente: string; situacao: string; valor: number; liberado: number; inicio: string; fim: string }[];
 };
+
+function anoDe(s: string): number | null {
+  const m = String(s || "").match(/\d{4}/g);
+  if (!m) return null;
+  const y = Number(m[m.length - 1]);
+  return y >= 2000 && y <= 2100 ? y : null;
+}
 
 export function temChavePortal(): boolean {
   return !!(process.env.PORTAL_TRANSPARENCIA_KEY && process.env.PORTAL_TRANSPARENCIA_KEY.trim());
@@ -85,6 +93,9 @@ export async function fetchTransferenciasPortal(cod: string): Promise<Transferen
   };
   const por_situacao = agg("situacao") as TransferenciasSC["por_situacao"];
   const por_orgao = (agg("orgao") as TransferenciasSC["por_orgao"]).slice(0, 8);
+  const ma: Record<number, { n: number; valor: number; liberado: number }> = {};
+  for (const c of norm) { const y = anoDe(c.inicio); if (!y) continue; (ma[y] ??= { n: 0, valor: 0, liberado: 0 }); ma[y].n++; ma[y].valor = r2(ma[y].valor + c.valor); ma[y].liberado = r2(ma[y].liberado + c.liberado); }
+  const por_ano = Object.entries(ma).map(([ano, v]) => ({ ano: Number(ano), ...v })).sort((a, b) => a.ano - b.ano);
   const top = [...norm].sort((a, b) => b.valor - a.valor).slice(0, 12);
-  return { n_instrumentos: norm.length, valor_total, valor_liberado, por_situacao, por_orgao, top };
+  return { n_instrumentos: norm.length, valor_total, valor_liberado, por_situacao, por_orgao, por_ano, top };
 }

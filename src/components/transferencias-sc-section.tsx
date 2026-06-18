@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { Database, HandCoins, Loader2 } from "lucide-react";
 import { Donut } from "@/components/charts/donut";
+import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
 import { fmtBRLCompact } from "@/lib/ui";
 
 type Transf = {
   n_instrumentos: number; valor_total: number; valor_liberado: number;
   por_situacao: { situacao: string; n: number; valor: number }[];
   por_orgao: { orgao: string; n: number; valor: number }[];
+  por_ano?: { ano: number; n: number; valor: number; liberado: number }[];
   top: { objeto: string; orgao: string; convenente: string; situacao: string; valor: number; liberado: number; inicio: string; fim: string }[];
 };
 
@@ -67,6 +69,20 @@ export function TransferenciasSCSection({ codigo }: { codigo: string }) {
           </div>
         </div>
       </div>
+
+      {(() => {
+        const serie = (data.por_ano ?? []).filter((a) => a.ano >= 2018).map((a) => ({ ano: a.ano, celebrado: a.valor, liberado: a.liberado }));
+        return serie.length > 1 ? (
+          <section className="rounded-2xl border border-slate-200 bg-white p-5">
+            <h3 className="font-semibold text-slate-800">Evolução das transferências por ano</h3>
+            <p className="mb-2 text-xs text-slate-500">Valor celebrado × liberado por ano de início da vigência</p>
+            <LinhasFinanceiras
+              data={serie as unknown as Record<string, number>[]}
+              linhas={[{ key: "celebrado", label: "Celebrado", cor: "#7c3aed" }, { key: "liberado", label: "Liberado", cor: "#0891b2" }]}
+            />
+          </section>
+        ) : null;
+      })()}
 
       {data.por_orgao.length > 0 && (
         <section className="rounded-2xl border border-slate-200 bg-white p-5">

@@ -46,12 +46,17 @@ function agregar(convenios) {
     };
   });
   const agg = (key) => { const m = {}; for (const c of norm) { const k = c[key] || "—"; (m[k] ??= { n: 0, valor: 0 }); m[k].n++; m[k].valor = r2(m[k].valor + c.valor); } return Object.entries(m).map(([nome, v]) => ({ [key]: nome, n: v.n, valor: v.valor })).sort((a, b) => b.valor - a.valor); };
+  const anoDe = (s) => { const m = String(s || "").match(/\d{4}/g); if (!m) return null; const y = Number(m[m.length - 1]); return y >= 2000 && y <= 2100 ? y : null; };
+  const ma = {};
+  for (const c of norm) { const y = anoDe(c.inicio); if (!y) continue; (ma[y] ??= { n: 0, valor: 0, liberado: 0 }); ma[y].n++; ma[y].valor = r2(ma[y].valor + c.valor); ma[y].liberado = r2(ma[y].liberado + c.liberado); }
+  const por_ano = Object.entries(ma).map(([ano, v]) => ({ ano: Number(ano), n: v.n, valor: v.valor, liberado: v.liberado })).sort((a, b) => a.ano - b.ano);
   return {
     n_instrumentos: norm.length,
     valor_total: r2(norm.reduce((s, c) => s + c.valor, 0)),
     valor_liberado: r2(norm.reduce((s, c) => s + c.liberado, 0)),
     por_situacao: agg("situacao"),
     por_orgao: agg("orgao").slice(0, 8),
+    por_ano,
     top: [...norm].sort((a, b) => b.valor - a.valor).slice(0, 12),
   };
 }
@@ -61,7 +66,8 @@ async function pool(items, conc, fn) { let i = 0, done = 0; await Promise.all(Ar
 async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 4 });
   db.on("error", () => {});
-  await db.query(`CREATE TABLE IF NOT EXISTS transferencias_sc (cod_ibge TEXT PRIMARY KEY, n_instrumentos INTEGER, valor_total NUMERIC(16,2), valor_liberado NUMERIC(16,2), por_situacao JSONB, por_orgao JSONB, top JSONB);`);
+  await db.query(`CREATE TABLE IF NOT EXISTS transferencias_sc (cod_ibge TEXT PRIMARY KEY, n_instrumentos INTEGER, valor_total NUMERIC(16,2), valor_liberado NUMERIC(16,2), por_situacao JSONB, por_orgao JSONB, top JSONB);
+    ALTER TABLE transferencias_sc ADD COLUMN IF NOT EXISTS por_ano JSONB;`);
   const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' ORDER BY cod_ibge`)).rows;
   const feitos = new Set((await db.query(`SELECT cod_ibge FROM transferencias_sc`)).rows.map((r) => r.cod_ibge));
   const pend = entes.filter((e) => !feitos.has(e.cod_ibge));
@@ -74,9 +80,9 @@ async function main() {
     if (!conv.length) return;
     const d = agregar(conv);
     await db.query(
-      `INSERT INTO transferencias_sc (cod_ibge,n_instrumentos,valor_total,valor_liberado,por_situacao,por_orgao,top) VALUES ($1,$2,$3,$4,$5,$6,$7)
-       ON CONFLICT (cod_ibge) DO UPDATE SET n_instrumentos=EXCLUDED.n_instrumentos,valor_total=EXCLUDED.valor_total,valor_liberado=EXCLUDED.valor_liberado,por_situacao=EXCLUDED.por_situacao,por_orgao=EXCLUDED.por_orgao,top=EXCLUDED.top`,
-      [e.cod_ibge, d.n_instrumentos, d.valor_total, d.valor_liberado, JSON.stringify(d.por_situacao), JSON.stringify(d.por_orgao), JSON.stringify(d.top)],
+      `INSERT INTO transferencias_sc (cod_ibge,n_instrumentos,valor_total,valor_liberado,por_situacao,por_orgao,por_ano,top) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       ON CONFLICT (cod_ibge) DO UPDATE SET n_instrumentos=EXCLUDED.n_instrumentos,valor_total=EXCLUDED.valor_total,valor_liberado=EXCLUDED.valor_liberado,por_situacao=EXCLUDED.por_situacao,por_orgao=EXCLUDED.por_orgao,por_ano=EXCLUDED.por_ano,top=EXCLUDED.top`,
+      [e.cod_ibge, d.n_instrumentos, d.valor_total, d.valor_liberado, JSON.stringify(d.por_situacao), JSON.stringify(d.por_orgao), JSON.stringify(d.por_ano), JSON.stringify(d.top)],
     );
     ok++;
   });
