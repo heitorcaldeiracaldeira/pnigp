@@ -37,7 +37,7 @@ async function fetchPagina(modId: number, esfera: string, cod: string, pagina: n
   return null;
 }
 
-type Bruto = { objeto: string; modalidade: string; lic: boolean; orgao: string; estimado: number; homologado: number; data: string };
+type Bruto = { objeto: string; modalidade: string; lic: boolean; orgao: string; estimado: number; homologado: number; data: string; cnpj: string; ano: number; seq: number };
 
 export async function fetchComprasPNCP(cod: string, tipo: "M" | "E"): Promise<ComprasSC> {
   const esfera = tipo === "E" ? "E" : "M";
@@ -52,7 +52,7 @@ export async function fetchComprasPNCP(cod: string, tipo: "M" | "E"): Promise<Co
       if (!j) break;
       totalPaginas = j.totalPaginas || 0;
       for (const x of j.data || []) {
-        const org = x.orgaoEntidade as { esferaId?: string; razaoSocial?: string } | undefined;
+        const org = x.orgaoEntidade as { esferaId?: string; razaoSocial?: string; cnpj?: string } | undefined;
         if (org?.esferaId !== esfera) continue;
         contratos.push({
           objeto: String(x.objetoCompra || "").slice(0, 240),
@@ -62,6 +62,9 @@ export async function fetchComprasPNCP(cod: string, tipo: "M" | "E"): Promise<Co
           estimado: Number(x.valorTotalEstimado) || 0,
           homologado: Number(x.valorTotalHomologado) || 0,
           data: String(x.dataPublicacaoPncp || "").slice(0, 10),
+          cnpj: org?.cnpj || "",
+          ano: Number(x.anoCompra) || 0,
+          seq: Number(x.sequencialCompra) || 0,
         });
       }
       pagina++;
@@ -86,7 +89,59 @@ export async function fetchComprasPNCP(cod: string, tipo: "M" | "E"): Promise<Co
     objeto: c.objeto, modalidade: c.modalidade, orgao: c.orgao,
     estimado: r2(c.estimado), homologado: r2(c.homologado),
     economia_pct: c.estimado > 0 && c.homologado > 0 ? r2(((c.estimado - c.homologado) / c.estimado) * 100) : null,
-    data: c.data,
+    data: c.data, cnpj: c.cnpj, ano: c.ano, seq: c.seq,
   }));
   return { n_contratos: contratos.length, valor_estimado: estSoma, valor_homologado, economia_pct, dispensa_pct, por_modalidade, top };
+}
+
+/* ============ ITENS de uma contratação (PNCP API principal) ============ */
+const PNCP_MAIN = "https://pncp.gov.br/api/pncp/v1";
+
+export type ItemPNCP = {
+  numero: number; descricao: string; unidade: string; quantidade: number;
+  unitEstimado: number; totalEstimado: number; unitHomologado: number | null;
+  fornecedor: string | null; beneficioLC: string | null; economiaPct: number | null;
+};
+
+async function getMain(url: string): Promise<unknown[] | null> {
+  for (let t = 0; t < 3; t++) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(15000), next: { revalidate: 86400 } });
+      if (r.status === 204) return [];
+      if (r.status === 429) { if (t === 2) return null; await sleep(2500); continue; }
+      if (!r.ok) return [];
+      const j = await r.json();
+      return Array.isArray(j) ? j : [];
+    } catch { await sleep(500 * (t + 1)); }
+  }
+  return null;
+}
+
+export async function fetchItensPNCP(cnpj: string, ano: number, seq: number): Promise<ItemPNCP[]> {
+  const itens = await getMain(`${PNCP_MAIN}/orgaos/${cnpj}/compras/${ano}/${seq}/itens`);
+  if (!Array.isArray(itens) || !itens.length) return [];
+  const lim = itens.slice(0, 30) as Record<string, unknown>[];
+  // resultado (fornecedor + homologado) por item — best-effort, em paralelo, limitado
+  const comResultado = lim.slice(0, 12);
+  const resultados = await Promise.all(
+    comResultado.map((it) => getMain(`${PNCP_MAIN}/orgaos/${cnpj}/compras/${ano}/${seq}/itens/${it.numeroItem}/resultados`).catch(() => null)),
+  );
+  return lim.map((it, i) => {
+    const r = (i < resultados.length && Array.isArray(resultados[i]) ? (resultados[i] as Record<string, unknown>[])[0] : null) || null;
+    const unitEst = Number(it.valorUnitarioEstimado) || 0;
+    const unitHom = r ? Number(r.valorUnitarioHomologado) || Number(r.valorUnitario) || 0 : 0;
+    const benef = String(it.tipoBeneficioNome || "");
+    return {
+      numero: Number(it.numeroItem) || i + 1,
+      descricao: String(it.descricao || "").slice(0, 200),
+      unidade: String(it.unidadeMedida || ""),
+      quantidade: Number(it.quantidade) || 0,
+      unitEstimado: unitEst,
+      totalEstimado: Number(it.valorTotal) || 0,
+      unitHomologado: unitHom > 0 ? unitHom : null,
+      fornecedor: r ? String(r.nomeRazaoSocialFornecedor || r.niFornecedor || "") || null : null,
+      beneficioLC: benef && !/nenhum|não|nao|sem benef/i.test(benef) ? benef : null,
+      economiaPct: unitEst > 0 && unitHom > 0 ? Math.round(((unitEst - unitHom) / unitEst) * 1000) / 10 : null,
+    };
+  });
 }

@@ -67,6 +67,9 @@ async function coletarEnte(ente) {
           estimado: +x.valorTotalEstimado || 0,
           homologado: +x.valorTotalHomologado || 0,
           data: (x.dataPublicacaoPncp || "").slice(0, 10),
+          cnpj: x.orgaoEntidade?.cnpj || "",
+          ano: +x.anoCompra || 0,
+          seq: +x.sequencialCompra || 0,
         });
       }
       pagina++;
@@ -95,7 +98,7 @@ function agregar(contratos) {
     objeto: c.objeto, modalidade: c.modalidade, orgao: c.orgao,
     estimado: r2(c.estimado), homologado: r2(c.homologado),
     economia_pct: c.estimado > 0 && c.homologado > 0 ? r2(((c.estimado - c.homologado) / c.estimado) * 100) : null,
-    data: c.data,
+    data: c.data, cnpj: c.cnpj, ano: c.ano, seq: c.seq,
   }));
   return { n_contratos: n, valor_estimado: estSoma, valor_homologado, economia_pct, dispensa_pct, por_modalidade, top };
 }

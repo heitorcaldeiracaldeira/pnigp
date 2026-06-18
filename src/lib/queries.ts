@@ -558,7 +558,7 @@ export type ComprasSC = {
   n_contratos: number; valor_estimado: number; valor_homologado: number;
   economia_pct: number; dispensa_pct: number;
   por_modalidade: { modalidade: string; n: number; valor: number }[];
-  top: { objeto: string; modalidade: string; orgao: string; estimado: number; homologado: number; economia_pct: number | null; data: string }[];
+  top: { objeto: string; modalidade: string; orgao: string; estimado: number; homologado: number; economia_pct: number | null; data: string; cnpj?: string; ano?: number; seq?: number }[];
 };
 
 export async function getComprasSC(cod: string): Promise<ComprasSC | null> {
