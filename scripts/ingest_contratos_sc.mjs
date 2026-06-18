@@ -94,10 +94,14 @@ async function main() {
     CREATE INDEX IF NOT EXISTS idx_contratos_sc_ente ON contratos_sc (cod_ibge);
     CREATE INDEX IF NOT EXISTS idx_contratos_sc_proc ON contratos_sc (cnpj_compra, ano_compra, seq_compra);
     CREATE TABLE IF NOT EXISTS contratos_sc_feitos (cod_ibge TEXT PRIMARY KEY, n INTEGER);
+    CREATE TABLE IF NOT EXISTS contratos_sc_feitos_inc (cod_ibge TEXT PRIMARY KEY, n INTEGER);
     CREATE TABLE IF NOT EXISTS orgaos_municipais_sc (cod_ibge TEXT, cnpj TEXT, PRIMARY KEY (cod_ibge, cnpj));
     CREATE TABLE IF NOT EXISTS orgaos_sc_feitos (cod_ibge TEXT PRIMARY KEY);`);
+  // modo APPEND: adiciona anos novos (ex.: 2026) sem apagar os já coletados (janelas de publicação distintas → sem duplicar)
+  const APPEND = process.env.APPEND === "1";
+  const FEITOS = APPEND ? "contratos_sc_feitos_inc" : "contratos_sc_feitos";
   const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' ORDER BY cod_ibge`)).rows;
-  const feitos = new Set((await db.query(`SELECT cod_ibge FROM contratos_sc_feitos`)).rows.map((r) => r.cod_ibge));
+  const feitos = new Set((await db.query(`SELECT cod_ibge FROM ${FEITOS}`)).rows.map((r) => r.cod_ibge));
   const pend = entes.filter((e) => !feitos.has(e.cod_ibge));
   console.log(`Contratos PNCP (${ANOS.join(",")}): ${pend.length} municípios pendentes de ${entes.length}...`);
   // escrita resiliente (Neon derruba conexões longas — retry/reconecta)
@@ -117,8 +121,9 @@ async function main() {
     const cnpjs = await getOrgaos(e.cod_ibge);
     let contratos = [];
     for (const cnpj of cnpjs) { contratos = contratos.concat(await contratosDoOrgao(cnpj)); }
-    // grava (substitui o ente) — em lotes multi-linha
-    await q(`DELETE FROM contratos_sc WHERE cod_ibge=$1`, [e.cod_ibge]);
+    // grava: APPEND remove só os anos-alvo (idempotente); padrão substitui o ente inteiro
+    if (APPEND) await q(`DELETE FROM contratos_sc WHERE cod_ibge=$1 AND ano_compra = ANY($2)`, [e.cod_ibge, ANOS]);
+    else await q(`DELETE FROM contratos_sc WHERE cod_ibge=$1`, [e.cod_ibge]);
     for (let i = 0; i < contratos.length; i += 100) {
       const lote = contratos.slice(i, i + 100);
       const vals = [], ph = [];
@@ -129,7 +134,7 @@ async function main() {
       });
       await q(`INSERT INTO contratos_sc (cod_ibge,numero_controle_compra,cnpj_compra,ano_compra,seq_compra,fornecedor,ni_fornecedor,valor_global,vig_inicio,vig_fim,assinatura,objeto,orgao) VALUES ${ph.join(",")}`, vals);
     }
-    await q(`INSERT INTO contratos_sc_feitos (cod_ibge,n) VALUES ($1,$2) ON CONFLICT (cod_ibge) DO UPDATE SET n=EXCLUDED.n`, [e.cod_ibge, contratos.length]);
+    await q(`INSERT INTO ${FEITOS} (cod_ibge,n) VALUES ($1,$2) ON CONFLICT (cod_ibge) DO UPDATE SET n=EXCLUDED.n`, [e.cod_ibge, contratos.length]);
     if (contratos.length) comDados++;
    } catch (err) { console.log(`  ! falha em ${e.cod_ibge} (${String(err).slice(0, 40)}) — será retomado depois`); }
   });
