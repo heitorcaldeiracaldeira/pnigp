@@ -16,7 +16,7 @@ export type TransferenciasSC = {
   valor_liberado: number;
   por_situacao: { situacao: string; n: number; valor: number }[];
   por_orgao: { orgao: string; n: number; valor: number }[];
-  top: { objeto: string; orgao: string; situacao: string; valor: number; liberado: number; inicio: string; fim: string }[];
+  top: { objeto: string; orgao: string; convenente: string; situacao: string; valor: number; liberado: number; inicio: string; fim: string }[];
 };
 
 export function temChavePortal(): boolean {
@@ -46,21 +46,6 @@ async function getPagina(cod: string, pagina: number): Promise<Record<string, un
   return [];
 }
 
-// extração defensiva de um convênio
-function campoNum(c: Record<string, unknown>, ...nomes: string[]): number {
-  for (const n of nomes) { const v = c[n]; if (v != null && v !== "") return Number(String(v).replace(/\./g, "").replace(",", ".")) || Number(v) || 0; }
-  return 0;
-}
-function campoStr(c: Record<string, unknown>, ...nomes: string[]): string {
-  for (const n of nomes) {
-    const v = c[n];
-    if (v == null) continue;
-    if (typeof v === "object") { const o = v as Record<string, unknown>; const nome = o.nome ?? o.descricao ?? o.razaoSocial; if (nome) return String(nome); }
-    else if (String(v).trim()) return String(v);
-  }
-  return "—";
-}
-
 export async function fetchTransferenciasPortal(cod: string): Promise<TransferenciasSC | null> {
   if (!temChavePortal()) return null;
   const convenios: Record<string, unknown>[] = [];
@@ -75,15 +60,19 @@ export async function fetchTransferenciasPortal(cod: string): Promise<Transferen
   }
 
   const norm = convenios.map((c) => {
-    const orgaoSup = c.dimensaoOrgaoSuperior ?? c.orgaoSuperior ?? c.concedente ?? c.orgao;
+    const dim = (c.dimConvenio ?? {}) as Record<string, unknown>;
+    const org = (c.orgao ?? {}) as Record<string, unknown>;
+    const orgMax = (org.orgaoMaximo ?? {}) as Record<string, unknown>;
+    const conv = (c.convenente ?? {}) as Record<string, unknown>;
     return {
-      objeto: campoStr(c, "objeto", "objetoConvenio", "objetoProposta").slice(0, 220),
-      orgao: campoStr({ x: orgaoSup } as Record<string, unknown>, "x"),
-      situacao: campoStr(c, "situacao", "situacaoConvenio", "situacaoPublicacao"),
-      valor: r2(campoNum(c, "valor", "valorGlobal", "valorCelebrado", "valorConvenio")),
-      liberado: r2(campoNum(c, "valorLiberado", "valorLiberadoConcedente")),
-      inicio: campoStr(c, "dataInicioVigencia", "dataPublicacao", "dataCelebracao"),
-      fim: campoStr(c, "dataFinalVigencia", "dataFimVigencia"),
+      objeto: String(dim.objeto ?? "—").slice(0, 220),
+      orgao: String(orgMax.nome ?? org.nome ?? "—"),
+      convenente: String(conv.nome ?? conv.razaoSocialReceita ?? "—"),
+      situacao: String(c.situacao ?? "—"),
+      valor: r2(Number(c.valor) || 0),
+      liberado: r2(Number(c.valorLiberado) || 0),
+      inicio: String(c.dataInicioVigencia ?? c.dataPublicacao ?? ""),
+      fim: String(c.dataFinalVigencia ?? ""),
     };
   });
 

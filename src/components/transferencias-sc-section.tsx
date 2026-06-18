@@ -9,7 +9,7 @@ type Transf = {
   n_instrumentos: number; valor_total: number; valor_liberado: number;
   por_situacao: { situacao: string; n: number; valor: number }[];
   por_orgao: { orgao: string; n: number; valor: number }[];
-  top: { objeto: string; orgao: string; situacao: string; valor: number; liberado: number; inicio: string; fim: string }[];
+  top: { objeto: string; orgao: string; convenente: string; situacao: string; valor: number; liberado: number; inicio: string; fim: string }[];
 };
 
 export function TransferenciasSCSection({ codigo }: { codigo: string }) {
@@ -93,7 +93,10 @@ export function TransferenciasSCSection({ codigo }: { codigo: string }) {
               <tbody>
                 {data.top.slice(0, 10).map((t, i) => (
                   <tr key={i} className="border-b border-slate-100 align-top">
-                    <td className="p-2 text-slate-700"><span className="line-clamp-2">{t.objeto}</span></td>
+                    <td className="p-2 text-slate-700">
+                      <span className="line-clamp-2">{t.objeto}</span>
+                      {t.convenente && t.convenente !== "—" && <span className="block text-[11px] text-slate-500">Recebedor: {t.convenente}</span>}
+                    </td>
                     <td className="hidden p-2 text-slate-500 md:table-cell"><span className="line-clamp-2">{t.orgao}</span></td>
                     <td className="hidden p-2 text-slate-500 sm:table-cell">{t.situacao}</td>
                     <td className="p-2 text-right font-semibold tabular-nums text-slate-800">{fmtBRLCompact(t.valor)}</td>

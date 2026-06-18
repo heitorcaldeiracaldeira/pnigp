@@ -32,15 +32,19 @@ async function getPagina(cod, pagina) {
 }
 
 function agregar(convenios) {
-  const norm = convenios.map((c) => ({
-    objeto: strF(c, "objeto", "objetoConvenio", "objetoProposta").slice(0, 220),
-    orgao: strF({ x: c.dimensaoOrgaoSuperior ?? c.orgaoSuperior ?? c.concedente ?? c.orgao }, "x"),
-    situacao: strF(c, "situacao", "situacaoConvenio", "situacaoPublicacao"),
-    valor: r2(numF(c.valor ?? c.valorGlobal ?? c.valorCelebrado ?? c.valorConvenio)),
-    liberado: r2(numF(c.valorLiberado ?? c.valorLiberadoConcedente)),
-    inicio: strF(c, "dataInicioVigencia", "dataPublicacao", "dataCelebracao"),
-    fim: strF(c, "dataFinalVigencia", "dataFimVigencia"),
-  }));
+  const norm = convenios.map((c) => {
+    const dim = c.dimConvenio || {}; const org = c.orgao || {}; const orgMax = org.orgaoMaximo || {}; const conv = c.convenente || {};
+    return {
+      objeto: String(dim.objeto ?? "—").slice(0, 220),
+      orgao: String(orgMax.nome ?? org.nome ?? "—"),
+      convenente: String(conv.nome ?? conv.razaoSocialReceita ?? "—"),
+      situacao: String(c.situacao ?? "—"),
+      valor: r2(Number(c.valor) || 0),
+      liberado: r2(Number(c.valorLiberado) || 0),
+      inicio: String(c.dataInicioVigencia ?? c.dataPublicacao ?? ""),
+      fim: String(c.dataFinalVigencia ?? ""),
+    };
+  });
   const agg = (key) => { const m = {}; for (const c of norm) { const k = c[key] || "—"; (m[k] ??= { n: 0, valor: 0 }); m[k].n++; m[k].valor = r2(m[k].valor + c.valor); } return Object.entries(m).map(([nome, v]) => ({ [key]: nome, n: v.n, valor: v.valor })).sort((a, b) => b.valor - a.valor); };
   return {
     n_instrumentos: norm.length,
