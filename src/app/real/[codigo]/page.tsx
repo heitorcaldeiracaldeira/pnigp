@@ -9,7 +9,7 @@ import { ComprasSCSection } from "@/components/compras-sc-section";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getEntesSC, getFinancasSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getRankingFiscalSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getRankingFiscalSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RealEntePage({ params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params;
-  const [dados, entes, contratosResumo, pcaResumo, metasFiscais, rankingFiscal, pibPerCapita] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo), getMetasFiscaisSC(codigo), getRankingFiscalSC(), getPibPerCapitaSC(codigo)]);
+  const [dados, entes, contratosResumo, pcaResumo, metasFiscais, rankingFiscal, pibPerCapita, indicadores] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo), getMetasFiscaisSC(codigo), getRankingFiscalSC(), getPibPerCapitaSC(codigo), getIndicadoresSetoriaisSC(codigo)]);
   if (!dados || dados.serie.length === 0) notFound();
   const minhaPos = rankingFiscal.find((r) => r.cod_ibge === codigo) ?? null;
   const totalRank = rankingFiscal.length;
@@ -113,6 +113,46 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
         </>
       ),
     },
+    ...(indicadores.length > 0
+      ? [{
+          id: "indicadores",
+          label: "Indicadores",
+          content: (() => {
+            const areas = Array.from(new Set(indicadores.map((i) => i.area)));
+            const fmtVal = (v: number, un: string) => (un.includes("R$") ? fmtBRL(v) : v.toLocaleString("pt-BR")) + (un.includes("R$") ? "" : ` ${un}`);
+            return (
+              <>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <Target className="h-4 w-4 text-teal-600" />
+                    <h3 className="font-semibold text-slate-800">Indicadores setoriais</h3>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
+                  </div>
+                  <p className="text-xs text-slate-500">Indicadores reais coletados (vs. média de SC). Em expansão — educação e segurança dependem de fontes adicionais.</p>
+                </div>
+                {areas.map((ar) => (
+                  <section key={ar} className="rounded-2xl border border-slate-200 bg-white p-5">
+                    <h3 className="mb-3 font-semibold text-slate-800">{indicadores.find((i) => i.area === ar)?.areaLabel}</h3>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {indicadores.filter((i) => i.area === ar).map((i) => {
+                        const acima = i.valor >= i.media;
+                        return (
+                          <div key={i.codigo} className="rounded-xl border border-slate-200 p-4">
+                            <div className="text-xs text-slate-500">{i.nome}</div>
+                            <div className="mt-1 font-display text-xl font-bold tabular-nums text-slate-900">{fmtVal(i.valor, i.unidade)}</div>
+                            <div className="mt-0.5 text-[11px] text-slate-500">Média SC: <span className="tabular-nums">{fmtVal(Math.round(i.media * 10) / 10, i.unidade)}</span> · <span className={acima ? "text-emerald-600" : "text-amber-600"}>{acima ? "▲ acima" : "▼ abaixo"}</span></div>
+                            <div className="mt-0.5 text-[10px] text-slate-400">Fonte: {i.fonte}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
+              </>
+            );
+          })(),
+        }]
+      : []),
     {
       id: "financas",
       label: "Finanças",

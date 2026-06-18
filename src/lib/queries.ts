@@ -795,3 +795,28 @@ export async function getPibPerCapitaSC(cod: string): Promise<number | null> {
   ).catch(() => []);
   return rows.length ? num(rows[0].valor) : null;
 }
+
+/* ===== INDICADORES SETORIAIS reais (indicadores_sc) + benchmark SC ===== */
+
+const IND_LABEL: Record<string, string> = {
+  pib_per_capita: "PIB per capita",
+  bpc_por_mil_hab: "BPC — beneficiários por mil hab.",
+};
+const AREA_LABEL: Record<string, string> = {
+  economia: "Economia", social: "Social", saude: "Saúde", educacao: "Educação", seguranca: "Segurança",
+};
+
+export type IndicadorSetorial = { codigo: string; nome: string; area: string; areaLabel: string; valor: number; unidade: string; fonte: string; media: number };
+
+export async function getIndicadoresSetoriaisSC(cod: string): Promise<IndicadorSetorial[]> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT i.codigo, i.area, i.valor, i.unidade, i.fonte, i.ano,
+            (SELECT AVG(x.valor) FROM indicadores_sc x WHERE x.codigo=i.codigo AND x.ano=i.ano) AS media
+       FROM indicadores_sc i WHERE i.cod_ibge=$1 ORDER BY i.area, i.codigo`, [cod],
+  ).catch(() => []);
+  return rows.map((r) => ({
+    codigo: String(r.codigo), nome: IND_LABEL[String(r.codigo)] || String(r.codigo),
+    area: String(r.area), areaLabel: AREA_LABEL[String(r.area)] || String(r.area),
+    valor: num(r.valor), unidade: String(r.unidade || ""), fonte: String(r.fonte || ""), media: num(r.media),
+  }));
+}

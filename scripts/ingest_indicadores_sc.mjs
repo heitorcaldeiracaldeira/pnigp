@@ -6,7 +6,23 @@ import fs from "fs"; import path from "path"; import { fileURLToPath } from "url
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const env = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8");
 const DATABASE_URL = env.match(/^DATABASE_URL=(.+)$/m)[1].trim();
+const CGU_KEY = (env.match(/^PORTAL_TRANSPARENCIA_KEY=(.+)$/m)?.[1] || "").trim();
+const MES_BPC = process.env.MES_BPC || "202412";
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
+
+async function getCGU(url) {
+  for (let t = 0; t < 5; t++) {
+    try {
+      const r = await fetch(url, { headers: { accept: "application/json", "chave-api-dados": CGU_KEY }, signal: AbortSignal.timeout(25000) });
+      if (r.status === 429) { await sleep(3000 + t * 3000); continue; }
+      if (r.status === 204 || !r.ok) return [];
+      const j = await r.json();
+      return Array.isArray(j) ? j : [];
+    } catch { await sleep(800 * (t + 1)); }
+  }
+  return [];
+}
+async function poolRun(items, conc, fn) { let i = 0, done = 0; await Promise.all(Array.from({ length: conc }, async () => { while (i < items.length) { await fn(items[i++]); if (++done % 30 === 0) console.log(`  …${done}/${items.length}`); } })); }
 
 async function getJson(url) {
   for (let t = 0; t < 5; t++) {
@@ -51,8 +67,28 @@ async function main() {
              ON CONFLICT (cod_ibge,ano,codigo) DO UPDATE SET valor=EXCLUDED.valor`, [cod, ANO_PIB, pibPerCapita]);
     n++;
   }
-  const c = await db.query(`SELECT count(*) n, count(DISTINCT cod_ibge) e FROM indicadores_sc`);
-  console.log(`Concluído: ${n} municípios c/ PIB per capita | total indicadores_sc: ${c.rows[0].n} em ${c.rows[0].e} entes`);
+  console.log(`  ✓ economia: ${n} municípios c/ PIB per capita`);
+
+  // SOCIAL — BPC (beneficiários por mil hab) via CGU
+  if (CGU_KEY) {
+    console.log(`SOCIAL — BPC por mil hab (CGU ${MES_BPC})...`);
+    let sn = 0;
+    await poolRun(entes, 4, async (e) => {
+      const p = pop[e.cod_ibge]; if (!p) return;
+      const arr = await getCGU(`https://api.portaldatransparencia.gov.br/api-de-dados/bpc-por-municipio?mesAno=${MES_BPC}&codigoIbge=${e.cod_ibge}&pagina=1`);
+      const benef = arr.reduce((s, x) => s + (Number(x.quantidadeBeneficiados) || 0), 0);
+      if (!benef) return;
+      const porMil = Math.round((benef / p) * 1000 * 10) / 10;
+      const ano = Number(MES_BPC.slice(0, 4));
+      await q(`INSERT INTO indicadores_sc (cod_ibge,ano,codigo,area,valor,unidade,fonte) VALUES ($1,$2,'bpc_por_mil_hab','social',$3,'benef./mil hab','CGU/Transparência')
+               ON CONFLICT (cod_ibge,ano,codigo) DO UPDATE SET valor=EXCLUDED.valor`, [e.cod_ibge, ano, porMil]);
+      sn++;
+    });
+    console.log(`  ✓ social: ${sn} municípios c/ BPC`);
+  } else { console.log("SOCIAL pulado (sem chave CGU)"); }
+
+  const c = await db.query(`SELECT area, count(*) n, count(DISTINCT cod_ibge) e FROM indicadores_sc GROUP BY area`);
+  c.rows.forEach((r) => console.log(`  [${r.area}] ${r.n} registros em ${r.e} entes`));
   await db.end();
 }
 main().catch((e) => { console.error("ERRO:", e); process.exit(1); });
