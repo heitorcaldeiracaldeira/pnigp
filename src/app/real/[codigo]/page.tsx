@@ -9,7 +9,7 @@ import { ComprasSCSection } from "@/components/compras-sc-section";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getRankingFiscalSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getRankingFiscalSC, getSerieIndicadorSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RealEntePage({ params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params;
-  const [dados, entes, contratosResumo, pcaResumo, metasFiscais, rankingFiscal, pibPerCapita, indicadores] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo), getMetasFiscaisSC(codigo), getRankingFiscalSC(), getPibPerCapitaSC(codigo), getIndicadoresSetoriaisSC(codigo)]);
+  const [dados, entes, contratosResumo, pcaResumo, metasFiscais, rankingFiscal, pibPerCapita, indicadores, serieRenda] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo), getMetasFiscaisSC(codigo), getRankingFiscalSC(), getPibPerCapitaSC(codigo), getIndicadoresSetoriaisSC(codigo), getSerieIndicadorSC(codigo, "transferencia_renda_por_mil_hab")]);
   if (!dados || dados.serie.length === 0) notFound();
   const minhaPos = rankingFiscal.find((r) => r.cod_ibge === codigo) ?? null;
   const totalRank = rankingFiscal.length;
@@ -146,6 +146,13 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
                         );
                       })}
                     </div>
+                    {ar === "social" && serieRenda.length > 1 && (
+                      <div className="mt-4 border-t border-slate-100 pt-4">
+                        <h4 className="text-sm font-semibold text-slate-700">Transferência de renda — série histórica</h4>
+                        <p className="mb-2 text-[11px] text-slate-500">Bolsa Família → Auxílio Brasil → Novo Bolsa Família · beneficiários por mil hab.</p>
+                        <LinhasFinanceiras data={serieRenda as unknown as Record<string, number>[]} linhas={[{ key: "valor", label: "Benef./mil hab.", cor: "#7c3aed" }]} />
+                      </div>
+                    )}
                   </section>
                 ))}
               </>

@@ -72,10 +72,19 @@ async function main() {
   // SOCIAL — programas sociais por município (CGU): beneficiários por mil hab
   const PROGRAMAS = [
     { codigo: "bpc_por_mil_hab", ep: "bpc-por-municipio", mes: "202412" },
-    { codigo: "novo_bolsa_familia_por_mil_hab", ep: "novo-bolsa-familia-por-municipio", mes: "202412" },
     { codigo: "seguro_defeso_por_mil_hab", ep: "seguro-defeso-por-municipio", mes: "202306" },
   ];
+  // série histórica da transferência de renda (Bolsa Família → Auxílio Brasil → Novo Bolsa Família)
+  const RENDA = [
+    { ano: 2019, ep: "bolsa-familia-por-municipio", mes: "201912" },
+    { ano: 2020, ep: "bolsa-familia-por-municipio", mes: "202012" },
+    { ano: 2021, ep: "auxilio-brasil-por-municipio", mes: "202112" },
+    { ano: 2022, ep: "auxilio-brasil-por-municipio", mes: "202212" },
+    { ano: 2023, ep: "novo-bolsa-familia-por-municipio", mes: "202312" },
+    { ano: 2024, ep: "novo-bolsa-familia-por-municipio", mes: "202412" },
+  ];
   if (CGU_KEY) {
+    await q(`DELETE FROM indicadores_sc WHERE codigo='novo_bolsa_familia_por_mil_hab'`).catch(() => {});
     for (const prog of PROGRAMAS) {
       console.log(`SOCIAL — ${prog.codigo} (CGU ${prog.mes})...`);
       const ano = Number(prog.mes.slice(0, 4));
@@ -91,6 +100,22 @@ async function main() {
         sn++;
       });
       console.log(`  ✓ ${prog.codigo}: ${sn} municípios`);
+    }
+    // série histórica de renda → codigo unificado 'transferencia_renda_por_mil_hab'
+    for (const yr of RENDA) {
+      console.log(`SOCIAL — transferência de renda ${yr.ano} (${yr.ep})...`);
+      let sn = 0;
+      await poolRun(entes, 4, async (e) => {
+        const p = pop[e.cod_ibge]; if (!p) return;
+        const arr = await getCGU(`https://api.portaldatransparencia.gov.br/api-de-dados/${yr.ep}?mesAno=${yr.mes}&codigoIbge=${e.cod_ibge}&pagina=1`);
+        const benef = arr.reduce((s, x) => s + (Number(x.quantidadeBeneficiados) || 0), 0);
+        if (!benef) return;
+        const porMil = Math.round((benef / p) * 1000 * 10) / 10;
+        await q(`INSERT INTO indicadores_sc (cod_ibge,ano,codigo,area,valor,unidade,fonte) VALUES ($1,$2,'transferencia_renda_por_mil_hab','social',$3,'benef./mil hab','CGU/Transparência')
+                 ON CONFLICT (cod_ibge,ano,codigo) DO UPDATE SET valor=EXCLUDED.valor`, [e.cod_ibge, yr.ano, porMil]);
+        sn++;
+      });
+      console.log(`  ✓ renda ${yr.ano}: ${sn} municípios`);
     }
   } else { console.log("SOCIAL pulado (sem chave CGU)"); }
 
