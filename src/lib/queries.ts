@@ -1,5 +1,6 @@
 import "server-only";
 import { query } from "./db";
+import { fetchComprasPNCP } from "./pncp";
 
 export const ANO_ATUAL = 2024;
 export const ANO_BASE = 2022; // linha de base do PPA (2022–2025)
@@ -551,4 +552,45 @@ export async function getFinancasSC(
   const last = rows[rows.length - 1];
   const funcoesLatest = last && Array.isArray(last.funcoes) ? (last.funcoes as FuncaoSC[]) : [];
   return { ente, serie, funcoesLatest };
+}
+
+export type ComprasSC = {
+  n_contratos: number; valor_estimado: number; valor_homologado: number;
+  economia_pct: number; dispensa_pct: number;
+  por_modalidade: { modalidade: string; n: number; valor: number }[];
+  top: { objeto: string; modalidade: string; orgao: string; estimado: number; homologado: number; economia_pct: number | null; data: string }[];
+};
+
+export async function getComprasSC(cod: string): Promise<ComprasSC | null> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT n_contratos, valor_estimado, valor_homologado, economia_pct, dispensa_pct, por_modalidade, top
+       FROM compras_sc WHERE cod_ibge = $1 ORDER BY ano DESC LIMIT 1`,
+    [cod],
+  );
+  if (!rows.length) return null;
+  const r = rows[0];
+  return {
+    n_contratos: num(r.n_contratos), valor_estimado: num(r.valor_estimado), valor_homologado: num(r.valor_homologado),
+    economia_pct: num(r.economia_pct), dispensa_pct: num(r.dispensa_pct),
+    por_modalidade: Array.isArray(r.por_modalidade) ? (r.por_modalidade as ComprasSC["por_modalidade"]) : [],
+    top: Array.isArray(r.top) ? (r.top as ComprasSC["top"]) : [],
+  };
+}
+
+/** Compras do ente: usa o cache (compras_sc); se não houver, busca no PNCP e grava (write-through). */
+export async function getOrFetchComprasSC(cod: string): Promise<ComprasSC | null> {
+  const cached = await getComprasSC(cod);
+  if (cached) return cached;
+  const er = await query<Record<string, unknown>>(`SELECT tipo FROM entes_sc WHERE cod_ibge = $1`, [cod]);
+  if (!er.length) return null;
+  const tipo = er[0].tipo as "M" | "E";
+  const d = await fetchComprasPNCP(cod, tipo);
+  if (d.n_contratos === 0) return d; // não cacheia vazio (pode ter sido rate limit) — tenta de novo na próxima
+  await query(
+    `INSERT INTO compras_sc (cod_ibge,ano,n_contratos,valor_estimado,valor_homologado,economia_pct,dispensa_pct,por_modalidade,top)
+     VALUES ($1,2024,$2,$3,$4,$5,$6,$7,$8)
+     ON CONFLICT (cod_ibge,ano) DO UPDATE SET n_contratos=EXCLUDED.n_contratos,valor_estimado=EXCLUDED.valor_estimado,valor_homologado=EXCLUDED.valor_homologado,economia_pct=EXCLUDED.economia_pct,dispensa_pct=EXCLUDED.dispensa_pct,por_modalidade=EXCLUDED.por_modalidade,top=EXCLUDED.top`,
+    [cod, d.n_contratos, d.valor_estimado, d.valor_homologado, d.economia_pct, d.dispensa_pct, JSON.stringify(d.por_modalidade), JSON.stringify(d.top)],
+  );
+  return d;
 }

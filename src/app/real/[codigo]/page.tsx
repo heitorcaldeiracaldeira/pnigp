@@ -5,6 +5,7 @@ import { Logo } from "@/components/brand";
 import { Donut } from "@/components/charts/donut";
 import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
 import { OrcadoExecutado } from "@/components/charts/orcado-executado";
+import { ComprasSCSection } from "@/components/compras-sc-section";
 import { RealSelector } from "@/components/real-selector";
 import { FONTE_SICONFI, getEntesSC, getFinancasSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop } from "@/lib/ui";
@@ -166,8 +167,10 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
           </section>
         )}
 
+        <ComprasSCSection codigo={ente.cod_ibge} tipo={ente.tipo} />
+
         <footer className="py-6 text-center text-xs text-slate-500">
-          PNIGP · Instituto I10 — dados oficiais do SICONFI/Tesouro Nacional (RREO {anoIni}–{anoFim}), base usada pelo TCE/SC.
+          PNIGP · Instituto I10 — finanças do SICONFI ({anoIni}–{anoFim}) e compras do PNCP (2024), bases oficiais usadas pelo TCE/SC.
         </footer>
       </main>
     </div>
