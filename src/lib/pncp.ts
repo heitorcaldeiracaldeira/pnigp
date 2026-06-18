@@ -100,7 +100,8 @@ const PNCP_MAIN = "https://pncp.gov.br/api/pncp/v1";
 export type ItemPNCP = {
   numero: number; descricao: string; unidade: string; quantidade: number;
   unitEstimado: number; totalEstimado: number; unitHomologado: number | null;
-  fornecedor: string | null; beneficioLC: string | null; economiaPct: number | null;
+  fornecedor: string | null; cnpjFornecedor: string | null; porteFornecedor: string | null;
+  beneficioLC: string | null; economiaPct: number | null;
 };
 
 async function getMain(url: string): Promise<unknown[] | null> {
@@ -140,6 +141,8 @@ export async function fetchItensPNCP(cnpj: string, ano: number, seq: number): Pr
       totalEstimado: Number(it.valorTotal) || 0,
       unitHomologado: unitHom > 0 ? unitHom : null,
       fornecedor: r ? String(r.nomeRazaoSocialFornecedor || r.niFornecedor || "") || null : null,
+      cnpjFornecedor: r ? String(r.niFornecedor || "") || null : null,
+      porteFornecedor: r ? String(r.porteFornecedorNome || r.porteFornecedor || "") || null : null,
       beneficioLC: benef && !/nenhum|não|nao|sem benef/i.test(benef) ? benef : null,
       economiaPct: unitEst > 0 && unitHom > 0 ? Math.round(((unitEst - unitHom) / unitEst) * 1000) / 10 : null,
     };

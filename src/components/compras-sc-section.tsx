@@ -7,7 +7,7 @@ import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
 import { fmtBRL, fmtBRLCompact } from "@/lib/ui";
 
 type Contrato = { objeto: string; modalidade: string; orgao: string; estimado: number; homologado: number; economia_pct: number | null; data: string; cnpj?: string; ano?: number; seq?: number };
-type Item = { numero: number; descricao: string; unidade: string; quantidade: number; unitEstimado: number; totalEstimado: number; unitHomologado: number | null; fornecedor: string | null; beneficioLC: string | null; economiaPct: number | null };
+type Item = { numero: number; descricao: string; unidade: string; quantidade: number; unitEstimado: number; totalEstimado: number; unitHomologado: number | null; fornecedor: string | null; cnpjFornecedor: string | null; porteFornecedor: string | null; beneficioLC: string | null; economiaPct: number | null };
 type Compras = {
   n_contratos: number; valor_estimado: number; valor_homologado: number; economia_pct: number; dispensa_pct: number;
   por_modalidade: { modalidade: string; n: number; valor: number }[];
@@ -228,16 +228,20 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
       .catch(() => v && setContratos([]));
     return () => { v = false; };
   }, [c.cnpj, c.ano, c.seq]);
-  // fornecedores consolidados a partir dos itens
-  const fornMap: Record<string, { nome: string; itens: number; valor: number; lc: boolean }> = {};
+  // fornecedores consolidados a partir dos itens (nome, CNPJ, porte, LC123, valor)
+  const fornMap: Record<string, { nome: string; cnpj: string; porte: string; itens: number; valor: number; lc: string | null }> = {};
   for (const it of itens || []) {
     if (!it.fornecedor) continue;
-    (fornMap[it.fornecedor] ??= { nome: it.fornecedor, itens: 0, valor: 0, lc: false });
-    fornMap[it.fornecedor].itens++;
-    fornMap[it.fornecedor].valor += (it.unitHomologado ?? 0) * it.quantidade;
-    if (it.beneficioLC) fornMap[it.fornecedor].lc = true;
+    const k = it.cnpjFornecedor || it.fornecedor;
+    (fornMap[k] ??= { nome: it.fornecedor, cnpj: it.cnpjFornecedor || "", porte: it.porteFornecedor || "", itens: 0, valor: 0, lc: null });
+    fornMap[k].itens++;
+    fornMap[k].valor += (it.unitHomologado ?? 0) * it.quantidade;
+    if (it.beneficioLC) fornMap[k].lc = it.beneficioLC;
+    if (!fornMap[k].porte && it.porteFornecedor) fornMap[k].porte = it.porteFornecedor;
   }
   const fornecedores = Object.values(fornMap).sort((a, b) => b.valor - a.valor);
+  const porteSigla = (p: string) => /micro\s*empresa|^me\b/i.test(p) ? "ME" : /pequeno|epp/i.test(p) ? "EPP" : /m[eé]dia/i.test(p) ? "Média" : /grande|demais/i.test(p) ? "Grande" : (p || "—");
+  const porteCor = (p: string) => { const s = porteSigla(p); return s === "ME" ? "bg-emerald-100 text-emerald-700" : s === "EPP" ? "bg-sky-100 text-sky-700" : "bg-slate-100 text-slate-600"; };
 
   return (
     <div className="space-y-3">
@@ -297,13 +301,21 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
       {/* #3 Fornecedores consolidados do processo */}
       {fornecedores.length > 0 && (
         <div>
-          <div className="mb-1 text-xs font-semibold text-slate-600">Fornecedores do processo</div>
+          <div className="mb-1 text-xs font-semibold text-slate-600">Fornecedores vencedores</div>
+          <p className="mb-2 text-[10px] text-slate-400">LC 123/2006 — tratamento diferenciado a ME/EPP nas licitações.</p>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {fornecedores.slice(0, 6).map((f) => (
-              <div key={f.nome} className="rounded-lg border border-slate-200 bg-white p-2">
-                <div className="flex items-center gap-1 text-xs font-medium text-slate-700"><Building2 className="h-3 w-3 shrink-0 text-slate-400" /><span className="line-clamp-1">{f.nome}</span></div>
-                <div className="text-[11px] text-slate-500">{f.itens} {f.itens === 1 ? "item" : "itens"} · {fmtBRLCompact(f.valor)}</div>
-                {f.lc && <span className="mt-0.5 inline-block rounded bg-teal-100 px-1 py-0.5 text-[10px] font-semibold text-teal-700">Beneficiário LC 123</span>}
+              <div key={f.cnpj || f.nome} className="rounded-lg border border-slate-200 bg-white p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="flex items-center gap-1 text-xs font-semibold text-slate-800"><Building2 className="h-3 w-3 shrink-0 text-slate-400" /><span className="line-clamp-1">{f.nome}</span></span>
+                  {f.porte && <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${porteCor(f.porte)}`} title={f.porte}>{porteSigla(f.porte)}</span>}
+                </div>
+                <dl className="mt-1.5 space-y-0.5 text-[11px] text-slate-500">
+                  {f.cnpj && <div className="flex justify-between gap-2"><dt>CNPJ</dt><dd className="tabular-nums text-slate-700">{f.cnpj}</dd></div>}
+                  <div className="flex justify-between gap-2"><dt>Itens vencidos</dt><dd className="text-slate-700">{f.itens}</dd></div>
+                  <div className="flex justify-between gap-2 border-t border-slate-100 pt-1"><dt>Contratado</dt><dd className="font-semibold text-slate-800">{fmtBRLCompact(f.valor)}</dd></div>
+                  {f.lc && <div className="rounded bg-emerald-50 px-1.5 py-1 text-[10px] leading-snug text-emerald-700">LC 123: {f.lc}</div>}
+                </dl>
               </div>
             ))}
           </div>
