@@ -803,6 +803,7 @@ const IND_LABEL: Record<string, string> = {
   bpc_por_mil_hab: "BPC — beneficiários por mil hab.",
   transferencia_renda_por_mil_hab: "Bolsa Família / renda — benef. por mil hab.",
   seguro_defeso_por_mil_hab: "Seguro Defeso — beneficiários por mil hab.",
+  taxa_alfabetizacao: "Taxa de alfabetização (15+ anos)",
 };
 const AREA_LABEL: Record<string, string> = {
   economia: "Economia", social: "Social", saude: "Saúde", educacao: "Educação", seguranca: "Segurança",
@@ -832,4 +833,14 @@ export async function getSerieIndicadorSC(cod: string, codigo: string): Promise<
     `SELECT ano, valor FROM indicadores_sc WHERE cod_ibge=$1 AND codigo=$2 ORDER BY ano`, [cod, codigo],
   ).catch(() => []);
   return rows.map((r) => ({ ano: num(r.ano), valor: num(r.valor) }));
+}
+
+/** Todas as séries históricas dos indicadores do ente, agrupadas por código. */
+export async function getSeriesIndicadoresSC(cod: string): Promise<Record<string, { ano: number; valor: number }[]>> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT codigo, ano, valor FROM indicadores_sc WHERE cod_ibge=$1 ORDER BY codigo, ano`, [cod],
+  ).catch(() => []);
+  const m: Record<string, { ano: number; valor: number }[]> = {};
+  for (const r of rows) { const k = String(r.codigo); (m[k] ??= []).push({ ano: num(r.ano), valor: num(r.valor) }); }
+  return m;
 }

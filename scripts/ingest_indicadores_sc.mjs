@@ -56,18 +56,34 @@ async function main() {
   const entes = (await db.query(`SELECT cod_ibge, populacao FROM entes_sc WHERE tipo='M'`)).rows;
   const pop = Object.fromEntries(entes.map((e) => [e.cod_ibge, Number(e.populacao) || 0]));
 
-  const ANO_PIB = 2021; // último PIB municipal publicado pelo IBGE
-  console.log(`ECONOMIA — PIB per capita (IBGE ${ANO_PIB})...`);
-  const pib = await pibIBGE(ANO_PIB);
-  let n = 0;
-  for (const [cod, pibMil] of Object.entries(pib)) {
-    const p = pop[cod]; if (!p) continue;
-    const pibPerCapita = Math.round((pibMil * 1000) / p); // R$/hab
-    await q(`INSERT INTO indicadores_sc (cod_ibge,ano,codigo,area,valor,unidade,fonte) VALUES ($1,$2,'pib_per_capita','economia',$3,'R$/hab','IBGE')
-             ON CONFLICT (cod_ibge,ano,codigo) DO UPDATE SET valor=EXCLUDED.valor`, [cod, ANO_PIB, pibPerCapita]);
-    n++;
+  // ECONOMIA — PIB per capita (IBGE), SÉRIE histórica
+  for (const ano of [2017, 2018, 2019, 2020, 2021]) {
+    const pib = await pibIBGE(ano);
+    let n = 0;
+    for (const [cod, pibMil] of Object.entries(pib)) {
+      const p = pop[cod]; if (!p) continue;
+      await q(`INSERT INTO indicadores_sc (cod_ibge,ano,codigo,area,valor,unidade,fonte) VALUES ($1,$2,'pib_per_capita','economia',$3,'R$/hab','IBGE')
+               ON CONFLICT (cod_ibge,ano,codigo) DO UPDATE SET valor=EXCLUDED.valor`, [cod, ano, Math.round((pibMil * 1000) / p)]);
+      n++;
+    }
+    console.log(`  ✓ PIB per capita ${ano}: ${n} municípios`);
   }
-  console.log(`  ✓ economia: ${n} municípios c/ PIB per capita`);
+
+  // EDUCAÇÃO — Taxa de alfabetização (IBGE Censo 2022, agregado 9543 var 2513, %)
+  console.log(`EDUCAÇÃO — taxa de alfabetização (IBGE Censo 2022)...`);
+  {
+    const j = await getJson(`https://servicodados.ibge.gov.br/api/v3/agregados/9543/periodos/2022/variaveis/2513?localidades=N6%5BN3%5B42%5D%5D`);
+    const series = j?.[0]?.resultados?.[0]?.series || [];
+    let n = 0;
+    for (const s of series) {
+      const v = Number(Object.values(s.serie)[0]); const cod = s.localidade?.id;
+      if (!cod || !Number.isFinite(v)) continue;
+      await q(`INSERT INTO indicadores_sc (cod_ibge,ano,codigo,area,valor,unidade,fonte) VALUES ($1,2022,'taxa_alfabetizacao','educacao',$2,'%','IBGE/Censo')
+               ON CONFLICT (cod_ibge,ano,codigo) DO UPDATE SET valor=EXCLUDED.valor`, [cod, Math.round(v * 100) / 100]);
+      n++;
+    }
+    console.log(`  ✓ educação: ${n} municípios c/ alfabetização`);
+  }
 
   // SOCIAL — programas sociais por município (CGU): beneficiários por mil hab
   const PROGRAMAS = [
