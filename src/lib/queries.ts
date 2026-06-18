@@ -804,9 +804,10 @@ const IND_LABEL: Record<string, string> = {
   transferencia_renda_por_mil_hab: "Bolsa Família / renda — benef. por mil hab.",
   seguro_defeso_por_mil_hab: "Seguro Defeso — beneficiários por mil hab.",
   taxa_alfabetizacao: "Taxa de alfabetização (15+ anos)",
+  populacao: "População", area_km2: "Área territorial", densidade_hab_km2: "Densidade demográfica",
 };
 const AREA_LABEL: Record<string, string> = {
-  economia: "Economia", social: "Social", saude: "Saúde", educacao: "Educação", seguranca: "Segurança",
+  economia: "Economia", social: "Social", saude: "Saúde", educacao: "Educação", seguranca: "Segurança", demografia: "Demografia",
 };
 
 export type IndicadorSetorial = { codigo: string; nome: string; area: string; areaLabel: string; valor: number; unidade: string; fonte: string; media: number };

@@ -36,14 +36,15 @@ async function getJson(url) {
   return null;
 }
 
-// IBGE — PIB municipal (agregado 5938, variável 37 = PIB a preços correntes, mil reais)
-async function pibIBGE(ano) {
-  const j = await getJson(`https://servicodados.ibge.gov.br/api/v3/agregados/5938/periodos/${ano}/variaveis/37?localidades=N6%5BN3%5B42%5D%5D`);
+// IBGE — mapa cod_ibge -> valor (agregado/ano/variável) p/ todos os municípios de SC
+async function ibgeMap(agregado, ano, variavel) {
+  const j = await getJson(`https://servicodados.ibge.gov.br/api/v3/agregados/${agregado}/periodos/${ano}/variaveis/${variavel}?localidades=N6%5BN3%5B42%5D%5D`);
   const series = j?.[0]?.resultados?.[0]?.series || [];
   const m = {};
   for (const s of series) { const v = Number(Object.values(s.serie)[0]); if (s.localidade?.id && Number.isFinite(v)) m[s.localidade.id] = v; }
-  return m; // cod_ibge -> PIB (mil reais)
+  return m;
 }
+const pibIBGE = (ano) => ibgeMap(5938, ano, 37); // PIB a preços correntes (mil reais)
 
 async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 4 });
@@ -83,6 +84,27 @@ async function main() {
       n++;
     }
     console.log(`  ✓ educação: ${n} municípios c/ alfabetização`);
+  }
+
+  // DEMOGRAFIA — população (censo 2010+2022, série), área territorial e densidade (IBGE)
+  console.log(`DEMOGRAFIA — população (série), área, densidade (IBGE)...`);
+  {
+    const pop2010 = await ibgeMap(1378, 2010, 93);
+    const pop2022 = await ibgeMap(4709, 2022, 93);
+    const area = await ibgeMap(1301, 2010, 615);
+    let n = 0;
+    const ins = async (cod, ano, codigo, valor, un) => q(
+      `INSERT INTO indicadores_sc (cod_ibge,ano,codigo,area,valor,unidade,fonte) VALUES ($1,$2,$3,'demografia',$4,$5,'IBGE')
+       ON CONFLICT (cod_ibge,ano,codigo) DO UPDATE SET valor=EXCLUDED.valor`, [cod, ano, codigo, valor, un]);
+    for (const e of entes) {
+      const cod = e.cod_ibge; let teve = false;
+      if (pop2010[cod]) { await ins(cod, 2010, "populacao", pop2010[cod], "hab"); teve = true; }
+      if (pop2022[cod]) { await ins(cod, 2022, "populacao", pop2022[cod], "hab"); teve = true; }
+      if (area[cod]) await ins(cod, 2022, "area_km2", Math.round(area[cod] * 10) / 10, "km²");
+      if (pop2022[cod] && area[cod]) await ins(cod, 2022, "densidade_hab_km2", Math.round((pop2022[cod] / area[cod]) * 10) / 10, "hab/km²");
+      if (teve) n++;
+    }
+    console.log(`  ✓ demografia: ${n} municípios`);
   }
 
   // SOCIAL — programas sociais por município (CGU): beneficiários por mil hab
