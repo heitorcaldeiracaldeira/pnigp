@@ -61,14 +61,16 @@ async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 4 });
   db.on("error", () => {});
   const munis = JSON.parse(fs.readFileSync(path.join(__dirname, "sc_munis.json"), "utf8"));
-  const tem = new Set((await db.query(`SELECT cod_ibge FROM entes_sc`)).rows.map((r) => r.cod_ibge));
-  const faltam = munis.filter((m) => !tem.has(String(m.id)));
-  console.log(`Recuperando ${faltam.length} municípios via DCA...`);
+  const have = {};
+  (await db.query(`SELECT cod_ibge, ano FROM financas_sc`)).rows.forEach((r) => { (have[r.cod_ibge] ??= new Set()).add(Number(r.ano)); });
+  const faltam = munis.filter((m) => ANOS.some((a) => !(have[String(m.id)]?.has(a))));
+  console.log(`Recuperando lacunas (anos ${ANOS.join(",")}) em ${faltam.length} municípios via DCA...`);
   let ok = 0, falha = 0;
   for (const m of faltam) {
     const cod = String(m.id);
     let gravou = false;
     for (const ano of ANOS) {
+      if (have[cod]?.has(ano)) continue; // ano já presente
       const items = await getDCA(ano, cod);
       if (!items || !items.length) continue;
       const d = extrair(items);

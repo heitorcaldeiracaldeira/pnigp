@@ -594,3 +594,25 @@ export async function getOrFetchComprasSC(cod: string): Promise<ComprasSC | null
   );
   return d;
 }
+
+export type ComprasAno = { ano: number; n_contratos: number; valor_homologado: number; economia_pct: number; dispensa_pct: number };
+
+/** Série de compras por ano (todos os anos já no banco para o ente). */
+export async function getComprasSerieSC(cod: string): Promise<ComprasAno[]> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT ano, n_contratos, valor_homologado, economia_pct, dispensa_pct
+       FROM compras_sc WHERE cod_ibge = $1 AND n_contratos > 0 ORDER BY ano`,
+    [cod],
+  );
+  return rows.map((r) => ({
+    ano: num(r.ano), n_contratos: num(r.n_contratos), valor_homologado: num(r.valor_homologado),
+    economia_pct: num(r.economia_pct), dispensa_pct: num(r.dispensa_pct),
+  }));
+}
+
+/** Compras do ente: garante o ano corrente (on-demand) e devolve detalhe do último ano + a série. */
+export async function getComprasComEvolucao(cod: string): Promise<{ latest: ComprasSC | null; serie: ComprasAno[] }> {
+  const latest = await getOrFetchComprasSC(cod);
+  const serie = await getComprasSerieSC(cod);
+  return { latest, serie };
+}
