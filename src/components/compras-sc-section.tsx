@@ -343,7 +343,7 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
       )}
 
       {/* #2 Empenhos — não disponível no PNCP */}
-      <p className="text-[10px] text-slate-400">Empenhos/pagamentos não são publicados no PNCP (a execução orçamentária — empenhado/pago — fica no SIAFI/Portal da Transparência, sem vínculo direto ao contrato).</p>
+      <p className="text-[10px] text-slate-400">Empenhos/pagamentos não são publicados no PNCP. A execução orçamentária (empenhado/pago) fica no <strong>sistema próprio de cada ente</strong> — cada município e estado tem o seu (o SIAFI é federal) — e é consolidada no SICONFI e nos portais de transparência/TCE.</p>
     </div>
   );
 }
