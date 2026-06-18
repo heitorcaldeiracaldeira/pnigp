@@ -12,7 +12,7 @@ const DATABASE_URL = env.match(/^DATABASE_URL=(.+)$/m)[1].trim();
 
 const ANO = Number(process.env.ANO) || 2024;
 const DI = `${ANO}0101`, DF = `${ANO}1231`;
-const CAP_PAGINAS = 90; // coleta COMPLETA: pagina fundo (capitais cobertas); rate limit tratado com backoff
+const CAP_PAGINAS = 300; // fidelidade: pagina até o fim (15 mil/modalidade) — só trava em caso extremo, e avisa
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 const PNCP = "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao";
 // modalidades principais p/ compras municipais (4 Concorrência Elet., 6 Pregão Elet., 8 Dispensa, 9 Inexig.)
@@ -74,6 +74,7 @@ async function coletarEnte(ente) {
       }
       pagina++;
     } while (pagina <= totalPaginas && pagina <= CAP_PAGINAS);
+    if (totalPaginas > CAP_PAGINAS) console.log(`  ! TRUNCADO: ${ente.cod_ibge} mod ${mod.nome} tem ${totalPaginas} págs (>CAP ${CAP_PAGINAS}) — revisar fidelidade`);
   }
   return contratos;
 }
