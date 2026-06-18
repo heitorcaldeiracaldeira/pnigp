@@ -669,3 +669,23 @@ export async function getContratosDoProcesso(cnpj: string, ano: number, seq: num
     assinatura: r.assinatura ? String(r.assinatura) : null, objeto: String(r.objeto || ""),
   }));
 }
+
+export type ContratosResumoSC = {
+  n: number; valor_total: number;
+  por_fornecedor: { nome: string; ni: string; n: number; valor: number }[];
+  top: { objeto: string; fornecedor: string; valor: number; vigInicio: string | null; vigFim: string | null; assinatura: string | null }[];
+};
+
+export async function getContratosResumoSC(cod: string): Promise<ContratosResumoSC | null> {
+  const tot = await query<Record<string, unknown>>(`SELECT count(*) n, COALESCE(sum(valor_global),0) v FROM contratos_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
+  if (!tot.length || num(tot[0].n) === 0) return null;
+  const forn = await query<Record<string, unknown>>(
+    `SELECT fornecedor, ni_fornecedor, count(*) n, COALESCE(sum(valor_global),0) v FROM contratos_sc WHERE cod_ibge=$1 AND fornecedor IS NOT NULL GROUP BY fornecedor, ni_fornecedor ORDER BY v DESC LIMIT 8`, [cod]);
+  const top = await query<Record<string, unknown>>(
+    `SELECT objeto, fornecedor, valor_global, to_char(vig_inicio,'DD/MM/YYYY') vi, to_char(vig_fim,'DD/MM/YYYY') vf, to_char(assinatura,'DD/MM/YYYY') asn FROM contratos_sc WHERE cod_ibge=$1 ORDER BY valor_global DESC NULLS LAST LIMIT 12`, [cod]);
+  return {
+    n: num(tot[0].n), valor_total: num(tot[0].v),
+    por_fornecedor: forn.map((r) => ({ nome: String(r.fornecedor || "—"), ni: String(r.ni_fornecedor || ""), n: num(r.n), valor: num(r.v) })),
+    top: top.map((r) => ({ objeto: String(r.objeto || ""), fornecedor: String(r.fornecedor || "—"), valor: num(r.valor_global), vigInicio: r.vi ? String(r.vi) : null, vigFim: r.vf ? String(r.vf) : null, assinatura: r.asn ? String(r.asn) : null })),
+  };
+}
