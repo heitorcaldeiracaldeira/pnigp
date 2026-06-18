@@ -6,7 +6,7 @@ import "server-only";
 // confirmados contra uma resposta real assim que a chave estiver disponível.
 
 const API = "https://api.portaldatransparencia.gov.br/api-de-dados";
-const CAP_PAGINAS = 20; // bounded
+const CAP_PAGINAS = 40; // on-demand: bounded p/ resposta rápida (pré-aquecidos têm coleta completa)
 const r2 = (n: number) => Math.round((n || 0) * 100) / 100;
 const sleep = (ms: number) => new Promise((s) => setTimeout(s, ms));
 

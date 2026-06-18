@@ -70,7 +70,7 @@ async function main() {
   await pool(pend, 3, async (e) => {
     const conv = [];
     let p = 1;
-    while (p <= 20) { const a = await getPagina(e.cod_ibge, p); if (!a.length) break; conv.push(...a); if (a.length < 15) break; p++; }
+    while (p <= 300) { const a = await getPagina(e.cod_ibge, p); if (!a.length) break; conv.push(...a); if (a.length < 15) break; p++; }
     if (!conv.length) return;
     const d = agregar(conv);
     await db.query(
