@@ -787,3 +787,11 @@ export async function getRankingFiscalSC(): Promise<RankFiscalSC[]> {
   scored.sort((a, b) => b.score - a.score);
   return scored.map((s, i) => ({ ...s, posicao: i + 1 }));
 }
+
+/** PIB per capita real (IBGE) do ente, se coletado. */
+export async function getPibPerCapitaSC(cod: string): Promise<number | null> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT valor FROM indicadores_sc WHERE cod_ibge=$1 AND codigo='pib_per_capita' ORDER BY ano DESC LIMIT 1`, [cod],
+  ).catch(() => []);
+  return rows.length ? num(rows[0].valor) : null;
+}

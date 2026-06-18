@@ -9,7 +9,7 @@ import { ComprasSCSection } from "@/components/compras-sc-section";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getEntesSC, getFinancasSC, getMetasFiscaisSC, getPcaResumoSC, getRankingFiscalSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getEntesSC, getFinancasSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getRankingFiscalSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RealEntePage({ params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params;
-  const [dados, entes, contratosResumo, pcaResumo, metasFiscais, rankingFiscal] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo), getMetasFiscaisSC(codigo), getRankingFiscalSC()]);
+  const [dados, entes, contratosResumo, pcaResumo, metasFiscais, rankingFiscal, pibPerCapita] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo), getMetasFiscaisSC(codigo), getRankingFiscalSC(), getPibPerCapitaSC(codigo)]);
   if (!dados || dados.serie.length === 0) notFound();
   const minhaPos = rankingFiscal.find((r) => r.cod_ibge === codigo) ?? null;
   const totalRank = rankingFiscal.length;
@@ -440,6 +440,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
               </div>
               <p className="mt-1 text-sm text-slate-500">
                 {ente.tipo === "E" ? "Governo estadual" : "Município"} · {fmtPop(ente.populacao)} · série {anoIni}–{anoFim} · IBGE {ente.cod_ibge}
+                {pibPerCapita ? ` · PIB per capita ${fmtBRL(pibPerCapita)}` : ""}
               </p>
             </div>
             <div className="lg:items-end">
