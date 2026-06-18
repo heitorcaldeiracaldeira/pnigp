@@ -9,7 +9,7 @@ import { ComprasSCSection } from "@/components/compras-sc-section";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getEntesSC, getFinancasSC, getMetasFiscaisSC, getPcaResumoSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getEntesSC, getFinancasSC, getMetasFiscaisSC, getPcaResumoSC, getRankingFiscalSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -17,8 +17,10 @@ export const dynamic = "force-dynamic";
 
 export default async function RealEntePage({ params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params;
-  const [dados, entes, contratosResumo, pcaResumo, metasFiscais] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo), getMetasFiscaisSC(codigo)]);
+  const [dados, entes, contratosResumo, pcaResumo, metasFiscais, rankingFiscal] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo), getMetasFiscaisSC(codigo), getRankingFiscalSC()]);
   if (!dados || dados.serie.length === 0) notFound();
+  const minhaPos = rankingFiscal.find((r) => r.cod_ibge === codigo) ?? null;
+  const totalRank = rankingFiscal.length;
 
   const { ente, serie, funcoesLatest } = dados;
   const a = serie[serie.length - 1];
@@ -50,6 +52,23 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       label: "Visão geral",
       content: (
         <>
+          {minhaPos && (
+            <div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 to-emerald-50 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-teal-700"><Target className="h-4 w-4" /> Índice Fiscal PNIGP <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] text-slate-500">real · finanças SICONFI</span></div>
+                  <div className="mt-1 font-display text-4xl font-bold tracking-tight text-slate-900">{minhaPos.score.toFixed(1)}<span className="text-lg font-semibold text-slate-400"> /100</span></div>
+                  <div className="text-xs text-slate-600"><strong className="text-teal-700">{minhaPos.posicao}º</strong> de {totalRank} entes de SC · gestão fiscal</div>
+                </div>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-600">
+                  <div className="flex justify-between gap-3"><span>Autonomia (receita própria)</span><strong className="tabular-nums text-slate-800">{minhaPos.autonomia.toFixed(0)}%</strong></div>
+                  <div className="flex justify-between gap-3"><span>Esforço de investimento</span><strong className="tabular-nums text-slate-800">{minhaPos.investimento.toFixed(0)}%</strong></div>
+                  <div className="flex justify-between gap-3"><span>Equilíbrio (resultado/receita)</span><strong className="tabular-nums text-slate-800">{minhaPos.equilibrio.toFixed(1)}%</strong></div>
+                  <div className="flex justify-between gap-3"><span>Peso de pessoal</span><strong className="tabular-nums text-slate-800">{minhaPos.pessoal.toFixed(0)}%</strong></div>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <div className="flex items-center gap-1.5 text-xs text-slate-500"><Wallet className="h-4 w-4 text-teal-600" /> Receita arrecadada {a.ano}</div>
@@ -330,6 +349,63 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
         }]
       : []),
     { id: "transferencias", label: "Transferências", content: <TransferenciasSCSection codigo={ente.cod_ibge} /> },
+    ...(rankingFiscal.length > 1
+      ? [{
+          id: "ranking",
+          label: "Ranking",
+          content: (() => {
+            const top = rankingFiscal.slice(0, 15);
+            const fora = minhaPos && minhaPos.posicao > 15 ? minhaPos : null;
+            const Row = (r: typeof rankingFiscal[number], destaque: boolean) => (
+              <tr key={r.cod_ibge} className={`border-b border-slate-100 ${destaque ? "bg-teal-50 font-medium" : ""}`}>
+                <td className="p-2 tabular-nums text-slate-500">{r.posicao}º</td>
+                <td className="p-2 text-slate-700">{r.tipo === "E" ? `★ ${r.nome}` : r.nome}</td>
+                <td className="p-2 text-right font-semibold tabular-nums text-teal-700">{r.score.toFixed(1)}</td>
+                <td className="hidden p-2 text-right tabular-nums text-slate-500 sm:table-cell">{r.autonomia.toFixed(0)}%</td>
+                <td className="hidden p-2 text-right tabular-nums text-slate-500 md:table-cell">{r.investimento.toFixed(0)}%</td>
+                <td className="hidden p-2 text-right tabular-nums text-slate-500 md:table-cell">{r.equilibrio.toFixed(1)}%</td>
+                <td className="hidden p-2 text-right tabular-nums text-slate-500 lg:table-cell">{r.pessoal.toFixed(0)}%</td>
+              </tr>
+            );
+            return (
+              <>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <Target className="h-4 w-4 text-teal-600" />
+                    <h3 className="font-semibold text-slate-800">Ranking fiscal · entes de Santa Catarina</h3>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
+                  </div>
+                  <p className="text-xs text-slate-500">Índice Fiscal PNIGP (real) — média de percentis de autonomia, investimento, equilíbrio e peso de pessoal entre os {totalRank} entes.</p>
+                  {minhaPos && <p className="mt-2 text-sm text-slate-700"><strong className="text-teal-700">{ente.nome}</strong>: índice <strong>{minhaPos.score.toFixed(1)}</strong> — <strong>{minhaPos.posicao}º</strong> de {totalRank}.</p>}
+                </div>
+                <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <h3 className="mb-3 font-semibold text-slate-800">Top 15 + sua posição</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-left text-xs text-slate-500">
+                          <th className="p-2 font-medium">#</th>
+                          <th className="p-2 font-medium">Ente</th>
+                          <th className="p-2 text-right font-medium">Índice</th>
+                          <th className="hidden p-2 text-right font-medium sm:table-cell">Autonomia</th>
+                          <th className="hidden p-2 text-right font-medium md:table-cell">Investim.</th>
+                          <th className="hidden p-2 text-right font-medium md:table-cell">Equilíbrio</th>
+                          <th className="hidden p-2 text-right font-medium lg:table-cell">Pessoal</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {top.map((r) => Row(r, r.cod_ibge === codigo))}
+                        {fora && (<><tr><td colSpan={7} className="p-1 text-center text-xs text-slate-400">⋯</td></tr>{Row(fora, true)}</>)}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="mt-2 text-[11px] text-slate-400">Índice fiscal real (SICONFI). Os índices completos PNIGP (ICEB/INVP/IGP 360) dependem de indicadores setoriais (saúde/educação/segurança/social/economia) ainda a coletar.</p>
+                </section>
+              </>
+            );
+          })(),
+        }]
+      : []),
   ];
 
   return (

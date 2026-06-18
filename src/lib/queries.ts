@@ -741,3 +741,49 @@ export async function getMetasFiscaisSC(cod: string): Promise<{ latest: MetaFisc
   }));
   return { latest: serie[serie.length - 1], serie };
 }
+
+/* ===== ÍNDICE FISCAL PNIGP (real) + ranking dos entes de SC ===== */
+
+export type RankFiscalSC = {
+  cod_ibge: string; nome: string; tipo: string; score: number; posicao: number;
+  autonomia: number; investimento: number; equilibrio: number; pessoal: number; // % brutos p/ exibir
+};
+
+export async function getRankingFiscalSC(): Promise<RankFiscalSC[]> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT DISTINCT ON (f.cod_ibge) f.cod_ibge, e.nome, e.tipo,
+            f.receita, f.tributaria, f.despesa, f.resultado, f.pessoal, f.investimento
+       FROM financas_sc f JOIN entes_sc e ON e.cod_ibge = f.cod_ibge
+      ORDER BY f.cod_ibge, f.ano DESC`,
+  ).catch(() => []);
+  if (!rows.length) return [];
+  const base = rows.map((r) => {
+    const receita = num(r.receita) || 0; const despesa = num(r.despesa) || 0;
+    return {
+      cod_ibge: String(r.cod_ibge), nome: String(r.nome), tipo: String(r.tipo),
+      autonomia: receita > 0 ? num(r.tributaria) / receita : 0,
+      investimento: despesa > 0 ? num(r.investimento) / despesa : 0,
+      equilibrio: receita > 0 ? num(r.resultado) / receita : 0,
+      pessoal: receita > 0 ? num(r.pessoal) / receita : 0, // menor é melhor
+    };
+  });
+  const n = base.length;
+  // percentil de cada dimensão (0-100); pessoal invertido (menor = melhor)
+  const pct = (vals: number[], invert = false) => {
+    const idx = vals.map((v, i) => ({ v, i })).sort((a, b) => a.v - b.v);
+    const p = new Array(n).fill(0);
+    idx.forEach((o, rank) => { p[o.i] = n > 1 ? (rank / (n - 1)) * 100 : 100; });
+    return invert ? p.map((x) => 100 - x) : p;
+  };
+  const pA = pct(base.map((b) => b.autonomia));
+  const pI = pct(base.map((b) => b.investimento));
+  const pE = pct(base.map((b) => b.equilibrio));
+  const pP = pct(base.map((b) => b.pessoal), true);
+  const scored = base.map((b, i) => ({
+    ...b, score: Math.round(((pA[i] + pI[i] + pE[i] + pP[i]) / 4) * 10) / 10,
+    autonomia: Math.round(b.autonomia * 1000) / 10, investimento: Math.round(b.investimento * 1000) / 10,
+    equilibrio: Math.round(b.equilibrio * 1000) / 10, pessoal: Math.round(b.pessoal * 1000) / 10,
+  }));
+  scored.sort((a, b) => b.score - a.score);
+  return scored.map((s, i) => ({ ...s, posicao: i + 1 }));
+}
