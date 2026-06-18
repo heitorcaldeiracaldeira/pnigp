@@ -46,6 +46,7 @@ async function descobrirCnpjs(codIbge) {
 
 async function pcaDoOrgao(cnpj) {
   const itens = [];
+  const seen = new Set(); // dedup por item único (mesmo plano aparece em vários anos/páginas)
   for (const ano of ANOS) {
     let pagina = 1, totalPaginas = 1;
     do {
@@ -54,7 +55,11 @@ async function pcaDoOrgao(cnpj) {
       totalPaginas = j.totalPaginas || 0;
       for (const plano of j.data || []) {
         const anoPca = plano.anoPca;
+        const pid = plano.idPcaPncp ?? `${cnpj}-${anoPca}`;
         for (const it of plano.itens || []) {
+          const key = `${pid}|${it.numeroItem ?? it.codigoItem ?? it.descricaoItem}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
           itens.push({
             anoPca,
             descricao: String(it.descricaoItem || "—").slice(0, 200),
@@ -102,13 +107,15 @@ async function main() {
   const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' ORDER BY cod_ibge`)).rows;
   const feitos = new Set((await db.query(`SELECT cod_ibge FROM pca_sc_feitos`)).rows.map((r) => r.cod_ibge));
   const pend = entes.filter((e) => !feitos.has(e.cod_ibge));
-  console.log(`PCA PNCP (${ANOS.join(",")}): ${pend.length} municípios pendentes de ${entes.length}...`);
+  // CNPJs compartilhados entre municípios (atas de registro de preço / consórcios) — NÃO atribuir o PCA deles a um ente
+  const shared = new Set((await db.query(`SELECT cnpj_compra FROM contratos_sc GROUP BY cnpj_compra HAVING count(DISTINCT cod_ibge)>1`).catch(() => ({ rows: [] })).then((r) => r.rows || [])).map((r) => r.cnpj_compra));
+  console.log(`PCA PNCP (${ANOS.join(",")}): ${pend.length} municípios pendentes de ${entes.length} | CNPJs compartilhados excluídos: ${shared.size}`);
   let comDados = 0;
   await pool(pend, 4, async (e) => {
     try {
-      // reaproveita CNPJs já descobertos pelo ETL de contratos; senão descobre
-      let cnpjs = (await db.query(`SELECT DISTINCT cnpj_compra FROM contratos_sc WHERE cod_ibge=$1 AND cnpj_compra IS NOT NULL`, [e.cod_ibge]).catch(() => ({ rows: [] }))).rows.map((r) => r.cnpj_compra);
-      if (!cnpjs.length) cnpjs = await descobrirCnpjs(e.cod_ibge);
+      // SÓ órgãos MUNICIPAIS (esfera M, via descoberta geográfica) — nunca cnpj_compra:
+      // em "carona" o cnpj_compra é federal/estadual (ex.: FNDE) e traria o PCA da entidade externa.
+      const cnpjs = (await descobrirCnpjs(e.cod_ibge)).filter((c) => !shared.has(c));
       let itens = [];
       for (const cnpj of cnpjs) { itens = itens.concat(await pcaDoOrgao(cnpj)); }
       if (itens.length) {
