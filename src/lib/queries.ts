@@ -689,3 +689,25 @@ export async function getContratosResumoSC(cod: string): Promise<ContratosResumo
     top: top.map((r) => ({ objeto: String(r.objeto || ""), fornecedor: String(r.fornecedor || "—"), valor: num(r.valor_global), vigInicio: r.vi ? String(r.vi) : null, vigFim: r.vf ? String(r.vf) : null, assinatura: r.asn ? String(r.asn) : null })),
   };
 }
+
+/* ===== PCA — Plano Anual de Contratações (PNCP) — planejado × contratado ===== */
+
+export type PcaResumoSC = {
+  n_itens: number; valor_total: number;
+  por_categoria: { nome: string; n: number; valor: number }[];
+  por_ano: { nome: string; n: number; valor: number }[];
+  top: { descricao: string; categoria: string; qtd: number; valor: number; dataDesejada: string | null; anoPca: number | null }[];
+};
+
+export async function getPcaResumoSC(cod: string): Promise<PcaResumoSC | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT n_itens, valor_total, por_categoria, por_ano, top FROM pca_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const r = rows[0];
+  const arr = (v: unknown) => (Array.isArray(v) ? v : []);
+  return {
+    n_itens: num(r.n_itens), valor_total: num(r.valor_total),
+    por_categoria: arr(r.por_categoria) as PcaResumoSC["por_categoria"],
+    por_ano: arr(r.por_ano) as PcaResumoSC["por_ano"],
+    top: arr(r.top) as PcaResumoSC["top"],
+  };
+}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Database, FileText, Landmark, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { ArrowLeft, ClipboardList, Database, FileText, Landmark, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { Donut } from "@/components/charts/donut";
 import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
@@ -9,7 +9,7 @@ import { ComprasSCSection } from "@/components/compras-sc-section";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getEntesSC, getFinancasSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getEntesSC, getFinancasSC, getPcaResumoSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RealEntePage({ params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params;
-  const [dados, entes, contratosResumo] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo)]);
+  const [dados, entes, contratosResumo, pcaResumo] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo)]);
   if (!dados || dados.serie.length === 0) notFound();
 
   const { ente, serie, funcoesLatest } = dados;
@@ -189,6 +189,83 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
                     </table>
                   </div>
                   <p className="mt-2 text-[11px] text-slate-400">Fonte: PNCP (/contratos). Cada contrato está vinculado ao seu processo licitatório (ver aba Compras).</p>
+                </section>
+              )}
+            </>
+          ),
+        }]
+      : []),
+    ...(pcaResumo
+      ? [{
+          id: "planejamento",
+          label: "Planejamento",
+          content: (
+            <>
+              <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                <div className="mb-1 flex flex-wrap items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-teal-600" />
+                  <h3 className="font-semibold text-slate-800">Planejamento de compras · PCA</h3>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
+                </div>
+                <p className="mb-3 text-xs text-slate-500">Plano Anual de Contratações (o que o ente <strong>planejou comprar</strong>) — fonte PNCP. Cruzamento inédito: <strong>planejado × contratado</strong>.</p>
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  <div className="rounded-xl border border-slate-200 p-3">
+                    <div className="text-xs text-slate-500">Itens planejados</div>
+                    <div className="font-display text-xl font-bold tabular-nums text-slate-900">{pcaResumo.n_itens.toLocaleString("pt-BR")}</div>
+                  </div>
+                  <div className="rounded-xl border border-slate-200 p-3">
+                    <div className="text-xs text-slate-500">Valor planejado (PCA)</div>
+                    <div className="font-display text-xl font-bold tabular-nums text-slate-900">{fmtBRLCompact(pcaResumo.valor_total)}</div>
+                  </div>
+                  {contratosResumo && (
+                    <div className="rounded-xl border border-slate-200 p-3">
+                      <div className="text-xs text-slate-500">Contratado (PNCP)</div>
+                      <div className="font-display text-xl font-bold tabular-nums text-slate-900">{fmtBRLCompact(contratosResumo.valor_total)}</div>
+                    </div>
+                  )}
+                  {contratosResumo && pcaResumo.valor_total > 0 && (
+                    <div className="rounded-xl border border-teal-200 bg-teal-50 p-3">
+                      <div className="text-xs text-slate-500">Contratado ÷ planejado</div>
+                      <div className="font-display text-xl font-bold tabular-nums text-teal-700">{((contratosResumo.valor_total / pcaResumo.valor_total) * 100).toFixed(0)}%</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {pcaResumo.por_categoria.length > 0 && (
+                <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <h3 className="font-semibold text-slate-800">O que foi planejado, por categoria</h3>
+                  <p className="mb-2 text-xs text-slate-500">Valor planejado por categoria do PCA</p>
+                  <Donut data={pcaResumo.por_categoria.map((c) => ({ label: c.nome, valor: c.valor }))} />
+                </section>
+              )}
+
+              {pcaResumo.top.length > 0 && (
+                <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <h3 className="mb-3 font-semibold text-slate-800">Maiores itens planejados</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-left text-xs text-slate-500">
+                          <th className="p-2 font-medium">Item planejado</th>
+                          <th className="hidden p-2 font-medium md:table-cell">Categoria</th>
+                          <th className="p-2 text-right font-medium">Valor estimado</th>
+                          <th className="hidden p-2 text-center font-medium sm:table-cell">Ano PCA</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pcaResumo.top.map((t, i) => (
+                          <tr key={i} className="border-b border-slate-100 align-top">
+                            <td className="p-2 text-slate-700"><span className="line-clamp-2">{t.descricao}</span></td>
+                            <td className="hidden p-2 text-slate-500 md:table-cell"><span className="line-clamp-1">{t.categoria}</span></td>
+                            <td className="p-2 text-right font-semibold tabular-nums text-slate-800">{fmtBRLCompact(t.valor)}</td>
+                            <td className="hidden p-2 text-center tabular-nums text-slate-500 sm:table-cell">{t.anoPca || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="mt-2 text-[11px] text-slate-400">Fonte: PNCP (/pca). O cruzamento planejado × contratado pode abranger anos/escopos distintos; use como indicativo de execução do plano.</p>
                 </section>
               )}
             </>

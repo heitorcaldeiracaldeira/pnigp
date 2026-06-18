@@ -98,22 +98,29 @@ async function main() {
   const feitos = new Set((await db.query(`SELECT cod_ibge FROM contratos_sc_feitos`)).rows.map((r) => r.cod_ibge));
   const pend = entes.filter((e) => !feitos.has(e.cod_ibge));
   console.log(`Contratos PNCP (${ANOS.join(",")}): ${pend.length} municípios pendentes de ${entes.length}...`);
+  // escrita resiliente (Neon derruba conexões longas — retry/reconecta)
+  const q = async (sql, params) => { for (let t = 0; t < 6; t++) { try { return await db.query(sql, params); } catch { await sleep(900 * (t + 1)); } } throw new Error("db indisponível"); };
   let comDados = 0;
   await pool(pend, 4, async (e) => {
+   try {
     const cnpjs = await descobrirCnpjs(e.cod_ibge);
     let contratos = [];
     for (const cnpj of cnpjs) { contratos = contratos.concat(await contratosDoOrgao(cnpj)); }
-    // grava (substitui o ente)
-    await db.query(`DELETE FROM contratos_sc WHERE cod_ibge=$1`, [e.cod_ibge]);
-    for (const c of contratos) {
-      await db.query(
-        `INSERT INTO contratos_sc (cod_ibge,numero_controle_compra,cnpj_compra,ano_compra,seq_compra,fornecedor,ni_fornecedor,valor_global,vig_inicio,vig_fim,assinatura,objeto,orgao)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-        [e.cod_ibge, c.compra, c.cnpjC, c.anoC, c.seqC, c.fornecedor, c.ni, c.valor, c.vigIni, c.vigFim, c.assinatura, c.objeto, c.orgao],
-      );
+    // grava (substitui o ente) — em lotes multi-linha
+    await q(`DELETE FROM contratos_sc WHERE cod_ibge=$1`, [e.cod_ibge]);
+    for (let i = 0; i < contratos.length; i += 100) {
+      const lote = contratos.slice(i, i + 100);
+      const vals = [], ph = [];
+      lote.forEach((c, k) => {
+        const b = k * 13;
+        ph.push(`($${b + 1},$${b + 2},$${b + 3},$${b + 4},$${b + 5},$${b + 6},$${b + 7},$${b + 8},$${b + 9},$${b + 10},$${b + 11},$${b + 12},$${b + 13})`);
+        vals.push(e.cod_ibge, c.compra, c.cnpjC, c.anoC, c.seqC, c.fornecedor, c.ni, c.valor, c.vigIni, c.vigFim, c.assinatura, c.objeto, c.orgao);
+      });
+      await q(`INSERT INTO contratos_sc (cod_ibge,numero_controle_compra,cnpj_compra,ano_compra,seq_compra,fornecedor,ni_fornecedor,valor_global,vig_inicio,vig_fim,assinatura,objeto,orgao) VALUES ${ph.join(",")}`, vals);
     }
-    await db.query(`INSERT INTO contratos_sc_feitos (cod_ibge,n) VALUES ($1,$2) ON CONFLICT (cod_ibge) DO UPDATE SET n=EXCLUDED.n`, [e.cod_ibge, contratos.length]);
+    await q(`INSERT INTO contratos_sc_feitos (cod_ibge,n) VALUES ($1,$2) ON CONFLICT (cod_ibge) DO UPDATE SET n=EXCLUDED.n`, [e.cod_ibge, contratos.length]);
     if (contratos.length) comDados++;
+   } catch (err) { console.log(`  ! falha em ${e.cod_ibge} (${String(err).slice(0, 40)}) — será retomado depois`); }
   });
   const c = await db.query(`SELECT count(*) n, count(DISTINCT cod_ibge) e, sum(valor_global) v FROM contratos_sc`);
   console.log(`Concluído: entes c/ contratos=${comDados} | total contratos=${c.rows[0].n} | entes=${c.rows[0].e} | valor R$ ${(Number(c.rows[0].v) / 1e9).toFixed(2)} bi`);
