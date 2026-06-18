@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
-import { ChevronDown, ChevronRight, Database, Loader2, ShoppingCart, TriangleAlert } from "lucide-react";
+import { Building2, ChevronDown, ChevronRight, Database, Loader2, ShoppingCart, TriangleAlert } from "lucide-react";
 import { Donut } from "@/components/charts/donut";
 import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
 import { fmtBRL, fmtBRLCompact } from "@/lib/ui";
@@ -15,6 +15,24 @@ type Compras = {
 };
 type Ano = { ano: number; n_contratos: number; valor_homologado: number; economia_pct: number; dispensa_pct: number };
 type Resp = { latest: Compras | null; serie: Ano[] };
+
+type Nivel = "alto" | "medio" | "baixo" | "ok";
+const RISCO_META: Record<Nivel, { label: string; dot: string; txt: string; chip: string }> = {
+  alto: { label: "Alto", dot: "bg-rose-500", txt: "text-rose-700", chip: "bg-rose-100 text-rose-700" },
+  medio: { label: "Médio", dot: "bg-amber-500", txt: "text-amber-700", chip: "bg-amber-100 text-amber-700" },
+  baixo: { label: "Baixo", dot: "bg-sky-500", txt: "text-sky-700", chip: "bg-sky-100 text-sky-700" },
+  ok: { label: "OK", dot: "bg-emerald-500", txt: "text-emerald-600", chip: "bg-emerald-100 text-emerald-700" },
+};
+function riscoContrato(c: Contrato): { nivel: Nivel; motivos: string[] } {
+  const motivos: string[] = [];
+  let nivel: Nivel = "ok";
+  const direta = /dispensa|inexig/i.test(c.modalidade);
+  const competitiva = /preg|concorr|leil/i.test(c.modalidade);
+  if (direta) { motivos.push("Contratação direta (sem licitação)"); nivel = c.homologado >= 1_000_000 ? "alto" : "medio"; }
+  if (competitiva && c.economia_pct != null && c.economia_pct < 1) { motivos.push("Economia próxima de zero em modalidade competitiva — possível sobrepreço"); if (nivel === "ok") nivel = "medio"; }
+  if (c.economia_pct != null && c.economia_pct > 40) { motivos.push("Economia muito alta (>40%) — possível superestimativa do valor de referência"); if (nivel === "ok") nivel = "baixo"; }
+  return { nivel, motivos };
+}
 
 export function ComprasSCSection({ codigo, tipo }: { codigo: string; tipo: "M" | "E" }) {
   const [data, setData] = useState<Resp | null | undefined>(undefined);
@@ -156,6 +174,8 @@ function ContratoRow({ c }: { c: Contrato }) {
         .catch(() => setItens([]));
     }
   }
+  const risco = riscoContrato(c);
+  const rm = RISCO_META[risco.nivel];
   return (
     <Fragment>
       <tr className={`border-b border-slate-100 align-top ${open ? "bg-slate-50/70" : ""}`}>
@@ -163,7 +183,14 @@ function ContratoRow({ c }: { c: Contrato }) {
           {podeDrill ? (
             <button onClick={toggle} aria-expanded={open} className="flex items-start gap-1.5 text-left transition hover:text-teal-700">
               {open ? <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" /> : <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />}
-              <span className="line-clamp-2">{c.objeto}</span>
+              <span>
+                <span className="line-clamp-2">{c.objeto}</span>
+                {risco.nivel !== "ok" && (
+                  <span className={`mt-0.5 inline-flex items-center gap-1 rounded px-1 py-0.5 text-[10px] font-semibold ${rm.chip}`} title={risco.motivos.join(" · ")}>
+                    <span className={`h-1.5 w-1.5 rounded-full ${rm.dot}`} /> Risco {rm.label.toLowerCase()}
+                  </span>
+                )}
+              </span>
             </button>
           ) : (
             <span className="line-clamp-2 pl-[22px]">{c.objeto}</span>
@@ -178,7 +205,7 @@ function ContratoRow({ c }: { c: Contrato }) {
       {open && (
         <tr className="border-b border-slate-100 bg-slate-50/60">
           <td colSpan={4} className="p-3">
-            <ItensDetalhe itens={itens} />
+            <ItensDetalhe c={c} itens={itens} />
           </td>
         </tr>
       )}
@@ -186,18 +213,42 @@ function ContratoRow({ c }: { c: Contrato }) {
   );
 }
 
-function ItensDetalhe({ itens }: { itens: Item[] | null | undefined }) {
-  if (itens === null) {
-    return (
-      <div className="flex items-center gap-2 text-xs text-slate-500">
-        <Loader2 className="h-3.5 w-3.5 animate-spin text-teal-600" /> Carregando itens do processo (PNCP)…
-      </div>
-    );
+function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefined }) {
+  const risco = riscoContrato(c);
+  const rm = RISCO_META[risco.nivel];
+  // fornecedores consolidados a partir dos itens
+  const fornMap: Record<string, { nome: string; itens: number; valor: number; lc: boolean }> = {};
+  for (const it of itens || []) {
+    if (!it.fornecedor) continue;
+    (fornMap[it.fornecedor] ??= { nome: it.fornecedor, itens: 0, valor: 0, lc: false });
+    fornMap[it.fornecedor].itens++;
+    fornMap[it.fornecedor].valor += (it.unitHomologado ?? 0) * it.quantidade;
+    if (it.beneficioLC) fornMap[it.fornecedor].lc = true;
   }
-  if (!itens || itens.length === 0) return <p className="text-xs text-slate-500">Sem itens detalhados disponíveis no PNCP para este processo.</p>;
+  const fornecedores = Object.values(fornMap).sort((a, b) => b.valor - a.valor);
+
   return (
-    <div>
-      <div className="mb-1 text-xs font-semibold text-slate-600">Itens do processo licitatório</div>
+    <div className="space-y-3">
+      {/* #1 Análise de risco do processo */}
+      <div>
+        <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+          Análise de risco (TCU)
+          <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${rm.chip}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${rm.dot}`} /> Risco {rm.label.toLowerCase()}
+          </span>
+        </div>
+        {risco.motivos.length ? (
+          <ul className="ml-1 space-y-0.5 text-[11px] text-slate-600">{risco.motivos.map((m) => <li key={m} className="flex gap-1"><span className="text-slate-300">•</span> {m}</li>)}</ul>
+        ) : <p className="text-[11px] text-slate-500">Sem apontamentos de risco neste processo.</p>}
+      </div>
+
+      {itens === null ? (
+        <div className="flex items-center gap-2 text-xs text-slate-500"><Loader2 className="h-3.5 w-3.5 animate-spin text-teal-600" /> Carregando itens do processo (PNCP)…</div>
+      ) : !itens || itens.length === 0 ? (
+        <p className="text-xs text-slate-500">Sem itens detalhados disponíveis no PNCP para este processo.</p>
+      ) : (
+        <>
+          <div className="mb-1 text-xs font-semibold text-slate-600">Itens do processo licitatório</div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
@@ -227,7 +278,28 @@ function ItensDetalhe({ itens }: { itens: Item[] | null | undefined }) {
           </tbody>
         </table>
       </div>
-      <p className="mt-1 text-[10px] text-slate-400">Fonte: PNCP (itens e resultados). Valor unitário homologado e fornecedor exibidos quando já publicados.</p>
+          <p className="mt-1 text-[10px] text-slate-400">Fonte: PNCP (itens e resultados). Valor unitário homologado e fornecedor exibidos quando já publicados.</p>
+        </>
+      )}
+
+      {/* #3 Fornecedores consolidados do processo */}
+      {fornecedores.length > 0 && (
+        <div>
+          <div className="mb-1 text-xs font-semibold text-slate-600">Fornecedores do processo</div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {fornecedores.slice(0, 6).map((f) => (
+              <div key={f.nome} className="rounded-lg border border-slate-200 bg-white p-2">
+                <div className="flex items-center gap-1 text-xs font-medium text-slate-700"><Building2 className="h-3 w-3 shrink-0 text-slate-400" /><span className="line-clamp-1">{f.nome}</span></div>
+                <div className="text-[11px] text-slate-500">{f.itens} {f.itens === 1 ? "item" : "itens"} · {fmtBRLCompact(f.valor)}</div>
+                {f.lc && <span className="mt-0.5 inline-block rounded bg-teal-100 px-1 py-0.5 text-[10px] font-semibold text-teal-700">Beneficiário LC 123</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* #2 Empenhos — não disponível no PNCP */}
+      <p className="text-[10px] text-slate-400">Empenhos/pagamentos não são publicados no PNCP (a execução orçamentária — empenhado/pago — fica no SIAFI/Portal da Transparência, sem vínculo direto ao contrato).</p>
     </div>
   );
 }
