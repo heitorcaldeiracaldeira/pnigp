@@ -2,8 +2,8 @@ import "server-only";
 import type { ComprasSC } from "./queries";
 
 const PNCP = "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao";
-const CAP_PAGINAS = 4; // sob demanda: janela limitada p/ resposta rápida (capitais ficam parciais)
-const ORCAMENTO_MS = 25000; // tempo máx. de coleta por ente — retorna o que tiver
+const CAP_PAGINAS = 8; // sob demanda: janela p/ resposta razoável (capitais ainda parciais)
+const ORCAMENTO_MS = 40000; // tempo máx. de coleta por ente — retorna o que tiver
 // Ordenadas por volume típico; lic=false só p/ dispensa(8)/inexigibilidade(9) (fuga à licitação).
 const MODALIDADES = [
   { id: 6, nome: "Pregão Eletrônico", lic: true },
