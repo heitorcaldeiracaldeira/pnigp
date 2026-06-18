@@ -4,11 +4,18 @@ import type { ComprasSC } from "./queries";
 const PNCP = "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao";
 const CAP_PAGINAS = 4; // sob demanda: janela limitada p/ resposta rápida (capitais ficam parciais)
 const ORCAMENTO_MS = 25000; // tempo máx. de coleta por ente — retorna o que tiver
+// Ordenadas por volume típico; lic=false só p/ dispensa(8)/inexigibilidade(9) (fuga à licitação).
 const MODALIDADES = [
   { id: 6, nome: "Pregão Eletrônico", lic: true },
   { id: 8, nome: "Dispensa", lic: false },
   { id: 4, nome: "Concorrência Eletrônica", lic: true },
   { id: 9, nome: "Inexigibilidade", lic: false },
+  { id: 12, nome: "Credenciamento", lic: true },
+  { id: 7, nome: "Pregão Presencial", lic: true },
+  { id: 5, nome: "Concorrência", lic: true },
+  { id: 13, nome: "Leilão", lic: true },
+  { id: 1, nome: "Leilão Eletrônico", lic: true },
+  { id: 3, nome: "Concurso", lic: true },
 ];
 const r2 = (n: number) => Math.round((n || 0) * 100) / 100;
 const sleep = (ms: number) => new Promise((s) => setTimeout(s, ms));
