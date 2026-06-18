@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ClipboardList, Database, FileText, Landmark, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { ArrowLeft, ClipboardList, Database, FileText, Landmark, Target, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { Donut } from "@/components/charts/donut";
 import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
@@ -9,7 +9,7 @@ import { ComprasSCSection } from "@/components/compras-sc-section";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getEntesSC, getFinancasSC, getPcaResumoSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getEntesSC, getFinancasSC, getMetasFiscaisSC, getPcaResumoSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RealEntePage({ params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params;
-  const [dados, entes, contratosResumo, pcaResumo] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo)]);
+  const [dados, entes, contratosResumo, pcaResumo, metasFiscais] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo), getMetasFiscaisSC(codigo)]);
   if (!dados || dados.serie.length === 0) notFound();
 
   const { ente, serie, funcoesLatest } = dados;
@@ -270,6 +270,63 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
               )}
             </>
           ),
+        }]
+      : []),
+    ...(metasFiscais
+      ? [{
+          id: "metas",
+          label: "Metas fiscais",
+          content: (() => {
+            const mf = metasFiscais.latest;
+            const cumpriuPrim = mf.resultado_primario != null && mf.meta_primario != null ? mf.resultado_primario >= mf.meta_primario : null;
+            const dclSerie = metasFiscais.serie.filter((s) => s.dcl_fim != null).map((s) => ({ ano: s.ano, dcl: Number(s.dcl_fim) }));
+            return (
+              <>
+                <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <Target className="h-4 w-4 text-teal-600" />
+                    <h3 className="font-semibold text-slate-800">Metas fiscais · LDO {mf.ano}</h3>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
+                  </div>
+                  <p className="mb-3 text-xs text-slate-500">Meta fixada no <strong>Anexo de Metas Fiscais da LDO</strong> × resultado realizado — fonte SICONFI (RREO Anexo 06).</p>
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <div className={`rounded-xl border p-4 ${cumpriuPrim == null ? "border-slate-200" : cumpriuPrim ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"}`}>
+                      <div className="text-xs font-medium text-slate-500">Resultado Primário {mf.ano}</div>
+                      <div className="mt-1 flex items-baseline gap-2">
+                        <span className="font-display text-2xl font-bold tabular-nums text-slate-900">{mf.resultado_primario != null ? fmtBRLCompact(mf.resultado_primario) : "—"}</span>
+                        <span className="text-xs text-slate-500">realizado</span>
+                      </div>
+                      <div className="mt-1 text-xs text-slate-600">Meta LDO: <strong>{mf.meta_primario != null ? fmtBRLCompact(mf.meta_primario) : "—"}</strong></div>
+                      {cumpriuPrim != null && <div className={`mt-1 text-xs font-semibold ${cumpriuPrim ? "text-emerald-700" : "text-amber-700"}`}>{cumpriuPrim ? "✓ Meta atingida" : "Abaixo da meta"}</div>}
+                    </div>
+                    <div className="rounded-xl border border-slate-200 p-4">
+                      <div className="text-xs font-medium text-slate-500">Resultado Nominal {mf.ano}</div>
+                      <div className="mt-1 flex items-baseline gap-2">
+                        <span className="font-display text-2xl font-bold tabular-nums text-slate-900">{mf.resultado_nominal != null ? fmtBRLCompact(mf.resultado_nominal) : "—"}</span>
+                        <span className="text-xs text-slate-500">realizado</span>
+                      </div>
+                      <div className="mt-1 text-xs text-slate-600">Meta LDO: <strong>{mf.meta_nominal != null ? fmtBRLCompact(mf.meta_nominal) : "—"}</strong></div>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <div className="rounded-xl border border-slate-200 p-3"><div className="text-xs text-slate-500">Receita primária prevista</div><div className="font-display text-lg font-bold tabular-nums text-slate-900">{mf.receita_prim_prev != null ? fmtBRLCompact(mf.receita_prim_prev) : "—"}</div></div>
+                    <div className="rounded-xl border border-slate-200 p-3"><div className="text-xs text-slate-500">Receita primária realizada</div><div className="font-display text-lg font-bold tabular-nums text-slate-900">{mf.receita_prim_real != null ? fmtBRLCompact(mf.receita_prim_real) : "—"}</div></div>
+                    <div className="rounded-xl border border-slate-200 p-3"><div className="text-xs text-slate-500">Despesa primária (dotação)</div><div className="font-display text-lg font-bold tabular-nums text-slate-900">{mf.despesa_prim_dot != null ? fmtBRLCompact(mf.despesa_prim_dot) : "—"}</div></div>
+                    <div className="rounded-xl border border-slate-200 p-3"><div className="text-xs text-slate-500">Despesa primária (empenhada)</div><div className="font-display text-lg font-bold tabular-nums text-slate-900">{mf.despesa_prim_emp != null ? fmtBRLCompact(mf.despesa_prim_emp) : "—"}</div></div>
+                  </div>
+                </div>
+
+                {dclSerie.length > 1 && (
+                  <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                    <h3 className="font-semibold text-slate-800">Dívida Consolidada Líquida (evolução)</h3>
+                    <p className="mb-2 text-xs text-slate-500">Saldo da DCL por exercício · SICONFI</p>
+                    <LinhasFinanceiras data={dclSerie as unknown as Record<string, number>[]} linhas={[{ key: "dcl", label: "Dívida Consolidada Líquida", cor: "#e11d48" }]} />
+                  </section>
+                )}
+                <p className="px-1 text-[11px] text-slate-400">Fonte: SICONFI — RREO Anexo 06 (Demonstrativo do Resultado Primário e Nominal). Meta = Anexo de Metas Fiscais da LDO. No resultado primário, realizado ≥ meta indica cumprimento.</p>
+              </>
+            );
+          })(),
         }]
       : []),
     { id: "transferencias", label: "Transferências", content: <TransferenciasSCSection codigo={ente.cod_ibge} /> },

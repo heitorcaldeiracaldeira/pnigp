@@ -711,3 +711,32 @@ export async function getPcaResumoSC(cod: string): Promise<PcaResumoSC | null> {
     top: arr(r.top) as PcaResumoSC["top"],
   };
 }
+
+/* ===== METAS FISCAIS (LDO) reais — SICONFI RREO Anexo 06 ===== */
+
+export type MetaFiscalAno = {
+  ano: number;
+  meta_primario: number | null; resultado_primario: number | null;
+  meta_nominal: number | null; resultado_nominal: number | null;
+  receita_prim_prev: number | null; receita_prim_real: number | null;
+  despesa_prim_dot: number | null; despesa_prim_emp: number | null;
+  dcl_inicio: number | null; dcl_fim: number | null;
+};
+
+export async function getMetasFiscaisSC(cod: string): Promise<{ latest: MetaFiscalAno; serie: MetaFiscalAno[] } | null> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT ano, meta_primario, resultado_primario, meta_nominal, resultado_nominal,
+            receita_prim_prev, receita_prim_real, despesa_prim_dot, despesa_prim_emp, dcl_inicio, dcl_fim
+       FROM metas_fiscais_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const n = (v: unknown) => (v == null ? null : Number(v));
+  const serie = rows.map((r) => ({
+    ano: num(r.ano),
+    meta_primario: n(r.meta_primario), resultado_primario: n(r.resultado_primario),
+    meta_nominal: n(r.meta_nominal), resultado_nominal: n(r.resultado_nominal),
+    receita_prim_prev: n(r.receita_prim_prev), receita_prim_real: n(r.receita_prim_real),
+    despesa_prim_dot: n(r.despesa_prim_dot), despesa_prim_emp: n(r.despesa_prim_emp),
+    dcl_inicio: n(r.dcl_inicio), dcl_fim: n(r.dcl_fim),
+  }));
+  return { latest: serie[serie.length - 1], serie };
+}
