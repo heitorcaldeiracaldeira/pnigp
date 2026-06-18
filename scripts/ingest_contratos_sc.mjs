@@ -93,17 +93,28 @@ async function main() {
       vig_inicio DATE, vig_fim DATE, assinatura DATE, objeto TEXT, orgao TEXT );
     CREATE INDEX IF NOT EXISTS idx_contratos_sc_ente ON contratos_sc (cod_ibge);
     CREATE INDEX IF NOT EXISTS idx_contratos_sc_proc ON contratos_sc (cnpj_compra, ano_compra, seq_compra);
-    CREATE TABLE IF NOT EXISTS contratos_sc_feitos (cod_ibge TEXT PRIMARY KEY, n INTEGER);`);
+    CREATE TABLE IF NOT EXISTS contratos_sc_feitos (cod_ibge TEXT PRIMARY KEY, n INTEGER);
+    CREATE TABLE IF NOT EXISTS orgaos_municipais_sc (cod_ibge TEXT, cnpj TEXT, PRIMARY KEY (cod_ibge, cnpj));
+    CREATE TABLE IF NOT EXISTS orgaos_sc_feitos (cod_ibge TEXT PRIMARY KEY);`);
   const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' ORDER BY cod_ibge`)).rows;
   const feitos = new Set((await db.query(`SELECT cod_ibge FROM contratos_sc_feitos`)).rows.map((r) => r.cod_ibge));
   const pend = entes.filter((e) => !feitos.has(e.cod_ibge));
   console.log(`Contratos PNCP (${ANOS.join(",")}): ${pend.length} municípios pendentes de ${entes.length}...`);
   // escrita resiliente (Neon derruba conexões longas — retry/reconecta)
   const q = async (sql, params) => { for (let t = 0; t < 6; t++) { try { return await db.query(sql, params); } catch { await sleep(900 * (t + 1)); } } throw new Error("db indisponível"); };
+  // descoberta de órgãos municipais COMPARTILHADA (grava p/ o ETL de PCA reaproveitar)
+  const getOrgaos = async (cod) => {
+    if ((await db.query(`SELECT 1 FROM orgaos_sc_feitos WHERE cod_ibge=$1`, [cod]).catch(() => ({ rows: [] }))).rows.length)
+      return (await db.query(`SELECT cnpj FROM orgaos_municipais_sc WHERE cod_ibge=$1`, [cod])).rows.map((r) => r.cnpj);
+    const cnpjs = await descobrirCnpjs(cod);
+    for (const c of cnpjs) await q(`INSERT INTO orgaos_municipais_sc (cod_ibge,cnpj) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [cod, c]);
+    await q(`INSERT INTO orgaos_sc_feitos (cod_ibge) VALUES ($1) ON CONFLICT DO NOTHING`, [cod]);
+    return cnpjs;
+  };
   let comDados = 0;
   await pool(pend, 4, async (e) => {
    try {
-    const cnpjs = await descobrirCnpjs(e.cod_ibge);
+    const cnpjs = await getOrgaos(e.cod_ibge);
     let contratos = [];
     for (const cnpj of cnpjs) { contratos = contratos.concat(await contratosDoOrgao(cnpj)); }
     // grava (substitui o ente) — em lotes multi-linha

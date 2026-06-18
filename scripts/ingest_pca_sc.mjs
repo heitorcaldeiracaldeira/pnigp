@@ -102,8 +102,19 @@ async function main() {
     CREATE TABLE IF NOT EXISTS pca_sc (
       cod_ibge TEXT PRIMARY KEY, n_itens INTEGER, valor_total NUMERIC(16,2),
       por_categoria JSONB, por_ano JSONB, top JSONB );
-    CREATE TABLE IF NOT EXISTS pca_sc_feitos (cod_ibge TEXT PRIMARY KEY, n INTEGER);`);
+    CREATE TABLE IF NOT EXISTS pca_sc_feitos (cod_ibge TEXT PRIMARY KEY, n INTEGER);
+    CREATE TABLE IF NOT EXISTS orgaos_municipais_sc (cod_ibge TEXT, cnpj TEXT, PRIMARY KEY (cod_ibge, cnpj));
+    CREATE TABLE IF NOT EXISTS orgaos_sc_feitos (cod_ibge TEXT PRIMARY KEY);`);
   const q = async (sql, params) => { for (let t = 0; t < 6; t++) { try { return await db.query(sql, params); } catch { await sleep(900 * (t + 1)); } } throw new Error("db indisponível"); };
+  // descoberta de órgãos municipais COMPARTILHADA (reaproveita o que o ETL de contratos gravou)
+  const getOrgaos = async (cod) => {
+    if ((await db.query(`SELECT 1 FROM orgaos_sc_feitos WHERE cod_ibge=$1`, [cod]).catch(() => ({ rows: [] }))).rows.length)
+      return (await db.query(`SELECT cnpj FROM orgaos_municipais_sc WHERE cod_ibge=$1`, [cod])).rows.map((r) => r.cnpj);
+    const cnpjs = await descobrirCnpjs(cod);
+    for (const c of cnpjs) await q(`INSERT INTO orgaos_municipais_sc (cod_ibge,cnpj) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [cod, c]);
+    await q(`INSERT INTO orgaos_sc_feitos (cod_ibge) VALUES ($1) ON CONFLICT DO NOTHING`, [cod]);
+    return cnpjs;
+  };
   const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' ORDER BY cod_ibge`)).rows;
   const feitos = new Set((await db.query(`SELECT cod_ibge FROM pca_sc_feitos`)).rows.map((r) => r.cod_ibge));
   const pend = entes.filter((e) => !feitos.has(e.cod_ibge));
@@ -113,9 +124,9 @@ async function main() {
   let comDados = 0;
   await pool(pend, 4, async (e) => {
     try {
-      // SÓ órgãos MUNICIPAIS (esfera M, via descoberta geográfica) — nunca cnpj_compra:
+      // SÓ órgãos MUNICIPAIS (esfera M; descoberta compartilhada) — nunca cnpj_compra:
       // em "carona" o cnpj_compra é federal/estadual (ex.: FNDE) e traria o PCA da entidade externa.
-      const cnpjs = (await descobrirCnpjs(e.cod_ibge)).filter((c) => !shared.has(c));
+      const cnpjs = (await getOrgaos(e.cod_ibge)).filter((c) => !shared.has(c));
       let itens = [];
       for (const cnpj of cnpjs) { itens = itens.concat(await pcaDoOrgao(cnpj)); }
       if (itens.length) {
