@@ -1,6 +1,7 @@
 import "server-only";
 import { query } from "./db";
 import { fetchComprasPNCP } from "./pncp";
+import { fetchTransferenciasPortal, temChavePortal, type TransferenciasSC } from "./transferegov";
 
 export const ANO_ATUAL = 2024;
 export const ANO_BASE = 2022; // linha de base do PPA (2022–2025)
@@ -615,4 +616,34 @@ export async function getComprasComEvolucao(cod: string): Promise<{ latest: Comp
   const latest = await getOrFetchComprasSC(cod);
   const serie = await getComprasSerieSC(cod);
   return { latest, serie };
+}
+
+/* ========= TRANSFERÊNCIAS DA UNIÃO / CONVÊNIOS (Transferegov via Portal da Transparência) ===== */
+
+export async function getTransferenciasSC(cod: string): Promise<TransferenciasSC | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT * FROM transferencias_sc WHERE cod_ibge = $1`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const r = rows[0];
+  return {
+    n_instrumentos: num(r.n_instrumentos), valor_total: num(r.valor_total), valor_liberado: num(r.valor_liberado),
+    por_situacao: Array.isArray(r.por_situacao) ? (r.por_situacao as TransferenciasSC["por_situacao"]) : [],
+    por_orgao: Array.isArray(r.por_orgao) ? (r.por_orgao as TransferenciasSC["por_orgao"]) : [],
+    top: Array.isArray(r.top) ? (r.top as TransferenciasSC["top"]) : [],
+  };
+}
+
+/** Usa cache (transferencias_sc); se vazio e houver chave do Portal, busca e grava. */
+export async function getOrFetchTransferenciasSC(cod: string): Promise<TransferenciasSC | null> {
+  const cached = await getTransferenciasSC(cod);
+  if (cached) return cached;
+  if (!temChavePortal()) return null; // sem chave → seção fica oculta
+  const d = await fetchTransferenciasPortal(cod);
+  if (!d || d.n_instrumentos === 0) return d;
+  await query(
+    `INSERT INTO transferencias_sc (cod_ibge,n_instrumentos,valor_total,valor_liberado,por_situacao,por_orgao,top)
+     VALUES ($1,$2,$3,$4,$5,$6,$7)
+     ON CONFLICT (cod_ibge) DO UPDATE SET n_instrumentos=EXCLUDED.n_instrumentos,valor_total=EXCLUDED.valor_total,valor_liberado=EXCLUDED.valor_liberado,por_situacao=EXCLUDED.por_situacao,por_orgao=EXCLUDED.por_orgao,top=EXCLUDED.top`,
+    [cod, d.n_instrumentos, d.valor_total, d.valor_liberado, JSON.stringify(d.por_situacao), JSON.stringify(d.por_orgao), JSON.stringify(d.top)],
+  );
+  return d;
 }
