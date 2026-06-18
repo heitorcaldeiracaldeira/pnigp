@@ -213,9 +213,21 @@ function ContratoRow({ c }: { c: Contrato }) {
   );
 }
 
+type ContratoAssinado = { fornecedor: string; ni: string; valor: number; vigInicio: string | null; vigFim: string | null; assinatura: string | null; objeto: string };
+
 function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefined }) {
   const risco = riscoContrato(c);
   const rm = RISCO_META[risco.nivel];
+  const [contratos, setContratos] = useState<ContratoAssinado[] | null>(null);
+  useEffect(() => {
+    if (!(c.cnpj && c.ano && c.seq)) return;
+    let v = true;
+    fetch(`/api/contratos-processo/${c.cnpj}/${c.ano}/${c.seq}`)
+      .then((r) => r.json())
+      .then((d) => v && setContratos(Array.isArray(d) ? d : []))
+      .catch(() => v && setContratos([]));
+    return () => { v = false; };
+  }, [c.cnpj, c.ano, c.seq]);
   // fornecedores consolidados a partir dos itens
   const fornMap: Record<string, { nome: string; itens: number; valor: number; lc: boolean }> = {};
   for (const it of itens || []) {
@@ -295,6 +307,38 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Contratos assinados gerados deste processo (conexão PNCP) */}
+      {contratos && contratos.length > 0 && (
+        <div>
+          <div className="mb-1 text-xs font-semibold text-slate-600">Contratos assinados gerados deste processo</div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-slate-500">
+                  <th className="p-1 font-medium">Fornecedor</th>
+                  <th className="hidden p-1 font-medium sm:table-cell">CNPJ</th>
+                  <th className="p-1 text-right font-medium">Valor global</th>
+                  <th className="hidden p-1 font-medium md:table-cell">Vigência</th>
+                  <th className="hidden p-1 font-medium lg:table-cell">Assinatura</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contratos.map((ct, i) => (
+                  <tr key={i} className="border-t border-slate-100 align-top">
+                    <td className="p-1 text-slate-700"><span className="line-clamp-1">{ct.fornecedor}</span></td>
+                    <td className="hidden p-1 tabular-nums text-slate-500 sm:table-cell">{ct.ni}</td>
+                    <td className="p-1 text-right font-semibold tabular-nums text-slate-800">{fmtBRLCompact(ct.valor)}</td>
+                    <td className="hidden p-1 text-slate-500 md:table-cell">{ct.vigInicio || "—"}{ct.vigFim ? ` → ${ct.vigFim}` : ""}</td>
+                    <td className="hidden p-1 text-slate-500 lg:table-cell">{ct.assinatura || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-1 text-[10px] text-slate-400">Contratos do PNCP vinculados a este processo (numeroControlePncpCompra). Fonte: PNCP /contratos.</p>
         </div>
       )}
 

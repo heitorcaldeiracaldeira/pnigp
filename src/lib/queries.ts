@@ -647,3 +647,25 @@ export async function getOrFetchTransferenciasSC(cod: string): Promise<Transfere
   );
   return d;
 }
+
+/* ===== CONTRATOS assinados (PNCP /contratos) conectados ao processo licitatório ===== */
+
+export type ContratoProcesso = { fornecedor: string; ni: string; valor: number; vigInicio: string | null; vigFim: string | null; assinatura: string | null; objeto: string };
+
+export async function getContratosDoProcesso(cnpj: string, ano: number, seq: number): Promise<ContratoProcesso[]> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT fornecedor, ni_fornecedor, valor_global,
+            to_char(vig_inicio,'DD/MM/YYYY') AS vig_inicio,
+            to_char(vig_fim,'DD/MM/YYYY')    AS vig_fim,
+            to_char(assinatura,'DD/MM/YYYY') AS assinatura, objeto
+       FROM contratos_sc WHERE cnpj_compra=$1 AND ano_compra=$2 AND seq_compra=$3
+      ORDER BY valor_global DESC NULLS LAST`,
+    [cnpj, ano, seq],
+  ).catch(() => []);
+  return rows.map((r) => ({
+    fornecedor: String(r.fornecedor || "—"), ni: String(r.ni_fornecedor || ""),
+    valor: num(r.valor_global),
+    vigInicio: r.vig_inicio ? String(r.vig_inicio) : null, vigFim: r.vig_fim ? String(r.vig_fim) : null,
+    assinatura: r.assinatura ? String(r.assinatura) : null, objeto: String(r.objeto || ""),
+  }));
+}
