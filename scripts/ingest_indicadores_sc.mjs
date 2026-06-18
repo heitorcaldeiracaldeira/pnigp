@@ -69,22 +69,29 @@ async function main() {
   }
   console.log(`  ✓ economia: ${n} municípios c/ PIB per capita`);
 
-  // SOCIAL — BPC (beneficiários por mil hab) via CGU
+  // SOCIAL — programas sociais por município (CGU): beneficiários por mil hab
+  const PROGRAMAS = [
+    { codigo: "bpc_por_mil_hab", ep: "bpc-por-municipio", mes: "202412" },
+    { codigo: "novo_bolsa_familia_por_mil_hab", ep: "novo-bolsa-familia-por-municipio", mes: "202412" },
+    { codigo: "seguro_defeso_por_mil_hab", ep: "seguro-defeso-por-municipio", mes: "202306" },
+  ];
   if (CGU_KEY) {
-    console.log(`SOCIAL — BPC por mil hab (CGU ${MES_BPC})...`);
-    let sn = 0;
-    await poolRun(entes, 4, async (e) => {
-      const p = pop[e.cod_ibge]; if (!p) return;
-      const arr = await getCGU(`https://api.portaldatransparencia.gov.br/api-de-dados/bpc-por-municipio?mesAno=${MES_BPC}&codigoIbge=${e.cod_ibge}&pagina=1`);
-      const benef = arr.reduce((s, x) => s + (Number(x.quantidadeBeneficiados) || 0), 0);
-      if (!benef) return;
-      const porMil = Math.round((benef / p) * 1000 * 10) / 10;
-      const ano = Number(MES_BPC.slice(0, 4));
-      await q(`INSERT INTO indicadores_sc (cod_ibge,ano,codigo,area,valor,unidade,fonte) VALUES ($1,$2,'bpc_por_mil_hab','social',$3,'benef./mil hab','CGU/Transparência')
-               ON CONFLICT (cod_ibge,ano,codigo) DO UPDATE SET valor=EXCLUDED.valor`, [e.cod_ibge, ano, porMil]);
-      sn++;
-    });
-    console.log(`  ✓ social: ${sn} municípios c/ BPC`);
+    for (const prog of PROGRAMAS) {
+      console.log(`SOCIAL — ${prog.codigo} (CGU ${prog.mes})...`);
+      const ano = Number(prog.mes.slice(0, 4));
+      let sn = 0;
+      await poolRun(entes, 4, async (e) => {
+        const p = pop[e.cod_ibge]; if (!p) return;
+        const arr = await getCGU(`https://api.portaldatransparencia.gov.br/api-de-dados/${prog.ep}?mesAno=${prog.mes}&codigoIbge=${e.cod_ibge}&pagina=1`);
+        const benef = arr.reduce((s, x) => s + (Number(x.quantidadeBeneficiados) || 0), 0);
+        if (!benef) return;
+        const porMil = Math.round((benef / p) * 1000 * 10) / 10;
+        await q(`INSERT INTO indicadores_sc (cod_ibge,ano,codigo,area,valor,unidade,fonte) VALUES ($1,$2,$3,'social',$4,'benef./mil hab','CGU/Transparência')
+                 ON CONFLICT (cod_ibge,ano,codigo) DO UPDATE SET valor=EXCLUDED.valor`, [e.cod_ibge, ano, prog.codigo, porMil]);
+        sn++;
+      });
+      console.log(`  ✓ ${prog.codigo}: ${sn} municípios`);
+    }
   } else { console.log("SOCIAL pulado (sem chave CGU)"); }
 
   const c = await db.query(`SELECT area, count(*) n, count(DISTINCT cod_ibge) e FROM indicadores_sc GROUP BY area`);

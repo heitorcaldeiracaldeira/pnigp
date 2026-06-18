@@ -801,6 +801,8 @@ export async function getPibPerCapitaSC(cod: string): Promise<number | null> {
 const IND_LABEL: Record<string, string> = {
   pib_per_capita: "PIB per capita",
   bpc_por_mil_hab: "BPC — beneficiários por mil hab.",
+  novo_bolsa_familia_por_mil_hab: "Bolsa Família — beneficiários por mil hab.",
+  seguro_defeso_por_mil_hab: "Seguro Defeso — beneficiários por mil hab.",
 };
 const AREA_LABEL: Record<string, string> = {
   economia: "Economia", social: "Social", saude: "Saúde", educacao: "Educação", seguranca: "Segurança",
