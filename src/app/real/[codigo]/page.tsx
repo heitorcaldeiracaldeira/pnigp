@@ -151,7 +151,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
                       <div key={`s-${i.codigo}`} className="mt-4 border-t border-slate-100 pt-4">
                         <h4 className="text-sm font-semibold text-slate-700">{i.nome} — série histórica</h4>
                         {i.codigo === "transferencia_renda_por_mil_hab" && <p className="mb-1 text-[11px] text-slate-500">Bolsa Família → Auxílio Brasil → Novo Bolsa Família</p>}
-                        <LinhasFinanceiras data={seriesInd[i.codigo] as unknown as Record<string, number>[]} linhas={[{ key: "valor", label: i.unidade || "valor", cor: "#0f766e" }]} />
+                        <LinhasFinanceiras data={seriesInd[i.codigo] as unknown as Record<string, number>[]} linhas={[{ key: "valor", label: i.unidade || "valor", cor: "#0f766e" }]} moeda={i.unidade.includes("R$")} />
                       </div>
                     ))}
                   </section>
