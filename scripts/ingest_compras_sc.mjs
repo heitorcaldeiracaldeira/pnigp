@@ -10,9 +10,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const env = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8");
 const DATABASE_URL = env.match(/^DATABASE_URL=(.+)$/m)[1].trim();
 
-const ANO = 2024;
+const ANO = Number(process.env.ANO) || 2024;
 const DI = `${ANO}0101`, DF = `${ANO}1231`;
-const CAP_PAGINAS = 30; // PNCP rate-limita (~30 req); paginamos com moderação (capitais ficam parciais)
+const CAP_PAGINAS = 90; // coleta COMPLETA: pagina fundo (capitais cobertas); rate limit tratado com backoff
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 const PNCP = "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao";
 // modalidades principais p/ compras municipais (4 Concorrência Elet., 6 Pregão Elet., 8 Dispensa, 9 Inexig.)
@@ -125,10 +125,8 @@ async function main() {
   if (process.env.LIMPAR === "1") { await db.query(`TRUNCATE compras_sc, compras_sc_vazios`); console.log("tabelas de compras limpas (re-ingestão completa)"); }
   const entes = (await db.query(`SELECT cod_ibge, tipo FROM entes_sc ORDER BY (tipo='E') DESC, cod_ibge`)).rows;
   // retomar: pular os que já têm compras OU já foram marcados como vazios
-  const feitos = new Set([
-    ...(await db.query(`SELECT cod_ibge FROM compras_sc WHERE ano=${ANO}`)).rows.map((r) => r.cod_ibge),
-    ...(await db.query(`SELECT cod_ibge FROM compras_sc_vazios`)).rows.map((r) => r.cod_ibge),
-  ]);
+  // retomar: pular só os que já têm compras DESTE ano (vazios não entram, p/ suportar múltiplos anos)
+  const feitos = new Set((await db.query(`SELECT cod_ibge FROM compras_sc WHERE ano=${ANO}`)).rows.map((r) => r.cod_ibge));
   const pendentes = entes.filter((e) => !feitos.has(e.cod_ibge));
   console.log(`Coletando compras PNCP ${ANO}: ${pendentes.length} pendentes (${feitos.size} já feitos) de ${entes.length}...`);
   let comDados = 0, vazios = 0;
