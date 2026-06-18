@@ -845,3 +845,22 @@ export async function getSeriesIndicadoresSC(cod: string): Promise<Record<string
   for (const r of rows) { const k = String(r.codigo); (m[k] ??= []).push({ ano: num(r.ano), valor: num(r.valor) }); }
   return m;
 }
+
+/** Itens persistidos (itens_sc) de um processo; vazio se ainda não coletado (cai p/ on-demand). */
+export async function getItensPersistidosSC(cnpj: string, ano: number, seq: number) {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT numero, descricao, unidade, quantidade, unit_estimado, unit_homologado,
+            fornecedor, cnpj_fornecedor, porte_fornecedor, beneficio_lc, economia_pct
+       FROM itens_sc WHERE cnpj=$1 AND ano=$2 AND seq=$3 ORDER BY numero`, [cnpj, ano, seq],
+  ).catch(() => []);
+  return rows.map((r) => ({
+    numero: num(r.numero), descricao: String(r.descricao || ""), unidade: String(r.unidade || ""),
+    quantidade: num(r.quantidade), unitEstimado: num(r.unit_estimado), totalEstimado: num(r.unit_estimado) * num(r.quantidade),
+    unitHomologado: r.unit_homologado == null ? null : num(r.unit_homologado),
+    fornecedor: r.fornecedor ? String(r.fornecedor) : null,
+    cnpjFornecedor: r.cnpj_fornecedor ? String(r.cnpj_fornecedor) : null,
+    porteFornecedor: r.porte_fornecedor ? String(r.porte_fornecedor) : null,
+    beneficioLC: r.beneficio_lc ? String(r.beneficio_lc) : null,
+    economiaPct: r.economia_pct == null ? null : num(r.economia_pct),
+  }));
+}
