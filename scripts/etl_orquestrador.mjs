@@ -46,6 +46,7 @@ async function ensure() {
   await db.query(`CREATE TABLE IF NOT EXISTS etl_catalogo (
     id TEXT PRIMARY KEY, label TEXT, api TEXT, max_ano INTEGER,
     ultima_exec timestamptz, ultimo_status TEXT, devido BOOLEAN, msg TEXT, atualizado_em timestamptz )`);
+  await db.query(`ALTER TABLE etl_catalogo ADD COLUMN IF NOT EXISTS solicitado BOOLEAN DEFAULT FALSE`); // pedido manual via tela /etl
   for (const f of FONTES) await db.query(`INSERT INTO etl_catalogo (id,label,api) VALUES ($1,$2,$3) ON CONFLICT (id) DO UPDATE SET label=EXCLUDED.label, api=EXCLUDED.api`, [f.id, f.label, f.api]);
 }
 const estado = async (id) => (await db.query(`SELECT * FROM etl_catalogo WHERE id=$1`, [id])).rows[0];
@@ -94,19 +95,22 @@ async function rodar(f) {
 async function main() {
   await ensure();
   log(`MODO=${MODO} | ano fechado=${ANO_FECHADO} | corrente=${ANO_CORRENTE}`);
-  // 1) detectar
+  // 1) detectar (MODO=solicitados → roda só o que foi pedido na tela; run → devidos OU solicitados; plan → só reporta)
+  const SOLIC = MODO === "solicitados";
   const plano = [];
   for (const f of FONTES) {
     const st = await estado(f.id);
     let devido = false; try { devido = await f.devido(st); } catch {}
+    const solicitado = st?.solicitado === true;
     const ma = await maxAno({ financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", rgf: "rgf_sc", siops: "siops_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc" }[f.id] || "financas_sc", f.id === "contratos" ? "ano_compra" : "ano");
     await db.query(`UPDATE etl_catalogo SET max_ano=$1, devido=$2, atualizado_em=now() WHERE id=$3`, [ma, devido, f.id]);
-    plano.push({ f, devido, ma });
-    log(`  ${devido ? "PENDENTE" : "ok      "} ${f.id.padEnd(14)} max_ano=${ma}`);
+    const roda = SOLIC ? solicitado : (devido || solicitado);
+    plano.push({ f, roda });
+    log(`  ${roda ? "RODA    " : "ok      "} ${f.id.padEnd(14)} max_ano=${ma}${solicitado ? " [solicitado]" : ""}`);
   }
-  const devidos = plano.filter((p) => p.devido);
-  log(`→ ${devidos.length} fonte(s) pendente(s): ${devidos.map((p) => p.f.id).join(", ") || "(nenhuma)"}`);
-  if (MODO !== "run") { log("MODO=plan — nada executado. Use MODO=run para coletar."); await db.end(); return; }
+  const devidos = plano.filter((p) => p.roda);
+  log(`→ ${devidos.length} fonte(s) a coletar: ${devidos.map((p) => p.f.id).join(", ") || "(nenhuma)"}`);
+  if (MODO === "plan") { log("MODO=plan — nada executado. Use MODO=run (ou =solicitados) para coletar."); await db.end(); return; }
 
   // 2) executar devidos, SERIAL por API (grupos diferentes em paralelo)
   const grupos = {};
@@ -114,13 +118,16 @@ async function main() {
   await Promise.all(Object.values(grupos).map(async (lista) => {
     for (const f of lista) {
       const status = await rodar(f); // rodar() já é supervisionado e grava o estado no catálogo
+      await db.query(`UPDATE etl_catalogo SET solicitado=false WHERE id=$1`, [f.id]).catch(() => {}); // limpa pedido manual atendido
       log(`✔ ${f.id}: ${status}`);
     }
   }));
-  // 3) validação final + 4) regenerar documentação (mantém docs/SISTEMA.md sempre fiel)
-  const rodarScript = (s) => new Promise((res) => { const c = spawn(process.execPath, [s], { cwd: ROOT, stdio: "ignore" }); c.on("exit", () => res()); c.on("error", () => res()); });
-  log("validando integridade…"); await rodarScript("scripts/auditoria_dados_sc.mjs");
-  log("regenerando documentação…"); await rodarScript("scripts/gerar_documentacao.mjs");
+  // 3) validação final + 4) regenerar documentação — só no ciclo completo (run), não no atende-solicitações
+  if (MODO === "run") {
+    const rodarScript = (s) => new Promise((res) => { const c = spawn(process.execPath, [s], { cwd: ROOT, stdio: "ignore" }); c.on("exit", () => res()); c.on("error", () => res()); });
+    log("validando integridade…"); await rodarScript("scripts/auditoria_dados_sc.mjs");
+    log("regenerando documentação…"); await rodarScript("scripts/gerar_documentacao.mjs");
+  }
   log("ciclo concluído.");
   await db.end();
 }
