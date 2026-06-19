@@ -1105,6 +1105,26 @@ export async function getPrevineSC(cod: string): Promise<PrevineSC> {
   return { competencia: ult, grupo: _faixa(num(ent.populacao)), indicadores };
 }
 
+// Repasses federais do FNS por bloco/área (fundo-a-fundo) — último ano com dado
+export type FnsSC = { ano: number; total: number; custeio: number; investimento: number; areas: { nome: string; valor: number }[] } | null;
+export async function getFnsSC(cod: string): Promise<FnsSC> {
+  const ult = (await query<Record<string, unknown>>(`SELECT max(ano) m FROM fns_repasse_sc WHERE cod_ibge=$1 AND vl_liquido>0`, [cod]).catch(() => []))[0]?.m;
+  if (ult == null) return null;
+  const ano = num(ult);
+  const rows = await query<Record<string, unknown>>(`SELECT bloco_cod, area_cod, area_nome, vl_liquido FROM fns_repasse_sc WHERE cod_ibge=$1 AND ano=$2`, [cod, ano]).catch(() => []);
+  const tops = rows.filter((r) => num(r.area_cod) === 0); // totais por bloco (10=Custeio, 11=Investimento)
+  const custeio = tops.filter((r) => num(r.bloco_cod) === 10).reduce((s, r) => s + num(r.vl_liquido), 0);
+  const investimento = tops.filter((r) => num(r.bloco_cod) === 11).reduce((s, r) => s + num(r.vl_liquido), 0);
+  const total = tops.reduce((s, r) => s + num(r.vl_liquido), 0);
+  const map = new Map<string, number>(); // consolida áreas (APS aparece em custeio e investimento)
+  for (const r of rows.filter((x) => num(x.area_cod) !== 0)) {
+    const nome = String(r.area_nome || "Outros");
+    map.set(nome, (map.get(nome) || 0) + num(r.vl_liquido));
+  }
+  const areas = [...map.entries()].map(([nome, valor]) => ({ nome, valor })).sort((a, b) => b.valor - a.valor);
+  return { ano, total, custeio, investimento, areas };
+}
+
 export type RgfResumo = { ano: number; pessoalPct: number; rclAjustada: number; dclPct: number | null } | null;
 export async function getRgfResumoSC(cod: string): Promise<RgfResumo> {
   const r = (await query<Record<string, unknown>>(`SELECT ano, pessoal_pct, rcl_ajustada, dcl_pct FROM rgf_sc WHERE cod_ibge=$1 AND pessoal_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];

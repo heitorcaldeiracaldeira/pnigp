@@ -1,7 +1,8 @@
 import { Activity, Building2, Database, HeartPulse, Stethoscope, Users } from "lucide-react";
-import type { SaudeSC, PrevineSC } from "@/lib/queries";
+import type { SaudeSC, PrevineSC, FnsSC } from "@/lib/queries";
 
 const n1 = (x: number) => x.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+const brMi = (x: number) => "R$ " + (x / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " mi";
 function cmp(v: number, m: number) {
   if (m <= 0) return { txt: "—", cls: "text-slate-400" };
   if (v >= m * 1.15) return { txt: "▲ acima dos pares", cls: "text-emerald-600" };
@@ -9,7 +10,7 @@ function cmp(v: number, m: number) {
   return { txt: "≈ na média dos pares", cls: "text-slate-500" };
 }
 
-export function SaudeSC({ data, previne }: { data: NonNullable<SaudeSC>; previne?: NonNullable<PrevineSC> | null }) {
+export function SaudeSC({ data, previne, fns }: { data: NonNullable<SaudeSC>; previne?: NonNullable<PrevineSC> | null; fns?: NonNullable<FnsSC> | null }) {
   const d = data;
   const cEstab = cmp(d.estabMil, d.estabMilPares);
   const cSus = cmp(d.susMil, d.susMilPares);
@@ -53,6 +54,22 @@ export function SaudeSC({ data, previne }: { data: NonNullable<SaudeSC>; previne
             {d.transfUniaoPct != null ? <> — <b>{n1(d.transfUniaoPct)}%</b> vêm da União{d.transfUniaoValor != null ? ` (R$ ${(d.transfUniaoValor / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi)` : ""}.</> : "."}
           </p>
           <p className="mt-0.5 text-[11px] text-slate-400">SIOPS — transferências SUS para a saúde do município (quanto maior a fatia da União, maior a dependência de repasse federal).</p>
+        </div>
+      )}
+
+      {fns && fns.total > 0 && (
+        <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-teal-50 p-5">
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-emerald-800"><Database className="h-4 w-4" /> Repasses federais do FNS por bloco ({fns.ano})</div>
+          <p className="mt-1 text-sm text-slate-600">O que a União repassou fundo-a-fundo, por bloco e área — fonte: Fundo Nacional de Saúde. Total <b>{brMi(fns.total)}</b> ({fns.investimento > 0 ? `${brMi(fns.custeio)} custeio + ${brMi(fns.investimento)} investimento` : "custeio"}).</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {fns.areas.map((a) => (
+              <div key={a.nome} className="rounded-xl border border-slate-200 bg-white p-3">
+                <div className="text-xs text-slate-500">{a.nome.charAt(0) + a.nome.slice(1).toLowerCase()}</div>
+                <div className="font-display text-lg font-bold tabular-nums text-slate-900">{brMi(a.valor)}</div>
+                <div className="text-[11px] text-slate-400">{n1(a.valor / fns.total * 100)}% do repasse federal</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
