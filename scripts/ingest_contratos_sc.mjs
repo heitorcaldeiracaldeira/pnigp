@@ -101,7 +101,8 @@ async function main() {
   const APPEND = process.env.APPEND === "1";
   const FEITOS = APPEND ? "contratos_sc_feitos_inc" : "contratos_sc_feitos";
   const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' ORDER BY cod_ibge`)).rows;
-  const feitos = new Set((await db.query(`SELECT cod_ibge FROM ${FEITOS}`)).rows.map((r) => r.cod_ibge));
+  // REFRESH=1: re-coleta todos os entes (não pula feitos) — atualiza o ano corrente; APPEND já deleta+reinsere por ano (idempotente)
+  const feitos = process.env.REFRESH === "1" ? new Set() : new Set((await db.query(`SELECT cod_ibge FROM ${FEITOS}`)).rows.map((r) => r.cod_ibge));
   const pend = entes.filter((e) => !feitos.has(e.cod_ibge));
   console.log(`Contratos PNCP (${ANOS.join(",")}): ${pend.length} municípios pendentes de ${entes.length}...`);
   // escrita resiliente (Neon derruba conexões longas — retry/reconecta)

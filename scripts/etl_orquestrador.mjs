@@ -30,9 +30,9 @@ const FONTES = [
     devido: async () => (await maxAno("rgf_sc")) < ANO_FECHADO },
   { id: "siops", label: "Saúde ASPS (SIOPS)", api: "siops", script: "scripts/ingest_siops_sc.mjs", env: {},
     devido: async () => (await maxAno("siops_sc")) < ANO_FECHADO },
-  { id: "compras", label: "Compras (PNCP ano corrente)", api: "pncp", script: "scripts/ingest_compras_sc.mjs", env: { ANO: String(ANO_CORRENTE) },
+  { id: "compras", label: "Compras (PNCP ano corrente)", api: "pncp", script: "scripts/ingest_compras_sc.mjs", env: { ANO: String(ANO_CORRENTE), REFRESH: "1" },
     devido: async (st) => diasDesde(st?.ultima_exec) > 25 },
-  { id: "contratos", label: "Contratos (PNCP ano corrente, append)", api: "pncp", script: "scripts/ingest_contratos_sc.mjs", env: { APPEND: "1", ANOS: String(ANO_CORRENTE) },
+  { id: "contratos", label: "Contratos (PNCP ano corrente, append)", api: "pncp", script: "scripts/ingest_contratos_sc.mjs", env: { APPEND: "1", ANOS: String(ANO_CORRENTE), REFRESH: "1" },
     devido: async (st) => diasDesde(st?.ultima_exec) > 25 },
   { id: "pca", label: "PCA (PNCP)", api: "pncp", script: "scripts/ingest_pca_sc.mjs", env: { ANOS: `${ANO_CORRENTE},${ANO_CORRENTE + 1}` },
     devido: async (st) => diasDesde(st?.ultima_exec) > 35 },
@@ -108,7 +108,9 @@ async function main() {
     const st = await estado(f.id);
     let devido = false; try { devido = await f.devido(st); } catch {}
     const solicitado = st?.solicitado === true;
-    const ma = await maxAno({ financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", rgf: "rgf_sc", siops: "siops_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", cnes: "cnes_sc", sih: "saude_producao_sc", sia: "saude_producao_sc" }[f.id] || "financas_sc", f.id === "contratos" ? "ano_compra" : "ano");
+    const ma = f.id === "cnes"
+      ? (Number((await db.query(`SELECT max(extract(year from atualizado))::int y FROM cnes_sc`).catch(() => ({ rows: [{}] }))).rows[0]?.y) || 0) // CNES é snapshot por competência (sem coluna ano)
+      : await maxAno({ financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", rgf: "rgf_sc", siops: "siops_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", sih: "saude_producao_sc", sia: "saude_producao_sc" }[f.id] || "financas_sc", f.id === "contratos" ? "ano_compra" : "ano");
     await db.query(`UPDATE etl_catalogo SET max_ano=$1, devido=$2, atualizado_em=now() WHERE id=$3`, [ma, devido, f.id]);
     const roda = SOLIC ? solicitado : (devido || solicitado);
     plano.push({ f, roda });

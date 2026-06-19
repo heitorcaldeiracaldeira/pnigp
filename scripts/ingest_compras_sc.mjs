@@ -152,7 +152,8 @@ async function main() {
   const entes = (await db.query(`SELECT cod_ibge, tipo FROM entes_sc ORDER BY (tipo='E') DESC, cod_ibge`)).rows;
   // retomar: pular os que já têm compras OU já foram marcados como vazios
   // retomar: pular só os que já têm compras DESTE ano (vazios não entram, p/ suportar múltiplos anos)
-  const feitos = new Set((await db.query(`SELECT cod_ibge FROM compras_sc WHERE ano=${ANO}`)).rows.map((r) => r.cod_ibge));
+  // REFRESH=1: re-coleta o ano inteiro (não pula os já feitos) — p/ atualizar o ano corrente com contratos novos
+  const feitos = process.env.REFRESH === "1" ? new Set() : new Set((await db.query(`SELECT cod_ibge FROM compras_sc WHERE ano=${ANO}`)).rows.map((r) => r.cod_ibge));
   const pendentes = entes.filter((e) => !feitos.has(e.cod_ibge));
   console.log(`Coletando compras PNCP ${ANO}: ${pendentes.length} pendentes (${feitos.size} já feitos) de ${entes.length}...`);
   let comDados = 0, vazios = 0;
