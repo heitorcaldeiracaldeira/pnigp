@@ -512,7 +512,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       </div>
     ),
   });
-  if (diag) tabs.push({ id: "auditoria", label: "Auditoria", content: <AuditoriaSC data={diag} /> });
+  if (diag) tabs.push({ id: "auditoria", label: "Auditoria", content: <AuditoriaSC data={diag} radar={radar} /> });
   if (rgfResumo) tabs.push({ id: "simulador", label: "Simulador", content: <SimuladorFiscal ano={rgfResumo.ano} receita={a.receita} despesa={a.despesa} pessoal={a.pessoal} investimento={a.investimento} rclAjustada={rgfResumo.rclAjustada} pessoalPctBase={rgfResumo.pessoalPct} /> });
   if (saude) tabs.push({ id: "saude", label: "Saúde", content: <SaudeSC data={saude} previne={previne} fns={fns} /> });
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Educação", content: <EducacaoSC data={educacao} /> });
