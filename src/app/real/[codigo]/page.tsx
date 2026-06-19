@@ -417,10 +417,11 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
           content: (() => {
             const top = rankingFiscal.slice(0, 15);
             const fora = minhaPos && minhaPos.posicao > 15 ? minhaPos : null;
+            const medalha = (pos: number) => (pos === 1 ? "🥇" : pos === 2 ? "🥈" : pos === 3 ? "🥉" : null);
             const Row = (r: typeof rankingFiscal[number], destaque: boolean) => (
-              <tr key={r.cod_ibge} className={`border-b border-slate-100 ${destaque ? "bg-teal-50 font-medium" : ""}`}>
-                <td className="p-2 tabular-nums text-slate-500">{r.posicao}º</td>
-                <td className="p-2 text-slate-700">{r.tipo === "E" ? `★ ${r.nome}` : r.nome}</td>
+              <tr key={r.cod_ibge} className={`border-b border-slate-100 ${destaque ? "bg-teal-50 font-semibold ring-1 ring-inset ring-teal-300" : ""}`}>
+                <td className="p-2 tabular-nums text-slate-500"><span aria-hidden>{medalha(r.posicao) ?? `${r.posicao}º`}</span><span className="sr-only">{r.posicao}º</span></td>
+                <td className="p-2 text-slate-700">{r.tipo === "E" ? `★ ${r.nome}` : r.nome}{destaque && <span className="ml-1.5 rounded bg-teal-600 px-1.5 py-0.5 text-[9px] font-bold tracking-wide text-white align-middle">SEU MUNICÍPIO</span>}</td>
                 <td className="p-2 text-right font-semibold tabular-nums text-teal-700">{r.score.toFixed(1)}</td>
                 <td className="hidden p-2 text-right tabular-nums text-slate-500 sm:table-cell">{r.autonomia.toFixed(0)}%</td>
                 <td className="hidden p-2 text-right tabular-nums text-slate-500 md:table-cell">{r.investimento.toFixed(0)}%</td>
