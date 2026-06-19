@@ -12,6 +12,7 @@ import { SimuladorFiscal } from "@/components/simulador-fiscal";
 import { SaudeSC } from "@/components/saude-sc";
 import { EducacaoSC } from "@/components/educacao-sc";
 import { CruzamentosSC } from "@/components/cruzamentos-sc";
+import { PanoramaSC } from "@/components/panorama-sc";
 import { ArvoreFinanceira } from "@/components/arvore-financeira";
 import type { NoFin } from "@/lib/orcamento";
 import type { FuncaoSC } from "@/lib/queries";
@@ -466,6 +467,23 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   ];
 
   if (diagnostico) tabs.splice(1, 0, { id: "diagnostico", label: "Diagnóstico", content: <DiagnosticoGestor data={diagnostico} /> });
+
+  // PANORAMA 360° — cruza todas as dimensões num radar (50 = mediana dos pares)
+  const scP = (v: number, m: number, inv = false) => (m > 0 ? Math.max(0, Math.min(100, inv ? (m / Math.max(v, 0.01)) * 50 : (v / m) * 50)) : 50);
+  const pcr = (x: number) => x.toFixed(1) + "%";
+  const radar: { dimensao: string; valor: number; bruto: string }[] = [];
+  if (cruz?.fiscal) {
+    radar.push({ dimensao: "Autonomia", valor: scP(cruz.fiscal.autonomia, cruz.fiscal.autonomiaPares), bruto: pcr(cruz.fiscal.autonomia) });
+    radar.push({ dimensao: "Independência", valor: scP(cruz.fiscal.dependencia, cruz.fiscal.dependenciaPares, true), bruto: pcr(cruz.fiscal.dependencia) + " dep." });
+  }
+  if (cruz?.compras) radar.push({ dimensao: "Compras", valor: scP(cruz.compras.dispensaPct, cruz.compras.dispensaPares, true), bruto: pcr(cruz.compras.dispensaPct) + " s/lic." });
+  if (educacao?.alfab != null) radar.push({ dimensao: "Educação", valor: scP(educacao.alfab, educacao.alfabPares), bruto: pcr(educacao.alfab) + " alfab." });
+  if (saude) {
+    radar.push({ dimensao: "Rede saúde", valor: scP(saude.estabMil, saude.estabMilPares), bruto: saude.estabMil.toFixed(1) + "/mil" });
+    if (saude.internMil > 0) radar.push({ dimensao: "Produção saúde", valor: scP(saude.internMil, saude.internMilPares), bruto: saude.internMil.toFixed(1) + " int/mil" });
+  }
+  if (cruz?.social?.transfRendaMil != null) radar.push({ dimensao: "Social", valor: scP(cruz.social.transfRendaMil, cruz.social.transfPares), bruto: cruz.social.transfRendaMil.toFixed(0) + "/mil" });
+  if (radar.length >= 3) tabs.splice(1, 0, { id: "panorama", label: "Panorama", content: <PanoramaSC radar={radar} grupo={saude?.grupo || educacao?.grupo || cruz?.grupo || ""} /> });
 
   const toNoFin = (f: FuncaoSC): NoFin => ({ nome: f.nome, previsto: f.dotacao, realizado: f.empenhado, pct: f.dotacao > 0 ? (f.empenhado / f.dotacao) * 100 : 0, filhos: f.filhos && f.filhos.length ? f.filhos.map(toNoFin).sort((a, b) => b.previsto - a.previsto) : undefined });
   const arvoreFunc: NoFin[] = funcoesLatest.map(toNoFin).sort((x, y) => y.previsto - x.previsto);
