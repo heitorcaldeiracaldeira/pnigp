@@ -24,13 +24,13 @@ async function buscar(co6, ano) {
 }
 
 async function main() {
-  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 3, keepAlive: true, query_timeout: 60000, statement_timeout: 60000 });
+  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2, keepAlive: true, query_timeout: 60000, statement_timeout: 60000 });
   db.on("error", () => {});
   await db.query(`CREATE TABLE IF NOT EXISTS fns_repasse_sc (
     cod_ibge TEXT NOT NULL, ano INTEGER NOT NULL, bloco_cod INTEGER NOT NULL, bloco_nome TEXT,
     area_cod INTEGER NOT NULL DEFAULT 0, area_nome TEXT, vl_total NUMERIC, vl_liquido NUMERIC,
     PRIMARY KEY (cod_ibge, ano, bloco_cod, area_cod) )`);
-  const q = async (s, p) => { for (let t = 0; t < 6; t++) { try { return await db.query(s, p); } catch { await sleep(900 * (t + 1)); } } throw new Error("db"); };
+  const q = async (s, p) => { for (let t = 0; t < 10; t++) { try { return await db.query(s, p); } catch { await sleep(1200 * (t + 1)); } } throw new Error("db"); };
   const munis = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' ORDER BY cod_ibge`)).rows.map((r) => r.cod_ibge);
   const feitos = new Set((await db.query(`SELECT DISTINCT cod_ibge||'-'||ano k FROM fns_repasse_sc`)).rows.map((r) => r.k));
 
@@ -45,9 +45,15 @@ async function main() {
         linhas.push([cod, ano, b.codigo, b.nome, 0, null, b.vlTotal, b.vlLiquido]); // total do bloco (Custeio/Investimento)
         for (const r of (b.repasses || [])) linhas.push([cod, ano, b.codigo, b.nome, r.codigo, r.nome, r.vlTotal, r.vlLiquido]); // áreas
       }
-      for (const l of linhas) {
-        await q(`INSERT INTO fns_repasse_sc (cod_ibge,ano,bloco_cod,bloco_nome,area_cod,area_nome,vl_total,vl_liquido) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-                 ON CONFLICT (cod_ibge,ano,bloco_cod,area_cod) DO UPDATE SET bloco_nome=EXCLUDED.bloco_nome,area_nome=EXCLUDED.area_nome,vl_total=EXCLUDED.vl_total,vl_liquido=EXCLUDED.vl_liquido`, l);
+      try {
+        for (const l of linhas) {
+          await q(`INSERT INTO fns_repasse_sc (cod_ibge,ano,bloco_cod,bloco_nome,area_cod,area_nome,vl_total,vl_liquido) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+                   ON CONFLICT (cod_ibge,ano,bloco_cod,area_cod) DO UPDATE SET bloco_nome=EXCLUDED.bloco_nome,area_nome=EXCLUDED.area_nome,vl_total=EXCLUDED.vl_total,vl_liquido=EXCLUDED.vl_liquido`, l);
+        }
+      } catch {
+        await db.query(`DELETE FROM fns_repasse_sc WHERE cod_ibge=$1 AND ano=$2`, [cod, ano]).catch(() => {}); // limpa parcial p/ rerun refazer este cod-ano
+        console.log(`  ${cod}/${ano}: erro de escrita — parcial removido (rerun refaz)`);
+        continue;
       }
       if (!linhas.length) vazios++;
       proc++;

@@ -60,7 +60,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   ];
   const funcData = funcoesLatest.slice(0, 8).map((f) => ({ label: f.nome, orcado: f.dotacao, executado: f.empenhado }));
 
-  const tabs = [
+  const tabs: { id: string; label: string; content: React.ReactNode; grupo?: string }[] = [
     {
       id: "visao",
       label: "Visão geral",
@@ -519,9 +519,18 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Educação", content: <EducacaoSC data={educacao} /> });
   if (cruz) tabs.push({ id: "cruzamentos", label: "Cruzamentos", content: <CruzamentosSC data={cruz} /> });
 
-  // ordem lógica das abas: panorama → fiscal → compras → social/cruzamentos → extras
-  const ORDEM = ["visao", "panorama", "diagnostico", "financas", "execucao", "metas", "ranking", "compras", "contratos", "planejamento", "saude", "educacao-cruz", "cruzamentos", "indicadores", "transferencias", "auditoria", "simulador"];
+  // abas agrupadas em 5 clusters (auditoria de UX): Resumo · Finanças · Compras · Setores · Análise
+  const GRUPOS: [string, string[]][] = [
+    ["Resumo", ["visao", "panorama", "diagnostico"]],
+    ["Finanças", ["financas", "execucao", "metas", "simulador"]],
+    ["Compras", ["compras", "contratos", "planejamento"]],
+    ["Setores", ["saude", "educacao-cruz", "indicadores"]],
+    ["Análise", ["cruzamentos", "ranking", "transferencias", "auditoria"]],
+  ];
+  const ORDEM = GRUPOS.flatMap(([, ids]) => ids);
+  const grupoDe = (id: string) => GRUPOS.find(([, ids]) => ids.includes(id))?.[0];
   tabs.sort((x, y) => ((ORDEM.indexOf(x.id) + 1 || 99) - (ORDEM.indexOf(y.id) + 1 || 99)));
+  tabs.forEach((t) => { t.grupo = grupoDe(t.id); });
 
   return (
     <div className="min-h-screen bg-slate-50" style={{ ["--header-h" as string]: "60px" } as React.CSSProperties}>

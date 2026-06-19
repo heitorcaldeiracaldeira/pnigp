@@ -1,4 +1,5 @@
 import { AlertTriangle, CheckCircle2, Database, Stethoscope } from "lucide-react";
+import { GlossarioStrip } from "@/components/termo";
 import type { DiagGestor } from "@/lib/queries";
 
 export function DiagnosticoGestor({ data }: { data: NonNullable<DiagGestor> }) {
@@ -40,6 +41,7 @@ export function DiagnosticoGestor({ data }: { data: NonNullable<DiagGestor> }) {
         <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
         Pessoal e DCL: RGF (SICONFI, % oficial sobre RCL ajustada). Educação/FUNDEB: RREO Anexo 14. Saúde (ASPS/LC 141): SIOPS/Min. Saúde. Finanças: RREO. Benchmarks por grupo de porte populacional. Sugestões são pontos a verificar, não veredictos.
       </p>
+      <GlossarioStrip ks={["LRF", "pessoal", "RCL", "DCL", "MDE", "FUNDEB"]} />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { Activity, Building2, Database, HeartPulse, Stethoscope, Users } from "lucide-react";
 import type { SaudeSC, PrevineSC, FnsSC } from "@/lib/queries";
+import { Termo, GlossarioStrip } from "@/components/termo";
 
 const n1 = (x: number) => x.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
 const brMi = (x: number) => "R$ " + (x / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " mi";
@@ -25,7 +26,7 @@ export function SaudeSC({ data, previne, fns }: { data: NonNullable<SaudeSC>; pr
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className={`rounded-xl border p-4 ${gastoOk === false ? "border-amber-200 bg-amber-50" : "border-slate-200 bg-white"}`}>
-          <div className="flex items-center gap-1.5 text-xs text-slate-500"><Activity className="h-3.5 w-3.5" /> Gasto em saúde (ASPS)</div>
+          <div className="flex items-center gap-1.5 text-xs text-slate-500"><Activity className="h-3.5 w-3.5" /> Gasto em saúde (<Termo k="ASPS" />)</div>
           <div className="font-display text-2xl font-bold tabular-nums text-slate-900">{d.saudePct == null ? "—" : `${n1(d.saudePct)}%`}</div>
           <div className="text-[11px] text-slate-500">mínimo CF 15%{d.saudeAno ? ` · ${d.saudeAno}` : ""} {gastoOk === false ? "· ⚠ abaixo" : gastoOk ? "· ✓" : ""}</div>
         </div>
@@ -135,6 +136,7 @@ export function SaudeSC({ data, previne, fns }: { data: NonNullable<SaudeSC>; pr
         <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
         Gasto: SIOPS (ASPS, LC 141). Previne Brasil: SISAB/Min. Saúde. Rede: CNES (inclui pública e privada). Produção: SIH (internações) e SIA (ambulatorial) — DATASUS, por local de atendimento. População: IBGE. Benchmarks por grupo de porte. Ciclo completo: insumo (gasto) → capacidade (rede) → entrega (produção).
       </p>
+      <GlossarioStrip ks={["ASPS", "APS", "FNS", "SIOPS"]} />
     </div>
   );
 }
