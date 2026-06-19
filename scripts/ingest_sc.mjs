@@ -66,7 +66,19 @@ function extrair(a01, a02) {
     else if (curFunc) curFunc.filhos.push(node);
   }
   const funcoes = arvore.filter((f) => f.dotacao > 0 || f.empenhado > 0).sort((a, b) => b.dotacao - a.dotacao);
+  // RECEITA — "de onde vem o dinheiro": grupos × fontes (previsto × arrecadado)
+  const RECG = [
+    ["Receita própria", ["Impostos", "Taxas", "Contribuição de Melhoria", "Receita Patrimonial", "Receita de Serviços", "Outras Receitas Correntes"]],
+    ["Transferências", ["Transferências da União e de suas Entidades", "Transferências dos Estados e do Distrito Federal e de suas Entidades", "Transferências de Outras Instituições Públicas", "Transferências dos Municípios e de suas Entidades"]],
+    ["Contribuições", ["Contribuições Sociais", "Contribuições Econômicas"]],
+    ["Receitas de capital", ["Operações de Crédito", "Alienação de Bens", "Amortizações de Empréstimos", "Transferências de Capital"]],
+  ];
+  const receitas = RECG.map(([nome, leaves]) => {
+    const filhos = leaves.map((l) => ({ nome: l, previsto: r2(recPrev(l)), arrecadado: r2(recA(l)) })).filter((f) => f.arrecadado > 0 || f.previsto > 0);
+    return { nome, previsto: r2(filhos.reduce((s, f) => s + f.previsto, 0)), arrecadado: r2(filhos.reduce((s, f) => s + f.arrecadado, 0)), filhos };
+  }).filter((g) => g.arrecadado > 0 || g.previsto > 0);
   return {
+    receitas,
     receita: r2(receita), receita_prevista: r2(recPrev("RECEITAS (EXCETO INTRA-ORÇAMENTÁRIAS) (I)")),
     tributaria: r2(trib), transferencias: r2(transf), outras: r2(receita - trib - transf),
     despesa, resultado: r2(receita - despesa),
@@ -108,6 +120,7 @@ async function main() {
       infraestrutura NUMERIC(16,2), administracao NUMERIC(16,2), funcoes JSONB,
       PRIMARY KEY (cod_ibge, ano) );
   `);
+  await client.query(`ALTER TABLE financas_sc ADD COLUMN IF NOT EXISTS receitas JSONB`); // árvore "de onde vem o dinheiro"
 
   const munis = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "scripts", "sc_munis.json"), "utf8"));
   const entes = [
@@ -129,10 +142,10 @@ async function main() {
       const d = extrair(a01, a02);
       if (d.receita <= 0 && d.despesa <= 0) continue;
       await client.query(
-        `INSERT INTO financas_sc (cod_ibge,ano,receita,receita_prevista,tributaria,transferencias,outras,despesa,resultado,pessoal,custeio,investimento,divida,saude,educacao,seguranca,assistencia,infraestrutura,administracao,funcoes)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
-         ON CONFLICT (cod_ibge,ano) DO UPDATE SET receita=EXCLUDED.receita,receita_prevista=EXCLUDED.receita_prevista,tributaria=EXCLUDED.tributaria,transferencias=EXCLUDED.transferencias,outras=EXCLUDED.outras,despesa=EXCLUDED.despesa,resultado=EXCLUDED.resultado,pessoal=EXCLUDED.pessoal,custeio=EXCLUDED.custeio,investimento=EXCLUDED.investimento,divida=EXCLUDED.divida,saude=EXCLUDED.saude,educacao=EXCLUDED.educacao,seguranca=EXCLUDED.seguranca,assistencia=EXCLUDED.assistencia,infraestrutura=EXCLUDED.infraestrutura,administracao=EXCLUDED.administracao,funcoes=EXCLUDED.funcoes`,
-        [e.cod, ano, d.receita, d.receita_prevista, d.tributaria, d.transferencias, d.outras, d.despesa, d.resultado, d.pessoal, d.custeio, d.investimento, d.divida, d.saude, d.educacao, d.seguranca, d.assistencia, d.infraestrutura, d.administracao, JSON.stringify(d.funcoes)],
+        `INSERT INTO financas_sc (cod_ibge,ano,receita,receita_prevista,tributaria,transferencias,outras,despesa,resultado,pessoal,custeio,investimento,divida,saude,educacao,seguranca,assistencia,infraestrutura,administracao,funcoes,receitas)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+         ON CONFLICT (cod_ibge,ano) DO UPDATE SET receita=EXCLUDED.receita,receita_prevista=EXCLUDED.receita_prevista,tributaria=EXCLUDED.tributaria,transferencias=EXCLUDED.transferencias,outras=EXCLUDED.outras,despesa=EXCLUDED.despesa,resultado=EXCLUDED.resultado,pessoal=EXCLUDED.pessoal,custeio=EXCLUDED.custeio,investimento=EXCLUDED.investimento,divida=EXCLUDED.divida,saude=EXCLUDED.saude,educacao=EXCLUDED.educacao,seguranca=EXCLUDED.seguranca,assistencia=EXCLUDED.assistencia,infraestrutura=EXCLUDED.infraestrutura,administracao=EXCLUDED.administracao,funcoes=EXCLUDED.funcoes,receitas=EXCLUDED.receitas`,
+        [e.cod, ano, d.receita, d.receita_prevista, d.tributaria, d.transferencias, d.outras, d.despesa, d.resultado, d.pessoal, d.custeio, d.investimento, d.divida, d.saude, d.educacao, d.seguranca, d.assistencia, d.infraestrutura, d.administracao, JSON.stringify(d.funcoes), JSON.stringify(d.receitas)],
       );
       gravou = true;
     }

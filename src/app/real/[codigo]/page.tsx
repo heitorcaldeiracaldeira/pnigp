@@ -15,7 +15,7 @@ import { CruzamentosSC } from "@/components/cruzamentos-sc";
 import { PanoramaSC } from "@/components/panorama-sc";
 import { ArvoreFinanceira } from "@/components/arvore-financeira";
 import type { NoFin } from "@/lib/orcamento";
-import type { FuncaoSC } from "@/lib/queries";
+import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
@@ -33,7 +33,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const minhaPos = rankingFiscal.find((r) => r.cod_ibge === codigo) ?? null;
   const totalRank = rankingFiscal.length;
 
-  const { ente, serie, funcoesLatest } = dados;
+  const { ente, serie, funcoesLatest, receitasLatest } = dados;
   const a = serie[serie.length - 1];
   const anterior = serie[serie.length - 2] ?? null;
   const resultado = a.receita - a.despesa;
@@ -488,12 +488,23 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
 
   const toNoFin = (f: FuncaoSC): NoFin => ({ nome: f.nome, previsto: f.dotacao, realizado: f.empenhado, pct: f.dotacao > 0 ? (f.empenhado / f.dotacao) * 100 : 0, filhos: f.filhos && f.filhos.length ? f.filhos.map(toNoFin).sort((a, b) => b.previsto - a.previsto) : undefined });
   const arvoreFunc: NoFin[] = funcoesLatest.map(toNoFin).sort((x, y) => y.previsto - x.previsto);
-  if (arvoreFunc.length) tabs.push({
-    id: "execucao", label: "Execução", content: (
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="mb-1 text-base font-semibold text-slate-800">Despesa por função — execução</h2>
-        <p className="mb-3 text-sm text-slate-500">Dotação atualizada × empenhado, por função de governo (clique nas colunas para ler; % de execução na barra).</p>
-        <ArvoreFinanceira raizes={arvoreFunc} colNome="Função" colV1="Dotação" colV2="Empenhado" />
+  const recToNoFin = (r: ReceitaSC): NoFin => ({ nome: r.nome, previsto: r.previsto, realizado: r.arrecadado, pct: r.previsto > 0 ? (r.arrecadado / r.previsto) * 100 : 0, filhos: r.filhos && r.filhos.length ? r.filhos.map(recToNoFin).sort((a, b) => b.realizado - a.realizado) : undefined });
+  const arvoreRec: NoFin[] = (receitasLatest || []).map(recToNoFin).sort((x, y) => y.realizado - x.realizado);
+  if (arvoreFunc.length || arvoreRec.length) tabs.push({
+    id: "execucao", label: "Origem & Aplicação", content: (
+      <div className="space-y-4">
+        {arvoreRec.length > 0 && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-1 text-base font-semibold text-slate-800">💰 De onde vem o dinheiro — receita por fonte</h2>
+            <p className="mb-3 text-sm text-slate-500">Previsto × arrecadado, por origem (receita própria, transferências, contribuições, capital). % = realização da receita.</p>
+            <ArvoreFinanceira raizes={arvoreRec} colNome="Fonte da receita" colV1="Previsto" colV2="Arrecadado" />
+          </div>
+        )}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-1 text-base font-semibold text-slate-800">🏛️ Onde é gasto — despesa por função → subfunção</h2>
+          <p className="mb-3 text-sm text-slate-500">Dotação atualizada × empenhado. Clique na função para abrir as subfunções; % de execução na barra.</p>
+          <ArvoreFinanceira raizes={arvoreFunc} colNome="Função" colV1="Dotação" colV2="Empenhado" />
+        </div>
       </div>
     ),
   });

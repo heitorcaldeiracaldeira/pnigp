@@ -522,6 +522,7 @@ export const FONTE_SICONFI =
 
 export type EnteSC = { cod_ibge: string; nome: string; tipo: "M" | "E"; populacao: number };
 export type FuncaoSC = { nome: string; dotacao: number; empenhado: number; filhos?: FuncaoSC[] };
+export type ReceitaSC = { nome: string; previsto: number; arrecadado: number; filhos?: ReceitaSC[] };
 export type FinancaSCAno = {
   ano: number;
   receita: number; receita_prevista: number; tributaria: number; transferencias: number; outras: number;
@@ -538,7 +539,7 @@ export async function getEntesSC(): Promise<EnteSC[]> {
 
 export async function getFinancasSC(
   cod: string,
-): Promise<{ ente: EnteSC; serie: FinancaSCAno[]; funcoesLatest: FuncaoSC[] } | null> {
+): Promise<{ ente: EnteSC; serie: FinancaSCAno[]; funcoesLatest: FuncaoSC[]; receitasLatest: ReceitaSC[] } | null> {
   const er = await query<Record<string, unknown>>(`SELECT cod_ibge, nome, tipo, populacao FROM entes_sc WHERE cod_ibge = $1`, [cod]);
   if (!er.length) return null;
   const ente: EnteSC = { cod_ibge: String(er[0].cod_ibge), nome: String(er[0].nome), tipo: er[0].tipo as "M" | "E", populacao: num(er[0].populacao) };
@@ -552,7 +553,8 @@ export async function getFinancasSC(
   }));
   const last = rows[rows.length - 1];
   const funcoesLatest = last && Array.isArray(last.funcoes) ? (last.funcoes as FuncaoSC[]) : [];
-  return { ente, serie, funcoesLatest };
+  const receitasLatest = last && Array.isArray(last.receitas) ? (last.receitas as ReceitaSC[]) : [];
+  return { ente, serie, funcoesLatest, receitasLatest };
 }
 
 export type ComprasSC = {
