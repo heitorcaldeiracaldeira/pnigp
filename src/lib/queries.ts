@@ -924,6 +924,35 @@ export async function getDiagnosticoGestorSC(cod: string): Promise<DiagGestor> {
   return { ano, grupo: _faixa(num(alvo.populacao)), nAlertas: P.filter((p) => p.alerta).length, pontos: P };
 }
 
+// ===== Cruzamento Saúde: gasto (SIOPS) × rede (CNES) × população =====
+export type SaudeSC = {
+  pop: number; grupo: string;
+  saudePct: number | null; saudeAno: number | null;
+  estab: number; sus: number; hospitalar: number; cirurgico: number; temHospital: boolean;
+  estabMil: number; susMil: number; estabMilPares: number; susMilPares: number;
+} | null;
+export async function getSaudeSC(cod: string): Promise<SaudeSC> {
+  const base = await query<Record<string, unknown>>(
+    `SELECT c.cod_ibge, e.populacao, c.total, c.sus_amb FROM cnes_sc c JOIN entes_sc e ON e.cod_ibge=c.cod_ibge WHERE e.tipo='M' AND e.populacao>0`,
+  ).catch(() => []);
+  const alvo = base.find((x) => String(x.cod_ibge) === cod);
+  if (!alvo) return null;
+  const mil = (v: number, pop: number) => (pop > 0 ? v / (pop / 1000) : 0);
+  const gk = _fk(num(alvo.populacao));
+  const pares = base.filter((x) => _fk(num(x.populacao)) === gk);
+  const estabMilPares = _median(pares.map((x) => mil(num(x.total), num(x.populacao))));
+  const susMilPares = _median(pares.map((x) => mil(num(x.sus_amb), num(x.populacao))));
+  const cn = (await query<Record<string, unknown>>(`SELECT total,sus_amb,hospitalar,cirurgico FROM cnes_sc WHERE cod_ibge=$1`, [cod]))[0];
+  const sd = (await query<Record<string, unknown>>(`SELECT ano,saude_pct FROM siops_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  const pop = num(alvo.populacao);
+  return {
+    pop, grupo: _faixa(pop),
+    saudePct: sd ? num(sd.saude_pct) : null, saudeAno: sd ? num(sd.ano) : null,
+    estab: num(cn?.total), sus: num(cn?.sus_amb), hospitalar: num(cn?.hospitalar), cirurgico: num(cn?.cirurgico), temHospital: num(cn?.hospitalar) > 0,
+    estabMil: mil(num(cn?.total), pop), susMil: mil(num(cn?.sus_amb), pop), estabMilPares, susMilPares,
+  };
+}
+
 export type RgfResumo = { ano: number; pessoalPct: number; rclAjustada: number; dclPct: number | null } | null;
 export async function getRgfResumoSC(cod: string): Promise<RgfResumo> {
   const r = (await query<Record<string, unknown>>(`SELECT ano, pessoal_pct, rcl_ajustada, dcl_pct FROM rgf_sc WHERE cod_ibge=$1 AND pessoal_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
