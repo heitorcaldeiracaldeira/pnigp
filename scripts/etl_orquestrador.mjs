@@ -117,9 +117,10 @@ async function main() {
       log(`✔ ${f.id}: ${status}`);
     }
   }));
-  // 3) validação final (auditoria one-shot)
-  log("validando integridade…");
-  await new Promise((res) => { const c = spawn(process.execPath, ["scripts/auditoria_dados_sc.mjs"], { cwd: ROOT, stdio: "ignore" }); c.on("exit", () => res()); c.on("error", () => res()); });
+  // 3) validação final + 4) regenerar documentação (mantém docs/SISTEMA.md sempre fiel)
+  const rodarScript = (s) => new Promise((res) => { const c = spawn(process.execPath, [s], { cwd: ROOT, stdio: "ignore" }); c.on("exit", () => res()); c.on("error", () => res()); });
+  log("validando integridade…"); await rodarScript("scripts/auditoria_dados_sc.mjs");
+  log("regenerando documentação…"); await rodarScript("scripts/gerar_documentacao.mjs");
   log("ciclo concluído.");
   await db.end();
 }
