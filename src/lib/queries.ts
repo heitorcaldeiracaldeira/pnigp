@@ -1055,6 +1055,30 @@ export async function getCruzamentosSC(cod: string): Promise<Cruzamentos> {
   return { grupo, compras, fiscal, social };
 }
 
+// Diagnóstico do ESTADO (tipo E) — âncoras legais absolutas (sem pares; limites estaduais próprios)
+export async function getDiagnosticoEstadoSC(cod: string): Promise<DiagGestor> {
+  const e = (await query<Record<string, unknown>>(`SELECT tipo, populacao FROM entes_sc WHERE cod_ibge=$1`, [cod]))[0];
+  if (!e || e.tipo !== "E") return null;
+  const f = (await query<Record<string, unknown>>(`SELECT ano,receita,tributaria,transferencias,despesa,resultado,pessoal,investimento FROM financas_sc WHERE cod_ibge=$1 AND suspeito IS NOT TRUE ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  if (!f) return null;
+  const rg = (await query<Record<string, unknown>>(`SELECT ano,pessoal_pct,dcl_pct,limite_pct FROM rgf_sc WHERE cod_ibge=$1 AND pessoal_pct IS NOT NULL ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  const rc = (await query<Record<string, unknown>>(`SELECT ano,educacao_pct,fundeb_pct FROM rreo_const_sc WHERE cod_ibge=$1 AND educacao_pct IS NOT NULL ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  const meta = (await query<Record<string, unknown>>(`SELECT ano,meta_primario,resultado_primario FROM metas_fiscais_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  const rec = num(f.receita), P: DiagPonto[] = [];
+  P.push({ titulo: "Autonomia tributária", valor: _pc(num(f.tributaria) / rec * 100 / 100), ref: "receita própria / receita total", alerta: false, sugestao: "" });
+  if (rg?.pessoal_pct != null) {
+    const pp = num(rg.pessoal_pct), lim = num(rg.limite_pct) || 49, prud = lim * 0.95, alerta = lim * 0.90;
+    P.push({ titulo: `Pessoal Executivo / RCL — oficial RGF ${num(rg.ano)}`, valor: _pc(pp / 100), ref: `LRF estadual: alerta ${alerta.toFixed(1)}% · prud. ${prud.toFixed(1)}% · limite ${lim}%`, alerta: pp > alerta, sugestao: pp > lim ? "Acima do limite da LRF (Executivo estadual) — recondução obrigatória e vedações." : pp > prud ? "Acima do limite prudencial — vedações da LRF aplicáveis." : "Na faixa de alerta — monitorar." });
+  }
+  P.push({ titulo: "Taxa de investimento", valor: _pc(num(f.despesa) > 0 ? num(f.investimento) / num(f.despesa) : 0), ref: "investimento / despesa", alerta: false, sugestao: "" });
+  P.push({ titulo: "Resultado orçamentário", valor: _pc(rec > 0 ? num(f.resultado) / rec : 0), ref: _br(num(f.resultado)), alerta: num(f.resultado) < 0, sugestao: "Déficit no exercício — ajustar despesa ou reforçar receita." });
+  if (rg?.dcl_pct != null) { const d = num(rg.dcl_pct); P.push({ titulo: `Dívida Consolidada Líquida / RCL — RGF ${num(rg.ano)}`, valor: _pc(d / 100), ref: "limite 200% (estados, Res. SF 40/2001)", alerta: d > 200, sugestao: "DCL acima do limite legal — recondução obrigatória." }); }
+  if (rc?.educacao_pct != null) { const v = num(rc.educacao_pct); P.push({ titulo: "Aplicação em Educação (MDE · CF art. 212)", valor: _pc(v / 100), ref: `mínimo 25% · ${num(rc.ano)}`, alerta: v < 25, sugestao: "Abaixo do mínimo constitucional de educação — risco de contas." }); }
+  if (rc?.fundeb_pct != null) { const v = num(rc.fundeb_pct); P.push({ titulo: "FUNDEB em remuneração (mín. 70%)", valor: _pc(v / 100), ref: `mínimo 70% · ${num(rc.ano)}`, alerta: v < 70, sugestao: "Abaixo de 70% do FUNDEB em remuneração." }); }
+  if (meta?.meta_primario != null && meta?.resultado_primario != null) { const ok = num(meta.resultado_primario) >= num(meta.meta_primario); P.push({ titulo: `Meta de resultado primário — LDO ${num(meta.ano)}`, valor: ok ? "cumprida" : "não cumprida", ref: `meta ${_br(num(meta.meta_primario))} × real ${_br(num(meta.resultado_primario))}`, alerta: !ok, sugestao: "Meta da LDO descumprida — revisar programação financeira." }); }
+  return { ano: num(f.ano), grupo: "Estado (limites legais estaduais)", nAlertas: P.filter((p) => p.alerta).length, pontos: P };
+}
+
 export type RgfResumo = { ano: number; pessoalPct: number; rclAjustada: number; dclPct: number | null } | null;
 export async function getRgfResumoSC(cod: string): Promise<RgfResumo> {
   const r = (await query<Record<string, unknown>>(`SELECT ano, pessoal_pct, rcl_ajustada, dcl_pct FROM rgf_sc WHERE cod_ibge=$1 AND pessoal_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
