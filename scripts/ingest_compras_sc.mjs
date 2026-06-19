@@ -35,11 +35,18 @@ async function fetchPagina(modId, esfera, codIbge, pagina) {
   const url = `${PNCP}?dataInicial=${DI}&dataFinal=${DF}&codigoModalidadeContratacao=${modId}&${geo}&pagina=${pagina}&tamanhoPagina=50`;
   for (let t = 0; t < 7; t++) {
     try {
-      const r = await fetch(url, { signal: AbortSignal.timeout(40000) });
+      // teto rígido (race) além do AbortSignal — evita socket meio-aberto pendurar a coleta
+      const r = await Promise.race([
+        fetch(url, { signal: AbortSignal.timeout(40000) }),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("hard-timeout-fetch")), 55000)),
+      ]);
       if (r.status === 204) return { data: [], totalPaginas: 0 };
       if (r.status === 429) { await sleep(8000 + t * 4000); continue; } // rate limit: espera e tenta de novo
       if (!r.ok) throw new Error("HTTP " + r.status);
-      return await r.json();
+      return await Promise.race([
+        r.json(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("hard-timeout-json")), 30000)),
+      ]);
     } catch (e) {
       await sleep(1000 * (t + 1));
     }
@@ -79,10 +86,25 @@ async function coletarEnte(ente) {
   return contratos;
 }
 
-function agregar(contratos) {
+// Só modalidades COMPETITIVAS comparáveis entram no cálculo de economia: nelas estimado×homologado
+// têm o mesmo sentido. Em Credenciamento/Dispensa/Inexigibilidade o "estimado" é referência parcial e
+// o "homologado" é teto do registro → estimado<<homologado é ESTRUTURAL, não sobrepreço.
+const MODALIDADES_COMPARAVEIS = new Set(["Pregão Eletrônico", "Concorrência Eletrônica", "Pregão Presencial", "Concorrência"]);
+function dedupContratos(cs) {
+  const seen = new Set(), out = [];
+  for (const c of cs) {
+    const k = c.cnpj && c.ano && c.seq ? `${c.cnpj}-${c.ano}-${c.seq}` : `${c.modalidade}|${c.objeto}|${c.homologado}`;
+    if (!seen.has(k)) { seen.add(k); out.push(c); }
+  }
+  return out;
+}
+
+function agregar(contratosRaw) {
+  const contratos = dedupContratos(contratosRaw); // remove duplicatas (mesmo processo retornado 2x)
   const n = contratos.length;
   const valor_homologado = r2(contratos.reduce((s, c) => s + c.homologado, 0));
-  const comEstHom = contratos.filter((c) => c.estimado > 0 && c.homologado > 0);
+  // economia: apenas modalidades comparáveis com estimado e homologado válidos
+  const comEstHom = contratos.filter((c) => c.estimado > 0 && c.homologado > 0 && MODALIDADES_COMPARAVEIS.has(c.modalidade));
   const estSoma = r2(comEstHom.reduce((s, c) => s + c.estimado, 0));
   const homSoma = r2(comEstHom.reduce((s, c) => s + c.homologado, 0));
   const economia_pct = estSoma > 0 ? r2(((estSoma - homSoma) / estSoma) * 100) : 0;
@@ -116,7 +138,7 @@ async function pool(items, conc, fn) {
 }
 
 async function main() {
-  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 4, idleTimeoutMillis: 8000, connectionTimeoutMillis: 20000 });
+  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 4, idleTimeoutMillis: 8000, connectionTimeoutMillis: 20000, keepAlive: true, query_timeout: 90000, statement_timeout: 90000 });
   db.on("error", (e) => console.warn("aviso pool:", e.message)); // não derruba o processo em desconexão ociosa
   await db.query(`
     CREATE TABLE IF NOT EXISTS compras_sc (

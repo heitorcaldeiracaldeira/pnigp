@@ -1,0 +1,126 @@
+// ORQUESTRADOR de coleta — detecta novidade por fonte e roda só os ETLs devidos (incremental,
+// idempotente, serial por API). Grava estado em etl_catalogo. node scripts/etl_orquestrador.mjs
+//   MODO=plan (padrão) → só detecta e reporta o que está pendente, sem rodar.
+//   MODO=run           → detecta e executa os ETLs devidos.
+import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import { spawn, execSync } from "child_process"; import pg from "pg";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.join(__dirname, "..");
+const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
+const MODO = process.env.MODO || "plan";
+const HOJE = new Date();
+const ANO_FECHADO = HOJE.getFullYear() - 1;      // último exercício fechado
+const ANO_CORRENTE = HOJE.getFullYear();
+const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
+const log = (m) => process.stdout.write(`[ORQ ${new Date().toISOString().slice(11, 19)}] ${m}\n`);
+
+const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 3, keepAlive: true, query_timeout: 60000, statement_timeout: 60000 });
+db.on("error", () => {});
+const maxAno = async (tab, col = "ano") => { try { return Number((await db.query(`SELECT max(${col}) m FROM ${tab}`)).rows[0]?.m) || 0; } catch { return 0; } };
+const diasDesde = (ts) => (ts ? (Date.now() - new Date(ts).getTime()) / 86400000 : 9999);
+
+// CATÁLOGO — cada fonte: id, label, api (serializa por grupo), script+env, e o detector "devido?"
+const FONTES = [
+  { id: "financas", label: "Finanças (SICONFI RREO an.1/2)", api: "siconfi", script: "scripts/ingest_sc.mjs", env: { ANOS: `${ANO_FECHADO},${ANO_CORRENTE}` },
+    devido: async (st) => (await maxAno("financas_sc")) < ANO_FECHADO || diasDesde(st?.ultima_exec) > 35 },
+  { id: "metas", label: "Metas Fiscais LDO (RREO an.6)", api: "siconfi", script: "scripts/ingest_metas_fiscais_sc.mjs", env: { ANOS: `${ANO_FECHADO},${ANO_CORRENTE}` },
+    devido: async () => (await maxAno("metas_fiscais_sc")) < ANO_FECHADO },
+  { id: "rreo_const", label: "Educação/RCL (RREO an.14/3)", api: "siconfi", script: "scripts/ingest_rreo_constitucional_sc.mjs", env: {},
+    devido: async () => (await maxAno("rreo_const_sc")) < ANO_FECHADO },
+  { id: "rgf", label: "Pessoal/DCL (RGF)", api: "siconfi", script: "scripts/ingest_rgf_sc.mjs", env: {},
+    devido: async () => (await maxAno("rgf_sc")) < ANO_FECHADO },
+  { id: "siops", label: "Saúde ASPS (SIOPS)", api: "siops", script: "scripts/ingest_siops_sc.mjs", env: {},
+    devido: async () => (await maxAno("siops_sc")) < ANO_FECHADO },
+  { id: "compras", label: "Compras (PNCP ano corrente)", api: "pncp", script: "scripts/ingest_compras_sc.mjs", env: { ANO: String(ANO_CORRENTE) },
+    devido: async (st) => diasDesde(st?.ultima_exec) > 25 },
+  { id: "contratos", label: "Contratos (PNCP ano corrente, append)", api: "pncp", script: "scripts/ingest_contratos_sc.mjs", env: { APPEND: "1", ANOS: String(ANO_CORRENTE) },
+    devido: async (st) => diasDesde(st?.ultima_exec) > 25 },
+  { id: "pca", label: "PCA (PNCP)", api: "pncp", script: "scripts/ingest_pca_sc.mjs", env: { ANOS: `${ANO_CORRENTE},${ANO_CORRENTE + 1}` },
+    devido: async (st) => diasDesde(st?.ultima_exec) > 35 },
+  { id: "indicadores", label: "Indicadores (IBGE/CGU)", api: "ibge", script: "scripts/ingest_indicadores_sc.mjs", env: {},
+    devido: async (st) => diasDesde(st?.ultima_exec) > 60 },
+  { id: "transferencias", label: "Transferências (CGU)", api: "cgu", script: "scripts/ingest_transferencias_sc.mjs", env: {},
+    devido: async (st) => diasDesde(st?.ultima_exec) > 30 },
+];
+
+async function ensure() {
+  await db.query(`CREATE TABLE IF NOT EXISTS etl_catalogo (
+    id TEXT PRIMARY KEY, label TEXT, api TEXT, max_ano INTEGER,
+    ultima_exec timestamptz, ultimo_status TEXT, devido BOOLEAN, msg TEXT, atualizado_em timestamptz )`);
+  for (const f of FONTES) await db.query(`INSERT INTO etl_catalogo (id,label,api) VALUES ($1,$2,$3) ON CONFLICT (id) DO UPDATE SET label=EXCLUDED.label, api=EXCLUDED.api`, [f.id, f.label, f.api]);
+}
+const estado = async (id) => (await db.query(`SELECT * FROM etl_catalogo WHERE id=$1`, [id])).rows[0];
+
+// ===== SUPERVISÃO (lógica do PNCP aplicada a TODA fonte) =====
+// Tabela cujo count(*) cresce durante a coleta = sinal de progresso de cada fonte.
+const TAB = { financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", rgf: "rgf_sc", siops: "siops_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc_feitos", indicadores: "indicadores_sc", transferencias: "transferencias_sc" };
+const conta = async (id) => { try { return Number((await db.query(`SELECT count(*) n FROM ${TAB[id] || "financas_sc"}`)).rows[0].n) || 0; } catch { return 0; } };
+const STALL_MS = 20 * 60 * 1000;   // 20 min sem progresso => mata e religa (folga p/ não matar ente pesado)
+const CHECK_MS = 60 * 1000;
+const MAX_TENT = 5;
+const killTree = (pid) => { try { execSync(`taskkill /F /T /PID ${pid}`, { stdio: "ignore" }); } catch {} };
+
+// roda 1 vez sob monitoramento; "ok" | "retry"(estagnado) | "erro(n)"
+function runOnce(f, reinicios) {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, [f.script], { cwd: ROOT, env: { ...process.env, ...f.env }, stdio: "ignore" });
+    let last = -1, lastChange = Date.now(), settled = false, timer = null;
+    const fin = (v) => { if (settled) return; settled = true; if (timer) clearInterval(timer); resolve(v); };
+    timer = setInterval(async () => {
+      let p; try { p = await conta(f.id); } catch { return; }
+      if (p !== last) { last = p; lastChange = Date.now(); }
+      const idle = Math.round((Date.now() - lastChange) / 1000);
+      await db.query(`UPDATE etl_catalogo SET msg=$1, atualizado_em=now() WHERE id=$2`, [`rodando: ${p} regs · ${reinicios} reinício(s)${idle > 120 ? ` · quieto ${idle}s` : ""}`, f.id]).catch(() => {});
+      if (Date.now() - lastChange > STALL_MS) { log(`!! ${f.id} ESTAGNADO (${idle}s) — matando e religando`); killTree(child.pid); fin("retry"); }
+    }, CHECK_MS);
+    child.on("exit", (code) => fin(code === 0 ? "ok" : `erro(${code})`));
+    child.on("error", () => fin("erro(spawn)"));
+  });
+}
+
+// supervisão completa: religa em estagnação OU crash, até MAX_TENT (ETLs são idempotentes/resumíveis)
+async function rodar(f) {
+  let ultimo = "—";
+  for (let tent = 1; tent <= MAX_TENT; tent++) {
+    log(`▶ ${f.id} (tentativa ${tent}/${MAX_TENT})`);
+    ultimo = await runOnce(f, tent - 1);
+    await db.query(`UPDATE etl_catalogo SET ultima_exec=now(), ultimo_status=$1, msg=$2, atualizado_em=now() WHERE id=$3`, [ultimo, `tentativa ${tent} · ${new Date().toISOString().slice(0, 16)}`, f.id]).catch(() => {});
+    if (ultimo === "ok") return "ok";
+    log(`  ${f.id}: ${ultimo} — religando em 5s`);
+    await sleep(5000);
+  }
+  return ultimo;
+}
+
+async function main() {
+  await ensure();
+  log(`MODO=${MODO} | ano fechado=${ANO_FECHADO} | corrente=${ANO_CORRENTE}`);
+  // 1) detectar
+  const plano = [];
+  for (const f of FONTES) {
+    const st = await estado(f.id);
+    let devido = false; try { devido = await f.devido(st); } catch {}
+    const ma = await maxAno({ financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", rgf: "rgf_sc", siops: "siops_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc" }[f.id] || "financas_sc", f.id === "contratos" ? "ano_compra" : "ano");
+    await db.query(`UPDATE etl_catalogo SET max_ano=$1, devido=$2, atualizado_em=now() WHERE id=$3`, [ma, devido, f.id]);
+    plano.push({ f, devido, ma });
+    log(`  ${devido ? "PENDENTE" : "ok      "} ${f.id.padEnd(14)} max_ano=${ma}`);
+  }
+  const devidos = plano.filter((p) => p.devido);
+  log(`→ ${devidos.length} fonte(s) pendente(s): ${devidos.map((p) => p.f.id).join(", ") || "(nenhuma)"}`);
+  if (MODO !== "run") { log("MODO=plan — nada executado. Use MODO=run para coletar."); await db.end(); return; }
+
+  // 2) executar devidos, SERIAL por API (grupos diferentes em paralelo)
+  const grupos = {};
+  for (const p of devidos) (grupos[p.f.api] ??= []).push(p.f);
+  await Promise.all(Object.values(grupos).map(async (lista) => {
+    for (const f of lista) {
+      const status = await rodar(f); // rodar() já é supervisionado e grava o estado no catálogo
+      log(`✔ ${f.id}: ${status}`);
+    }
+  }));
+  // 3) validação final (auditoria one-shot)
+  log("validando integridade…");
+  await new Promise((res) => { const c = spawn(process.execPath, ["scripts/auditoria_dados_sc.mjs"], { cwd: ROOT, stdio: "ignore" }); c.on("exit", () => res()); c.on("error", () => res()); });
+  log("ciclo concluído.");
+  await db.end();
+}
+main().catch((e) => { log("ERRO FATAL: " + e); process.exit(1); });

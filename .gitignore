@@ -46,3 +46,6 @@ next-env.d.ts
 /screenshots
 /sw.json
 /cat.json
+
+# backups de dados (sensível — nunca commitar)
+backups/

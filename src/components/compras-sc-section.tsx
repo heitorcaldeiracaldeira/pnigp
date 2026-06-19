@@ -29,7 +29,7 @@ function riscoContrato(c: Contrato): { nivel: Nivel; motivos: string[] } {
   const direta = /dispensa|inexig/i.test(c.modalidade);
   const competitiva = /preg|concorr|leil/i.test(c.modalidade);
   if (direta) { motivos.push("Contratação direta (sem licitação)"); nivel = c.homologado >= 1_000_000 ? "alto" : "medio"; }
-  if (competitiva && c.economia_pct != null && c.economia_pct < 1) { motivos.push("Economia próxima de zero em modalidade competitiva — possível sobrepreço"); if (nivel === "ok") nivel = "medio"; }
+  if (competitiva && c.economia_pct != null && c.economia_pct < 1) { motivos.push("Variação agregada ~zero em modalidade competitiva — verificar preço UNITÁRIO dos itens (sobrepreço só se confirma no unitário)"); if (nivel === "ok") nivel = "medio"; }
   if (c.economia_pct != null && c.economia_pct > 40) { motivos.push("Economia muito alta (>40%) — possível superestimativa do valor de referência"); if (nivel === "ok") nivel = "baixo"; }
   return { nivel, motivos };
 }
@@ -105,7 +105,7 @@ export function ComprasSCSection({ codigo, tipo }: { codigo: string; tipo: "M" |
                 <div className="font-display text-xl font-bold tabular-nums text-slate-900">{latest.n_contratos.toLocaleString("pt-BR")}</div>
               </div>
               <div className="rounded-xl border border-slate-200 p-3">
-                <div className="text-xs text-slate-500">Economia (estimado × homologado)</div>
+                <div className="text-xs text-slate-500">Variação estim. × homol. (total)</div>
                 <div className="font-display text-xl font-bold tabular-nums text-emerald-600">{latest.economia_pct.toFixed(1)}%</div>
               </div>
               <div className={`rounded-xl border p-3 ${latest.dispensa_pct >= 40 ? "border-rose-200 bg-rose-50" : latest.dispensa_pct >= 25 ? "border-amber-200 bg-amber-50" : "border-slate-200"}`}>

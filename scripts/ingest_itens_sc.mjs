@@ -53,7 +53,7 @@ async function fetchItens(cnpj, ano, seq) {
 async function pool(items, conc, fn) { let i = 0, done = 0; await Promise.all(Array.from({ length: conc }, async () => { while (i < items.length) { await fn(items[i++]); if (++done % 20 === 0) console.log(`  …${done}/${items.length}`); } })); }
 
 async function main() {
-  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 4 });
+  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 4, keepAlive: true, query_timeout: 90000, statement_timeout: 90000 });
   db.on("error", () => {});
   await db.query(`
     CREATE TABLE IF NOT EXISTS itens_sc (

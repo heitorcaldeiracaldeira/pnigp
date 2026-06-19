@@ -15,6 +15,8 @@ const r2 = (n) => Math.round((n || 0) * 100) / 100;
 const ANOS = process.env.ANOS ? process.env.ANOS.split(",").map(Number) : [2021, 2022, 2023, 2024, 2025];
 const FUNCS = ["Legislativa","Judiciária","Administração","Segurança Pública","Assistência Social","Previdência Social","Saúde","Educação","Cultura","Urbanismo","Habitação","Saneamento","Gestão Ambiental","Agricultura","Comércio e Serviços","Transporte","Desporto e Lazer","Encargos Especiais"];
 const SIC = "https://apidatalake.tesouro.gov.br/ords/siconfi/tt/rreo";
+// 28 funções de governo (Portaria 42/1999) — linhas no Anexo 02 que NÃO batem aqui são subfunções
+const FUNC_SET = new Set(["Legislativa", "Judiciária", "Essencial à Justiça", "Administração", "Defesa Nacional", "Segurança Pública", "Relações Exteriores", "Assistência Social", "Previdência Social", "Saúde", "Trabalho", "Educação", "Cultura", "Direitos da Cidadania", "Urbanismo", "Habitação", "Saneamento", "Gestão Ambiental", "Ciência e Tecnologia", "Agricultura", "Organização Agrária", "Indústria", "Comércio e Serviços", "Comunicações", "Energia", "Transporte", "Desporto e Lazer", "Encargos Especiais", "Reserva de Contingência"].map((s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim()));
 
 async function getJson(ano, esfera, idEnte, anexo) {
   const url = `${SIC}?an_exercicio=${ano}&nr_periodo=6&co_tipo_demonstrativo=RREO&no_anexo=${encodeURIComponent(anexo)}&co_esfera=${esfera}&id_ente=${idEnte}`;
@@ -45,8 +47,25 @@ function extrair(a01, a02) {
   const receita = recA("RECEITAS (EXCETO INTRA-ORÇAMENTÁRIAS) (I)");
   const trib = recA("Impostos, Taxas e Contribuições de Melhoria");
   const transf = recA("Transferências Correntes") + recA("Transferências de Capital");
-  const despesa = r2(FUNCS.reduce((s, f) => s + (emp[norm(f)] || 0), 0));
-  const funcoes = FUNCS.map((f) => ({ nome: f, dotacao: r2(dot[norm(f)] || 0), empenhado: fb(f) })).filter((f) => f.dotacao > 0).sort((a, b) => b.dotacao - a.dotacao);
+  // despesa OFICIAL: total empenhado "EXCETO INTRA-ORÇAMENTÁRIAS" (consistente com a receita, que também exclui intra).
+  // Fallback p/ soma das funções só se a linha-total não vier. Antes somávamos funções (incluía intra → inflava ~5%).
+  const despesaOficial = emp[norm("DESPESAS (EXCETO INTRA-ORÇAMENTÁRIAS) (I)")] || 0;
+  const despesa = r2(despesaOficial > 0 ? despesaOficial : FUNCS.reduce((s, f) => s + (emp[norm(f)] || 0), 0));
+  // árvore função → subfunção (ordem do Anexo 02; subfunção pertence à função mais recente)
+  const ordem = [], vistos = new Set();
+  for (const x of a02) {
+    if (!/DESPESAS EMPENHADAS AT. O BIMESTRE \(b\)/i.test(x.coluna)) continue;
+    const c = (x.conta || "").trim(), k = norm(c);
+    if (!c || /^despesas \(|^total \(/i.test(c) || vistos.has(k)) continue;
+    vistos.add(k); ordem.push({ nome: c, key: k, emp: r2(+x.valor || 0) });
+  }
+  const arvore = []; let curFunc = null;
+  for (const o of ordem) {
+    const node = { nome: o.nome, dotacao: r2(dot[o.key] || 0), empenhado: o.emp };
+    if (FUNC_SET.has(o.key)) { node.filhos = []; arvore.push(node); curFunc = node; }
+    else if (curFunc) curFunc.filhos.push(node);
+  }
+  const funcoes = arvore.filter((f) => f.dotacao > 0 || f.empenhado > 0).sort((a, b) => b.dotacao - a.dotacao);
   return {
     receita: r2(receita), receita_prevista: r2(recPrev("RECEITAS (EXCETO INTRA-ORÇAMENTÁRIAS) (I)")),
     tributaria: r2(trib), transferencias: r2(transf), outras: r2(receita - trib - transf),

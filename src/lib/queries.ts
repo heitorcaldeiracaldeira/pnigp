@@ -521,7 +521,7 @@ export const FONTE_SICONFI =
   "SICONFI / Tesouro Nacional (RREO 6º bimestre) — base oficial usada pelo TCE/SC";
 
 export type EnteSC = { cod_ibge: string; nome: string; tipo: "M" | "E"; populacao: number };
-export type FuncaoSC = { nome: string; dotacao: number; empenhado: number };
+export type FuncaoSC = { nome: string; dotacao: number; empenhado: number; filhos?: FuncaoSC[] };
 export type FinancaSCAno = {
   ano: number;
   receita: number; receita_prevista: number; tributaria: number; transferencias: number; outras: number;
@@ -542,7 +542,7 @@ export async function getFinancasSC(
   const er = await query<Record<string, unknown>>(`SELECT cod_ibge, nome, tipo, populacao FROM entes_sc WHERE cod_ibge = $1`, [cod]);
   if (!er.length) return null;
   const ente: EnteSC = { cod_ibge: String(er[0].cod_ibge), nome: String(er[0].nome), tipo: er[0].tipo as "M" | "E", populacao: num(er[0].populacao) };
-  const rows = await query<Record<string, unknown>>(`SELECT * FROM financas_sc WHERE cod_ibge = $1 ORDER BY ano`, [cod]);
+  const rows = await query<Record<string, unknown>>(`SELECT * FROM financas_sc WHERE cod_ibge = $1 AND suspeito IS NOT TRUE ORDER BY ano`, [cod]);
   const serie: FinancaSCAno[] = rows.map((r) => ({
     ano: num(r.ano), receita: num(r.receita), receita_prevista: num(r.receita_prevista), tributaria: num(r.tributaria),
     transferencias: num(r.transferencias), outras: num(r.outras), despesa: num(r.despesa), resultado: num(r.resultado),
@@ -754,6 +754,7 @@ export async function getRankingFiscalSC(): Promise<RankFiscalSC[]> {
     `SELECT DISTINCT ON (f.cod_ibge) f.cod_ibge, e.nome, e.tipo,
             f.receita, f.tributaria, f.despesa, f.resultado, f.pessoal, f.investimento
        FROM financas_sc f JOIN entes_sc e ON e.cod_ibge = f.cod_ibge
+      WHERE f.suspeito IS NOT TRUE
       ORDER BY f.cod_ibge, f.ano DESC`,
   ).catch(() => []);
   if (!rows.length) return [];
@@ -863,4 +864,69 @@ export async function getItensPersistidosSC(cnpj: string, ano: number, seq: numb
     beneficioLC: r.beneficio_lc ? String(r.beneficio_lc) : null,
     economiaPct: r.economia_pct == null ? null : num(r.economia_pct),
   }));
+}
+
+// ===== Diagnóstico do Gestor — pontos de análise + sugestões ancorados em LRF/CF/TCE =====
+export type DiagPonto = { titulo: string; valor: string; ref: string; alerta: boolean; sugestao: string };
+export type DiagGestor = { ano: number; grupo: string; nAlertas: number; pontos: DiagPonto[] } | null;
+
+const _faixa = (p: number) => (!p ? "sem população" : p >= 100000 ? "acima de 100 mil hab" : p >= 50000 ? "50–100 mil hab" : p >= 20000 ? "20–50 mil hab" : p >= 10000 ? "10–20 mil hab" : "até 10 mil hab");
+const _fk = (p: number) => (!p ? "x" : p >= 100000 ? "a" : p >= 50000 ? "b" : p >= 20000 ? "c" : p >= 10000 ? "d" : "e");
+const _median = (a: number[]) => { const s = a.filter((x) => isFinite(x)).sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
+const _pc = (n: number) => (n * 100).toFixed(1) + "%";
+const _br = (n: number) => "R$ " + Math.round(n).toLocaleString("pt-BR");
+
+export async function getDiagnosticoGestorSC(cod: string): Promise<DiagGestor> {
+  const fin = await query<Record<string, unknown>>(
+    `SELECT DISTINCT ON (f.cod_ibge) f.cod_ibge, f.ano, e.populacao,
+       f.receita,f.tributaria,f.transferencias,f.despesa,f.resultado,f.pessoal,f.custeio,f.investimento
+     FROM financas_sc f JOIN entes_sc e ON e.cod_ibge=f.cod_ibge
+     WHERE f.suspeito IS NOT TRUE AND f.receita>0 AND f.ano<=2025 AND e.tipo='M'
+     ORDER BY f.cod_ibge, f.ano DESC`).catch(() => []);
+  const alvo = fin.find((x) => String(x.cod_ibge) === cod);
+  if (!alvo) return null; // só municípios (Estado tem limites próprios — roadmap)
+
+  const ratios = (x: Record<string, unknown>) => ({
+    auto: num(x.tributaria) / num(x.receita),
+    dep: num(x.transferencias) / num(x.receita),
+    inv: num(x.despesa) > 0 ? num(x.investimento) / num(x.despesa) : 0,
+    eq: num(x.resultado) / num(x.receita),
+    rig: num(x.despesa) > 0 ? (num(x.pessoal) + num(x.custeio)) / num(x.despesa) : 0,
+  });
+  const gk = _fk(num(alvo.populacao));
+  const pares = fin.filter((x) => _fk(num(x.populacao)) === gk).map(ratios);
+  const med = { auto: _median(pares.map((x) => x.auto)), dep: _median(pares.map((x) => x.dep)), inv: _median(pares.map((x) => x.inv)), rig: _median(pares.map((x) => x.rig)) };
+  const r = ratios(alvo);
+  const ano = num(alvo.ano);
+
+  const rg = (await query<Record<string, unknown>>(`SELECT ano,pessoal_pct,dcl_pct FROM rgf_sc WHERE cod_ibge=$1 AND pessoal_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY (ano=$2) DESC, ano DESC LIMIT 1`, [cod, ano]).catch(() => []))[0];
+  const rc = (await query<Record<string, unknown>>(`SELECT ano,educacao_pct,educacao_min,fundeb_pct FROM rreo_const_sc WHERE cod_ibge=$1 AND educacao_pct IS NOT NULL ORDER BY (ano=$2) DESC, ano DESC LIMIT 1`, [cod, ano]).catch(() => []))[0];
+  const sd = (await query<Record<string, unknown>>(`SELECT ano,saude_pct FROM siops_sc WHERE cod_ibge=$1 AND saude_pct IS NOT NULL ORDER BY (ano=$2) DESC, ano DESC LIMIT 1`, [cod, ano]).catch(() => []))[0];
+  const disp = (await query<Record<string, unknown>>(`SELECT dispensa_pct FROM compras_sc WHERE cod_ibge=$1 AND ano<=2025 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  const meta = (await query<Record<string, unknown>>(`SELECT ano,meta_primario,resultado_primario FROM metas_fiscais_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+
+  const low = (v: number, m: number) => m > 0 && v < m * 0.85;
+  const high = (v: number, m: number) => m > 0 && v > m * 1.15;
+  const P: DiagPonto[] = [];
+  P.push({ titulo: "Autonomia tributária", valor: _pc(r.auto), ref: `pares ${_pc(med.auto)}`, alerta: low(r.auto, med.auto), sugestao: "Arrecadação própria abaixo dos pares — recuperar dívida ativa e atualizar a planta de valores (IPTU/ISS); reduz dependência de repasses." });
+  P.push({ titulo: "Dependência de transferências", valor: _pc(r.dep), ref: `pares ${_pc(med.dep)}`, alerta: high(r.dep, med.dep), sugestao: "Dependência acima dos pares — diversificar receita própria; vulnerável a cortes de repasse." });
+  if (rg?.pessoal_pct != null) { const pp = num(rg.pessoal_pct); P.push({ titulo: `Pessoal Executivo / RCL — oficial RGF ${num(rg.ano)}`, valor: _pc(pp / 100), ref: "LRF: alerta 48,6% · prudencial 51,3% · limite 54%", alerta: pp > 48.6, sugestao: pp > 54 ? "Acima do limite da LRF (54%) — recondução obrigatória (art. 23) e vedação a reajustes/contratações (art. 22)." : pp > 51.3 ? "Acima do limite prudencial (51,3%) — vedações da LRF já aplicáveis; conter pessoal." : "Na faixa de alerta da LRF (48,6%) — o TCE-SC notifica nessa faixa; monitorar." }); }
+  P.push({ titulo: "Taxa de investimento", valor: _pc(r.inv), ref: `pares ${_pc(med.inv)}`, alerta: low(r.inv, med.inv), sugestao: "Investimento abaixo dos pares — revisar execução de obras e restos a pagar; baixo investimento reduz a entrega à população." });
+  P.push({ titulo: "Rigidez da despesa (pessoal+custeio)", valor: _pc(r.rig), ref: `pares ${_pc(med.rig)}`, alerta: high(r.rig, med.rig), sugestao: "Despesa muito rígida — pouca margem para investir; buscar eficiência no custeio." });
+  P.push({ titulo: "Resultado orçamentário", valor: _pc(r.eq), ref: _br(num(alvo.resultado)), alerta: r.eq < 0, sugestao: "Déficit no exercício — ajustar despesa corrente ou reforçar receita; déficits recorrentes pressionam a dívida." });
+  if (rg?.dcl_pct != null) { const d = num(rg.dcl_pct); P.push({ titulo: `Dívida Consolidada Líquida / RCL — oficial RGF ${num(rg.ano)}`, valor: _pc(d / 100), ref: "limite 120% (Res. SF 40/2001)", alerta: d > 120, sugestao: "DCL acima do limite legal — recondução obrigatória e restrição a novas operações de crédito." }); }
+  if (disp?.dispensa_pct != null) { const dp = num(disp.dispensa_pct) / 100; P.push({ titulo: "Compras sem licitação", valor: _pc(dp), ref: "valor por dispensa/inexigibilidade", alerta: dp > 0.30, sugestao: "Fatia alta sem licitação — ampliar pregão/concorrência aumenta competição e reduz preço." }); }
+  if (meta?.meta_primario != null && meta?.resultado_primario != null) { const ok = num(meta.resultado_primario) >= num(meta.meta_primario); P.push({ titulo: `Meta de resultado primário — LDO ${num(meta.ano)}`, valor: ok ? "cumprida" : "não cumprida", ref: `meta ${_br(num(meta.meta_primario))} × real ${_br(num(meta.resultado_primario))}`, alerta: !ok, sugestao: "Meta da LDO descumprida — revisar programação financeira; impacto na prestação de contas ao TCE." }); }
+  if (rc?.educacao_pct != null) { const mn = num(rc.educacao_min) || 25; const v = num(rc.educacao_pct); P.push({ titulo: "Aplicação em Educação (MDE · CF art. 212)", valor: _pc(v / 100), ref: `mínimo ${mn}% · ${num(rc.ano)}`, alerta: v < mn, sugestao: "Abaixo do mínimo constitucional de educação — risco de rejeição de contas pelo TCE; reforçar despesas de MDE." }); }
+  if (rc?.fundeb_pct != null) { const v = num(rc.fundeb_pct); P.push({ titulo: "FUNDEB em remuneração (mín. 70%)", valor: _pc(v / 100), ref: `mínimo 70% · ${num(rc.ano)}`, alerta: v < 70, sugestao: "Abaixo de 70% do FUNDEB em remuneração de profissionais — descumprimento legal a corrigir." }); }
+  if (sd?.saude_pct != null) { const v = num(sd.saude_pct); P.push({ titulo: "Aplicação em Saúde (ASPS · LC 141)", valor: _pc(v / 100), ref: `mínimo 15% · ${num(sd.ano)} (SIOPS)`, alerta: v < 15, sugestao: "Abaixo do mínimo constitucional de saúde (15%) — risco de rejeição de contas pelo TCE; reforçar despesas com ASPS." }); }
+
+  return { ano, grupo: _faixa(num(alvo.populacao)), nAlertas: P.filter((p) => p.alerta).length, pontos: P };
+}
+
+export type RgfResumo = { ano: number; pessoalPct: number; rclAjustada: number; dclPct: number | null } | null;
+export async function getRgfResumoSC(cod: string): Promise<RgfResumo> {
+  const r = (await query<Record<string, unknown>>(`SELECT ano, pessoal_pct, rcl_ajustada, dcl_pct FROM rgf_sc WHERE cod_ibge=$1 AND pessoal_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  if (!r) return null;
+  return { ano: num(r.ano), pessoalPct: num(r.pessoal_pct), rclAjustada: num(r.rcl_ajustada), dclPct: r.dcl_pct == null ? null : num(r.dcl_pct) };
 }
