@@ -1,4 +1,4 @@
-import { Database, Landmark, ShoppingCart, Users } from "lucide-react";
+import { AlertTriangle, Database, Landmark, ShoppingCart, Users } from "lucide-react";
 import type { Cruzamentos } from "@/lib/queries";
 
 const n1 = (x: number) => x.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
@@ -48,6 +48,31 @@ export function CruzamentosSC({ data }: { data: NonNullable<Cruzamentos> }) {
             <Card icon={<ShoppingCart className="h-3.5 w-3.5" />} titulo="Economia unitária (itens)" valor={c.economiaUnit == null ? "—" : `${n1(c.economiaUnit)}%`} nota={c.economiaUnit == null ? "itens ainda não coletados p/ este ente" : `base: ${c.itensCobertura} itens (preço unitário)`} />
           </div>
           <p className="mt-1.5 text-xs text-slate-500">Leitura: muita dispensa + pouca competição = risco de preço e governança. Economia real só no preço unitário.</p>
+          {(() => {
+            const flags: { nivel: "alto" | "medio"; txt: string }[] = [];
+            if (c.dispensaPct > c.dispensaPares && c.dispensaPct >= 25) flags.push({ nivel: "alto", txt: `Compras sem licitação em ${n1(c.dispensaPct)}% — acima dos pares (${n1(c.dispensaPares)}%). Risco de preço e direcionamento.` });
+            else if (c.dispensaPct > c.dispensaPares * 1.3) flags.push({ nivel: "medio", txt: `Dispensa acima da mediana dos pares (${n1(c.dispensaPct)}% vs ${n1(c.dispensaPares)}%).` });
+            if (c.competPct < 40) flags.push({ nivel: "medio", txt: `Só ${n1(c.competPct)}% do valor em modalidade competitiva (pregão/concorrência) — pouca disputa.` });
+            if (c.economiaUnit != null && c.economiaUnit < 0) flags.push({ nivel: "alto", txt: `Indício de sobrepreço unitário (${n1(c.economiaUnit)}%) em ${c.itensCobertura} itens com preço unitário.` });
+            return (
+              <div className="mt-3 rounded-xl border border-slate-200 bg-slate-900 p-4">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-white"><AlertTriangle className="h-3.5 w-3.5 text-amber-400" /> Sinais de risco em compras (red flags)</div>
+                {flags.length === 0 ? (
+                  <p className="mt-2 text-sm text-emerald-300">Sem red flags evidentes nas compras deste ente.</p>
+                ) : (
+                  <ul className="mt-2 space-y-1.5">
+                    {flags.map((f, i) => (
+                      <li key={i} className={`rounded-lg border-l-4 bg-white/5 px-3 py-1.5 text-sm text-slate-100 ${f.nivel === "alto" ? "border-l-rose-500" : "border-l-amber-400"}`}>
+                        <span className={`mr-1.5 rounded px-1.5 py-0.5 text-[10px] font-bold ${f.nivel === "alto" ? "bg-rose-500/20 text-rose-300" : "bg-amber-400/20 text-amber-200"}`}>{f.nivel === "alto" ? "ALTO" : "MÉDIO"}</span>
+                        {f.txt}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="mt-2 text-[11px] text-slate-400">Inspirado nos red flags de controle (TCU/TCE). Sinais ≠ irregularidade — apontam o que auditar.</p>
+              </div>
+            );
+          })()}
         </section>
       )}
 

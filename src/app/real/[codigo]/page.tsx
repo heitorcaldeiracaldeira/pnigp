@@ -13,6 +13,7 @@ import { SaudeSC } from "@/components/saude-sc";
 import { EducacaoSC } from "@/components/educacao-sc";
 import { CruzamentosSC } from "@/components/cruzamentos-sc";
 import { PanoramaSC } from "@/components/panorama-sc";
+import { ResumoExecutivo } from "@/components/resumo-executivo";
 import { ArvoreFinanceira } from "@/components/arvore-financeira";
 import type { NoFin } from "@/lib/orcamento";
 import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
@@ -562,6 +563,20 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
             <strong className="text-slate-700">Fonte:</strong> {FONTE_SICONFI}. Números reais publicados.
           </p>
         </div>
+
+        {/* Resumo executivo — parecer + prioridade nº1 (dado real do Diagnóstico) */}
+        {diag && (
+          <ResumoExecutivo
+            nome={ente.nome}
+            tom={diag.nAlertas === 0 ? "ok" : diag.nAlertas <= 2 ? "ressalva" : "critico"}
+            nAlertas={diag.nAlertas}
+            prioridade={(() => { const p = diag.pontos.find((x) => x.alerta); return p ? { titulo: p.titulo, sugestao: p.sugestao } : null; })()}
+            posicao={minhaPos?.posicao ?? null}
+            total={totalRank || null}
+            scoreFiscal={minhaPos?.score ?? null}
+            ano={diag.ano}
+          />
+        )}
 
         {/* Seções em abas (mesmo layout do painel) */}
         <PanelTabs tabs={tabs} />
