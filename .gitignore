@@ -49,3 +49,4 @@ next-env.d.ts
 
 # backups de dados (sensível — nunca commitar)
 backups/
+_*.mjs
