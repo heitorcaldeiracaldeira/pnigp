@@ -1,5 +1,5 @@
 import { Activity, Building2, Database, HeartPulse, Stethoscope } from "lucide-react";
-import type { SaudeSC } from "@/lib/queries";
+import type { SaudeSC, PrevineSC } from "@/lib/queries";
 
 const n1 = (x: number) => x.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
 function cmp(v: number, m: number) {
@@ -9,7 +9,7 @@ function cmp(v: number, m: number) {
   return { txt: "≈ na média dos pares", cls: "text-slate-500" };
 }
 
-export function SaudeSC({ data }: { data: NonNullable<SaudeSC> }) {
+export function SaudeSC({ data, previne }: { data: NonNullable<SaudeSC>; previne?: NonNullable<PrevineSC> | null }) {
   const d = data;
   const cEstab = cmp(d.estabMil, d.estabMilPares);
   const cSus = cmp(d.susMil, d.susMilPares);
@@ -73,9 +73,28 @@ export function SaudeSC({ data }: { data: NonNullable<SaudeSC> }) {
         </p>
       </div>
 
+      {previne && previne.indicadores.length > 0 && (
+        <div>
+          <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-800"><Stethoscope className="h-4 w-4 text-indigo-600" /> Atenção Primária — Previne Brasil ({previne.competencia})</h3>
+          <p className="mb-2 text-xs text-slate-500">Indicadores de desempenho da APS (SISAB) — quanto maior, melhor; comparado aos pares de porte.</p>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {previne.indicadores.map((i) => {
+              const c = cmp(i.pct, i.paresPct);
+              return (
+                <div key={i.nome} className="rounded-xl border border-slate-200 bg-white p-3">
+                  <div className="text-xs text-slate-500">{i.nome}</div>
+                  <div className="font-display text-xl font-bold tabular-nums text-slate-900">{n1(i.pct)}%</div>
+                  <div className={`text-[11px] ${c.cls}`}>pares {n1(i.paresPct)}% · {c.txt}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <p className="text-[11px] text-slate-400">
         <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
-        Gasto: SIOPS (ASPS, LC 141). Rede: CNES (inclui pública e privada). Produção: SIH (internações) e SIA (ambulatorial) — DATASUS, por local de atendimento. População: IBGE. Benchmarks por grupo de porte. Ciclo completo: insumo (gasto) → capacidade (rede) → entrega (produção).
+        Gasto: SIOPS (ASPS, LC 141). Previne Brasil: SISAB/Min. Saúde. Rede: CNES (inclui pública e privada). Produção: SIH (internações) e SIA (ambulatorial) — DATASUS, por local de atendimento. População: IBGE. Benchmarks por grupo de porte. Ciclo completo: insumo (gasto) → capacidade (rede) → entrega (produção).
       </p>
     </div>
   );

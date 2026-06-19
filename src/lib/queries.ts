@@ -1081,6 +1081,24 @@ export async function getDiagnosticoEstadoSC(cod: string): Promise<DiagGestor> {
   return { ano: num(f.ano), grupo: "Estado (limites legais estaduais)", nAlertas: P.filter((p) => p.alerta).length, pontos: P };
 }
 
+// Previne Brasil — indicadores de desempenho da APS (última competência), vs pares de porte
+export type PrevineSC = { competencia: string; grupo: string; indicadores: { nome: string; pct: number; paresPct: number }[] } | null;
+export async function getPrevineSC(cod: string): Promise<PrevineSC> {
+  const ent = (await query<Record<string, unknown>>(`SELECT populacao FROM entes_sc WHERE cod_ibge=$1 AND tipo='M'`, [cod]))[0];
+  if (!ent) return null;
+  const ult = (await query<Record<string, unknown>>(`SELECT max(competencia) m FROM previne_sc`).catch(() => []))[0]?.m as string | undefined;
+  if (!ult) return null;
+  const rows = await query<Record<string, unknown>>(`SELECT p.cod_ibge, e.populacao, p.ind_nome, p.pct FROM previne_sc p JOIN entes_sc e ON e.cod_ibge=p.cod_ibge WHERE p.competencia=$1 AND p.pct IS NOT NULL`, [ult]).catch(() => []);
+  const gk = _fk(num(ent.populacao));
+  const nomes = [...new Set(rows.map((r) => String(r.ind_nome)))].sort();
+  const indicadores = nomes.map((nome) => {
+    const alvo = rows.find((r) => String(r.cod_ibge) === cod && String(r.ind_nome) === nome);
+    const pares = rows.filter((r) => String(r.ind_nome) === nome && _fk(num(r.populacao)) === gk).map((r) => num(r.pct));
+    return { nome, pct: alvo ? num(alvo.pct) : 0, paresPct: _median(pares) };
+  });
+  return { competencia: ult, grupo: _faixa(num(ent.populacao)), indicadores };
+}
+
 export type RgfResumo = { ano: number; pessoalPct: number; rclAjustada: number; dclPct: number | null } | null;
 export async function getRgfResumoSC(cod: string): Promise<RgfResumo> {
   const r = (await query<Record<string, unknown>>(`SELECT ano, pessoal_pct, rcl_ajustada, dcl_pct FROM rgf_sc WHERE cod_ibge=$1 AND pessoal_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
