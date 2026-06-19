@@ -981,6 +981,62 @@ export async function getEducacaoSC(cod: string): Promise<EducacaoSC> {
   };
 }
 
+// ===== Cruzamentos: compras (eficiência) · fiscal×economia · proteção social =====
+export type Cruzamentos = {
+  grupo: string;
+  compras: { dispensaPct: number; dispensaPares: number; competPct: number; economiaUnit: number | null; itensCobertura: number } | null;
+  fiscal: { autonomia: number; autonomiaPares: number; dependencia: number; dependenciaPares: number; pib: number | null; pibPares: number } | null;
+  social: { transfRendaMil: number | null; transfPares: number; bpcMil: number | null } | null;
+} | null;
+export async function getCruzamentosSC(cod: string): Promise<Cruzamentos> {
+  const ANO = new Date().getFullYear() - 1;
+  const ente = (await query<Record<string, unknown>>(`SELECT populacao FROM entes_sc WHERE cod_ibge=$1 AND tipo='M'`, [cod]))[0];
+  if (!ente) return null;
+  const gk = _fk(num(ente.populacao)), grupo = _faixa(num(ente.populacao));
+  const pops = new Map((await query<Record<string, unknown>>(`SELECT cod_ibge, populacao FROM entes_sc WHERE tipo='M'`)).map((r) => [String(r.cod_ibge), num(r.populacao)]));
+  const noGrupo = (c: string) => _fk(pops.get(c) || 0) === gk;
+  const compet = (pm: unknown) => { if (!Array.isArray(pm)) return 0; let c = 0, t = 0; for (const m of pm) { t += num(m.valor); if (/preg|concorr/i.test(String(m.modalidade))) c += num(m.valor); } return t > 0 ? (c / t) * 100 : 0; };
+
+  // FISCAL
+  const fin = await query<Record<string, unknown>>(`SELECT DISTINCT ON (cod_ibge) cod_ibge, tributaria, transferencias, receita FROM financas_sc WHERE suspeito IS NOT TRUE AND receita>0 AND ano<=${ANO} ORDER BY cod_ibge, ano DESC`).catch(() => []);
+  const finG = fin.filter((x) => noGrupo(String(x.cod_ibge)));
+  const fa = fin.find((x) => String(x.cod_ibge) === cod);
+  const pibRows = await query<Record<string, unknown>>(`SELECT DISTINCT ON (cod_ibge) cod_ibge, valor FROM indicadores_sc WHERE codigo='pib_per_capita' ORDER BY cod_ibge, ano DESC`).catch(() => []);
+  const pibMap = new Map(pibRows.map((r) => [String(r.cod_ibge), num(r.valor)]));
+  const fiscal = fa ? {
+    autonomia: num(fa.tributaria) / num(fa.receita) * 100,
+    autonomiaPares: _median(finG.map((x) => num(x.tributaria) / num(x.receita) * 100)),
+    dependencia: num(fa.transferencias) / num(fa.receita) * 100,
+    dependenciaPares: _median(finG.map((x) => num(x.transferencias) / num(x.receita) * 100)),
+    pib: pibMap.get(cod) || null,
+    pibPares: _median([...pibMap.entries()].filter(([c]) => noGrupo(c)).map(([, v]) => v).filter((v) => v > 0)),
+  } : null;
+
+  // COMPRAS
+  const comp = await query<Record<string, unknown>>(`SELECT DISTINCT ON (cod_ibge) cod_ibge, dispensa_pct, por_modalidade FROM compras_sc ORDER BY cod_ibge, ano DESC`).catch(() => []);
+  const ca = comp.find((x) => String(x.cod_ibge) === cod);
+  const it = (await query<Record<string, unknown>>(`SELECT avg(economia_pct) m, count(*) n FROM itens_sc WHERE cod_ibge=$1 AND economia_pct IS NOT NULL`, [cod]).catch(() => []))[0];
+  const compras = ca ? {
+    dispensaPct: num(ca.dispensa_pct),
+    dispensaPares: _median(comp.filter((x) => noGrupo(String(x.cod_ibge))).map((x) => num(x.dispensa_pct))),
+    competPct: compet(ca.por_modalidade),
+    economiaUnit: it && num(it.n) > 0 ? num(it.m) : null,
+    itensCobertura: num(it?.n),
+  } : null;
+
+  // SOCIAL
+  const soc = await query<Record<string, unknown>>(`SELECT DISTINCT ON (cod_ibge) cod_ibge, valor FROM indicadores_sc WHERE codigo='transferencia_renda_por_mil_hab' ORDER BY cod_ibge, ano DESC`).catch(() => []);
+  const sa = soc.find((x) => String(x.cod_ibge) === cod);
+  const bpc = (await query<Record<string, unknown>>(`SELECT valor FROM indicadores_sc WHERE cod_ibge=$1 AND codigo='bpc_por_mil_hab' ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  const social = {
+    transfRendaMil: sa ? num(sa.valor) : null,
+    transfPares: _median(soc.filter((x) => noGrupo(String(x.cod_ibge))).map((x) => num(x.valor)).filter((v) => v > 0)),
+    bpcMil: bpc ? num(bpc.valor) : null,
+  };
+
+  return { grupo, compras, fiscal, social };
+}
+
 export type RgfResumo = { ano: number; pessoalPct: number; rclAjustada: number; dclPct: number | null } | null;
 export async function getRgfResumoSC(cod: string): Promise<RgfResumo> {
   const r = (await query<Record<string, unknown>>(`SELECT ano, pessoal_pct, rcl_ajustada, dcl_pct FROM rgf_sc WHERE cod_ibge=$1 AND pessoal_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
