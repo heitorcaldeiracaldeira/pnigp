@@ -6,7 +6,8 @@ import fs from "fs"; import path from "path"; import { fileURLToPath } from "url
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const API = "https://consultafns.saude.gov.br/recursos/consulta-consolidada/repasse-bloco";
-const ANOS = (process.env.ANOS || "2020,2021,2022,2023,2024,2025").split(",");
+const ANO_ATUAL = new Date().getFullYear();
+const ANOS = (process.env.ANOS || `2020,2021,2022,2023,2024,${ANO_ATUAL}`).split(",");
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 
 async function buscar(co6, ano) {
@@ -36,7 +37,7 @@ async function main() {
   let proc = 0, vazios = 0;
   for (const ano of ANOS) {
     for (const cod of munis) {
-      if (feitos.has(`${cod}-${ano}`)) continue;
+      if (feitos.has(`${cod}-${ano}`) && Number(ano) < ANO_ATUAL) continue; // ano corrente sempre re-coleta (repasses crescem)
       const blocos = await buscar(cod.slice(0, 6), ano);
       if (blocos == null) { console.log(`  ${cod}/${ano}: falhou (mantém p/ retry)`); continue; }
       const linhas = [];

@@ -11,12 +11,12 @@ function tag(v: number, m: number, inv = false) {
   return { t: `${acima ? "▲" : "▼"} pares ${n1(m)}`, c: bom ? "text-emerald-600" : "text-amber-600" };
 }
 
-function Card({ icon, titulo, valor, ref }: { icon: React.ReactNode; titulo: string; valor: string; ref: { t: string; c: string } | string }) {
+function Card({ icon, titulo, valor, nota }: { icon: React.ReactNode; titulo: string; valor: string; nota: { t: string; c: string } | string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
       <div className="flex items-center gap-1.5 text-xs text-slate-500">{icon} {titulo}</div>
       <div className="font-display text-2xl font-bold tabular-nums text-slate-900">{valor}</div>
-      <div className={`text-[11px] ${typeof ref === "string" ? "text-slate-500" : ref.c}`}>{typeof ref === "string" ? ref : ref.t}</div>
+      <div className={`text-[11px] ${typeof nota === "string" ? "text-slate-500" : nota.c}`}>{typeof nota === "string" ? nota : nota.t}</div>
     </div>
   );
 }
@@ -31,9 +31,9 @@ export function CruzamentosSC({ data }: { data: NonNullable<Cruzamentos> }) {
         <section>
           <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-800"><Landmark className="h-4 w-4 text-teal-600" /> Capacidade fiscal × economia local</h3>
           <div className="grid gap-3 sm:grid-cols-3">
-            <Card icon={<Landmark className="h-3.5 w-3.5" />} titulo="Autonomia tributária" valor={`${n1(f.autonomia)}%`} ref={tag(f.autonomia, f.autonomiaPares)} />
-            <Card icon={<Landmark className="h-3.5 w-3.5" />} titulo="Dependência de transferências" valor={`${n1(f.dependencia)}%`} ref={tag(f.dependencia, f.dependenciaPares, true)} />
-            <Card icon={<Landmark className="h-3.5 w-3.5" />} titulo="PIB per capita" valor={f.pib == null ? "—" : brl(f.pib)} ref={f.pib == null ? "—" : tag(f.pib, f.pibPares)} />
+            <Card icon={<Landmark className="h-3.5 w-3.5" />} titulo="Autonomia tributária" valor={`${n1(f.autonomia)}%`} nota={tag(f.autonomia, f.autonomiaPares)} />
+            <Card icon={<Landmark className="h-3.5 w-3.5" />} titulo="Dependência de transferências" valor={`${n1(f.dependencia)}%`} nota={tag(f.dependencia, f.dependenciaPares, true)} />
+            <Card icon={<Landmark className="h-3.5 w-3.5" />} titulo="PIB per capita" valor={f.pib == null ? "—" : brl(f.pib)} nota={f.pib == null ? "—" : tag(f.pib, f.pibPares)} />
           </div>
           <p className="mt-1.5 text-xs text-slate-500">Leitura: PIB alto com autonomia baixa = receita própria a explorar (IPTU/ISS/dívida ativa).</p>
         </section>
@@ -43,9 +43,9 @@ export function CruzamentosSC({ data }: { data: NonNullable<Cruzamentos> }) {
         <section>
           <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-800"><ShoppingCart className="h-4 w-4 text-violet-600" /> Eficiência de compras</h3>
           <div className="grid gap-3 sm:grid-cols-3">
-            <Card icon={<ShoppingCart className="h-3.5 w-3.5" />} titulo="Sem licitação (dispensa/inexig.)" valor={`${n1(c.dispensaPct)}%`} ref={tag(c.dispensaPct, c.dispensaPares, true)} />
-            <Card icon={<ShoppingCart className="h-3.5 w-3.5" />} titulo="Valor em modalidade competitiva" valor={`${n1(c.competPct)}%`} ref="pregão + concorrência sobre o total" />
-            <Card icon={<ShoppingCart className="h-3.5 w-3.5" />} titulo="Economia unitária (itens)" valor={c.economiaUnit == null ? "—" : `${n1(c.economiaUnit)}%`} ref={c.economiaUnit == null ? "itens ainda não coletados p/ este ente" : `base: ${c.itensCobertura} itens (preço unitário)`} />
+            <Card icon={<ShoppingCart className="h-3.5 w-3.5" />} titulo="Sem licitação (dispensa/inexig.)" valor={`${n1(c.dispensaPct)}%`} nota={tag(c.dispensaPct, c.dispensaPares, true)} />
+            <Card icon={<ShoppingCart className="h-3.5 w-3.5" />} titulo="Valor em modalidade competitiva" valor={`${n1(c.competPct)}%`} nota="pregão + concorrência sobre o total" />
+            <Card icon={<ShoppingCart className="h-3.5 w-3.5" />} titulo="Economia unitária (itens)" valor={c.economiaUnit == null ? "—" : `${n1(c.economiaUnit)}%`} nota={c.economiaUnit == null ? "itens ainda não coletados p/ este ente" : `base: ${c.itensCobertura} itens (preço unitário)`} />
           </div>
           <p className="mt-1.5 text-xs text-slate-500">Leitura: muita dispensa + pouca competição = risco de preço e governança. Economia real só no preço unitário.</p>
         </section>
@@ -55,9 +55,9 @@ export function CruzamentosSC({ data }: { data: NonNullable<Cruzamentos> }) {
         <section>
           <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-800"><Users className="h-4 w-4 text-amber-600" /> Proteção social</h3>
           <div className="grid gap-3 sm:grid-cols-3">
-            <Card icon={<Users className="h-3.5 w-3.5" />} titulo="Transf. de renda / mil hab" valor={s.transfRendaMil == null ? "—" : n1(s.transfRendaMil)} ref={s.transfRendaMil == null ? "sem dado" : tag(s.transfRendaMil, s.transfPares)} />
-            <Card icon={<Users className="h-3.5 w-3.5" />} titulo="BPC / mil hab" valor={s.bpcMil == null ? "—" : n1(s.bpcMil)} ref="benefício de prestação continuada" />
-            <Card icon={<Users className="h-3.5 w-3.5" />} titulo="Cobertura vs pares" valor={s.transfRendaMil == null ? "—" : tag(s.transfRendaMil, s.transfPares).t} ref="mediana do grupo de porte" />
+            <Card icon={<Users className="h-3.5 w-3.5" />} titulo="Transf. de renda / mil hab" valor={s.transfRendaMil == null ? "—" : n1(s.transfRendaMil)} nota={s.transfRendaMil == null ? "sem dado" : tag(s.transfRendaMil, s.transfPares)} />
+            <Card icon={<Users className="h-3.5 w-3.5" />} titulo="BPC / mil hab" valor={s.bpcMil == null ? "—" : n1(s.bpcMil)} nota="benefício de prestação continuada" />
+            <Card icon={<Users className="h-3.5 w-3.5" />} titulo="Cobertura vs pares" valor={s.transfRendaMil == null ? "—" : tag(s.transfRendaMil, s.transfPares).t} nota="mediana do grupo de porte" />
           </div>
           <p className="mt-1.5 text-xs text-slate-500">Leitura: alta transferência por mil hab indica maior vulnerabilidade atendida — cruzar com PIB per capita acima.</p>
         </section>
