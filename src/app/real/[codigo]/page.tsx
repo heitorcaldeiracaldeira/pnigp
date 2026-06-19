@@ -14,6 +14,8 @@ import { EducacaoSC } from "@/components/educacao-sc";
 import { CruzamentosSC } from "@/components/cruzamentos-sc";
 import { PanoramaSC } from "@/components/panorama-sc";
 import { ResumoExecutivo } from "@/components/resumo-executivo";
+import { InsightsPanelSC } from "@/components/insights-panel-sc";
+import { gerarInsightsSC } from "@/lib/insights-sc";
 import { ArvoreFinanceira } from "@/components/arvore-financeira";
 import type { NoFin } from "@/lib/orcamento";
 import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
@@ -468,6 +470,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   ];
 
   const diag = diagnostico ?? diagEstado; // município: vs pares · Estado: limites legais absolutos
+  const insights = gerarInsightsSC({ diag, cruz, saude, educacao, pos: minhaPos, total: totalRank }); // análise automática (dado real)
   if (diag) tabs.splice(1, 0, { id: "diagnostico", label: "Diagnóstico", content: <DiagnosticoGestor data={diag} /> });
 
   // PANORAMA 360° — cruza todas as dimensões num radar (50 = mediana dos pares)
@@ -577,6 +580,9 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
             ano={diag.ano}
           />
         )}
+
+        {/* Análise automática — insights narrativos (dado real) */}
+        {insights.length > 0 && <div className="mb-4"><InsightsPanelSC insights={insights} /></div>}
 
         {/* Seções em abas (mesmo layout do painel) */}
         <PanelTabs tabs={tabs} />
