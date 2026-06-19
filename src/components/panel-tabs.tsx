@@ -9,6 +9,13 @@ export function PanelTabs({
 }) {
   const [active, setActive] = useState(tabs[0]?.id ?? "");
   const ref = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+
+  // Centraliza a aba ativa na barra rolável (mobile/desktop) — descoberta + sensação tátil
+  useEffect(() => {
+    const btn = barRef.current?.querySelector<HTMLElement>(`#tab-${CSS.escape(active)}`);
+    btn?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [active]);
 
   // Abre a aba indicada na URL (#financas) e reage a cliques que mudam o hash
   useEffect(() => {
@@ -31,14 +38,14 @@ export function PanelTabs({
   };
 
   return (
-    <div ref={ref}>
+    <div ref={ref} className="scroll-mt-[calc(var(--header-h)+0.75rem)]">
       <div
         role="tablist"
         aria-label="Seções do painel"
         className="no-print sticky top-[var(--header-h)] z-10 -mx-4 border-b border-slate-200 bg-slate-50/95 px-4 backdrop-blur lg:-mx-8 lg:px-8"
       >
         <div className="relative">
-          <div className="flex gap-1 overflow-x-auto py-2 [-ms-overflow-style:none] [scrollbar-width:none]">
+          <div ref={barRef} className="flex gap-1 overflow-x-auto py-2 [-ms-overflow-style:none] [scrollbar-width:none]">
             {tabs.map((t) => (
               <button
                 key={t.id}
