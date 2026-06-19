@@ -930,6 +930,7 @@ export type SaudeSC = {
   saudePct: number | null; saudeAno: number | null;
   estab: number; sus: number; hospitalar: number; cirurgico: number; temHospital: boolean;
   estabMil: number; susMil: number; estabMilPares: number; susMilPares: number;
+  internMil: number; internMilPares: number; siaHab: number; siaHabPares: number; sihAno: number | null; siaAno: number | null;
 } | null;
 export async function getSaudeSC(cod: string): Promise<SaudeSC> {
   const base = await query<Record<string, unknown>>(
@@ -945,11 +946,28 @@ export async function getSaudeSC(cod: string): Promise<SaudeSC> {
   const cn = (await query<Record<string, unknown>>(`SELECT total,sus_amb,hospitalar,cirurgico FROM cnes_sc WHERE cod_ibge=$1`, [cod]))[0];
   const sd = (await query<Record<string, unknown>>(`SELECT ano,saude_pct FROM siops_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
   const pop = num(alvo.populacao);
+  // PRODUÇÃO (SIH/SIA) — último ano disponível por métrica, per capita, vs pares
+  const prodBase = await query<Record<string, unknown>>(
+    `SELECT e.cod_ibge, e.populacao,
+        (SELECT internacoes FROM saude_producao_sc s WHERE s.cod_ibge=e.cod_ibge AND internacoes IS NOT NULL ORDER BY ano DESC LIMIT 1) inter,
+        (SELECT sia_qtd FROM saude_producao_sc s WHERE s.cod_ibge=e.cod_ibge AND sia_qtd IS NOT NULL ORDER BY ano DESC LIMIT 1) sia
+       FROM entes_sc e WHERE e.tipo='M' AND e.populacao>0`,
+  ).catch(() => []);
+  const imil = (x: Record<string, unknown>) => { const p = num(x.populacao); return p > 0 ? num(x.inter) / (p / 1000) : 0; };
+  const shab = (x: Record<string, unknown>) => { const p = num(x.populacao); return p > 0 ? num(x.sia) / p : 0; };
+  const pa = prodBase.find((x) => String(x.cod_ibge) === cod);
+  const prodG = prodBase.filter((x) => _fk(num(x.populacao)) === gk);
+  const internMilPares = _median(prodG.filter((x) => num(x.inter) > 0).map(imil));
+  const siaHabPares = _median(prodG.filter((x) => num(x.sia) > 0).map(shab));
+  const sihAno = (await query<Record<string, unknown>>(`SELECT ano FROM saude_producao_sc WHERE cod_ibge=$1 AND internacoes IS NOT NULL ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  const siaAno = (await query<Record<string, unknown>>(`SELECT ano FROM saude_producao_sc WHERE cod_ibge=$1 AND sia_qtd IS NOT NULL ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
   return {
     pop, grupo: _faixa(pop),
     saudePct: sd ? num(sd.saude_pct) : null, saudeAno: sd ? num(sd.ano) : null,
     estab: num(cn?.total), sus: num(cn?.sus_amb), hospitalar: num(cn?.hospitalar), cirurgico: num(cn?.cirurgico), temHospital: num(cn?.hospitalar) > 0,
     estabMil: mil(num(cn?.total), pop), susMil: mil(num(cn?.sus_amb), pop), estabMilPares, susMilPares,
+    internMil: pa ? imil(pa) : 0, internMilPares, siaHab: pa ? shab(pa) : 0, siaHabPares,
+    sihAno: sihAno ? num(sihAno.ano) : null, siaAno: siaAno ? num(siaAno.ano) : null,
   };
 }
 

@@ -45,8 +45,28 @@ export function SaudeSC({ data }: { data: NonNullable<SaudeSC> }) {
         </div>
       </div>
 
+      <div>
+        <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-800"><Activity className="h-4 w-4 text-rose-600" /> Produção (entrega ao cidadão)</h3>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500"><Activity className="h-3.5 w-3.5" /> Internações / mil hab (SIH)</div>
+            <div className="font-display text-2xl font-bold tabular-nums text-slate-900">{d.internMil > 0 ? n1(d.internMil) : "—"}</div>
+            <div className={`text-[11px] ${d.internMil > 0 ? cmp(d.internMil, d.internMilPares).cls : "text-slate-400"}`}>
+              {d.internMil > 0 ? `pares ${n1(d.internMilPares)} · ${cmp(d.internMil, d.internMilPares).txt}${d.sihAno ? ` · ${d.sihAno}` : ""}` : "sem internação local (depende de referência regional)"}
+            </div>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500"><Activity className="h-3.5 w-3.5" /> Procedimentos ambulatoriais / hab (SIA)</div>
+            <div className="font-display text-2xl font-bold tabular-nums text-slate-900">{d.siaHab > 0 ? n1(d.siaHab) : "—"}</div>
+            <div className={`text-[11px] ${d.siaHab > 0 ? cmp(d.siaHab, d.siaHabPares).cls : "text-slate-400"}`}>
+              {d.siaHab > 0 ? `pares ${n1(d.siaHabPares)} · ${cmp(d.siaHab, d.siaHabPares).txt}${d.siaAno ? ` · ${d.siaAno}` : ""}` : "—"}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
-        <p className="mb-1 font-semibold text-slate-800">Leitura (insumo × capacidade)</p>
+        <p className="mb-1 font-semibold text-slate-800">Leitura (insumo × capacidade × entrega)</p>
         <p>
           O município aplicou <b>{d.saudePct == null ? "—" : `${n1(d.saudePct)}%`}</b> da receita própria em saúde (mín. 15%) e mantém <b>{n1(d.estabMil)}</b> estabelecimentos por mil habitantes
           ({cEstab.txt.replace("▲ ", "").replace("▼ ", "")}). {d.temHospital ? "Possui atenção hospitalar instalada." : "Não possui estabelecimento com atendimento hospitalar — depende de referência regional."}
@@ -55,7 +75,7 @@ export function SaudeSC({ data }: { data: NonNullable<SaudeSC> }) {
 
       <p className="text-[11px] text-slate-400">
         <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
-        Gasto: SIOPS/Min. Saúde (ASPS, LC 141). Rede: CNES/Min. Saúde (competência atual, inclui rede pública e privada). População: IBGE. Benchmarks por grupo de porte. CNES = capacidade instalada; produção de fato (SIA/SIH) é etapa futura.
+        Gasto: SIOPS (ASPS, LC 141). Rede: CNES (inclui pública e privada). Produção: SIH (internações) e SIA (ambulatorial) — DATASUS, por local de atendimento. População: IBGE. Benchmarks por grupo de porte. Ciclo completo: insumo (gasto) → capacidade (rede) → entrega (produção).
       </p>
     </div>
   );
