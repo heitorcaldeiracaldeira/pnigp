@@ -41,10 +41,13 @@ async function main() {
       const blocos = await buscar(cod.slice(0, 6), ano);
       if (blocos == null) { console.log(`  ${cod}/${ano}: falhou (mantém p/ retry)`); continue; }
       const linhas = [];
-      for (const b of blocos) {
-        linhas.push([cod, ano, b.codigo, b.nome, 0, null, b.vlTotal, b.vlLiquido]); // total do bloco (Custeio/Investimento)
-        for (const r of (b.repasses || [])) linhas.push([cod, ano, b.codigo, b.nome, r.codigo, r.nome, r.vlTotal, r.vlLiquido]); // áreas
-      }
+      blocos.forEach((b, i) => {
+        // pré-2018 não tinha Custeio/Investimento: bloco-pai vem sem codigo/nome → código sintético (90+i)
+        const bcod = b.codigo ?? 90 + i;
+        const bnome = b.nome ?? "Repasses (estrutura pré-2018)";
+        linhas.push([cod, ano, bcod, bnome, 0, null, b.vlTotal, b.vlLiquido]); // total do bloco
+        (b.repasses || []).forEach((r, j) => linhas.push([cod, ano, bcod, bnome, r.codigo ?? 500 + j, r.nome ?? null, r.vlTotal, r.vlLiquido])); // áreas (filhos)
+      });
       try {
         for (const l of linhas) {
           await q(`INSERT INTO fns_repasse_sc (cod_ibge,ano,bloco_cod,bloco_nome,area_cod,area_nome,vl_total,vl_liquido) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
