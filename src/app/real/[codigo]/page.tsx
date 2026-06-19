@@ -497,11 +497,15 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       </div>
     ),
   });
-  if (diagnostico) tabs.push({ id: "auditoria", label: "Auditoria", content: <AuditoriaSC data={diagnostico} /> });
+  if (diag) tabs.push({ id: "auditoria", label: "Auditoria", content: <AuditoriaSC data={diag} /> });
   if (rgfResumo) tabs.push({ id: "simulador", label: "Simulador", content: <SimuladorFiscal ano={rgfResumo.ano} receita={a.receita} despesa={a.despesa} pessoal={a.pessoal} investimento={a.investimento} rclAjustada={rgfResumo.rclAjustada} pessoalPctBase={rgfResumo.pessoalPct} /> });
   if (saude) tabs.push({ id: "saude", label: "Saúde", content: <SaudeSC data={saude} /> });
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Educação", content: <EducacaoSC data={educacao} /> });
   if (cruz) tabs.push({ id: "cruzamentos", label: "Cruzamentos", content: <CruzamentosSC data={cruz} /> });
+
+  // ordem lógica das abas: panorama → fiscal → compras → social/cruzamentos → extras
+  const ORDEM = ["visao", "panorama", "diagnostico", "financas", "execucao", "metas", "ranking", "compras", "contratos", "planejamento", "saude", "educacao-cruz", "cruzamentos", "indicadores", "transferencias", "auditoria", "simulador"];
+  tabs.sort((x, y) => ((ORDEM.indexOf(x.id) + 1 || 99) - (ORDEM.indexOf(y.id) + 1 || 99)));
 
   return (
     <div className="min-h-screen bg-slate-50" style={{ ["--header-h" as string]: "60px" } as React.CSSProperties}>
