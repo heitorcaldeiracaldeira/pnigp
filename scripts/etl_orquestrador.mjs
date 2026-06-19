@@ -48,6 +48,8 @@ const FONTES = [
     devido: async (st) => diasDesde(st?.ultima_exec) > 30 },
   { id: "previne", label: "Previne Brasil — indicadores APS (SISAB)", api: "datasus", script: "scripts/ingest_previne_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 40 }, // quadrimestral
+  { id: "indigena", label: "População indígena (IBGE Censo 2022)", api: "ibge", script: "scripts/ingest_indigena_sc.mjs", env: {},
+    devido: async (st) => diasDesde(st?.ultima_exec) > 300 }, // censitário (decenal)
 ];
 
 async function ensure() {
@@ -61,7 +63,7 @@ const estado = async (id) => (await db.query(`SELECT * FROM etl_catalogo WHERE i
 
 // ===== SUPERVISÃO (lógica do PNCP aplicada a TODA fonte) =====
 // Tabela cujo count(*) cresce durante a coleta = sinal de progresso de cada fonte.
-const TAB = { financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", rgf: "rgf_sc", siops: "siops_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc_feitos", indicadores: "indicadores_sc", transferencias: "transferencias_sc", cnes: "cnes_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc" };
+const TAB = { financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", rgf: "rgf_sc", siops: "siops_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc_feitos", indicadores: "indicadores_sc", transferencias: "transferencias_sc", cnes: "cnes_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc" };
 const conta = async (id) => { try { return Number((await db.query(`SELECT count(*) n FROM ${TAB[id] || "financas_sc"}`)).rows[0].n) || 0; } catch { return 0; } };
 const STALL_MS = 20 * 60 * 1000;   // 20 min sem progresso => mata e religa (folga p/ não matar ente pesado)
 const CHECK_MS = 60 * 1000;
@@ -112,7 +114,7 @@ async function main() {
     const solicitado = st?.solicitado === true;
     const ma = f.id === "cnes"
       ? (Number((await db.query(`SELECT max(extract(year from atualizado))::int y FROM cnes_sc`).catch(() => ({ rows: [{}] }))).rows[0]?.y) || 0) // CNES é snapshot por competência (sem coluna ano)
-      : await maxAno({ financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", rgf: "rgf_sc", siops: "siops_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc" }[f.id] || "financas_sc", f.id === "contratos" ? "ano_compra" : "ano");
+      : await maxAno({ financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", rgf: "rgf_sc", siops: "siops_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc" }[f.id] || "financas_sc", f.id === "contratos" ? "ano_compra" : "ano");
     await db.query(`UPDATE etl_catalogo SET max_ano=$1, devido=$2, atualizado_em=now() WHERE id=$3`, [ma, devido, f.id]);
     const roda = SOLIC ? solicitado : (devido || solicitado);
     plano.push({ f, roda });

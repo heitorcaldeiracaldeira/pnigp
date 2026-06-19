@@ -1,4 +1,4 @@
-import { Activity, Building2, Database, HeartPulse, Stethoscope } from "lucide-react";
+import { Activity, Building2, Database, HeartPulse, Stethoscope, Users } from "lucide-react";
 import type { SaudeSC, PrevineSC } from "@/lib/queries";
 
 const n1 = (x: number) => x.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
@@ -53,6 +53,17 @@ export function SaudeSC({ data, previne }: { data: NonNullable<SaudeSC>; previne
             {d.transfUniaoPct != null ? <> — <b>{n1(d.transfUniaoPct)}%</b> vêm da União{d.transfUniaoValor != null ? ` (R$ ${(d.transfUniaoValor / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi)` : ""}.</> : "."}
           </p>
           <p className="mt-0.5 text-[11px] text-slate-400">SIOPS — transferências SUS para a saúde do município (quanto maior a fatia da União, maior a dependência de repasse federal).</p>
+        </div>
+      )}
+
+      {d.popIndigena != null && d.popIndigena > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-800"><Users className="h-3.5 w-3.5" /> Saúde indígena — relevante neste município</div>
+          <p className="mt-1 text-slate-700">
+            População indígena: <b>{d.popIndigena.toLocaleString("pt-BR")} habitantes</b> ({n1(d.popIndigena / d.pop * 100)}% da população — Censo IBGE 2022).
+            {d.popIndigena / d.pop >= 0.1 ? " Presença expressiva — atenção básica indígena é prioridade local." : ""}
+          </p>
+          <p className="mt-0.5 text-[11px] text-slate-400">A atenção primária à população indígena é responsabilidade compartilhada (DSEI/SESAI + município). Atendimentos por DSEI não têm dado aberto confiável por município (API do MS instável); população é o indicador sólido disponível.</p>
         </div>
       )}
 

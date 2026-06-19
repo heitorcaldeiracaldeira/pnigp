@@ -934,10 +934,11 @@ export type SaudeSC = {
   estabMil: number; susMil: number; estabMilPares: number; susMilPares: number;
   internMil: number; internMilPares: number; siaHab: number; siaHabPares: number; sihAno: number | null; siaAno: number | null;
   transfSaudeValor: number | null; transfUniaoValor: number | null; transfUniaoPct: number | null;
+  popIndigena: number | null;
 } | null;
 export async function getSaudeSC(cod: string): Promise<SaudeSC> {
   const base = await query<Record<string, unknown>>(
-    `SELECT c.cod_ibge, e.populacao, c.total, c.sus_amb FROM cnes_sc c JOIN entes_sc e ON e.cod_ibge=c.cod_ibge WHERE e.tipo='M' AND e.populacao>0`,
+    `SELECT c.cod_ibge, e.populacao, e.pop_indigena, c.total, c.sus_amb FROM cnes_sc c JOIN entes_sc e ON e.cod_ibge=c.cod_ibge WHERE e.tipo='M' AND e.populacao>0`,
   ).catch(() => []);
   const alvo = base.find((x) => String(x.cod_ibge) === cod);
   if (!alvo) return null;
@@ -974,6 +975,7 @@ export async function getSaudeSC(cod: string): Promise<SaudeSC> {
     transfSaudeValor: sd && sd.transf_saude_valor != null ? num(sd.transf_saude_valor) : null,
     transfUniaoValor: sd && sd.transf_uniao_valor != null ? num(sd.transf_uniao_valor) : null,
     transfUniaoPct: sd && sd.transf_uniao_pct != null ? num(sd.transf_uniao_pct) : null,
+    popIndigena: alvo.pop_indigena != null ? num(alvo.pop_indigena) : null,
   };
 }
 
