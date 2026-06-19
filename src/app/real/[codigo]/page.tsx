@@ -14,6 +14,7 @@ import { EducacaoSC } from "@/components/educacao-sc";
 import { CruzamentosSC } from "@/components/cruzamentos-sc";
 import { PanoramaSC } from "@/components/panorama-sc";
 import { ResumoExecutivo } from "@/components/resumo-executivo";
+import { PrintButton } from "@/components/print-button";
 import { InsightsPanelSC } from "@/components/insights-panel-sc";
 import { gerarInsightsSC } from "@/lib/insights-sc";
 import { ArvoreFinanceira } from "@/components/arvore-financeira";
@@ -570,6 +571,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
             <div className="lg:items-end">
               <span className="mb-1 block text-xs text-slate-500">Trocar ente (295 municípios + Estado)</span>
               <RealSelector options={options} atual={ente.cod_ibge} />
+              <div className="no-print mt-2"><PrintButton /></div>
             </div>
           </div>
           <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">

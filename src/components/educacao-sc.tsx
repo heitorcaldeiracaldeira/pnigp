@@ -54,7 +54,7 @@ export function EducacaoSC({ data }: { data: NonNullable<EducacaoSC> }) {
         </p>
       </div>
 
-      <p className="text-[11px] text-slate-400">
+      <p className="text-[11px] text-slate-500">
         <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
         Gasto MDE/FUNDEB: RREO Anexo 14 (SICONFI). Alfabetização e PIB: IBGE. Benchmarks por grupo de porte. Gasto é insumo; alfabetização é resultado multifatorial (não atribuível só ao município).
       </p>

@@ -25,8 +25,8 @@ export function PanoramaSC({ radar, grupo }: { radar: { dimensao: string; valor:
               <li key={d.dimensao} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
                 <span className="text-slate-700">{d.dimensao}</span>
                 <span className="flex items-center gap-3">
-                  <span className="text-[11px] text-slate-400">{d.bruto}</span>
-                  <span className="w-16 text-right tabular-nums font-semibold text-slate-800">{d.valor.toFixed(0)}<span className="text-[10px] text-slate-400">/100</span></span>
+                  <span className="text-[11px] text-slate-500">{d.bruto}</span>
+                  <span className="w-16 text-right tabular-nums font-semibold text-slate-800">{d.valor.toFixed(0)}<span className="text-[10px] text-slate-500">/100</span></span>
                   <span className={`w-16 text-right text-xs font-medium ${n.c}`}>{n.t}</span>
                 </span>
               </li>
@@ -35,7 +35,7 @@ export function PanoramaSC({ radar, grupo }: { radar: { dimensao: string; valor:
         </ul>
       </div>
 
-      <p className="text-[11px] text-slate-400">
+      <p className="text-[11px] text-slate-500">
         <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
         Pontuação relativa: 50 = mediana dos pares de porte; 100 = o dobro do desempenho mediano (ou metade, nas dimensões onde menor é melhor). Síntese das fontes SICONFI, PNCP, SIOPS, CNES, SIH/SIA, IBGE, CGU.
       </p>

@@ -54,7 +54,7 @@ export function SaudeSC({ data, previne, fns }: { data: NonNullable<SaudeSC>; pr
             Transferências recebidas para saúde: <b>R$ {(d.transfSaudeValor / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi</b>
             {d.transfUniaoPct != null ? <> — <b>{n1(d.transfUniaoPct)}%</b> vêm da União{d.transfUniaoValor != null ? ` (R$ ${(d.transfUniaoValor / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi)` : ""}.</> : "."}
           </p>
-          <p className="mt-0.5 text-[11px] text-slate-400">SIOPS — transferências SUS para a saúde do município (quanto maior a fatia da União, maior a dependência de repasse federal).</p>
+          <p className="mt-0.5 text-[11px] text-slate-500">SIOPS — transferências SUS para a saúde do município (quanto maior a fatia da União, maior a dependência de repasse federal).</p>
         </div>
       )}
 
@@ -67,7 +67,7 @@ export function SaudeSC({ data, previne, fns }: { data: NonNullable<SaudeSC>; pr
               <div key={a.nome} className="rounded-xl border border-slate-200 bg-white p-3">
                 <div className="text-xs text-slate-500">{a.nome.charAt(0) + a.nome.slice(1).toLowerCase()}</div>
                 <div className="font-display text-lg font-bold tabular-nums text-slate-900">{brMi(a.valor)}</div>
-                <div className="text-[11px] text-slate-400">{n1(a.valor / fns.total * 100)}% do repasse federal</div>
+                <div className="text-[11px] text-slate-500">{n1(a.valor / fns.total * 100)}% do repasse federal</div>
               </div>
             ))}
           </div>
@@ -81,7 +81,7 @@ export function SaudeSC({ data, previne, fns }: { data: NonNullable<SaudeSC>; pr
             População indígena: <b>{d.popIndigena.toLocaleString("pt-BR")} habitantes</b> ({n1(d.popIndigena / d.pop * 100)}% da população — Censo IBGE 2022).
             {d.popIndigena / d.pop >= 0.1 ? " Presença expressiva — atenção básica indígena é prioridade local." : ""}
           </p>
-          <p className="mt-0.5 text-[11px] text-slate-400">A atenção primária à população indígena é responsabilidade compartilhada (DSEI/SESAI + município). Atendimentos por DSEI não têm dado aberto confiável por município (API do MS instável); população é o indicador sólido disponível.</p>
+          <p className="mt-0.5 text-[11px] text-slate-500">A atenção primária à população indígena é responsabilidade compartilhada (DSEI/SESAI + município). Atendimentos por DSEI não têm dado aberto confiável por município (API do MS instável); população é o indicador sólido disponível.</p>
         </div>
       )}
 
@@ -132,7 +132,7 @@ export function SaudeSC({ data, previne, fns }: { data: NonNullable<SaudeSC>; pr
         </div>
       )}
 
-      <p className="text-[11px] text-slate-400">
+      <p className="text-[11px] text-slate-500">
         <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
         Gasto: SIOPS (ASPS, LC 141). Previne Brasil: SISAB/Min. Saúde. Rede: CNES (inclui pública e privada). Produção: SIH (internações) e SIA (ambulatorial) — DATASUS, por local de atendimento. População: IBGE. Benchmarks por grupo de porte. Ciclo completo: insumo (gasto) → capacidade (rede) → entrega (produção).
       </p>

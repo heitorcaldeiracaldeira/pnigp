@@ -36,7 +36,7 @@ export function AuditoriaSC({ data, radar }: { data: NonNullable<DiagGestor>; ra
           <div className="space-y-2.5">
             {radar.map((d) => (
               <div key={d.dimensao}>
-                <div className="flex items-center justify-between text-xs"><span className="text-slate-700">{d.dimensao}</span><span className="text-[11px] text-slate-400">{d.bruto}</span></div>
+                <div className="flex items-center justify-between text-xs"><span className="text-slate-700">{d.dimensao}</span><span className="text-[11px] text-slate-500">{d.bruto}</span></div>
                 <div className="relative mt-0.5 h-2.5 rounded-full bg-slate-100">
                   <div className={`h-2.5 rounded-full ${barCor(d.valor)}`} style={{ width: `${Math.min(100, Math.max(2, d.valor))}%` }} />
                   <div className="absolute top-[-2px] h-[14px] w-px bg-slate-500" style={{ left: "50%" }} />
@@ -82,7 +82,7 @@ export function AuditoriaSC({ data, radar }: { data: NonNullable<DiagGestor>; ra
         </div>
       )}
 
-      <p className="text-[11px] text-slate-400">
+      <p className="text-[11px] text-slate-500">
         <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
         Regras ancoradas em LRF (pessoal/dívida), CF art. 212 (educação), LC 141 (saúde) e mediana dos pares de porte. Achados são pontos a verificar, não decisões de mérito. Integridade validada continuamente (registros inconsistentes excluídos).
       </p>

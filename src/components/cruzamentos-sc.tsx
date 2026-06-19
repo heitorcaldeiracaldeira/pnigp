@@ -69,7 +69,7 @@ export function CruzamentosSC({ data }: { data: NonNullable<Cruzamentos> }) {
                     ))}
                   </ul>
                 )}
-                <p className="mt-2 text-[11px] text-slate-400">Inspirado nos red flags de controle (TCU/TCE). Sinais ≠ irregularidade — apontam o que auditar.</p>
+                <p className="mt-2 text-[11px] text-slate-500">Inspirado nos red flags de controle (TCU/TCE). Sinais ≠ irregularidade — apontam o que auditar.</p>
               </div>
             );
           })()}
@@ -88,7 +88,7 @@ export function CruzamentosSC({ data }: { data: NonNullable<Cruzamentos> }) {
         </section>
       )}
 
-      <p className="text-[11px] text-slate-400">
+      <p className="text-[11px] text-slate-500">
         <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
         Fiscal: SICONFI. Compras: PNCP. Social/PIB: CGU/IBGE. Benchmarks por grupo de porte. Economia de compras só é válida por preço unitário (itens) — cobertura cresce com a coleta.
       </p>

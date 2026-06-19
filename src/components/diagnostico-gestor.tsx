@@ -37,7 +37,7 @@ export function DiagnosticoGestor({ data }: { data: NonNullable<DiagGestor> }) {
         ))}
       </div>
 
-      <p className="text-[11px] text-slate-400">
+      <p className="text-[11px] text-slate-500">
         <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
         Pessoal e DCL: RGF (SICONFI, % oficial sobre RCL ajustada). Educação/FUNDEB: RREO Anexo 14. Saúde (ASPS/LC 141): SIOPS/Min. Saúde. Finanças: RREO. Benchmarks por grupo de porte populacional. Sugestões são pontos a verificar, não veredictos.
       </p>

@@ -36,7 +36,7 @@ export function InsightsPanelSC({ insights }: { insights: Insight[] }) {
           );
         })}
       </ul>
-      <p className="px-4 py-2 text-[11px] text-slate-400">Gerado automaticamente a partir dos dados oficiais (SICONFI, SIOPS, CNES, PNCP, IBGE) vs. pares de porte e limites legais. Sinais para priorizar — não substituem análise técnica.</p>
+      <p className="px-4 py-2 text-[11px] text-slate-500">Gerado automaticamente a partir dos dados oficiais (SICONFI, SIOPS, CNES, PNCP, IBGE) vs. pares de porte e limites legais. Sinais para priorizar — não substituem análise técnica.</p>
     </div>
   );
 }
