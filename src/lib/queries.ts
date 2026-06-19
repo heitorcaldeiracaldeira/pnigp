@@ -933,6 +933,7 @@ export type SaudeSC = {
   estab: number; sus: number; hospitalar: number; cirurgico: number; temHospital: boolean;
   estabMil: number; susMil: number; estabMilPares: number; susMilPares: number;
   internMil: number; internMilPares: number; siaHab: number; siaHabPares: number; sihAno: number | null; siaAno: number | null;
+  transfSaudeValor: number | null; transfUniaoValor: number | null; transfUniaoPct: number | null;
 } | null;
 export async function getSaudeSC(cod: string): Promise<SaudeSC> {
   const base = await query<Record<string, unknown>>(
@@ -946,7 +947,7 @@ export async function getSaudeSC(cod: string): Promise<SaudeSC> {
   const estabMilPares = _median(pares.map((x) => mil(num(x.total), num(x.populacao))));
   const susMilPares = _median(pares.map((x) => mil(num(x.sus_amb), num(x.populacao))));
   const cn = (await query<Record<string, unknown>>(`SELECT total,sus_amb,hospitalar,cirurgico FROM cnes_sc WHERE cod_ibge=$1`, [cod]))[0];
-  const sd = (await query<Record<string, unknown>>(`SELECT ano,saude_pct FROM siops_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  const sd = (await query<Record<string, unknown>>(`SELECT ano,saude_pct,transf_saude_valor,transf_uniao_valor,transf_uniao_pct FROM siops_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
   const pop = num(alvo.populacao);
   // PRODUÇÃO (SIH/SIA) — último ano disponível por métrica, per capita, vs pares
   const prodBase = await query<Record<string, unknown>>(
@@ -970,6 +971,9 @@ export async function getSaudeSC(cod: string): Promise<SaudeSC> {
     estabMil: mil(num(cn?.total), pop), susMil: mil(num(cn?.sus_amb), pop), estabMilPares, susMilPares,
     internMil: pa ? imil(pa) : 0, internMilPares, siaHab: pa ? shab(pa) : 0, siaHabPares,
     sihAno: sihAno ? num(sihAno.ano) : null, siaAno: siaAno ? num(siaAno.ano) : null,
+    transfSaudeValor: sd && sd.transf_saude_valor != null ? num(sd.transf_saude_valor) : null,
+    transfUniaoValor: sd && sd.transf_uniao_valor != null ? num(sd.transf_uniao_valor) : null,
+    transfUniaoPct: sd && sd.transf_uniao_pct != null ? num(sd.transf_uniao_pct) : null,
   };
 }
 

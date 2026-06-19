@@ -20,13 +20,17 @@ async function getIndic(co6, ano) {
   }
   return null;
 }
+const pctCalc = (x) => { if (!x) return null; const num = Number(x.numerador) || 0, den = Number(x.denominador) || 0; let p = den > 0 ? (num / den) * 100 : null; if (p == null && x.indicador_calculado) { const v = parseFloat(String(x.indicador_calculado).replace(/\./g, "").replace(",", ".")); if (isFinite(v)) p = v; } return p == null ? null : Math.round(p * 100) / 100; };
 function saudeDe(arr) {
-  const x = (arr || []).find((i) => i.numero_indicador === "3.2");
-  if (!x) return null;
-  const num = Number(x.numerador) || 0, den = Number(x.denominador) || 0;
-  let pct = den > 0 ? (num / den) * 100 : null;
-  if (pct == null && x.indicador_calculado) { const p = parseFloat(String(x.indicador_calculado).replace(/\./g, "").replace(",", ".")); if (isFinite(p)) pct = p; }
-  return pct == null ? null : { saude_pct: Math.round(pct * 100) / 100, saude_valor: num };
+  const ind = (c) => (arr || []).find((i) => i.numero_indicador === c);
+  const x = ind("3.2"); if (!x) return null;
+  const pct = pctCalc(x); if (pct == null) return null;
+  const t13 = ind("1.3"), t14 = ind("1.4"); // % transf. para saúde (SUS) e % transf. da União p/ saúde — "de onde vem o dinheiro da saúde"
+  return {
+    saude_pct: pct, saude_valor: Number(x.numerador) || 0,
+    transf_saude_pct: pctCalc(t13), transf_saude_valor: t13 ? Number(t13.numerador) || 0 : null,
+    transf_uniao_pct: pctCalc(t14), transf_uniao_valor: t14 ? Number(t14.numerador) || 0 : null,
+  };
 }
 
 async function pool(items, n, fn) { let i = 0, done = 0; await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) { await fn(items[i++]); if (++done % 20 === 0) console.log(`  …${done}/${items.length}`); } })); }
@@ -37,13 +41,15 @@ async function main() {
   await db.query(`CREATE TABLE IF NOT EXISTS siops_sc (
     cod_ibge TEXT NOT NULL, ano INTEGER NOT NULL, saude_pct NUMERIC, saude_valor NUMERIC, saude_min NUMERIC DEFAULT 15,
     PRIMARY KEY (cod_ibge, ano) );`);
+  for (const c of ["transf_saude_pct", "transf_uniao_pct"]) await db.query(`ALTER TABLE siops_sc ADD COLUMN IF NOT EXISTS ${c} NUMERIC`);
+  for (const c of ["transf_saude_valor", "transf_uniao_valor"]) await db.query(`ALTER TABLE siops_sc ADD COLUMN IF NOT EXISTS ${c} NUMERIC`);
   const q = async (s, p) => { for (let t = 0; t < 6; t++) { try { return await db.query(s, p); } catch { await sleep(900 * (t + 1)); } } throw new Error("db"); };
 
   const arg = process.argv[2];
   if (arg) { for (const ano of ANOS) console.log(`${arg} ${ano}:`, JSON.stringify(saudeDe(await getIndic(arg.slice(0, 6), ano)))); await db.end(); return; }
 
   const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' ORDER BY cod_ibge`)).rows;
-  const feitos = new Set((await db.query(`SELECT cod_ibge||'-'||ano k FROM siops_sc`)).rows.map((r) => r.k));
+  const feitos = process.env.REFRESH === "1" ? new Set() : new Set((await db.query(`SELECT cod_ibge||'-'||ano k FROM siops_sc`)).rows.map((r) => r.k));
   let n = 0;
   await pool(entes, 4, async (e) => {
     const co6 = e.cod_ibge.slice(0, 6);
@@ -53,9 +59,9 @@ async function main() {
       if (arr === null) continue;
       const s = saudeDe(arr);
       if (!s) continue;
-      await q(`INSERT INTO siops_sc (cod_ibge,ano,saude_pct,saude_valor) VALUES ($1,$2,$3,$4)
-               ON CONFLICT (cod_ibge,ano) DO UPDATE SET saude_pct=EXCLUDED.saude_pct, saude_valor=EXCLUDED.saude_valor`,
-        [e.cod_ibge, ano, s.saude_pct, s.saude_valor]);
+      await q(`INSERT INTO siops_sc (cod_ibge,ano,saude_pct,saude_valor,transf_saude_pct,transf_saude_valor,transf_uniao_pct,transf_uniao_valor) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+               ON CONFLICT (cod_ibge,ano) DO UPDATE SET saude_pct=EXCLUDED.saude_pct, saude_valor=EXCLUDED.saude_valor, transf_saude_pct=EXCLUDED.transf_saude_pct, transf_saude_valor=EXCLUDED.transf_saude_valor, transf_uniao_pct=EXCLUDED.transf_uniao_pct, transf_uniao_valor=EXCLUDED.transf_uniao_valor`,
+        [e.cod_ibge, ano, s.saude_pct, s.saude_valor, s.transf_saude_pct, s.transf_saude_valor, s.transf_uniao_pct, s.transf_uniao_valor]);
       n++;
     }
   });

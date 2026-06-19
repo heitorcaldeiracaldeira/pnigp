@@ -45,6 +45,17 @@ export function SaudeSC({ data, previne }: { data: NonNullable<SaudeSC>; previne
         </div>
       </div>
 
+      {d.transfSaudeValor != null && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700"><Database className="h-3.5 w-3.5 text-teal-600" /> De onde vem o dinheiro da saúde (repasse federal SUS)</div>
+          <p className="mt-1 text-slate-700">
+            Transferências recebidas para saúde: <b>R$ {(d.transfSaudeValor / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi</b>
+            {d.transfUniaoPct != null ? <> — <b>{n1(d.transfUniaoPct)}%</b> vêm da União{d.transfUniaoValor != null ? ` (R$ ${(d.transfUniaoValor / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi)` : ""}.</> : "."}
+          </p>
+          <p className="mt-0.5 text-[11px] text-slate-400">SIOPS — transferências SUS para a saúde do município (quanto maior a fatia da União, maior a dependência de repasse federal).</p>
+        </div>
+      )}
+
       <div>
         <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-slate-800"><Activity className="h-4 w-4 text-rose-600" /> Produção (entrega ao cidadão)</h3>
         <div className="grid gap-3 sm:grid-cols-2">
