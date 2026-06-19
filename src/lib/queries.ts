@@ -953,6 +953,34 @@ export async function getSaudeSC(cod: string): Promise<SaudeSC> {
   };
 }
 
+// ===== Cruzamento Educação: gasto MDE (insumo) × alfabetização (resultado) × FUNDEB =====
+export type EducacaoSC = {
+  pop: number; grupo: string;
+  educPct: number | null; fundebPct: number | null; ano: number | null;
+  alfab: number | null; alfabPares: number; educPares: number; pib: number | null;
+} | null;
+export async function getEducacaoSC(cod: string): Promise<EducacaoSC> {
+  const base = await query<Record<string, unknown>>(
+    `SELECT e.cod_ibge, e.populacao,
+        (SELECT educacao_pct FROM rreo_const_sc r WHERE r.cod_ibge=e.cod_ibge AND educacao_pct IS NOT NULL ORDER BY ano DESC LIMIT 1) educ,
+        (SELECT valor FROM indicadores_sc i WHERE i.cod_ibge=e.cod_ibge AND codigo='taxa_alfabetizacao' ORDER BY ano DESC LIMIT 1) alfab
+       FROM entes_sc e WHERE e.tipo='M' AND e.populacao>0`,
+  ).catch(() => []);
+  const alvo = base.find((x) => String(x.cod_ibge) === cod);
+  if (!alvo) return null;
+  const gk = _fk(num(alvo.populacao));
+  const pares = base.filter((x) => _fk(num(x.populacao)) === gk);
+  const educPares = _median(pares.map((x) => num(x.educ)).filter((v) => v > 0));
+  const alfabPares = _median(pares.map((x) => num(x.alfab)).filter((v) => v > 0));
+  const rc = (await query<Record<string, unknown>>(`SELECT ano,educacao_pct,fundeb_pct FROM rreo_const_sc WHERE cod_ibge=$1 AND educacao_pct IS NOT NULL ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  const pib = (await query<Record<string, unknown>>(`SELECT valor FROM indicadores_sc WHERE cod_ibge=$1 AND codigo='pib_per_capita' ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  return {
+    pop: num(alvo.populacao), grupo: _faixa(num(alvo.populacao)),
+    educPct: rc ? num(rc.educacao_pct) : (num(alvo.educ) || null), fundebPct: rc ? num(rc.fundeb_pct) : null, ano: rc ? num(rc.ano) : null,
+    alfab: alvo.alfab == null ? null : num(alvo.alfab), alfabPares, educPares, pib: pib ? num(pib.valor) : null,
+  };
+}
+
 export type RgfResumo = { ano: number; pessoalPct: number; rclAjustada: number; dclPct: number | null } | null;
 export async function getRgfResumoSC(cod: string): Promise<RgfResumo> {
   const r = (await query<Record<string, unknown>>(`SELECT ano, pessoal_pct, rcl_ajustada, dcl_pct FROM rgf_sc WHERE cod_ibge=$1 AND pessoal_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
