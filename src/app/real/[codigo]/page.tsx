@@ -4,6 +4,7 @@ import { ArrowLeft, ClipboardList, Database, FileText, Landmark, Target, Trendin
 import { Logo } from "@/components/brand";
 import { Donut } from "@/components/charts/donut";
 import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
+import { AreaEmpilhada } from "@/components/charts/area-empilhada";
 import { OrcadoExecutado } from "@/components/charts/orcado-executado";
 import { ComprasSCSection } from "@/components/compras-sc-section";
 import { DiagnosticoGestor } from "@/components/diagnostico-gestor";
@@ -120,9 +121,9 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
 
           {serie.some((s) => s.saude > 0) && (
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
-              <h3 className="font-semibold text-slate-800">Investimento nas áreas ao longo do tempo</h3>
-              <p className="mb-2 text-xs text-slate-500">Despesa empenhada por função-chave · {anoIni}–{anoFim}</p>
-              <LinhasFinanceiras data={serie as unknown as Record<string, number>[]} linhas={[{ key: "saude", label: "Saúde", cor: "#0891b2" }, { key: "educacao", label: "Educação", cor: "#2563eb" }, { key: "infraestrutura", label: "Infraestrutura", cor: "#7c3aed" }, { key: "assistencia", label: "Assistência", cor: "#f59e0b" }]} />
+              <h3 className="font-semibold text-slate-800">Composição da despesa por área</h3>
+              <p className="mb-2 text-xs text-slate-500">Empenhado por função-chave, empilhado · {anoIni}–{anoFim} — mostra o peso de cada área e o total ao longo do tempo</p>
+              <AreaEmpilhada data={serie as unknown as Record<string, number>[]} areas={[{ key: "saude", label: "Saúde", cor: "#0891b2" }, { key: "educacao", label: "Educação", cor: "#2563eb" }, { key: "infraestrutura", label: "Infraestrutura", cor: "#7c3aed" }, { key: "assistencia", label: "Assistência", cor: "#f59e0b" }]} />
             </section>
           )}
         </>
