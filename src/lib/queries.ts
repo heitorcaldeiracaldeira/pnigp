@@ -675,7 +675,7 @@ export async function getContratosDoProcesso(cnpj: string, ano: number, seq: num
 
 export type ContratosResumoSC = {
   n: number; valor_total: number;
-  por_fornecedor: { nome: string; ni: string; n: number; valor: number; uf: string | null; municipio: string | null; empenhado: number; nfs: number }[];
+  por_fornecedor: { nome: string; ni: string; n: number; valor: number; uf: string | null; municipio: string | null; empenhado: number; nfs: number; situacao: string | null }[];
   top: { objeto: string; fornecedor: string; valor: number; vigInicio: string | null; vigFim: string | null; assinatura: string | null }[];
   localidade: { scPct: number; foraPct: number; resolvidoPct: number; topUF: { uf: string; valor: number }[] } | null;
   execucao: { empenhoTotal: number; nfTotal: number } | null; // contadores; 0 enquanto SC não publica o ciclo
@@ -685,9 +685,9 @@ export async function getContratosResumoSC(cod: string): Promise<ContratosResumo
   const tot = await query<Record<string, unknown>>(`SELECT count(*) n, COALESCE(sum(valor_global),0) v FROM contratos_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
   if (!tot.length || num(tot[0].n) === 0) return null;
   const forn = await query<Record<string, unknown>>(
-    `SELECT c.fornecedor, c.ni_fornecedor, count(*) n, COALESCE(sum(c.valor_global),0) v, cl.uf, cl.municipio
+    `SELECT c.fornecedor, c.ni_fornecedor, count(*) n, COALESCE(sum(c.valor_global),0) v, cl.uf, cl.municipio, cl.situacao
        FROM contratos_sc c LEFT JOIN cnpj_loc cl ON cl.cnpj = regexp_replace(c.ni_fornecedor,'\\D','','g')
-       WHERE c.cod_ibge=$1 AND c.fornecedor IS NOT NULL GROUP BY c.fornecedor, c.ni_fornecedor, cl.uf, cl.municipio ORDER BY v DESC LIMIT 8`, [cod]);
+       WHERE c.cod_ibge=$1 AND c.fornecedor IS NOT NULL GROUP BY c.fornecedor, c.ni_fornecedor, cl.uf, cl.municipio, cl.situacao ORDER BY v DESC LIMIT 8`, [cod]);
   const top = await query<Record<string, unknown>>(
     `SELECT objeto, fornecedor, valor_global, to_char(vig_inicio,'DD/MM/YYYY') vi, to_char(vig_fim,'DD/MM/YYYY') vf, to_char(assinatura,'DD/MM/YYYY') asn FROM contratos_sc WHERE cod_ibge=$1 ORDER BY valor_global DESC NULLS LAST LIMIT 12`, [cod]);
   // agregado de origem dos fornecedores (por valor) — SC vs fora, e top UFs de origem
@@ -718,7 +718,7 @@ export async function getContratosResumoSC(cod: string): Promise<ContratosResumo
   }
   return {
     n: num(tot[0].n), valor_total: num(tot[0].v),
-    por_fornecedor: forn.map((r) => ({ nome: String(r.fornecedor || "—"), ni: String(r.ni_fornecedor || ""), n: num(r.n), valor: num(r.v), uf: r.uf ? String(r.uf) : null, municipio: r.municipio ? String(r.municipio) : null, empenhado: empMap.get(String(r.ni_fornecedor || "")) || 0, nfs: 0 })),
+    por_fornecedor: forn.map((r) => ({ nome: String(r.fornecedor || "—"), ni: String(r.ni_fornecedor || ""), n: num(r.n), valor: num(r.v), uf: r.uf ? String(r.uf) : null, municipio: r.municipio ? String(r.municipio) : null, empenhado: empMap.get(String(r.ni_fornecedor || "")) || 0, nfs: 0, situacao: r.situacao ? String(r.situacao) : null })),
     top: top.map((r) => ({ objeto: String(r.objeto || ""), fornecedor: String(r.fornecedor || "—"), valor: num(r.valor_global), vigInicio: r.vi ? String(r.vi) : null, vigFim: r.vf ? String(r.vf) : null, assinatura: r.asn ? String(r.asn) : null })),
     localidade,
     execucao: { empenhoTotal: empTot, nfTotal: nfTot },

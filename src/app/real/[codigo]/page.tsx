@@ -262,7 +262,10 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
                       <tbody>
                         {contratosResumo.por_fornecedor.map((f) => (
                           <tr key={f.ni || f.nome} className="border-b border-slate-100 align-top">
-                            <td className="p-2 text-slate-700"><span className="line-clamp-1">{f.nome}</span></td>
+                            <td className="p-2 text-slate-700">
+                              <span className="line-clamp-1">{f.nome}</span>
+                              {f.situacao && f.situacao !== "ATIVA" && <span className="mt-0.5 inline-block rounded bg-rose-100 px-1.5 py-0.5 text-[9px] font-bold text-rose-700">⚠ {f.situacao}</span>}
+                            </td>
                             <td className="p-2">
                               {f.uf
                                 ? <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${f.uf === "SC" ? "bg-teal-100 text-teal-700" : "bg-amber-100 text-amber-700"}`}>{f.municipio ? `${f.municipio.charAt(0) + f.municipio.slice(1).toLowerCase()}/${f.uf}` : f.uf}{f.uf !== "SC" ? " · fora" : ""}</span>
