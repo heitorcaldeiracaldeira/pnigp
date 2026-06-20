@@ -516,7 +516,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       : []),
   ];
 
-  const comprasDestinos = codigo === "42" ? await getComprasDestinosSC() : null; // panorama estadual (só na visão do Estado)
+  const comprasDestinos = await getComprasDestinosSC(codigo === "42" ? undefined : codigo); // Estado = agregado SC · município = destinos dele
   const diag = diagnostico ?? diagEstado; // município: vs pares · Estado: limites legais absolutos
   const insights = gerarInsightsSC({ diag, cruz, saude, educacao, pos: minhaPos, total: totalRank }); // análise automática (dado real)
   if (diag) tabs.splice(1, 0, { id: "diagnostico", label: "Diagnóstico", content: <DiagnosticoGestor data={diag} /> });
@@ -565,7 +565,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (saude) tabs.push({ id: "saude", label: "Saúde", content: <SaudeSC data={saude} previne={previne} fns={fns} /> });
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Educação", content: <EducacaoSC data={educacao} /> });
   if (cruz) tabs.push({ id: "cruzamentos", label: "Cruzamentos", content: <CruzamentosSC data={cruz} /> });
-  if (comprasDestinos) tabs.push({ id: "compras-sc", label: "Para onde vai (SC)", content: <ComprasDestinosSCView data={comprasDestinos} /> });
+  if (comprasDestinos) tabs.push({ id: "compras-sc", label: codigo === "42" ? "Para onde vai (SC)" : "Para onde vai", content: <ComprasDestinosSCView data={comprasDestinos} escopo={codigo === "42" ? "dos municípios de SC" : `de ${ente.nome}`} /> });
 
   // abas agrupadas em 5 clusters (auditoria de UX): Resumo · Finanças · Compras · Setores · Análise
   const GRUPOS: [string, string[]][] = [

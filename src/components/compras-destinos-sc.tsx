@@ -4,13 +4,13 @@ import type { ComprasDestinosSC } from "@/lib/queries";
 const brl = (x: number) => (x >= 1e9 ? "R$ " + (x / 1e9).toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + " bi" : "R$ " + (x / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " mi");
 const cap = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 
-export function ComprasDestinosSCView({ data }: { data: NonNullable<ComprasDestinosSC> }) {
+export function ComprasDestinosSCView({ data, escopo = "dos municípios de SC" }: { data: NonNullable<ComprasDestinosSC>; escopo?: string }) {
   const max = Math.max(...data.destinos.map((d) => d.valor), 1);
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50 p-5">
-        <div className="flex items-center gap-1.5 text-sm font-semibold text-violet-700"><TrendingUp className="h-4 w-4" /> Para onde vai o dinheiro das compras — municípios de SC</div>
-        <p className="mt-1 text-sm text-slate-600">Destino (cidade do fornecedor) e categoria das empresas que mais venderam aos municípios. <b className="text-teal-700">{brl(data.scValor)}</b> ficaram em SC · <b className="text-amber-700">{brl(data.foraValor)}</b> saíram do estado <span className="text-[11px] text-slate-500">(origem resolvida em {data.coberturaPct}% do valor contratado).</span></p>
+        <div className="flex items-center gap-1.5 text-sm font-semibold text-violet-700"><TrendingUp className="h-4 w-4" /> Para onde vai o dinheiro das compras — {escopo}</div>
+        <p className="mt-1 text-sm text-slate-600">Destino (cidade do fornecedor) e categoria das empresas que mais venderam. <b className="text-teal-700">{brl(data.scValor)}</b> ficaram em SC · <b className="text-amber-700">{brl(data.foraValor)}</b> saíram do estado <span className="text-[11px] text-slate-500">(origem resolvida em {data.coberturaPct}% do valor contratado).</span></p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">

@@ -36,18 +36,21 @@ async function main() {
   const cache = new Set((await db.query(`SELECT cnpj FROM cnpj_loc WHERE situacao IS NOT NULL`)).rows.map((r) => r.cnpj));
   const pend = alvo.filter((c) => !cache.has(c));
   console.log(`CNPJs de fornecedores: ${alvo.length} | já em cache: ${cache.size} | a resolver: ${pend.length}`);
-  let ok = 0, falha = 0;
-  for (const cnpj of pend) {
+  let ok = 0, falha = 0, i = 0;
+  const CONC = Number(process.env.CONC || 6); // paralelismo (minhareceita aguenta; com retry/429)
+  async function gravar(cnpj) {
     const res = await resolver(cnpj);
-    if (!res.ok) { falha++; continue; } // mantém p/ próximo run
+    if (!res.ok) { falha++; return; } // mantém p/ próximo run
     const sit = res.naoExiste ? "INEXISTENTE" : res.situacao;
     await q(`INSERT INTO cnpj_loc (cnpj,razao_social,municipio,uf,situacao,situacao_motivo,abertura,cnae,porte) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
              ON CONFLICT (cnpj) DO UPDATE SET razao_social=EXCLUDED.razao_social,municipio=EXCLUDED.municipio,uf=EXCLUDED.uf,situacao=EXCLUDED.situacao,situacao_motivo=EXCLUDED.situacao_motivo,abertura=EXCLUDED.abertura,cnae=EXCLUDED.cnae,porte=EXCLUDED.porte,atualizado=now()`,
       [cnpj, res.razao || null, res.municipio || null, res.uf || null, sit, res.motivo || null, res.abertura || null, res.cnae || null, res.porte || null]);
     ok++;
-    if (ok % 25 === 0) console.log(`  …${ok}/${pend.length} resolvidos`);
-    await sleep(350); // gentil com o serviço público
+    if (ok % 50 === 0) console.log(`  …${ok}/${pend.length} resolvidos`);
   }
+  await Promise.all(Array.from({ length: CONC }, async () => {
+    while (i < pend.length) { await gravar(pend[i++]); await sleep(120); }
+  }));
   const c = await db.query(`SELECT count(*) total, count(*) FILTER(WHERE uf='SC') sc, count(*) FILTER(WHERE uf IS NOT NULL AND uf<>'SC') fora FROM cnpj_loc`);
   console.log(`Concluído: ${ok} resolvidos, ${falha} falhas. Cache: ${JSON.stringify(c.rows[0])}`);
   await db.end();
