@@ -681,6 +681,27 @@ export type ContratosResumoSC = {
   execucao: { empenhoTotal: number; nfTotal: number } | null; // contadores; 0 enquanto SC não publica o ciclo
 };
 
+// PANORAMA estadual de compras — para onde vai o dinheiro (destino dos fornecedores) + categorias (CNAE)
+export type ComprasDestinosSC = {
+  totalResolvido: number; scValor: number; foraValor: number; coberturaPct: number;
+  destinos: { municipio: string; uf: string; valor: number; fornecedores: number }[];
+  categorias: { cnae: string; valor: number; fornecedores: number }[];
+} | null;
+export async function getComprasDestinosSC(): Promise<ComprasDestinosSC> {
+  const J = `FROM contratos_sc c JOIN cnpj_loc cl ON cl.cnpj = regexp_replace(c.ni_fornecedor,'\\D','','g') WHERE c.valor_global IS NOT NULL`;
+  const dest = await query<Record<string, unknown>>(`SELECT cl.municipio, cl.uf, SUM(c.valor_global) v, COUNT(DISTINCT c.ni_fornecedor) nf ${J} AND cl.municipio IS NOT NULL GROUP BY cl.municipio, cl.uf ORDER BY v DESC LIMIT 10`).catch(() => []);
+  if (!dest.length) return null;
+  const cat = await query<Record<string, unknown>>(`SELECT cl.cnae, SUM(c.valor_global) v, COUNT(DISTINCT c.ni_fornecedor) nf ${J} AND cl.cnae IS NOT NULL GROUP BY cl.cnae ORDER BY v DESC LIMIT 5`).catch(() => []);
+  const tot: Record<string, unknown> = (await query<Record<string, unknown>>(`SELECT SUM(c.valor_global) FILTER (WHERE cl.uf IS NOT NULL) resolvido, SUM(c.valor_global) FILTER (WHERE cl.uf='SC') sc, SUM(c.valor_global) tot ${J}`).catch(() => []))[0] || {};
+  const resolvido = num(tot.resolvido), totalGeral = num(tot.tot), sc = num(tot.sc);
+  return {
+    totalResolvido: resolvido, scValor: sc, foraValor: resolvido - sc,
+    coberturaPct: totalGeral > 0 ? Math.round((resolvido / totalGeral) * 1000) / 10 : 0,
+    destinos: dest.map((r) => ({ municipio: String(r.municipio), uf: String(r.uf), valor: num(r.v), fornecedores: num(r.nf) })),
+    categorias: cat.map((r) => ({ cnae: String(r.cnae), valor: num(r.v), fornecedores: num(r.nf) })),
+  };
+}
+
 export async function getContratosResumoSC(cod: string): Promise<ContratosResumoSC | null> {
   const tot = await query<Record<string, unknown>>(`SELECT count(*) n, COALESCE(sum(valor_global),0) v FROM contratos_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
   if (!tot.length || num(tot[0].n) === 0) return null;

@@ -17,6 +17,7 @@ import { PanoramaSC } from "@/components/panorama-sc";
 import { ResumoExecutivo } from "@/components/resumo-executivo";
 import { PrintButton } from "@/components/print-button";
 import { InsightsPanelSC } from "@/components/insights-panel-sc";
+import { ComprasDestinosSCView } from "@/components/compras-destinos-sc";
 import { gerarInsightsSC } from "@/lib/insights-sc";
 import { ArvoreFinanceira } from "@/components/arvore-financeira";
 import type { NoFin } from "@/lib/orcamento";
@@ -24,7 +25,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getPrevineSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getPrevineSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -515,6 +516,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       : []),
   ];
 
+  const comprasDestinos = codigo === "42" ? await getComprasDestinosSC() : null; // panorama estadual (só na visão do Estado)
   const diag = diagnostico ?? diagEstado; // município: vs pares · Estado: limites legais absolutos
   const insights = gerarInsightsSC({ diag, cruz, saude, educacao, pos: minhaPos, total: totalRank }); // análise automática (dado real)
   if (diag) tabs.splice(1, 0, { id: "diagnostico", label: "Diagnóstico", content: <DiagnosticoGestor data={diag} /> });
@@ -563,12 +565,13 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (saude) tabs.push({ id: "saude", label: "Saúde", content: <SaudeSC data={saude} previne={previne} fns={fns} /> });
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Educação", content: <EducacaoSC data={educacao} /> });
   if (cruz) tabs.push({ id: "cruzamentos", label: "Cruzamentos", content: <CruzamentosSC data={cruz} /> });
+  if (comprasDestinos) tabs.push({ id: "compras-sc", label: "Para onde vai (SC)", content: <ComprasDestinosSCView data={comprasDestinos} /> });
 
   // abas agrupadas em 5 clusters (auditoria de UX): Resumo · Finanças · Compras · Setores · Análise
   const GRUPOS: [string, string[]][] = [
     ["Resumo", ["visao", "panorama", "diagnostico"]],
     ["Finanças", ["financas", "execucao", "metas", "simulador"]],
-    ["Compras", ["compras", "contratos", "planejamento"]],
+    ["Compras", ["compras", "contratos", "planejamento", "compras-sc"]],
     ["Setores", ["saude", "educacao-cruz", "indicadores"]],
     ["Análise", ["cruzamentos", "ranking", "transferencias", "auditoria"]],
   ];
