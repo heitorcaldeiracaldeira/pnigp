@@ -77,7 +77,7 @@ async function fetchItens(cnpj, ano, seq) {
 async function pool(items, conc, fn) { let i = 0, done = 0; await Promise.all(Array.from({ length: conc }, async () => { while (i < items.length) { await fn(items[i++]); if (++done % 20 === 0) console.log(`  …${done}/${items.length}`); } })); }
 
 async function main() {
-  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 4, keepAlive: true, query_timeout: 90000, statement_timeout: 90000 });
+  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2, keepAlive: true, query_timeout: 90000, statement_timeout: 90000 });
   db.on("error", () => {});
   await db.query(`
     CREATE TABLE IF NOT EXISTS itens_sc (
@@ -91,7 +91,7 @@ async function main() {
     CREATE INDEX IF NOT EXISTS idx_itens_ncm ON itens_sc (ncm) WHERE ncm IS NOT NULL;
     CREATE TABLE IF NOT EXISTS itens_sc_feitos (cod_ibge TEXT, ano INTEGER, PRIMARY KEY (cod_ibge, ano));`);
   for (const c of ["ncm TEXT", "catmat TEXT", "tipo TEXT", "situacao TEXT"]) await db.query(`ALTER TABLE itens_sc ADD COLUMN IF NOT EXISTS ${c}`); // robusto se a tabela já existir
-  const q = async (sql, params) => { for (let t = 0; t < 6; t++) { try { return await db.query(sql, params); } catch { await sleep(900 * (t + 1)); } } throw new Error("db indisponível"); };
+  const q = async (sql, params) => { for (let t = 0; t < 12; t++) { try { return await db.query(sql, params); } catch { await sleep(1500 * (t + 1)); } } throw new Error("db indisponível"); };
   // universo COMPLETO: todos os processos do PNCP em SC (processos_sc)
   await db.query(`CREATE TABLE IF NOT EXISTS itens_proc_feitos (numero_controle TEXT PRIMARY KEY, n INTEGER, feito_em timestamptz DEFAULT now())`);
   const procs = (await db.query(`SELECT numero_controle, cod_ibge, cnpj_orgao cnpj, ano, sequencial seq FROM processos_sc WHERE cnpj_orgao IS NOT NULL AND sequencial IS NOT NULL`).catch(() => ({ rows: [] }))).rows;
@@ -99,7 +99,7 @@ async function main() {
   const pend = procs.filter((p) => !feitos.has(p.numero_controle));
   console.log(`Itens: ${pend.length} processos pendentes (de ${procs.length} no PNCP/SC)...`);
   let comItens = 0;
-  await pool(pend, 4, async (e) => {
+  await pool(pend, 2, async (e) => {
     try {
       const itens = await fetchItens(e.cnpj, e.ano, e.seq);
       let n = 0;
