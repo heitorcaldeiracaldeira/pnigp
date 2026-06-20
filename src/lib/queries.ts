@@ -1196,6 +1196,14 @@ export async function getRppsSC(cod: string): Promise<RppsSC> {
   };
 }
 
+// CAUC — regularidade fiscal para transferências voluntárias (Tesouro; lê CADIN diariamente)
+export type CaucSC = { dataPesquisa: string | null; apto: boolean; nPendencias: number; pendencias: string[]; grupos: string[] } | null;
+export async function getCaucSC(cod: string): Promise<CaucSC> {
+  const r = (await query<Record<string, unknown>>(`SELECT to_char(data_pesquisa,'DD/MM/YYYY') dp, apto, n_pendencias, pendencias, grupos_pendentes FROM cauc_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r) return null;
+  return { dataPesquisa: r.dp ? String(r.dp) : null, apto: !!r.apto, nPendencias: num(r.n_pendencias), pendencias: Array.isArray(r.pendencias) ? (r.pendencias as string[]) : [], grupos: Array.isArray(r.grupos_pendentes) ? (r.grupos_pendentes as string[]) : [] };
+}
+
 export type RgfResumo = { ano: number; pessoalPct: number; rclAjustada: number; dclPct: number | null } | null;
 export async function getRgfResumoSC(cod: string): Promise<RgfResumo> {
   const r = (await query<Record<string, unknown>>(`SELECT ano, pessoal_pct, rcl_ajustada, dcl_pct FROM rgf_sc WHERE cod_ibge=$1 AND pessoal_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
