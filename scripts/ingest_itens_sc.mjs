@@ -24,19 +24,39 @@ async function getMain(url) {
   return null;
 }
 
+const CAP_RES = Number(process.env.CAP_RES || 5000); // teto de buscas de homologado por compra (atas podem ter ~20k itens)
 async function fetchItens(cnpj, ano, seq) {
-  const itens = await getMain(`${PNCP_MAIN}/orgaos/${cnpj}/compras/${ano}/${seq}/itens`);
-  if (!Array.isArray(itens) || !itens.length) return [];
-  const lim = itens.slice(0, 30);
-  const comRes = lim.slice(0, 12);
-  const resultados = await Promise.all(comRes.map((it) => getMain(`${PNCP_MAIN}/orgaos/${cnpj}/compras/${ano}/${seq}/itens/${it.numeroItem}/resultados`).catch(() => null)));
-  return lim.map((it, i) => {
-    const r = (i < resultados.length && Array.isArray(resultados[i]) ? resultados[i][0] : null) || null;
+  // paginação completa dos itens (default da API é 10!) — pega TODOS, mesmo atas com milhares
+  const base = `${PNCP_MAIN}/orgaos/${cnpj}/compras/${ano}/${seq}/itens`;
+  const itens = []; let p = 1;
+  while (p <= 60) {
+    const pg = await getMain(`${base}?pagina=${p}&tamanhoPagina=500`);
+    if (!Array.isArray(pg) || !pg.length) break;
+    itens.push(...pg);
+    if (pg.length < 500) break;
+    p++;
+  }
+  if (!itens.length) return [];
+  // homologado só dos itens premiados (temResultado), com concorrência; cap c/ log honesto
+  const premiados = itens.filter((it) => it.temResultado);
+  const alvo = premiados.slice(0, CAP_RES);
+  if (premiados.length > CAP_RES) console.log(`  ${cnpj}/${ano}/${seq}: ${premiados.length} itens c/ resultado — homologado coletado dos ${CAP_RES} primeiros (cap)`);
+  const resMap = new Map();
+  let i = 0;
+  await Promise.all(Array.from({ length: 6 }, async () => {
+    while (i < alvo.length) {
+      const it = alvo[i++];
+      const r = await getMain(`${base}/${it.numeroItem}/resultados`).catch(() => null);
+      if (Array.isArray(r) && r[0]) resMap.set(it.numeroItem, r[0]);
+    }
+  }));
+  return itens.map((it, idx) => {
+    const r = resMap.get(it.numeroItem) || null;
     const unitEst = Number(it.valorUnitarioEstimado) || 0;
     const unitHom = r ? Number(r.valorUnitarioHomologado) || Number(r.valorUnitario) || 0 : 0;
     const benef = String(it.tipoBeneficioNome || "");
     return {
-      numero: Number(it.numeroItem) || i + 1,
+      numero: Number(it.numeroItem) || idx + 1,
       descricao: String(it.descricao || "").slice(0, 240),
       unidade: String(it.unidadeMedida || ""),
       quantidade: Number(it.quantidade) || 0,
