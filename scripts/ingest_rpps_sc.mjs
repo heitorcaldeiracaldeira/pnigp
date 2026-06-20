@@ -49,7 +49,7 @@ async function main() {
   for (const ano of ANOS) {
     for (const e of entes) {
       if (feitos.has(`${e.cod_ibge}-${ano}`)) continue;
-      const items = await fetchAnexo(ano, e.cod_ibge.slice(0, 6), e.tipo === "E" ? "E" : "M");
+      const items = await fetchAnexo(ano, e.cod_ibge, e.tipo === "E" ? "E" : "M"); // SICONFI usa IBGE de 7 dígitos (não slice!)
       if (items == null) continue; // rede falhou — tenta na próxima
       const d = extrair(items);
       if (d) {
