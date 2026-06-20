@@ -18,6 +18,7 @@ import { ResumoExecutivo } from "@/components/resumo-executivo";
 import { PrintButton } from "@/components/print-button";
 import { InsightsPanelSC } from "@/components/insights-panel-sc";
 import { ComprasDestinosSCView } from "@/components/compras-destinos-sc";
+import { FolhaSC } from "@/components/folha-sc";
 import { gerarInsightsSC } from "@/lib/insights-sc";
 import { ArvoreFinanceira } from "@/components/arvore-financeira";
 import type { NoFin } from "@/lib/orcamento";
@@ -564,13 +565,14 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (rgfResumo) tabs.push({ id: "simulador", label: "Simulador", content: <SimuladorFiscal ano={rgfResumo.ano} receita={a.receita} despesa={a.despesa} pessoal={a.pessoal} investimento={a.investimento} rclAjustada={rgfResumo.rclAjustada} pessoalPctBase={rgfResumo.pessoalPct} /> });
   if (saude) tabs.push({ id: "saude", label: "Saúde", content: <SaudeSC data={saude} previne={previne} fns={fns} /> });
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Educação", content: <EducacaoSC data={educacao} /> });
+  if (rgfResumo) tabs.push({ id: "folha", label: "Folha / Pessoal", content: <FolhaSC rgf={rgfResumo} serie={serie} /> });
   if (cruz) tabs.push({ id: "cruzamentos", label: "Cruzamentos", content: <CruzamentosSC data={cruz} /> });
   if (comprasDestinos) tabs.push({ id: "compras-sc", label: codigo === "42" ? "Para onde vai (SC)" : "Para onde vai", content: <ComprasDestinosSCView data={comprasDestinos} escopo={codigo === "42" ? "dos municípios de SC" : `de ${ente.nome}`} /> });
 
   // abas agrupadas em 5 clusters (auditoria de UX): Resumo · Finanças · Compras · Setores · Análise
   const GRUPOS: [string, string[]][] = [
     ["Resumo", ["visao", "panorama", "diagnostico"]],
-    ["Finanças", ["financas", "execucao", "metas", "simulador"]],
+    ["Finanças", ["financas", "execucao", "folha", "metas", "simulador"]],
     ["Compras", ["compras", "contratos", "planejamento", "compras-sc"]],
     ["Setores", ["saude", "educacao-cruz", "indicadores"]],
     ["Análise", ["cruzamentos", "ranking", "transferencias", "auditoria"]],
