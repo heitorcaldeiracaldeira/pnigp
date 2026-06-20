@@ -1,77 +1,81 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function PanelTabs({
   tabs,
 }: {
   tabs: { id: string; label: string; content: React.ReactNode; grupo?: string }[];
 }) {
+  const grupoDo = (id: string) => tabs.find((t) => t.id === id)?.grupo || "Geral";
+  const grupos = [...new Set(tabs.map((t) => t.grupo || "Geral"))];
   const [active, setActive] = useState(tabs[0]?.id ?? "");
+  const [grupo, setGrupo] = useState(tabs[0]?.grupo || "Geral");
   const ref = useRef<HTMLDivElement>(null);
-  const barRef = useRef<HTMLDivElement>(null);
 
-  // Centraliza a aba ativa na barra rolável (mobile/desktop) — descoberta + sensação tátil
-  useEffect(() => {
-    const btn = barRef.current?.querySelector<HTMLElement>(`#tab-${CSS.escape(active)}`);
-    btn?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-  }, [active]);
+  const selecionar = (id: string, rolar = false) => {
+    setActive(id);
+    setGrupo(grupoDo(id));
+    if (typeof window !== "undefined") history.replaceState(null, "", `#${id}`);
+    if (rolar) ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+  // ao trocar de grupo, abre a 1ª sub-aba dele
+  const abrirGrupo = (g: string) => {
+    setGrupo(g);
+    const primeira = tabs.find((t) => (t.grupo || "Geral") === g);
+    if (primeira) selecionar(primeira.id);
+  };
 
-  // Abre a aba indicada na URL (#financas) e reage a cliques que mudam o hash
+  // abre a aba do hash (#financas) — inclusive vindo de links internos
   useEffect(() => {
     const aplicar = (rolar: boolean) => {
       const h = window.location.hash.replace("#", "");
-      if (h && tabs.some((t) => t.id === h)) {
-        setActive(h);
-        if (rolar) ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
+      if (h && tabs.some((t) => t.id === h)) selecionar(h, rolar);
     };
     aplicar(false);
     const onHash = () => aplicar(true);
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tabs]);
 
-  const selecionar = (id: string) => {
-    setActive(id);
-    if (typeof window !== "undefined") history.replaceState(null, "", `#${id}`);
-  };
+  const subtabs = tabs.filter((t) => (t.grupo || "Geral") === grupo);
 
   return (
     <div ref={ref} className="scroll-mt-[calc(var(--header-h)+0.75rem)]">
-      <div
-        role="tablist"
-        aria-label="Seções do painel"
-        className="no-print sticky top-[var(--header-h)] z-10 -mx-4 border-b border-slate-200 bg-slate-50/95 px-4 backdrop-blur lg:-mx-8 lg:px-8"
-      >
-        <div className="relative">
-          <div ref={barRef} className="flex gap-1 overflow-x-auto py-2 [-ms-overflow-style:none] [scrollbar-width:none]">
-            {tabs.map((t, i) => {
-              const novoGrupo = t.grupo && t.grupo !== tabs[i - 1]?.grupo;
-              return (
-                <Fragment key={t.id}>
-                  {novoGrupo && (
-                    <span className={`flex shrink-0 items-center self-center whitespace-nowrap text-[10px] font-semibold uppercase tracking-wide text-slate-400 ${i > 0 ? "ml-1.5 border-l border-slate-300 pl-2.5" : "pl-0.5"}`}>
-                      {t.grupo}
-                    </span>
-                  )}
-                  <button
-                    role="tab"
-                    id={`tab-${t.id}`}
-                    aria-selected={active === t.id}
-                    aria-controls={`panel-${t.id}`}
-                    onClick={() => selecionar(t.id)}
-                    className={`shrink-0 rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
-                      active === t.id ? "bg-teal-700 text-white" : "text-slate-600 hover:bg-slate-200/70"
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                </Fragment>
-              );
-            })}
-          </div>
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-50 to-transparent sm:hidden" />
+      <div className="no-print sticky top-[var(--header-h)] z-10 -mx-4 border-b border-slate-200 bg-slate-50/95 px-4 py-2 backdrop-blur lg:-mx-8 lg:px-8">
+        {/* Nível 1 — grupos */}
+        <div role="tablist" aria-label="Grupos" className="flex flex-wrap gap-1.5">
+          {grupos.map((g) => (
+            <button
+              key={g}
+              onClick={() => abrirGrupo(g)}
+              aria-selected={g === grupo}
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
+                g === grupo ? "bg-slate-800 text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
+              }`}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
+        {/* Nível 2 — sub-abas do grupo (cascata) */}
+        <div role="tablist" aria-label={`Seções de ${grupo}`} className="mt-2 flex flex-wrap gap-1 border-t border-slate-200/70 pt-2">
+          {subtabs.map((t) => (
+            <button
+              key={t.id}
+              role="tab"
+              id={`tab-${t.id}`}
+              aria-selected={active === t.id}
+              aria-controls={`panel-${t.id}`}
+              onClick={() => selecionar(t.id)}
+              className={`rounded-md px-3 py-1 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${
+                active === t.id ? "bg-teal-700 text-white" : "text-slate-600 hover:bg-slate-200/70"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
       </div>
 
