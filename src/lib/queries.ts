@@ -1179,6 +1179,23 @@ export async function getFnsSC(cod: string): Promise<FnsSC> {
   return { ano, total, custeio, investimento, areas };
 }
 
+// Previdência (RPPS) — RREO Anexo 04. null = ente sem RPPS (está no RGPS/INSS)
+export type RppsSC = { ano: number; receita: number; despesa: number; resultado: number; contribSegurados: number; contribPatronais: number; aposentadorias: number; pensoes: number; coberturaPct: number; serie: { ano: number; resultado: number }[] } | null;
+export async function getRppsSC(cod: string): Promise<RppsSC> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, receita, despesa, resultado, contrib_segurados, contrib_patronais, aposentadorias, pensoes FROM rpps_sc WHERE cod_ibge=$1 ORDER BY ano DESC`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const r = rows[0];
+  const benef = num(r.aposentadorias) + num(r.pensoes);
+  const contrib = num(r.contrib_segurados) + num(r.contrib_patronais);
+  return {
+    ano: num(r.ano), receita: num(r.receita), despesa: num(r.despesa), resultado: num(r.resultado),
+    contribSegurados: num(r.contrib_segurados), contribPatronais: num(r.contrib_patronais),
+    aposentadorias: num(r.aposentadorias), pensoes: num(r.pensoes),
+    coberturaPct: benef > 0 ? Math.round((contrib / benef) * 1000) / 10 : 0, // contribuições cobrem quanto dos benefícios
+    serie: rows.map((x) => ({ ano: num(x.ano), resultado: num(x.resultado) })).reverse(),
+  };
+}
+
 export type RgfResumo = { ano: number; pessoalPct: number; rclAjustada: number; dclPct: number | null } | null;
 export async function getRgfResumoSC(cod: string): Promise<RgfResumo> {
   const r = (await query<Record<string, unknown>>(`SELECT ano, pessoal_pct, rcl_ajustada, dcl_pct FROM rgf_sc WHERE cod_ibge=$1 AND pessoal_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
