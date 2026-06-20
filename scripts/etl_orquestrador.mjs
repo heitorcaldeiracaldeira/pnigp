@@ -40,6 +40,10 @@ const FONTES = [
     devido: async (st) => diasDesde(st?.ultima_exec) > 25 },
   { id: "pca", label: "PCA (PNCP)", api: "pncp", script: "scripts/ingest_pca_sc.mjs", env: { ANOS: `${ANO_CORRENTE},${ANO_CORRENTE + 1}` },
     devido: async (st) => diasDesde(st?.ultima_exec) > 35 },
+  { id: "processos", label: "Processos PNCP — TODOS (todas modalidades/anos)", api: "pncp", script: "scripts/ingest_processos_sc.mjs", env: {},
+    devido: async (st) => diasDesde(st?.ultima_exec) > 20 },
+  { id: "itens", label: "Itens de TODOS os processos (preço unitário)", api: "pncp", script: "scripts/ingest_itens_sc.mjs", env: {},
+    devido: async (st) => diasDesde(st?.ultima_exec) > 20 },
   { id: "indicadores", label: "Indicadores (IBGE/CGU)", api: "ibge", script: "scripts/ingest_indicadores_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 60 },
   { id: "transferencias", label: "Transferências (CGU)", api: "cgu", script: "scripts/ingest_transferencias_sc.mjs", env: {},
@@ -79,7 +83,7 @@ const estado = async (id) => (await db.query(`SELECT * FROM etl_catalogo WHERE i
 
 // ===== SUPERVISÃO (lógica do PNCP aplicada a TODA fonte) =====
 // Tabela cujo count(*) cresce durante a coleta = sinal de progresso de cada fonte.
-const TAB = { financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc_feitos", indicadores: "indicadores_sc", transferencias: "transferencias_sc", cnes: "cnes_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc" };
+const TAB = { financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc_feitos", processos: "processos_sc", itens: "itens_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", cnes: "cnes_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc" };
 const conta = async (id) => { try { return Number((await db.query(`SELECT count(*) n FROM ${TAB[id] || "financas_sc"}`)).rows[0].n) || 0; } catch { return 0; } };
 const STALL_MS = 20 * 60 * 1000;   // 20 min sem progresso => mata e religa (folga p/ não matar ente pesado)
 const CHECK_MS = 60 * 1000;

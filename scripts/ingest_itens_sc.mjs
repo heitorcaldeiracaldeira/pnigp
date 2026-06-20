@@ -91,33 +91,30 @@ async function main() {
     CREATE TABLE IF NOT EXISTS itens_sc_feitos (cod_ibge TEXT, ano INTEGER, PRIMARY KEY (cod_ibge, ano));`);
   for (const c of ["ncm TEXT", "catmat TEXT", "tipo TEXT"]) await db.query(`ALTER TABLE itens_sc ADD COLUMN IF NOT EXISTS ${c}`); // robusto se a tabela já existir
   const q = async (sql, params) => { for (let t = 0; t < 6; t++) { try { return await db.query(sql, params); } catch { await sleep(900 * (t + 1)); } } throw new Error("db indisponível"); };
-  // último ano por ente (o que o drill mostra), com top contendo IDs
-  const rows = (await db.query(`SELECT DISTINCT ON (cod_ibge) cod_ibge, ano, top FROM compras_sc WHERE top IS NOT NULL ORDER BY cod_ibge, ano DESC`)).rows;
-  const feitos = new Set((await db.query(`SELECT cod_ibge, ano FROM itens_sc_feitos`)).rows.map((r) => `${r.cod_ibge}-${r.ano}`));
-  const pend = rows.filter((r) => !feitos.has(`${r.cod_ibge}-${r.ano}`));
-  console.log(`Itens: ${pend.length} entes pendentes (de ${rows.length} com compras)...`);
+  // universo COMPLETO: todos os processos do PNCP em SC (processos_sc)
+  await db.query(`CREATE TABLE IF NOT EXISTS itens_proc_feitos (numero_controle TEXT PRIMARY KEY, n INTEGER, feito_em timestamptz DEFAULT now())`);
+  const procs = (await db.query(`SELECT numero_controle, cod_ibge, cnpj_orgao cnpj, ano, sequencial seq FROM processos_sc WHERE cnpj_orgao IS NOT NULL AND sequencial IS NOT NULL`).catch(() => ({ rows: [] }))).rows;
+  const feitos = new Set((await db.query(`SELECT numero_controle FROM itens_proc_feitos`)).rows.map((r) => r.numero_controle));
+  const pend = procs.filter((p) => !feitos.has(p.numero_controle));
+  console.log(`Itens: ${pend.length} processos pendentes (de ${procs.length} no PNCP/SC)...`);
   let comItens = 0;
-  await pool(pend, 3, async (e) => {
+  await pool(pend, 4, async (e) => {
     try {
-      const top = Array.isArray(e.top) ? e.top : [];
-      const procs = top.filter((c) => c.cnpj && c.ano && c.seq).slice(0, 12);
+      const itens = await fetchItens(e.cnpj, e.ano, e.seq);
       let n = 0;
-      for (const c of procs) {
-        const itens = await fetchItens(c.cnpj, c.ano, c.seq);
-        for (const it of itens) {
-          await q(`INSERT INTO itens_sc (cod_ibge,cnpj,ano,seq,numero,descricao,unidade,quantidade,unit_estimado,unit_homologado,fornecedor,cnpj_fornecedor,porte_fornecedor,beneficio_lc,economia_pct,ncm,catmat,tipo)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
-                   ON CONFLICT (cnpj,ano,seq,numero) DO UPDATE SET descricao=EXCLUDED.descricao,unit_homologado=EXCLUDED.unit_homologado,fornecedor=EXCLUDED.fornecedor,cnpj_fornecedor=EXCLUDED.cnpj_fornecedor,porte_fornecedor=EXCLUDED.porte_fornecedor,beneficio_lc=EXCLUDED.beneficio_lc,economia_pct=EXCLUDED.economia_pct,ncm=EXCLUDED.ncm,catmat=EXCLUDED.catmat,tipo=EXCLUDED.tipo`,
-            [e.cod_ibge, c.cnpj, c.ano, c.seq, it.numero, it.descricao, it.unidade, it.quantidade, it.unitEst, it.unitHom, it.fornecedor, it.cnpjFornecedor, it.porteFornecedor, it.beneficioLC, it.economiaPct, it.ncm, it.catmat, it.tipo]);
-          n++;
-        }
+      for (const it of itens) {
+        await q(`INSERT INTO itens_sc (cod_ibge,cnpj,ano,seq,numero,descricao,unidade,quantidade,unit_estimado,unit_homologado,fornecedor,cnpj_fornecedor,porte_fornecedor,beneficio_lc,economia_pct,ncm,catmat,tipo)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+                 ON CONFLICT (cnpj,ano,seq,numero) DO UPDATE SET descricao=EXCLUDED.descricao,unit_homologado=EXCLUDED.unit_homologado,fornecedor=EXCLUDED.fornecedor,cnpj_fornecedor=EXCLUDED.cnpj_fornecedor,porte_fornecedor=EXCLUDED.porte_fornecedor,beneficio_lc=EXCLUDED.beneficio_lc,economia_pct=EXCLUDED.economia_pct,ncm=EXCLUDED.ncm,catmat=EXCLUDED.catmat,tipo=EXCLUDED.tipo`,
+          [e.cod_ibge, e.cnpj, e.ano, e.seq, it.numero, it.descricao, it.unidade, it.quantidade, it.unitEst, it.unitHom, it.fornecedor, it.cnpjFornecedor, it.porteFornecedor, it.beneficioLC, it.economiaPct, it.ncm, it.catmat, it.tipo]);
+        n++;
       }
-      await q(`INSERT INTO itens_sc_feitos (cod_ibge,ano) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [e.cod_ibge, e.ano]);
+      await q(`INSERT INTO itens_proc_feitos (numero_controle,n) VALUES ($1,$2) ON CONFLICT (numero_controle) DO UPDATE SET n=EXCLUDED.n, feito_em=now()`, [e.numero_controle, n]);
       if (n) comItens++;
-    } catch (err) { console.log(`  ! falha ${e.cod_ibge} (${String(err).slice(0, 35)})`); }
+    } catch (err) { console.log(`  ! falha ${e.numero_controle} (${String(err).slice(0, 35)})`); }
   });
   const c = await db.query(`SELECT count(*) n, count(DISTINCT (cnpj,ano,seq)) p FROM itens_sc`);
-  console.log(`Concluído: ${comItens} entes c/ itens | total ${c.rows[0].n} itens em ${c.rows[0].p} processos`);
+  console.log(`Concluído: ${comItens} processos c/ itens nesta rodada | total ${c.rows[0].n} itens em ${c.rows[0].p} processos`);
   await db.end();
 }
 main().catch((e) => { console.error("ERRO:", e); process.exit(1); });
