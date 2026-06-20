@@ -240,7 +240,28 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
               {contratosResumo.por_fornecedor.length > 0 && (
                 <section className="rounded-2xl border border-slate-200 bg-white p-5">
                   <h3 className="font-semibold text-slate-800">Maiores fornecedores</h3>
-                  <p className="mb-2 text-xs text-slate-500">Valor global contratado por fornecedor</p>
+                  <p className="mb-2 text-xs text-slate-500">Valor global contratado por fornecedor · origem (cidade/UF) do vencedor</p>
+                  {contratosResumo.localidade && (
+                    <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                      <b className="text-teal-700">{contratosResumo.localidade.scPct}%</b> do valor foi para fornecedores de <b>SC</b> · <b className="text-amber-700">{contratosResumo.localidade.foraPct}%</b> para fora do estado
+                      {contratosResumo.localidade.topUF.length > 0 ? ` (principais origens externas: ${contratosResumo.localidade.topUF.map((u) => u.uf).join(", ")})` : ""}.
+                      <span className="mt-0.5 block text-[11px] text-slate-500">Origem resolvida em {contratosResumo.localidade.resolvidoPct}% do valor (CNPJ → Receita Federal).</span>
+                    </div>
+                  )}
+                  <div className="mb-3 grid gap-2 sm:grid-cols-2">
+                    {contratosResumo.por_fornecedor.map((f) => (
+                      <div key={f.ni || f.nome} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                        <span className="min-w-0">
+                          <span className="line-clamp-1 text-slate-700">{f.nome}</span>
+                          <span className="text-[11px] text-slate-500">
+                            {f.uf ? <span className={`mr-1 rounded px-1 py-0.5 text-[9px] font-bold ${f.uf === "SC" ? "bg-teal-100 text-teal-700" : "bg-amber-100 text-amber-700"}`}>{f.municipio ? `${f.municipio}/${f.uf}` : f.uf}</span> : <span className="mr-1 text-slate-400">origem em resolução</span>}
+                            {f.n} contrato(s)
+                          </span>
+                        </span>
+                        <span className="shrink-0 tabular-nums font-semibold text-slate-800">{fmtBRLCompact(f.valor)}</span>
+                      </div>
+                    ))}
+                  </div>
                   <Donut data={contratosResumo.por_fornecedor.map((f) => ({ label: f.nome, valor: f.valor }))} />
                 </section>
               )}
