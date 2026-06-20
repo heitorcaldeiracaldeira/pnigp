@@ -46,6 +46,9 @@ async function fetchItens(cnpj, ano, seq) {
       porteFornecedor: r ? String(r.porteFornecedorNome || r.porteFornecedor || "") || null : null,
       beneficioLC: benef && !/nenhum|não|nao|sem benef/i.test(benef) ? benef : null,
       economiaPct: unitEst > 0 && unitHom > 0 ? Math.round(((unitEst - unitHom) / unitEst) * 1000) / 10 : null,
+      ncm: String(it.ncmNbsCodigo || "") || null,                         // código fiscal do produto (comparar mesmo produto)
+      catmat: it.catalogoCodigoItem != null ? String(it.catalogoCodigoItem) : null, // CATMAT/CATSER (catálogo oficial)
+      tipo: String(it.materialOuServicoNome || "") || null,              // Material | Serviço
     };
   });
 }
@@ -60,9 +63,13 @@ async function main() {
       cod_ibge TEXT, cnpj TEXT, ano INTEGER, seq INTEGER, numero INTEGER,
       descricao TEXT, unidade TEXT, quantidade NUMERIC, unit_estimado NUMERIC, unit_homologado NUMERIC,
       fornecedor TEXT, cnpj_fornecedor TEXT, porte_fornecedor TEXT, beneficio_lc TEXT, economia_pct NUMERIC,
+      ncm TEXT, catmat TEXT, tipo TEXT,
       PRIMARY KEY (cnpj, ano, seq, numero) );
     CREATE INDEX IF NOT EXISTS idx_itens_proc ON itens_sc (cnpj, ano, seq);
+    CREATE INDEX IF NOT EXISTS idx_itens_catmat ON itens_sc (catmat) WHERE catmat IS NOT NULL;
+    CREATE INDEX IF NOT EXISTS idx_itens_ncm ON itens_sc (ncm) WHERE ncm IS NOT NULL;
     CREATE TABLE IF NOT EXISTS itens_sc_feitos (cod_ibge TEXT, ano INTEGER, PRIMARY KEY (cod_ibge, ano));`);
+  for (const c of ["ncm TEXT", "catmat TEXT", "tipo TEXT"]) await db.query(`ALTER TABLE itens_sc ADD COLUMN IF NOT EXISTS ${c}`); // robusto se a tabela já existir
   const q = async (sql, params) => { for (let t = 0; t < 6; t++) { try { return await db.query(sql, params); } catch { await sleep(900 * (t + 1)); } } throw new Error("db indisponível"); };
   // último ano por ente (o que o drill mostra), com top contendo IDs
   const rows = (await db.query(`SELECT DISTINCT ON (cod_ibge) cod_ibge, ano, top FROM compras_sc WHERE top IS NOT NULL ORDER BY cod_ibge, ano DESC`)).rows;
@@ -78,10 +85,10 @@ async function main() {
       for (const c of procs) {
         const itens = await fetchItens(c.cnpj, c.ano, c.seq);
         for (const it of itens) {
-          await q(`INSERT INTO itens_sc (cod_ibge,cnpj,ano,seq,numero,descricao,unidade,quantidade,unit_estimado,unit_homologado,fornecedor,cnpj_fornecedor,porte_fornecedor,beneficio_lc,economia_pct)
-                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
-                   ON CONFLICT (cnpj,ano,seq,numero) DO UPDATE SET descricao=EXCLUDED.descricao,unit_homologado=EXCLUDED.unit_homologado,fornecedor=EXCLUDED.fornecedor,cnpj_fornecedor=EXCLUDED.cnpj_fornecedor,porte_fornecedor=EXCLUDED.porte_fornecedor,beneficio_lc=EXCLUDED.beneficio_lc,economia_pct=EXCLUDED.economia_pct`,
-            [e.cod_ibge, c.cnpj, c.ano, c.seq, it.numero, it.descricao, it.unidade, it.quantidade, it.unitEst, it.unitHom, it.fornecedor, it.cnpjFornecedor, it.porteFornecedor, it.beneficioLC, it.economiaPct]);
+          await q(`INSERT INTO itens_sc (cod_ibge,cnpj,ano,seq,numero,descricao,unidade,quantidade,unit_estimado,unit_homologado,fornecedor,cnpj_fornecedor,porte_fornecedor,beneficio_lc,economia_pct,ncm,catmat,tipo)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+                   ON CONFLICT (cnpj,ano,seq,numero) DO UPDATE SET descricao=EXCLUDED.descricao,unit_homologado=EXCLUDED.unit_homologado,fornecedor=EXCLUDED.fornecedor,cnpj_fornecedor=EXCLUDED.cnpj_fornecedor,porte_fornecedor=EXCLUDED.porte_fornecedor,beneficio_lc=EXCLUDED.beneficio_lc,economia_pct=EXCLUDED.economia_pct,ncm=EXCLUDED.ncm,catmat=EXCLUDED.catmat,tipo=EXCLUDED.tipo`,
+            [e.cod_ibge, c.cnpj, c.ano, c.seq, it.numero, it.descricao, it.unidade, it.quantidade, it.unitEst, it.unitHom, it.fornecedor, it.cnpjFornecedor, it.porteFornecedor, it.beneficioLC, it.economiaPct, it.ncm, it.catmat, it.tipo]);
           n++;
         }
       }
