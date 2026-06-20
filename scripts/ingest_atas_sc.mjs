@@ -5,14 +5,14 @@ import fs from "fs"; import path from "path"; import { fileURLToPath } from "url
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const ANO = new Date().getFullYear();
-const DI = `${process.env.ANO_MIN || ANO - 2}0101`, DF = `${ANO}1231`;
+const ANOS = []; for (let a = Number(process.env.ANO_MIN || ANO - 2); a <= ANO; a++) ANOS.push(a); // /atas limita a 365 dias → 1 ano por consulta
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 const d10 = (s) => (s ? String(s).slice(0, 10) : null);
 
-async function pagina(cnpj, pg_) {
+async function pagina(cnpj, ano, pg_) {
   for (let t = 0; t < 3; t++) {
     try {
-      const r = await fetch(`https://pncp.gov.br/api/consulta/v1/atas?dataInicial=${DI}&dataFinal=${DF}&cnpj=${cnpj}&pagina=${pg_}&tamanhoPagina=50`, { signal: AbortSignal.timeout(25000) });
+      const r = await fetch(`https://pncp.gov.br/api/consulta/v1/atas?dataInicial=${ano}0101&dataFinal=${ano}1231&cnpj=${cnpj}&pagina=${pg_}&tamanhoPagina=50`, { signal: AbortSignal.timeout(25000) });
       if (r.status === 404 || r.status === 204) return { data: [], totalPaginas: 0 };
       if (!r.ok) throw 0;
       return await r.json();
@@ -38,21 +38,25 @@ async function main() {
   console.log(`Atas: ${pend.length} órgãos a verificar (de ${orgaos.length})...`);
   let comAtas = 0, totalAtas = 0, proc = 0;
   for (const cnpj of pend) {
-    let p = 1, totalPag = 1, n = 0;
-    do {
-      const j = await pagina(cnpj, p);
-      if (j == null) break;
-      totalPag = Number(j.totalPaginas) || 1;
-      for (const a of (j.data || [])) {
-        await q(`INSERT INTO atas_sc (numero_controle_ata,cod_ibge,cnpj_orgao,ano_ata,numero_ata,numero_controle_compra,vigencia_inicio,vigencia_fim,assinatura,objeto,cancelado)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-                 ON CONFLICT (numero_controle_ata) DO UPDATE SET vigencia_fim=EXCLUDED.vigencia_fim,cancelado=EXCLUDED.cancelado,objeto=EXCLUDED.objeto,atualizado=now()`,
-          [a.numeroControlePNCPAta, cod[cnpj], cnpj, Number(a.anoAta) || null, String(a.numeroAtaRegistroPreco || ""), a.numeroControlePNCPCompra || null,
-           d10(a.vigenciaInicio), d10(a.vigenciaFim), d10(a.dataAssinatura), String(a.objetoContratacao || "").slice(0, 300), !!a.cancelado]);
-        n++;
-      }
-      p++;
-    } while (p <= totalPag && p <= 40);
+    let n = 0;
+    for (const ano of ANOS) {
+      let p = 1, totalPag = 1;
+      do {
+        const j = await pagina(cnpj, ano, p);
+        if (j == null) break;
+        totalPag = Number(j.totalPaginas) || 1;
+        for (const a of (j.data || [])) {
+          await q(`INSERT INTO atas_sc (numero_controle_ata,cod_ibge,cnpj_orgao,ano_ata,numero_ata,numero_controle_compra,vigencia_inicio,vigencia_fim,assinatura,objeto,cancelado)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+                   ON CONFLICT (numero_controle_ata) DO UPDATE SET vigencia_fim=EXCLUDED.vigencia_fim,cancelado=EXCLUDED.cancelado,objeto=EXCLUDED.objeto,atualizado=now()`,
+            [a.numeroControlePNCPAta, cod[cnpj], cnpj, Number(a.anoAta) || null, String(a.numeroAtaRegistroPreco || ""), a.numeroControlePNCPCompra || null,
+             d10(a.vigenciaInicio), d10(a.vigenciaFim), d10(a.dataAssinatura), String(a.objetoContratacao || "").slice(0, 300), !!a.cancelado]);
+          n++;
+        }
+        p++;
+      } while (p <= totalPag && p <= 40);
+      await sleep(80);
+    }
     if (n) { comAtas++; totalAtas += n; }
     await q(`INSERT INTO atas_check (cnpj_orgao,checado,n) VALUES ($1,now(),$2) ON CONFLICT (cnpj_orgao) DO UPDATE SET checado=now(), n=EXCLUDED.n`, [cnpj, n]);
     proc++;

@@ -5,14 +5,14 @@ import fs from "fs"; import path from "path"; import { fileURLToPath } from "url
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const ANO = new Date().getFullYear();
-const DI = `${process.env.ANO_MIN || ANO - 1}0101`, DF = `${ANO}1231`;
+const ANOS = []; for (let a = Number(process.env.ANO_MIN || ANO - 1); a <= ANO; a++) ANOS.push(a); // limite de 365 dias → 1 ano/consulta
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 const d10 = (s) => (s ? String(s).slice(0, 10) : null);
 
-async function pagina(cnpj, pg_) {
+async function pagina(cnpj, ano, pg_) {
   for (let t = 0; t < 3; t++) {
     try {
-      const r = await fetch(`https://pncp.gov.br/api/consulta/v1/instrumentoscobranca/inclusao?dataInicial=${DI}&dataFinal=${DF}&cnpjOrgao=${cnpj}&pagina=${pg_}&tamanhoPagina=50`, { signal: AbortSignal.timeout(25000) });
+      const r = await fetch(`https://pncp.gov.br/api/consulta/v1/instrumentoscobranca/inclusao?dataInicial=${ano}0101&dataFinal=${ano}1231&cnpjOrgao=${cnpj}&pagina=${pg_}&tamanhoPagina=50`, { signal: AbortSignal.timeout(25000) });
       if (r.status === 404 || r.status === 204) return { data: [], totalPaginas: 0 };
       if (!r.ok) throw 0;
       return await r.json();
@@ -38,21 +38,25 @@ async function main() {
   console.log(`NF: ${pend.length} órgãos a verificar (de ${orgaos.length})...`);
   let comNF = 0, totalNF = 0, proc = 0;
   for (const cnpj of pend) {
-    let p = 1, totalPag = 1, n = 0;
-    do {
-      const j = await pagina(cnpj, p);
-      if (j == null) break;
-      totalPag = Number(j.totalPaginas) || 1;
-      for (const x of (j.data || [])) {
-        await q(`INSERT INTO nf_sc (cod_ibge,cnpj_orgao,ano,seq_contrato,seq_instrumento,tipo,numero,chave_nfe,data_emissao,raw)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-                 ON CONFLICT (cnpj_orgao,ano,seq_contrato,seq_instrumento) DO UPDATE SET chave_nfe=EXCLUDED.chave_nfe,numero=EXCLUDED.numero,data_emissao=EXCLUDED.data_emissao,raw=EXCLUDED.raw,atualizado=now()`,
-          [cod[cnpj], cnpj, Number(x.ano) || ANO, Number(x.sequencialContrato) || 0, Number(x.sequencialInstrumentoCobranca) || 0,
-           Number(x.tipoInstrumentoCobranca) || null, String(x.numeroInstrumentoCobranca || ""), x.chaveNFe || null, d10(x.dataEmissaoDocumento), JSON.stringify(x)]);
-        n++;
-      }
-      p++;
-    } while (p <= totalPag && p <= 40);
+    let n = 0;
+    for (const ano of ANOS) {
+      let p = 1, totalPag = 1;
+      do {
+        const j = await pagina(cnpj, ano, p);
+        if (j == null) break;
+        totalPag = Number(j.totalPaginas) || 1;
+        for (const x of (j.data || [])) {
+          await q(`INSERT INTO nf_sc (cod_ibge,cnpj_orgao,ano,seq_contrato,seq_instrumento,tipo,numero,chave_nfe,data_emissao,raw)
+                   VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+                   ON CONFLICT (cnpj_orgao,ano,seq_contrato,seq_instrumento) DO UPDATE SET chave_nfe=EXCLUDED.chave_nfe,numero=EXCLUDED.numero,data_emissao=EXCLUDED.data_emissao,raw=EXCLUDED.raw,atualizado=now()`,
+            [cod[cnpj], cnpj, Number(x.ano) || ano, Number(x.sequencialContrato) || 0, Number(x.sequencialInstrumentoCobranca) || 0,
+             Number(x.tipoInstrumentoCobranca) || null, String(x.numeroInstrumentoCobranca || ""), x.chaveNFe || null, d10(x.dataEmissaoDocumento), JSON.stringify(x)]);
+          n++;
+        }
+        p++;
+      } while (p <= totalPag && p <= 40);
+      await sleep(80);
+    }
     if (n) { comNF++; totalNF += n; }
     await q(`INSERT INTO nf_check (cnpj_orgao,checado,n) VALUES ($1,now(),$2) ON CONFLICT (cnpj_orgao) DO UPDATE SET checado=now(), n=EXCLUDED.n`, [cnpj, n]);
     proc++;
