@@ -25,13 +25,13 @@ async function pagina(mod, ano, pg_) {
 }
 
 async function main() {
-  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 3, keepAlive: true, query_timeout: 60000, statement_timeout: 60000 });
+  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2, keepAlive: true, query_timeout: 60000, statement_timeout: 60000 });
   db.on("error", () => {});
   await db.query(`CREATE TABLE IF NOT EXISTS processos_sc (
     numero_controle TEXT PRIMARY KEY, cod_ibge TEXT, cnpj_orgao TEXT, ano INTEGER, sequencial INTEGER,
     modalidade_id INTEGER, modalidade TEXT, objeto TEXT, valor_estimado NUMERIC, situacao TEXT, data_pub DATE, atualizado timestamptz DEFAULT now() )`);
   await db.query(`CREATE TABLE IF NOT EXISTS processos_feitos (modalidade INTEGER, ano INTEGER, n INTEGER, concluido_em timestamptz DEFAULT now(), PRIMARY KEY (modalidade, ano))`);
-  const q = async (s, p) => { for (let t = 0; t < 6; t++) { try { return await db.query(s, p); } catch { await sleep(1000 * (t + 1)); } } throw new Error("db"); };
+  const q = async (s, p) => { for (let t = 0; t < 12; t++) { try { return await db.query(s, p); } catch { await sleep(1500 * (t + 1)); } } throw new Error("db"); };
   const cod6 = new Map((await db.query(`SELECT cod_ibge FROM entes_sc`)).rows.map((r) => [r.cod_ibge.slice(0, 6), r.cod_ibge]));
   const feitos = new Set((await db.query(`SELECT modalidade||'-'||ano k FROM processos_feitos WHERE ano < ${ANO}`)).rows.map((r) => r.k)); // ano corrente sempre recoleta
 
