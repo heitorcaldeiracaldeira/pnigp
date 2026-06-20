@@ -53,9 +53,37 @@ export function PrevidenciaSC({ data }: { data: NonNullable<RppsSC> }) {
         </div>
       )}
 
+      {d.atuarial && (
+        <div className={`rounded-2xl border p-5 ${d.atuarial.deficit < 0 ? "border-rose-200 bg-gradient-to-br from-rose-50 to-orange-50" : "border-emerald-200 bg-emerald-50"}`}>
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-800"><TrendingDown className="h-4 w-4 text-rose-600" /> Déficit atuarial — projeção de longo prazo (DRAA {d.atuarial.exercicio})</div>
+          <p className="mt-1 text-sm text-slate-600">Diferente do resultado anual (caixa): é o <b>rombo projetado em décadas</b> entre os compromissos futuros (aposentadorias/pensões) e os recursos do fundo. A bomba fiscal de verdade da previdência.</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <div className={`rounded-xl border p-4 ${d.atuarial.deficit < 0 ? "border-rose-200 bg-white" : "border-emerald-200 bg-white"}`}>
+              <div className="text-xs text-slate-500">{d.atuarial.deficit < 0 ? "Déficit atuarial" : "Equilíbrio/superávit atuarial"}</div>
+              <div className={`font-display text-2xl font-bold tabular-nums ${d.atuarial.deficit < 0 ? "text-rose-700" : "text-emerald-700"}`}>{d.atuarial.deficit < 0 ? "−" : "+"}{brl(d.atuarial.deficit)}</div>
+              <div className="text-[11px] text-slate-500">compromissos − recursos (a valor presente)</div>
+            </div>
+            {d.atuarial.ativos != null && (
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="text-xs text-slate-500">Ativos garantidores</div>
+                <div className="font-display text-2xl font-bold tabular-nums text-slate-900">{brl(d.atuarial.ativos)}</div>
+                <div className="text-[11px] text-slate-500">patrimônio do fundo</div>
+              </div>
+            )}
+            {d.atuarial.ativos != null && d.atuarial.deficit < 0 && (
+              <div className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="text-xs text-slate-500">Cobertura dos compromissos</div>
+                <div className="font-display text-2xl font-bold tabular-nums text-slate-900">{n1((d.atuarial.ativos / (d.atuarial.ativos + Math.abs(d.atuarial.deficit))) * 100)}%</div>
+                <div className="text-[11px] text-slate-500">ativos / passivo atuarial total</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <p className="text-[11px] text-slate-500">
         <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
-        Fonte: SICONFI RREO Anexo 04 (RPPS). Resultado = receitas − despesas previdenciárias do fundo. Déficit atuarial (projeção de longo prazo) está no CADPREV/MPS — complemento futuro.
+        Resultado anual: SICONFI RREO Anexo 04. Déficit atuarial: CADPREV/SPREV (DRAA). Caixa (anual) × atuarial (décadas) são coisas distintas — ambas importam.
       </p>
     </div>
   );

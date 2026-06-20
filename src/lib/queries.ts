@@ -1180,10 +1180,12 @@ export async function getFnsSC(cod: string): Promise<FnsSC> {
 }
 
 // Previdência (RPPS) — RREO Anexo 04. null = ente sem RPPS (está no RGPS/INSS)
-export type RppsSC = { ano: number; receita: number; despesa: number; resultado: number; contribSegurados: number; contribPatronais: number; aposentadorias: number; pensoes: number; coberturaPct: number; serie: { ano: number; resultado: number }[] } | null;
+export type RppsSC = { ano: number; receita: number; despesa: number; resultado: number; contribSegurados: number; contribPatronais: number; aposentadorias: number; pensoes: number; coberturaPct: number; serie: { ano: number; resultado: number }[]; atuarial: { exercicio: number; deficit: number; ativos: number | null } | null } | null;
 export async function getRppsSC(cod: string): Promise<RppsSC> {
   const rows = await query<Record<string, unknown>>(`SELECT ano, receita, despesa, resultado, contrib_segurados, contrib_patronais, aposentadorias, pensoes FROM rpps_sc WHERE cod_ibge=$1 ORDER BY ano DESC`, [cod]).catch(() => []);
-  if (!rows.length) return null;
+  const at = (await query<Record<string, unknown>>(`SELECT exercicio, deficit_atuarial, ativos FROM rpps_atuarial_sc WHERE cod_ibge=$1 ORDER BY exercicio DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  const atuarial = at && at.deficit_atuarial != null ? { exercicio: num(at.exercicio), deficit: num(at.deficit_atuarial), ativos: at.ativos != null ? num(at.ativos) : null } : null;
+  if (!rows.length) return atuarial ? { ano: atuarial.exercicio, receita: 0, despesa: 0, resultado: 0, contribSegurados: 0, contribPatronais: 0, aposentadorias: 0, pensoes: 0, coberturaPct: 0, serie: [], atuarial } : null;
   const r = rows[0];
   const benef = num(r.aposentadorias) + num(r.pensoes);
   const contrib = num(r.contrib_segurados) + num(r.contrib_patronais);
@@ -1193,6 +1195,7 @@ export async function getRppsSC(cod: string): Promise<RppsSC> {
     aposentadorias: num(r.aposentadorias), pensoes: num(r.pensoes),
     coberturaPct: benef > 0 ? Math.round((contrib / benef) * 1000) / 10 : 0, // contribuições cobrem quanto dos benefícios
     serie: rows.map((x) => ({ ano: num(x.ano), resultado: num(x.resultado) })).reverse(),
+    atuarial,
   };
 }
 
