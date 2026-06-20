@@ -675,9 +675,10 @@ export async function getContratosDoProcesso(cnpj: string, ano: number, seq: num
 
 export type ContratosResumoSC = {
   n: number; valor_total: number;
-  por_fornecedor: { nome: string; ni: string; n: number; valor: number; uf: string | null; municipio: string | null }[];
+  por_fornecedor: { nome: string; ni: string; n: number; valor: number; uf: string | null; municipio: string | null; empenhado: number; nfs: number }[];
   top: { objeto: string; fornecedor: string; valor: number; vigInicio: string | null; vigFim: string | null; assinatura: string | null }[];
   localidade: { scPct: number; foraPct: number; resolvidoPct: number; topUF: { uf: string; valor: number }[] } | null;
+  execucao: { empenhoTotal: number; nfTotal: number } | null; // contadores; 0 enquanto SC não publica o ciclo
 };
 
 export async function getContratosResumoSC(cod: string): Promise<ContratosResumoSC | null> {
@@ -693,6 +694,14 @@ export async function getContratosResumoSC(cod: string): Promise<ContratosResumo
   const locRows = await query<Record<string, unknown>>(
     `SELECT cl.uf, COALESCE(sum(c.valor_global),0) v FROM contratos_sc c LEFT JOIN cnpj_loc cl ON cl.cnpj = regexp_replace(c.ni_fornecedor,'\\D','','g')
        WHERE c.cod_ibge=$1 AND c.ni_fornecedor IS NOT NULL GROUP BY cl.uf`, [cod]).catch(() => []);
+  // empenhado por fornecedor (empenhos_sc → contratos_sc) — 0 enquanto SC não publica o ciclo; preenche sozinho
+  const empMap = new Map<string, number>();
+  let empTot = 0, nfTot = 0;
+  for (const r of await query<Record<string, unknown>>(
+    `SELECT c.ni_fornecedor ni, COALESCE(sum(e.valor),0) emp FROM empenhos_sc e
+       JOIN contratos_sc c ON c.cnpj_compra=e.cnpj_compra AND c.ano_compra=e.ano_compra AND c.seq_compra=e.seq_compra
+       WHERE c.cod_ibge=$1 GROUP BY c.ni_fornecedor`, [cod]).catch(() => [])) { empMap.set(String(r.ni), num(r.emp)); empTot += num(r.emp); }
+  nfTot = num((await query<Record<string, unknown>>(`SELECT count(*) n FROM nf_sc WHERE cod_ibge=$1`, [cod]).catch(() => [{ n: 0 }]))[0]?.n);
   let localidade: ContratosResumoSC["localidade"] = null;
   if (locRows.length) {
     const totalV = locRows.reduce((s, r) => s + num(r.v), 0);
@@ -709,9 +718,10 @@ export async function getContratosResumoSC(cod: string): Promise<ContratosResumo
   }
   return {
     n: num(tot[0].n), valor_total: num(tot[0].v),
-    por_fornecedor: forn.map((r) => ({ nome: String(r.fornecedor || "—"), ni: String(r.ni_fornecedor || ""), n: num(r.n), valor: num(r.v), uf: r.uf ? String(r.uf) : null, municipio: r.municipio ? String(r.municipio) : null })),
+    por_fornecedor: forn.map((r) => ({ nome: String(r.fornecedor || "—"), ni: String(r.ni_fornecedor || ""), n: num(r.n), valor: num(r.v), uf: r.uf ? String(r.uf) : null, municipio: r.municipio ? String(r.municipio) : null, empenhado: empMap.get(String(r.ni_fornecedor || "")) || 0, nfs: 0 })),
     top: top.map((r) => ({ objeto: String(r.objeto || ""), fornecedor: String(r.fornecedor || "—"), valor: num(r.valor_global), vigInicio: r.vi ? String(r.vi) : null, vigFim: r.vf ? String(r.vf) : null, assinatura: r.asn ? String(r.asn) : null })),
     localidade,
+    execucao: { empenhoTotal: empTot, nfTotal: nfTot },
   };
 }
 

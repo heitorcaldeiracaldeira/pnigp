@@ -248,20 +248,39 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
                       <span className="mt-0.5 block text-[11px] text-slate-500">Origem resolvida em {contratosResumo.localidade.resolvidoPct}% do valor (CNPJ → Receita Federal).</span>
                     </div>
                   )}
-                  <div className="mb-3 grid gap-2 sm:grid-cols-2">
-                    {contratosResumo.por_fornecedor.map((f) => (
-                      <div key={f.ni || f.nome} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
-                        <span className="min-w-0">
-                          <span className="line-clamp-1 text-slate-700">{f.nome}</span>
-                          <span className="text-[11px] text-slate-500">
-                            {f.uf ? <span className={`mr-1 rounded px-1 py-0.5 text-[9px] font-bold ${f.uf === "SC" ? "bg-teal-100 text-teal-700" : "bg-amber-100 text-amber-700"}`}>{f.municipio ? `${f.municipio}/${f.uf}` : f.uf}</span> : <span className="mr-1 text-slate-400">origem em resolução</span>}
-                            {f.n} contrato(s)
-                          </span>
-                        </span>
-                        <span className="shrink-0 tabular-nums font-semibold text-slate-800">{fmtBRLCompact(f.valor)}</span>
-                      </div>
-                    ))}
+                  <div className="mb-3 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-left text-xs text-slate-500">
+                          <th className="p-2 font-medium">Fornecedor</th>
+                          <th className="p-2 font-medium">Origem (cidade/UF)</th>
+                          <th className="hidden p-2 text-right font-medium sm:table-cell">Contratos</th>
+                          <th className="p-2 text-right font-medium">Contratado</th>
+                          <th className="p-2 text-right font-medium">Empenhado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {contratosResumo.por_fornecedor.map((f) => (
+                          <tr key={f.ni || f.nome} className="border-b border-slate-100 align-top">
+                            <td className="p-2 text-slate-700"><span className="line-clamp-1">{f.nome}</span></td>
+                            <td className="p-2">
+                              {f.uf
+                                ? <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${f.uf === "SC" ? "bg-teal-100 text-teal-700" : "bg-amber-100 text-amber-700"}`}>{f.municipio ? `${f.municipio.charAt(0) + f.municipio.slice(1).toLowerCase()}/${f.uf}` : f.uf}{f.uf !== "SC" ? " · fora" : ""}</span>
+                                : <span className="text-[11px] text-slate-400">em resolução</span>}
+                            </td>
+                            <td className="hidden p-2 text-right tabular-nums text-slate-500 sm:table-cell">{f.n}</td>
+                            <td className="p-2 text-right font-semibold tabular-nums text-slate-800">{fmtBRLCompact(f.valor)}</td>
+                            <td className="p-2 text-right tabular-nums text-slate-500">{f.empenhado > 0 ? fmtBRLCompact(f.empenhado) : "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
+                  <p className="mb-3 text-[11px] text-slate-500">
+                    <b>Contratado</b> = valor do contrato (PNCP, disponível hoje). <b>Empenhado</b> preenche automaticamente quando o município publicar o ciclo da execução no PNCP (Lei 14.133) —
+                    {contratosResumo.execucao && contratosResumo.execucao.empenhoTotal > 0 ? ` já há empenhos publicados.` : ` ainda 0 em SC.`}
+                    {contratosResumo.execucao && contratosResumo.execucao.nfTotal > 0 ? ` Notas fiscais: ${contratosResumo.execucao.nfTotal}.` : ""}
+                  </p>
                   <Donut data={contratosResumo.por_fornecedor.map((f) => ({ label: f.nome, valor: f.valor }))} />
                 </section>
               )}
