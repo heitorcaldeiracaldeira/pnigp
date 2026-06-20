@@ -91,7 +91,7 @@ export default function EtlPage() {
                 <tr key={f.id} className="border-t border-slate-100 align-top">
                   <td className="px-4 py-3">
                     <div className="font-medium text-slate-800">{f.label}</div>
-                    {rodando ? <div className="text-[11px] font-medium text-blue-600">▶ {f.msg}</div> : f.ultimo_status && <div className="text-[11px] text-slate-400">último: {f.ultimo_status}</div>}
+                    {rodando ? <div className="text-[11px] font-medium text-blue-600">▶ {f.msg}</div> : f.msg ? <div className="text-[11px] text-slate-500">{f.msg}</div> : f.ultimo_status && <div className="text-[11px] text-slate-400">último: {f.ultimo_status}</div>}
                   </td>
                   <td className="px-4 py-3"><span className={`rounded-md px-2 py-0.5 text-xs font-medium uppercase ${API_COR[f.api] || "bg-slate-100 text-slate-600"}`}>{f.api}</span></td>
                   <td className="px-4 py-3 text-center tabular-nums text-slate-700">{f.max_ano || "—"}</td>
