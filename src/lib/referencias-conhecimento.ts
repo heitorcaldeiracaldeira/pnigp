@@ -41,6 +41,7 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
       { titulo: "Financiamento da Atenção Primária (gestor)", fonte: "Min. Saúde / SAPS", url: "https://aps.saude.gov.br/gestor/financiamento" },
       { titulo: "Previne Brasil — modelo de financiamento", fonte: "Min. Saúde", url: "https://www.gov.br/saude/pt-br/composicao/saps/previne-brasil/" },
       { titulo: "LC 141/2012 (mínimo em saúde)", fonte: "Planalto", url: "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp141.htm" },
+      { titulo: "SIOPS — orçamentos públicos em saúde (acompanha o mínimo de 15%)", fonte: "DataSUS/MS", url: "https://www.gov.br/saude/pt-br/acesso-a-informacao/siops" },
       { titulo: "CONASEMS — apoio aos municípios", fonte: "CONASEMS", url: "https://www.conasems.org.br/" },
     ],
   },
@@ -61,7 +62,8 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
       { titulo: "FUNDEB — legislação e manuais de orientação", fonte: "FNDE", url: "https://www.gov.br/fnde/pt-br/acesso-a-informacao/acoes-e-programas/financiamento/fundeb" },
       { titulo: "Lei 14.113/2020 (Novo FUNDEB)", fonte: "Planalto", url: "http://www.planalto.gov.br/ccivil_03/_ato2019-2022/2020/lei/l14113.htm" },
       { titulo: "Referências normativas do financiamento da educação", fonte: "MEC", url: "https://www.gov.br/mec/pt-br/financiamento-da-educacao-basica/RefernciasNormativas2024.pdf" },
-      { titulo: "Indicadores e censo (IDEB, matrículas)", fonte: "INEP", url: "https://www.gov.br/inep/" },
+      { titulo: "SIOPE — orçamentos públicos em educação (acompanha o mínimo de 25%)", fonte: "FNDE/MEC", url: "https://www.fnde.gov.br/siope/" },
+      { titulo: "INEP — IDEB e indicadores educacionais", fonte: "INEP", url: "https://www.gov.br/inep/pt-br/areas-de-atuacao/pesquisas-estatisticas-e-indicadores/ideb" },
     ],
   },
   previdencia: {
@@ -88,7 +90,8 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
     materiais: [
       { titulo: "Referencial Básico de Governança Organizacional (3ª ed.)", fonte: "TCU", url: "https://portal.tcu.gov.br/referencial-basico-de-governanca-organizacional.htm" },
       { titulo: "IEGM — Índice de Efetividade da Gestão Municipal", fonte: "IRB", url: "https://irbcontas.org.br/" },
-      { titulo: "TCE/SC — orientações e jurisprudência", fonte: "TCE/SC", url: "https://www.tcesc.tc.br/" },
+      { titulo: "e-Sfinge — prestação de contas dos municípios de SC", fonte: "TCE/SC", url: "https://www.tcesc.tc.br/" },
+      { titulo: "AUDESP — auditoria eletrônica (referência; modelo de SP)", fonte: "TCE-SP", url: "https://www.tce.sp.gov.br/audesp" },
     ],
   },
   assistencia: {
