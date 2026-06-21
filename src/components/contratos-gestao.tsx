@@ -4,13 +4,16 @@ import { fmtBRL, fmtBRLCompact, fmtData } from "@/lib/ui";
 const dt = (s: string | Date | null | undefined) => fmtData(s);
 const CORF: Record<string, string> = { critico: "bg-rose-500", m1_2: "bg-orange-400", m2_3: "bg-amber-400", m3_6: "bg-yellow-400", m6_12: "bg-teal-400" };
 
-// Índice de criticidade do vencimento — cresce conforme o prazo diminui (0 dias = 100).
-// score = 100 × (1 − dias/365); níveis: Crítico ≤30d · Alto ≤90d · Médio ≤180d · Baixo ≤365d.
-function criticidade(dias: number) {
-  const score = Math.max(0, Math.min(100, Math.round((1 - Math.min(dias, 365) / 365) * 100)));
-  if (dias <= 30) return { nivel: "Crítico", score, badge: "bg-rose-100 text-rose-700", bar: "bg-rose-500" };
-  if (dias <= 90) return { nivel: "Alto", score, badge: "bg-orange-100 text-orange-700", bar: "bg-orange-400" };
-  if (dias <= 180) return { nivel: "Médio", score, badge: "bg-amber-100 text-amber-700", bar: "bg-amber-400" };
+// Índice de criticidade do vencimento — combina URGÊNCIA do prazo (70%) e MAGNITUDE do valor (30%).
+// urgência = 1 − dias/365 (cresce ao encurtar o prazo); magnitude = valor/maiorValor (entre os a vencer).
+// score = 100 × (0,7·urgência + 0,3·magnitude). Níveis por score: Crítico ≥75 · Alto ≥50 · Médio ≥30 · Baixo <30.
+function criticidade(dias: number, valor: number, valorMax: number) {
+  const urg = 1 - Math.min(dias, 365) / 365;
+  const mag = valorMax > 0 ? valor / valorMax : 0;
+  const score = Math.max(0, Math.min(100, Math.round((0.7 * urg + 0.3 * mag) * 100)));
+  if (score >= 75 || dias <= 30) return { nivel: "Crítico", score, badge: "bg-rose-100 text-rose-700", bar: "bg-rose-500" };
+  if (score >= 50) return { nivel: "Alto", score, badge: "bg-orange-100 text-orange-700", bar: "bg-orange-400" };
+  if (score >= 30) return { nivel: "Médio", score, badge: "bg-amber-100 text-amber-700", bar: "bg-amber-400" };
   return { nivel: "Baixo", score, badge: "bg-teal-100 text-teal-700", bar: "bg-teal-400" };
 }
 
@@ -36,16 +39,19 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
             ))}
           </div>
 
-          {vencimento.aVencer.length > 0 && (
+          {vencimento.aVencer.length > 0 && (() => {
+            const vmax = Math.max(1, ...vencimento.aVencer.map((c) => c.valor));
+            const lista = [...vencimento.aVencer].sort((a, b) => criticidade(b.dias, b.valor, vmax).score - criticidade(a.dias, a.valor, vmax).score);
+            return (
             <div className="mt-4">
               <h4 className="text-xs font-semibold text-slate-700">⏳ Contratos a vencer (próximos 12 meses) — por criticidade {vencimento.nCriticos > 0 && <span className="text-rose-700">· {vencimento.nCriticos} crítico(s) &lt; 30 dias</span>}</h4>
-              <p className="mb-2 text-[11px] text-slate-400">Criticidade = 100 × (1 − dias/365), cresce conforme o prazo encurta. Níveis: <b className="text-rose-700">Crítico</b> ≤30d · <b className="text-orange-700">Alto</b> ≤90d · <b className="text-amber-700">Médio</b> ≤180d · <b className="text-teal-700">Baixo</b> ≤365d.</p>
+              <p className="mb-2 text-[11px] text-slate-400">Criticidade = 100 × (0,7·urgência do prazo + 0,3·magnitude do valor) — alto valor + prazo curto = mais crítico. Níveis: <b className="text-rose-700">Crítico</b> ≥75 (ou ≤30d) · <b className="text-orange-700">Alto</b> ≥50 · <b className="text-amber-700">Médio</b> ≥30 · <b className="text-teal-700">Baixo</b> &lt;30.</p>
               <div className="mt-1 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="border-b border-slate-100 text-left text-xs text-slate-500"><th className="p-2 font-medium">Objeto</th><th className="hidden p-2 font-medium md:table-cell">Fornecedor</th><th className="p-2 font-medium">Fim</th><th className="p-2 text-right font-medium">Faltam</th><th className="p-2 font-medium">Criticidade</th><th className="p-2 text-right font-medium">Valor</th></tr></thead>
                   <tbody>
-                    {vencimento.aVencer.map((c, i) => {
-                      const k = criticidade(c.dias);
+                    {lista.map((c, i) => {
+                      const k = criticidade(c.dias, c.valor, vmax);
                       return (
                       <tr key={i} className="border-b border-slate-100 align-top">
                         <td className="p-2 text-slate-700"><span className="line-clamp-2">{c.objeto}</span></td>
@@ -66,7 +72,8 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
                 </table>
               </div>
             </div>
-          )}
+            );
+          })()}
         </section>
       )}
 
