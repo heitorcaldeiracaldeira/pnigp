@@ -197,7 +197,7 @@ export default function EstrategiaPage() {
           <li><b>Inteligência de compras do ente</b> — preço de referência, sobrepreço, PCA, comportamento.</li>
           <li><b>Prestação de contas facilitada</b> (Câmara, Conselhos, TCE).</li>
           <li><b>Painéis para Câmara e TCE</b> — fiscalização por risco.</li>
-          <li>⭐ <b>Captação de Recursos (Convênios e Programas — União + Estado)</b> — sugere os programas com proposta ABERTA casados com os gargalos do município (IDEB→FNDE, saúde→MS, saneamento→FUNASA), mostra convênios ativos e quanto o ente deixa na mesa vs pares. Fontes: <b>Transferegov/SICONV (União)</b> + <b>dados.sc.gov.br (Estado de SC → municípios)</b> — ambos dados abertos.</li>
+          <li>⭐ <b>Radar de Captação de Recursos (Convênios e Programas — União + Estado)</b> — sugere os programas com proposta ABERTA casados com os gargalos do município (IDEB→FNDE, saúde→MS, saneamento→FUNASA), mostra convênios ativos, o que <b>pode entrar</b> (vs pares) e o que <b>não está apto</b> (CAUC bloqueia voluntárias). Fontes: <b>Transferegov/SICONV (União)</b> + <b>dados.sc.gov.br (Estado SC)</b>. <br/><b>+ Gerador de Projetos/Documentos para o Transferegov</b> ✨ — usa os dados do município (gargalos, indicadores, diagnóstico) para pré-montar plano de trabalho, justificativa e peças do projeto de convênio — o gestor só revisa e submete.</li>
         </ol>
 
         <H2>3. Produtos B2B (setor privado) — monetização do moat</H2>

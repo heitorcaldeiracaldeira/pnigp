@@ -36,7 +36,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getReceitaConexaoSC, getEducacaoSerieSC, getIegmSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getEducacaoSerieSC, getIegmSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -615,8 +615,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     const mac = repassesSaude?.programas.find((p) => p.key === "mac");
     tabs.push({ id: "mac", label: "Média e Alta Complexidade (4 visões)", content: <AssuntoMAC producao={macProducao} repasseValor={mac?.valorUlt ?? null} repasseAno={repassesSaude?.anoUlt ?? null} internMil={saude.internMil} internMilPares={saude.internMilPares} nome={ente.nome} /> });
   }
-  const receitaConexao = await getReceitaConexaoSC(codigo);
-  tabs.push({ id: "receitas", label: "Receitas (de onde vem)", content: <AssuntoReceitas serie={dados.serie} detalhe={receitasDetalhe} conexao={receitaConexao} cauc={cauc} nome={ente.nome} /> });
+  tabs.push({ id: "receitas", label: "Receitas (de onde vem)", content: <AssuntoReceitas serie={dados.serie} detalhe={receitasDetalhe} nome={ente.nome} /> });
   tabs.push({ id: "despesas", label: "Despesas (para onde vai)", content: <AssuntoDespesas serie={dados.serie} funcoes={dados.funcoesLatest} subfuncoes={despSubfuncao} pessoalPct={rgfResumo?.pessoalPct ?? null} nome={ente.nome} /> });
   if (previneFicha) {
     const aps = repassesSaude?.programas.find((p) => p.key === "aps");
