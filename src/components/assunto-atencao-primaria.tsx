@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { BarChart3, ClipboardCheck, Database, Gauge, LineChart as LineIcon } from "lucide-react";
 import type { PrevineFichaSC } from "@/lib/queries";
@@ -20,6 +20,11 @@ const PILULAS: { id: Visao; label: string; icon: typeof Gauge; desc: string }[] 
 const COR = { ok: "text-emerald-600", warn: "text-amber-600", bad: "text-rose-600" } as const;
 const BAR = { ok: "bg-emerald-500", warn: "bg-amber-500", bad: "bg-rose-500" } as const;
 const fmtComp = (c: string) => { const m = c.match(/(\d{4})Q(\d)/); return m ? `${m[2]}º/${m[1].slice(2)}` : c; };
+// o que o numerador conta (a "produção" de cada indicador)
+const UNIDADE: Record<string, string> = {
+  "10": "gestantes com 6+ consultas", "20": "gestantes testadas", "30": "gestantes c/ atend. odontológico",
+  "40": "exames citopatológicos", "50": "crianças vacinadas", "70": "exames de HbA1c",
+};
 
 export function AssuntoAtencaoPrimaria({ dados, nome }: { dados: Dados; nome: string }) {
   const [v, setV] = useState<Visao>("estrategico");
@@ -151,6 +156,29 @@ export function AssuntoAtencaoPrimaria({ dados, nome }: { dados: Dados; nome: st
                 )}
               </div>
             )}
+            <div className="rounded-xl border border-slate-200 p-3">
+              <div className="mb-2 text-xs font-semibold text-slate-700">📦 O que mudou na produção — nº de atendimentos/exames, com a variação a cada quadrimestre</div>
+              <div className="space-y-2.5">
+                {comMeta.map((i) => (
+                  <div key={i.codigo}>
+                    <div className="text-xs font-medium text-slate-700">{i.saber.emoji} {i.saber.curto} <span className="text-[10px] text-slate-400">({UNIDADE[i.codigo] || "registros"})</span></div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1 text-xs">
+                      {i.serie.map((s, idx) => {
+                        const d = idx > 0 ? s.numerador - i.serie[idx - 1].numerador : 0;
+                        return (
+                          <Fragment key={s.competencia}>
+                            {idx > 0 && <span className={`rounded px-1 text-[10px] font-semibold ${d >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>{d >= 0 ? "▲ +" : "▼ "}{d.toLocaleString("pt-BR")}</span>}
+                            <span className="font-semibold tabular-nums text-slate-800">{s.numerador.toLocaleString("pt-BR")}</span>
+                            <span className="text-[10px] text-slate-400">{fmtComp(s.competencia)}</span>
+                          </Fragment>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-[10px] text-slate-400">Número absoluto registrado (numerador do indicador). A variação a cada quadrimestre mostra o que de fato mudou na ponta — ex.: mais exames/consultas realizados.</p>
+            </div>
             <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 text-left text-xs text-slate-500">

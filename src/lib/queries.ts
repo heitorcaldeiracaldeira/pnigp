@@ -1162,7 +1162,7 @@ export async function getPrevineSC(cod: string): Promise<PrevineSC> {
 // Previne — Ficha do Indicador: série por competência + pares, por indicador (para a visão pedagógica)
 export type PrevineFichaSC = {
   competenciaUlt: string; grupo: string;
-  indicadores: { codigo: string; nome: string; pct: number; paresPct: number; numerador: number; denominador: number; serie: { competencia: string; pct: number }[] }[];
+  indicadores: { codigo: string; nome: string; pct: number; paresPct: number; numerador: number; denominador: number; serie: { competencia: string; pct: number; numerador: number; denominador: number }[] }[];
 } | null;
 export async function getPrevineFichaSC(cod: string): Promise<PrevineFichaSC> {
   const ent = (await query<Record<string, unknown>>(`SELECT populacao FROM entes_sc WHERE cod_ibge=$1 AND tipo='M'`, [cod]))[0];
@@ -1181,7 +1181,7 @@ export async function getPrevineFichaSC(cod: string): Promise<PrevineFichaSC> {
     return {
       codigo, nome: String(ultLinha?.ind_nome || codigo),
       pct: num(ultLinha?.pct), paresPct, numerador: num(ultLinha?.numerador), denominador: num(ultLinha?.denominador),
-      serie: linhas.map((r) => ({ competencia: String(r.competencia), pct: num(r.pct) })),
+      serie: linhas.map((r) => ({ competencia: String(r.competencia), pct: num(r.pct), numerador: num(r.numerador), denominador: num(r.denominador) })),
     };
   });
   return { competenciaUlt: ult, grupo: _faixa(num(ent.populacao)), indicadores };
