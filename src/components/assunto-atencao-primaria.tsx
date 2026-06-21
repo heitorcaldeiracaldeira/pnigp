@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { BarChart3, ClipboardCheck, Database, Gauge } from "lucide-react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { BarChart3, ClipboardCheck, Database, Gauge, LineChart as LineIcon } from "lucide-react";
 import type { PrevineFichaSC } from "@/lib/queries";
 import { PREVINE_SABER, nivelPrevine } from "@/lib/previne-saber";
 import { PrevineFicha } from "@/components/previne-ficha";
@@ -28,6 +29,15 @@ export function AssuntoAtencaoPrimaria({ dados, nome }: { dados: Dados; nome: st
   const piores = [...comMeta].sort((a, b) => a.pct / a.meta - b.pct / b.meta);
   const mediaMun = comMeta.reduce((s, i) => s + i.pct, 0) / (comMeta.length || 1);
   const mediaPar = comMeta.reduce((s, i) => s + i.paresPct, 0) / (comMeta.length || 1);
+  const CORES = ["#0d9488", "#2563eb", "#db2777", "#d97706", "#7c3aed", "#16a34a"];
+  const comps = [...new Set(comMeta.flatMap((i) => i.serie.map((s) => s.competencia)))].sort();
+  const evol = comps.map((c) => { const row: Record<string, number | string> = { competencia: fmtComp(c) }; comMeta.forEach((i) => { const p = i.serie.find((s) => s.competencia === c); if (p) row[i.saber.curto] = p.pct; }); return row; });
+  // leitura pedagógica da evolução (fato neutro + como ler)
+  const trends = comMeta.map((i) => ({ i, d: i.serie.length >= 2 ? i.pct - i.serie[0].pct : 0 }));
+  const melhoraram = trends.filter((t) => t.d > 0.5);
+  const recuaram = trends.filter((t) => t.d < -0.5);
+  const maiorAlta = [...trends].sort((a, b) => b.d - a.d)[0];
+  const maiorQueda = [...trends].sort((a, b) => a.d - b.d)[0];
   const parecer = naMeta === comMeta.length ? { t: "Todos os indicadores na meta", c: "bg-emerald-100 text-emerald-700" }
     : naMeta >= comMeta.length / 2 ? { t: "Maioria na meta — alguns pontos a subir", c: "bg-amber-100 text-amber-700" }
     : { t: "Vários indicadores abaixo da meta", c: "bg-rose-100 text-rose-700" };
@@ -110,7 +120,37 @@ export function AssuntoAtencaoPrimaria({ dados, nome }: { dados: Dados; nome: st
         {/* TÉCNICO — série, cálculo, fonte */}
         {v === "tecnico" && (
           <div className="space-y-3">
-            <p className="text-sm text-slate-600">A prova de cada número: série por quadrimestre, numerador/denominador e fonte oficial.</p>
+            <p className="text-sm text-slate-600">A prova de cada número: evolução por quadrimestre, numerador/denominador e fonte oficial.</p>
+            {evol.length >= 2 && (
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="mb-1 flex items-center gap-1.5 text-xs font-semibold text-slate-700"><LineIcon className="h-3.5 w-3.5" /> Evolução dos indicadores (% por quadrimestre)</div>
+                <ResponsiveContainer width="100%" height={240}>
+                  <LineChart data={evol} margin={{ top: 8, right: 16, left: 4, bottom: 4 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis dataKey="competencia" tick={{ fontSize: 12, fill: "#475569" }} tickLine={false} axisLine={{ stroke: "#e2e8f0" }} />
+                    <YAxis unit="%" tick={{ fontSize: 11, fill: "#64748b" }} tickLine={false} axisLine={false} width={40} domain={[0, 100]} />
+                    <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12 }} formatter={(v, n) => [`${Number(v).toFixed(1)}%`, n as string]} />
+                    {comMeta.map((i, idx) => <Line key={i.codigo} type="monotone" dataKey={i.saber.curto} stroke={CORES[idx % CORES.length]} strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />)}
+                  </LineChart>
+                </ResponsiveContainer>
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                  {comMeta.map((i, idx) => <span key={i.codigo} className="inline-flex items-center gap-1 text-[10px] text-slate-600"><span className="h-2 w-2 rounded-full" style={{ background: CORES[idx % CORES.length] }} /> {i.saber.curto}</span>)}
+                </div>
+                {/* leitura pedagógica da evolução (fato + como ler, tom neutro) */}
+                {maiorAlta && (
+                  <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+                    <p className="text-xs text-slate-700"><span className="mr-1 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">Fato</span>
+                      No período: <b>{melhoraram.length}</b> indicador(es) melhoraram e <b>{recuaram.length}</b> recuaram.
+                      {maiorAlta.d > 0.5 && <> Maior alta: <b>{maiorAlta.i.saber.curto}</b> (+{maiorAlta.d.toFixed(1)} p.p.).</>}
+                      {maiorQueda.d < -0.5 && <> Maior recuo: <b>{maiorQueda.i.saber.curto}</b> ({maiorQueda.d.toFixed(1)} p.p.).</>}
+                    </p>
+                    <p className="text-xs text-slate-700"><span className="mr-1 rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700">Como ler</span>
+                      No Previne, altas vêm de mais cadastro, busca ativa e melhor registro no e-SUS; recuos muitas vezes são queda de <b>registro</b> (e não de atendimento) — confira o registro antes de concluir. Para subir cada um, veja a visão <b>Operacional</b> (“como melhorar”).
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 text-left text-xs text-slate-500">
