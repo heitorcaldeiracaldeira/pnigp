@@ -39,7 +39,7 @@ import { TransferenciasSCSection } from "@/components/transferencias-sc-section"
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
 import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getContratosVencimentoSC, getEducacaoSerieSC, getIegmSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
-import { fmtBRL, fmtBRLCompact, fmtPop } from "@/lib/ui";
+import { fmtBRL, fmtBRLCompact, fmtPop, fmtData } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
 export const dynamic = "force-dynamic";
@@ -369,7 +369,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
                             <td className="p-2 text-slate-700"><span className="line-clamp-2">{t.objeto}</span></td>
                             <td className="hidden p-2 text-slate-500 md:table-cell"><span className="line-clamp-1">{t.fornecedor}</span></td>
                             <td className="p-2 text-right font-semibold tabular-nums text-slate-800">{fmtBRLCompact(t.valor)}</td>
-                            <td className="hidden p-2 text-slate-500 lg:table-cell">{t.vigInicio || "—"}{t.vigFim ? ` → ${t.vigFim}` : ""}</td>
+                            <td className="hidden p-2 text-slate-500 lg:table-cell">{fmtData(t.vigInicio)}{t.vigFim ? ` → ${fmtData(t.vigFim)}` : ""}</td>
                           </tr>
                         ))}
                       </tbody>

@@ -1,11 +1,7 @@
 import type { ContratosVencimentoSC, ContratoComItens } from "@/lib/queries";
-import { fmtBRL, fmtBRLCompact } from "@/lib/ui";
+import { fmtBRL, fmtBRLCompact, fmtData } from "@/lib/ui";
 
-function dt(s: string | null) {
-  if (!s) return "—";
-  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
-  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(s);
-}
+const dt = (s: string | Date | null | undefined) => fmtData(s);
 const CORF: Record<string, string> = { critico: "bg-rose-500", m1_2: "bg-orange-400", m2_3: "bg-amber-400", m3_6: "bg-yellow-400", m6_12: "bg-teal-400" };
 
 export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosVencimentoSC; itens?: ContratoComItens[] }) {
@@ -59,7 +55,7 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
       {itens && itens.length > 0 && (
         <section className="rounded-2xl border border-slate-200 bg-white p-5">
           <h3 className="font-semibold text-slate-800">📦 Itens dos maiores contratos</h3>
-          <p className="mb-3 text-xs text-slate-500">Os itens vêm do processo licitatório vinculado (PNCP). Mostra preço estimado → homologado, economia, situação e benefício LC 123 (ME/EPP). Clique para expandir.</p>
+          <p className="mb-3 text-xs text-slate-500">Cada linha mostra o <b>valor global do contrato</b> (à direita) e a <b>economia da licitação</b> que o originou (verde) — uma licitação pode gerar vários contratos, então a economia do processo costuma superar um contrato isolado. Os itens vêm do processo vinculado (PNCP): preço estimado → homologado, total, economia, situação e benefício LC 123 (ME/EPP). Clique para expandir.</p>
           <div className="space-y-2">
             {itens.map((c, i) => {
               const ecoContrato = c.itens.reduce((s, it) => (it.est != null && it.hom != null && it.est > 0 && it.hom <= it.est ? s + (it.est - it.hom) * it.quantidade : s), 0);
@@ -69,7 +65,7 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
                   <span className="text-sm font-medium text-slate-800"><span className="line-clamp-1 inline">{c.objeto}</span></span>
                   <span className="flex items-center gap-2 text-[11px] text-slate-500">
                     <span className="rounded bg-slate-100 px-1.5 py-0.5">{dt(c.vigInicio)} → {dt(c.vigFim)}</span>
-                    {ecoContrato > 0 && <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-700">economia {fmtBRLCompact(ecoContrato)}</span>}
+                    {ecoContrato > 0 && <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-700" title="Economia de toda a licitação que originou este contrato (a licitação pode gerar vários contratos)">economia da licitação {fmtBRLCompact(ecoContrato)}</span>}
                     <span className="font-semibold text-slate-700">{fmtBRLCompact(c.valor)}</span>
                   </span>
                 </summary>

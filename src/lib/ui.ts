@@ -75,6 +75,17 @@ export function fmtPop(v: number): string {
 
 export const fmtBRL = (v: number) => brl.format(v);
 
+/** Formata data para DD/MM/AAAA. Aceita ISO ("2025-12-18..."), Date ou Date.toString(). "—" se vazio. */
+export function fmtData(v: string | Date | null | undefined): string {
+  if (!v) return "—";
+  const s = String(v);
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  const d = v instanceof Date ? v : new Date(s);
+  if (!isNaN(d.getTime())) return `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}/${d.getUTCFullYear()}`;
+  return s;
+}
+
 /** Formata CNPJ (XX.XXX.XXX/XXXX-XX) ou CPF (XXX.XXX.XXX-XX). Mantém o valor original se não for 11/14 dígitos. */
 export function fmtCNPJ(v: string | null | undefined): string {
   if (!v) return "—";

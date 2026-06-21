@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import { Building2, ChevronDown, ChevronRight, Database, Loader2, ShoppingCart, TriangleAlert } from "lucide-react";
 import { Donut } from "@/components/charts/donut";
 import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
-import { fmtBRL, fmtBRLCompact, fmtCNPJ } from "@/lib/ui";
+import { fmtBRL, fmtBRLCompact, fmtCNPJ, fmtData } from "@/lib/ui";
 
 type Contrato = { objeto: string; modalidade: string; orgao: string; estimado: number; homologado: number; economia_pct: number | null; data: string; cnpj?: string; ano?: number; seq?: number };
 type Item = { numero: number; descricao: string; unidade: string; quantidade: number; unitEstimado: number; totalEstimado: number; unitHomologado: number | null; fornecedor: string | null; cnpjFornecedor: string | null; porteFornecedor: string | null; beneficioLC: string | null; economiaPct: number | null };
@@ -343,7 +343,7 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
                     <td className="p-1 text-slate-700"><span className="line-clamp-1">{ct.fornecedor}</span></td>
                     <td className="hidden p-1 tabular-nums text-slate-500 sm:table-cell">{fmtCNPJ(ct.ni)}</td>
                     <td className="p-1 text-right font-semibold tabular-nums text-slate-800">{fmtBRLCompact(ct.valor)}</td>
-                    <td className="hidden p-1 text-slate-500 md:table-cell">{ct.vigInicio || "—"}{ct.vigFim ? ` → ${ct.vigFim}` : ""}</td>
+                    <td className="hidden p-1 text-slate-500 md:table-cell">{fmtData(ct.vigInicio)}{ct.vigFim ? ` → ${fmtData(ct.vigFim)}` : ""}</td>
                     <td className="hidden p-1 text-slate-500 lg:table-cell">{ct.assinatura || "—"}</td>
                   </tr>
                 ))}
