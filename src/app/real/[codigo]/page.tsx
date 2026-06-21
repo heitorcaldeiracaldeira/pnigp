@@ -13,12 +13,12 @@ import { SimuladorFiscal } from "@/components/simulador-fiscal";
 import { SaudeSC } from "@/components/saude-sc";
 import { PrevineFicha } from "@/components/previne-ficha";
 import { SerieExplicada } from "@/components/serie-explicada";
+import { PlacarEstrategico } from "@/components/placar-estrategico";
 import { EducacaoSC } from "@/components/educacao-sc";
 import { CruzamentosSC } from "@/components/cruzamentos-sc";
 import { PanoramaSC } from "@/components/panorama-sc";
 import { ResumoExecutivo } from "@/components/resumo-executivo";
 import { PrintButton } from "@/components/print-button";
-import { InsightsPanelSC } from "@/components/insights-panel-sc";
 import { ComprasDestinosSCView } from "@/components/compras-destinos-sc";
 import { FolhaSC } from "@/components/folha-sc";
 import { PrevidenciaSC } from "@/components/previdencia-sc";
@@ -526,6 +526,10 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const comprasDestinos = await getComprasDestinosSC(codigo === "42" ? undefined : codigo); // Estado = agregado SC · município = destinos dele
   const diag = diagnostico ?? diagEstado; // município: vs pares · Estado: limites legais absolutos
   const insights = gerarInsightsSC({ diag, cruz, saude, educacao, pos: minhaPos, total: totalRank }); // análise automática (dado real)
+  tabs.push({ id: "placar", label: "Visão do Prefeito", content: (
+    <PlacarEstrategico nome={ente.nome} posicao={minhaPos?.posicao ?? null} total={totalRank || null} scoreFiscal={minhaPos?.score ?? null}
+      saudePct={saude?.saudePct ?? null} educPct={educacao?.educPct ?? null} pessoalPct={rgfResumo?.pessoalPct ?? null} insights={insights} ano={diag?.ano ?? anoFim} />
+  ) });
   if (diag) tabs.splice(1, 0, { id: "diagnostico", label: "Diagnóstico", content: <DiagnosticoGestor data={diag} /> });
 
   // PANORAMA 360° — cruza todas as dimensões num radar (50 = mediana dos pares)
@@ -582,7 +586,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   // navegação por NÍVEIS ESTRATÉGICOS DE GESTÃO (Estratégico → Tático → Operacional → Técnico):
   // cada nível entrega a profundidade certa para cada cabeça (prefeito → secretário → servidor → auditoria).
   const GRUPOS: [string, string[]][] = [
-    ["Estratégico", ["visao", "panorama", "diagnostico"]],
+    ["Estratégico", ["placar", "visao", "panorama", "diagnostico"]],
     ["Tático", ["financas", "saude", "educacao-cruz", "compras", "folha", "previdencia"]],
     ["Operacional", ["previne-ficha", "fns-historico", "execucao", "metas", "planejamento", "contratos", "compras-sc", "simulador"]],
     ["Técnico", ["cruzamentos", "indicadores", "ranking", "transferencias", "cauc", "auditoria"]],
@@ -652,8 +656,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
           />
         )}
 
-        {/* Análise automática — insights narrativos (dado real) */}
-        {insights.length > 0 && <div className="mb-4"><InsightsPanelSC insights={insights} /></div>}
+        {/* Insights agora vivem no Placar (aba Visão do Prefeito), evitando duplicação */}
 
         {/* Seções em abas (mesmo layout do painel) */}
         <PanelTabs tabs={tabs} />
