@@ -1226,6 +1226,21 @@ export async function getRepassesSaudeFichaSC(cod: string): Promise<RepasseSaude
   return { anoUlt, totalUlt, programas };
 }
 
+// Despesa por subfunção (drill da função) — último ano
+export type DespesaSubfuncaoSC = { anoUlt: number; porFuncao: Record<string, { subfuncao: string; empenhado: number }[]> } | null;
+export async function getDespesaSubfuncaoSC(cod: string): Promise<DespesaSubfuncaoSC> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, funcao, subfuncao, empenhado FROM despesa_subfuncao_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const anoUlt = Math.max(...rows.map((r) => num(r.ano)));
+  const porFuncao: Record<string, { subfuncao: string; empenhado: number }[]> = {};
+  for (const r of rows.filter((r) => num(r.ano) === anoUlt)) {
+    const f = String(r.funcao);
+    (porFuncao[f] = porFuncao[f] || []).push({ subfuncao: String(r.subfuncao), empenhado: num(r.empenhado) });
+  }
+  for (const f of Object.keys(porFuncao)) porFuncao[f].sort((a, b) => b.empenhado - a.empenhado);
+  return { anoUlt, porFuncao };
+}
+
 // Receitas detalhadas por item nominal (ICMS, FPM, IPTU, ISS, IPVA, ITR, FUNDEB) — série anual
 export type ReceitasDetalheSC = { anoUlt: number; itens: { item: string; valor: number; serie: { ano: number; valor: number }[] }[] } | null;
 export async function getReceitasDetalheSC(cod: string): Promise<ReceitasDetalheSC> {

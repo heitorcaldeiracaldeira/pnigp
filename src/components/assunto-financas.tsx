@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BarChart3, BookOpen, ClipboardCheck, Database, Gauge } from "lucide-react";
-import type { FinancaSCAno, FuncaoSC, ReceitasDetalheSC } from "@/lib/queries";
+import type { FinancaSCAno, FuncaoSC, ReceitasDetalheSC, DespesaSubfuncaoSC } from "@/lib/queries";
 import { fmtBRLCompact } from "@/lib/ui";
 
 type Visao = "estrategico" | "tatico" | "operacional" | "tecnico";
@@ -100,8 +100,9 @@ export function AssuntoReceitas({ serie, detalhe, nome }: { serie: FinancaSCAno[
 }
 
 // ============ DESPESAS — para onde vai o dinheiro ============
-export function AssuntoDespesas({ serie, funcoes, pessoalPct, nome }: { serie: FinancaSCAno[]; funcoes: FuncaoSC[]; pessoalPct: number | null; nome: string }) {
+export function AssuntoDespesas({ serie, funcoes, subfuncoes, pessoalPct, nome }: { serie: FinancaSCAno[]; funcoes: FuncaoSC[]; subfuncoes: DespesaSubfuncaoSC; pessoalPct: number | null; nome: string }) {
   const [v, setV] = useState<Visao>("estrategico");
+  const [aberta, setAberta] = useState<string | null>(null);
   const u = serie[serie.length - 1];
   const resultado = u.receita - u.despesa;
   const pess = pessoalPct ?? pct(u.pessoal, u.receita);
@@ -126,8 +127,33 @@ export function AssuntoDespesas({ serie, funcoes, pessoalPct, nome }: { serie: F
         )}
         {v === "tatico" && (
           <div className="space-y-2.5">
-            <p className="text-sm text-slate-600">Para onde vai — por função/área ({u.ano}, empenhado):</p>
-            {funcs.map((f) => <Barra key={f.nome} label={`${f.nome}`} valor={f.empenhado} max={maxF} cor="bg-blue-500" sub={`exec ${pct(f.empenhado, f.dotacao).toFixed(0)}%`} />)}
+            <p className="text-sm text-slate-600">Para onde vai — por função/área ({u.ano}, empenhado).{subfuncoes ? " Clique para ver as subfunções." : ""}</p>
+            {funcs.map((f) => {
+              const subs = subfuncoes?.porFuncao[f.nome];
+              const temDrill = subs && subs.length > 0;
+              const maxS = temDrill ? Math.max(...subs.map((s) => s.empenhado), 1) : 1;
+              return (
+                <div key={f.nome}>
+                  <button disabled={!temDrill} onClick={() => setAberta(aberta === f.nome ? null : f.nome)} className={`w-full text-left ${temDrill ? "cursor-pointer" : "cursor-default"}`}>
+                    <div className="mb-0.5 flex justify-between text-xs">
+                      <span className="text-slate-600">{temDrill && <span className="mr-1 text-slate-400">{aberta === f.nome ? "▾" : "▸"}</span>}{f.nome}</span>
+                      <span className="tabular-nums text-slate-500">{fmtBRLCompact(f.empenhado)} · exec {pct(f.empenhado, f.dotacao).toFixed(0)}%</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-slate-100"><div className="h-2 rounded-full bg-blue-500" style={{ width: `${Math.min(100, maxF > 0 ? (f.empenhado / maxF) * 100 : 0)}%` }} /></div>
+                  </button>
+                  {temDrill && aberta === f.nome && (
+                    <div className="mt-1.5 ml-3 space-y-1.5 border-l-2 border-slate-100 pl-3">
+                      {subs!.map((s) => (
+                        <div key={s.subfuncao}>
+                          <div className="mb-0.5 flex justify-between text-[11px]"><span className="text-slate-500">{s.subfuncao}</span><span className="tabular-nums text-slate-400">{fmtBRLCompact(s.empenhado)}</span></div>
+                          <div className="h-1.5 w-full rounded-full bg-slate-100"><div className="h-1.5 rounded-full bg-sky-400" style={{ width: `${Math.min(100, (s.empenhado / maxS) * 100)}%` }} /></div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
         {v === "operacional" && <Plano titulo="Como qualificar a despesa" porque="Gastar bem é tão importante quanto arrecadar: controlar pessoal libera caixa para investir e cumprir a lei." passos={["Manter o gasto com pessoal abaixo do prudencial (51,3% da RCL) — LRF.", "Priorizar investimento sobre custeio quando houver folga fiscal.", "Melhorar a execução (empenhado/dotação) para não perder recurso no fim do ano.", "Cumprir os mínimos de saúde (15%) e educação (25%) com qualidade do gasto.", "Renegociar e controlar a dívida dentro do limite (120% da RCL)."]} />}
