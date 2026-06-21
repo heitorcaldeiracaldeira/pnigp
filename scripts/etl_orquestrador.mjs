@@ -72,6 +72,8 @@ const FONTES = [
     devido: async (st) => diasDesde(st?.ultima_exec) > 20 },
   { id: "nf", label: "Notas fiscais / instrumentos de cobrança (PNCP — acende quando publicarem)", api: "pncp", script: "scripts/ingest_nf_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 15 }, // cobertura SC hoje ~0
+  { id: "iegm", label: "IEGM — qualidade da gestão (TCE-SC/IRB, dados abertos)", api: "irb", script: "scripts/ingest_iegm_sc.mjs", env: {},
+    devido: async () => (await maxAno("iegm_sc")) < ANO_FECHADO-1 },
   { id: "cauc", label: "Regularidade fiscal CAUC/CADIN (Tesouro)", api: "tesouro", script: "scripts/ingest_cauc_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 7 }, // atualizado diariamente — recoleta semanal
 ];
