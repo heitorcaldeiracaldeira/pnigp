@@ -9,6 +9,13 @@ export function PanelTabs({
 }) {
   const grupoDo = (id: string) => tabs.find((t) => t.id === id)?.grupo || "Geral";
   const grupos = [...new Set(tabs.map((t) => t.grupo || "Geral"))];
+  // descritor de cada nível estratégico de gestão (pedagogia: pra quem é cada um)
+  const NIVEL_DESC: Record<string, string> = {
+    "Estratégico": "Visão do prefeito — como o município está, em uma olhada.",
+    "Tático": "Visão do secretário — desempenho por área (saúde, finanças, compras…).",
+    "Operacional": "Visão de quem executa — indicador a indicador, com o que fazer para melhorar.",
+    "Técnico": "Dados, fontes e metodologia — para auditoria e transparência.",
+  };
   const [active, setActive] = useState(tabs[0]?.id ?? "");
   const [grupo, setGrupo] = useState(tabs[0]?.grupo || "Geral");
   const ref = useRef<HTMLDivElement>(null);
@@ -59,6 +66,7 @@ export function PanelTabs({
             </button>
           ))}
         </div>
+        {NIVEL_DESC[grupo] && <p className="mt-1.5 text-[11px] text-slate-500">{NIVEL_DESC[grupo]}</p>}
         {/* Nível 2 — sub-abas do grupo (cascata) */}
         <div role="tablist" aria-label={`Seções de ${grupo}`} className="mt-2 flex flex-wrap gap-1 border-t border-slate-200/70 pt-2">
           {subtabs.map((t) => (

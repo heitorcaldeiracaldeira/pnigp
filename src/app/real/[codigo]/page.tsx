@@ -579,13 +579,13 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (cruz) tabs.push({ id: "cruzamentos", label: "Cruzamentos", content: <CruzamentosSC data={cruz} /> });
   if (comprasDestinos) tabs.push({ id: "compras-sc", label: codigo === "42" ? "Para onde vai (SC)" : "Para onde vai", content: <ComprasDestinosSCView data={comprasDestinos} escopo={codigo === "42" ? "dos municípios de SC" : `de ${ente.nome}`} /> });
 
-  // abas agrupadas em 5 clusters (auditoria de UX): Resumo · Finanças · Compras · Setores · Análise
+  // navegação por NÍVEIS ESTRATÉGICOS DE GESTÃO (Estratégico → Tático → Operacional → Técnico):
+  // cada nível entrega a profundidade certa para cada cabeça (prefeito → secretário → servidor → auditoria).
   const GRUPOS: [string, string[]][] = [
-    ["Resumo", ["visao", "panorama", "diagnostico"]],
-    ["Finanças", ["financas", "execucao", "folha", "previdencia", "metas", "simulador"]],
-    ["Compras", ["compras", "contratos", "planejamento", "compras-sc"]],
-    ["Setores", ["saude", "previne-ficha", "fns-historico", "educacao-cruz", "indicadores"]],
-    ["Análise", ["cruzamentos", "ranking", "transferencias", "cauc", "auditoria"]],
+    ["Estratégico", ["visao", "panorama", "diagnostico"]],
+    ["Tático", ["financas", "saude", "educacao-cruz", "compras", "folha", "previdencia"]],
+    ["Operacional", ["previne-ficha", "fns-historico", "execucao", "metas", "planejamento", "contratos", "compras-sc", "simulador"]],
+    ["Técnico", ["cruzamentos", "indicadores", "ranking", "transferencias", "cauc", "auditoria"]],
   ];
   const ORDEM = GRUPOS.flatMap(([, ids]) => ids);
   const grupoDe = (id: string) => GRUPOS.find(([, ids]) => ids.includes(id))?.[0];
