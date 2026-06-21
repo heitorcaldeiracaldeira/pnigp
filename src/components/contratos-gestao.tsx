@@ -42,10 +42,26 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
           {vencimento.aVencer.length > 0 && (() => {
             const vmax = Math.max(1, ...vencimento.aVencer.map((c) => c.valor));
             const lista = [...vencimento.aVencer].sort((a, b) => criticidade(b.dias, b.valor, vmax).score - criticidade(a.dias, a.valor, vmax).score);
+            const NIVEIS = [
+              { nivel: "Crítico", cls: "border-rose-200 bg-rose-50 text-rose-700" },
+              { nivel: "Alto", cls: "border-orange-200 bg-orange-50 text-orange-700" },
+              { nivel: "Médio", cls: "border-amber-200 bg-amber-50 text-amber-700" },
+              { nivel: "Baixo", cls: "border-teal-200 bg-teal-50 text-teal-700" },
+            ];
+            const cont: Record<string, number> = { "Crítico": 0, "Alto": 0, "Médio": 0, "Baixo": 0 };
+            lista.forEach((c) => { cont[criticidade(c.dias, c.valor, vmax).nivel]++; });
             return (
             <div className="mt-4">
               <h4 className="text-xs font-semibold text-slate-700">⏳ Contratos a vencer (próximos 12 meses) — por criticidade {vencimento.nCriticos > 0 && <span className="text-rose-700">· {vencimento.nCriticos} crítico(s) &lt; 30 dias</span>}</h4>
-              <p className="mb-2 text-[11px] text-slate-400">Criticidade = 100 × (0,7·urgência do prazo + 0,3·magnitude do valor) — alto valor + prazo curto = mais crítico. Níveis: <b className="text-rose-700">Crítico</b> ≥75 (ou ≤30d) · <b className="text-orange-700">Alto</b> ≥50 · <b className="text-amber-700">Médio</b> ≥30 · <b className="text-teal-700">Baixo</b> &lt;30.</p>
+              <p className="mb-2 text-[11px] text-slate-400">Criticidade = 100 × (0,7·urgência do prazo + 0,3·magnitude do valor) — alto valor + prazo curto = mais crítico.</p>
+              <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {NIVEIS.map((n) => (
+                  <div key={n.nivel} className={`rounded-xl border p-3 ${n.cls}`}>
+                    <div className="text-2xl font-bold tabular-nums">{cont[n.nivel]}</div>
+                    <div className="text-[11px] font-medium">{n.nivel}</div>
+                  </div>
+                ))}
+              </div>
               <div className="mt-1 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="border-b border-slate-100 text-left text-xs text-slate-500"><th className="p-2 font-medium">Objeto</th><th className="hidden p-2 font-medium md:table-cell">Fornecedor</th><th className="p-2 font-medium">Fim</th><th className="p-2 text-right font-medium">Faltam</th><th className="p-2 font-medium">Criticidade</th><th className="p-2 text-right font-medium">Valor</th></tr></thead>
