@@ -1,6 +1,6 @@
 # PNIGP — Documentação do Sistema (gerada automaticamente)
 
-> Gerada em 2026-06-20 por `scripts/gerar_documentacao.mjs`. Reflete o estado real do código e do banco. **Não editar à mão.**
+> Gerada em 2026-06-21 por `scripts/gerar_documentacao.mjs`. Reflete o estado real do código e do banco. **Não editar à mão.**
 
 ## 1. Banco de dados (Neon)
 
@@ -20,12 +20,14 @@
 | `contratos_sc` | 765.146 | 14 (id, cod_ibge, numero_controle_compra, cnpj_compra, ano_compra, seq_compra, fornecedor, ni_fornecedor…) |
 | `contratos_sc_feitos` | 295 | 2 (cod_ibge, n) |
 | `contratos_sc_feitos_inc` | 295 | 2 (cod_ibge, n) |
+| `despesa_sub_check` | 394 | 2 (cod_ibge, ano) |
+| `despesa_subfuncao_sc` | 10.704 | 5 (cod_ibge, ano, funcao, subfuncao, empenhado) |
 | `empenhos_check` | 189 | 5 (cnpj_compra, ano_compra, seq_compra, checado, n) |
 | `empenhos_sc` | 0 | 10 (cod_ibge, cnpj_compra, ano_compra, seq_compra, seq_empenho, numero, valor, data…) |
 | `entes_sc` | 296 | 6 (cod_ibge, nome, uf, tipo, populacao, pop_indigena) |
 | `estado_indicador_valores` | 2.160 | 4 (estado_id, indicador_id, ano, valor) |
 | `estados` | 27 | 8 (id, uf, nome, regiao, populacao, capital, governador, pib_per_capita) |
-| `etl_catalogo` | 25 | 10 (id, label, api, max_ano, ultima_exec, ultimo_status, devido, msg…) |
+| `etl_catalogo` | 27 | 10 (id, label, api, max_ano, ultima_exec, ultimo_status, devido, msg…) |
 | `financas` | 106 | 19 (ente_tipo, ente_id, ano, receita_total, rec_tributaria, rec_transferencias, rec_outras, despesa_total…) |
 | `financas_sc` | 1.969 | 23 (cod_ibge, ano, receita, receita_prevista, tributaria, transferencias, outras, despesa…) |
 | `fns_repasse_sc` | 45.606 | 8 (cod_ibge, ano, bloco_cod, bloco_nome, area_cod, area_nome, vl_total, vl_liquido) |
@@ -34,8 +36,8 @@
 | `indicadores_sc` | 4.672 | 7 (cod_ibge, ano, codigo, area, valor, unidade, fonte) |
 | `indices_pnigp` | 130 | 9 (municipio_id, ano, iceb, invp, igp360, cap_planejamento, cap_fiscal, cap_gestao…) |
 | `indices_pnigp_estados` | 135 | 9 (estado_id, ano, iceb, invp, igp360, cap_planejamento, cap_fiscal, cap_gestao…) |
-| `itens_proc_feitos` | 35.905 | 3 (numero_controle, n, feito_em) |
-| `itens_sc` | 475.228 | 19 (cod_ibge, cnpj, ano, seq, numero, descricao, unidade, quantidade…) |
+| `itens_proc_feitos` | 44.693 | 3 (numero_controle, n, feito_em) |
+| `itens_sc` | 683.005 | 19 (cod_ibge, cnpj, ano, seq, numero, descricao, unidade, quantidade…) |
 | `itens_sc_feitos` | 0 | 2 (cod_ibge, ano) |
 | `metas` | 130 | 6 (id, municipio_id, indicador_id, ano_alvo, valor_alvo, descricao) |
 | `metas_estados` | 135 | 6 (id, estado_id, indicador_id, ano_alvo, valor_alvo, descricao) |
@@ -49,12 +51,15 @@
 | `previne_sc` | 5.310 | 7 (cod_ibge, competencia, indicador, ind_nome, numerador, denominador, pct) |
 | `processos_feitos` | 54 | 4 (modalidade, ano, n, concluido_em) |
 | `processos_sc` | 78.481 | 12 (numero_controle, cod_ibge, cnpj_orgao, ano, sequencial, modalidade_id, modalidade, objeto…) |
+| `receitas_det_check` | 1.027 | 2 (cod_ibge, ano) |
+| `receitas_detalhe_sc` | 10.594 | 4 (cod_ibge, ano, item, valor) |
 | `rgf_sc` | 1.270 | 10 (cod_ibge, ano, pessoal_pct, pessoal_valor, limite_pct, rcl_ajustada, dcl_valor, dcl_pct…) |
 | `rpps_atuarial_sc` | 418 | 5 (cod_ibge, exercicio, deficit_atuarial, ativos, no_ente) |
 | `rpps_check` | 1.480 | 2 (cod_ibge, ano) |
 | `rpps_sc` | 329 | 9 (cod_ibge, ano, receita, despesa, resultado, contrib_segurados, contrib_patronais, aposentadorias…) |
 | `rreo_const_sc` | 1.268 | 9 (cod_ibge, ano, educacao_pct, educacao_min, educacao_valor, fundeb_pct, rcl, saude_pct…) |
 | `saude_producao_sc` | 1.463 | 6 (cod_ibge, ano, internacoes, valor_internacoes, sia_qtd, sia_valor) |
+| `serie_anotacao` | 0 | 6 (id, escopo, cod_ibge, ano, texto, criado) |
 | `siops_sc` | 1.475 | 9 (cod_ibge, ano, saude_pct, saude_valor, saude_min, transf_saude_pct, transf_uniao_pct, transf_saude_valor…) |
 | `transferencias_sc` | 295 | 8 (cod_ibge, n_instrumentos, valor_total, valor_liberado, por_situacao, por_orgao, top, por_ano) |
 
@@ -67,6 +72,7 @@
 | `scripts/backup_neon.mjs` | Backup LÓGICO do Neon — dump de todas as tabelas em JSONL.gz local (backups/, gitignored). Dado sensível: NUNCA vai pro GitHub. Camada primária = PITR nativo do Neon; isto é o dump |
 | `scripts/diagnostico_gestor.mjs` | MOTOR DE DIAGNÓSTICO DO GESTOR — pontos de análise + sugestões acionáveis. Benchmark por GRUPO DE PARES (porte populacional) e ANO FECHADO (exclui ano em curso). Regras ancoradas e |
 | `scripts/etl_orquestrador.mjs` | ORQUESTRADOR de coleta — detecta novidade por fonte e roda só os ETLs devidos (incremental, idempotente, serial por API). Grava estado em etl_catalogo. node scripts/etl_orquestrado |
+| `scripts/etl_pagina_sync.mjs` | Sincroniza a PÁGINA DE COLETA (/etl) com a realidade do banco: conta registros reais por fonte, reflete progresso ao vivo do harvest (processos/itens) e atualiza etl_catalogo (msg/ |
 | `scripts/gerar_documentacao.mjs` | Gerador de documentação automática do sistema PNIGP. Introspecta: ETLs (cabeçalho dos scripts), tabelas do Neon (+contagens), rotas/páginas, catálogo de coleta e tarefas agendadas  |
 | `scripts/ingest_atas_sc.mjs` | ETL — Atas de Registro de Preço (PNCP, API de Consulta /v1/atas) por órgão de SC. Traz preços registrados + vínculo à compra (numeroControlePNCPCompra). Idempotente/resumível por ó |
 | `scripts/ingest_cauc_sc.mjs` | ETL — CAUC (Sistema de Informações sobre Requisitos Fiscais) por município/Estado de SC. Fonte: CSV oficial do Tesouro Transparente (CAUC lê o CADIN diariamente). Mostra se o ente  |
@@ -74,6 +80,7 @@
 | `scripts/ingest_cnpj_loc.mjs` | ETL — resolve UF/município dos FORNECEDORES vencedores (PNCP não fornece; usamos o CNPJ). Fonte: minhareceita.org (base Receita Federal). Cache em cnpj_loc, idempotente/resumível,  |
 | `scripts/ingest_compras_sc.mjs` | Fase 2 — Compras OFICIAIS (PNCP) de Santa Catarina, agregadas por ente no banco. Para cada ente de entes_sc: contratações 2024 (PNCP), esfera municipal (ou estadual), principais mo |
 | `scripts/ingest_contratos_sc.mjs` | ETL — Contratos ASSINADOS do PNCP por município de SC, conectados ao processo licitatório. Descobre os CNPJs dos órgãos municipais (via contratações esfera M) e puxa /contratos?cnp |
+| `scripts/ingest_despesa_subfuncao_sc.mjs` | ETL — Despesa por FUNÇÃO → SUBFUNÇÃO (drill real: Atenção Básica, Ensino Fundamental…) via SICONFI RREO Anexo 02. Hierarquia é por ordem: linha de função (lista oficial) e depois s |
 | `scripts/ingest_empenhos_sc.mjs` | ETL — Empenhos por contrato (PNCP, Lei 14.133). Endpoint /contratos/{ano}/{seq}/empenhos. Hoje a cobertura em SC é ~0 (municípios ainda não publicam o ciclo), mas o coletor "acende |
 | `scripts/ingest_fns_sc.mjs` | ETL — Repasses federais fundo-a-fundo do FNS por bloco/área, por município de SC. Fonte: API REST da Consulta Consolidada do FNS (consultafns.saude.gov.br) — descoberta via app Ang |
 | `scripts/ingest_indicadores_sc.mjs` | ETL — Indicadores setoriais REAIS (infraestrutura extensível). Inicia com ECONOMIA via IBGE (PIB per capita). Tabela genérica indicadores_sc (cod_ibge, ano, codigo, area, valor, un |
@@ -84,6 +91,7 @@
 | `scripts/ingest_pca_sc.mjs` | ETL — PCA (Plano Anual de Contratações) do PNCP por município de SC. Descobre os CNPJs dos órgãos municipais (contratações esfera M) e puxa /pca/atualizacao?cnpj= de cada (o filtro |
 | `scripts/ingest_previne_sc.mjs` | ETL — Previne Brasil (indicadores de desempenho da APS / SISAB) por município de SC. Fonte: CSV oficial por quadrimestre (Portal de Dados Abertos do SUS, S3). Agrega numerador/deno |
 | `scripts/ingest_processos_sc.mjs` | ETL — TODOS os processos de contratação do PNCP em SC (todas as modalidades, todos os anos). Fonte: API Consulta /v1/contratacoes/publicacao (exige codigoModalidadeContratacao; lim |
+| `scripts/ingest_receitas_detalhe_sc.mjs` | ETL — Receitas DETALHADAS por item nominal (IPTU, ISS, FPM, ICMS, IPVA, ITR, FUNDEB) via SICONFI RREO Anexo 03 (Demonstrativo da RCL). Soma os 12 meses (colunas <MR-11..MR>) = tota |
 | `scripts/ingest_rgf_sc.mjs` | ETL — RGF (Relatório de Gestão Fiscal, SICONFI): número OFICIAL de pessoal por Poder (Executivo) e Dívida Consolidada Líquida. Anexo 01 = DTP % sobre RCL Ajustada (limites LRF); An |
 | `scripts/ingest_rpps_atuarial_sc.mjs` | ETL — Déficit ATUARIAL dos RPPS (projeção de longo prazo) via CADPREV (SPREV). Fonte: apicadprev.trabalho.gov.br /DRAA_VALORES_COMPROMISSOS (item "Déficit Atuarial" + ativos garant |
 | `scripts/ingest_rpps_sc.mjs` | ETL — Previdência (RPPS) por município/Estado de SC. Fonte: SICONFI RREO Anexo 04. Receitas × despesas previdenciárias, resultado do fundo, contribuições e benefícios. Só entes COM |
@@ -104,35 +112,53 @@
 | `scripts/validar_consistencia.mjs` | Validação de consistência/integridade dos dados oficiais (SC) após os ETLs. Cobertura por base, duplicatas (vazamento de CNPJ compartilhado), conexões, e amostra planejado × contra |
 | `scripts/warm_compras.mjs` | Pré-aquece o cache de compras (PNCP) das maiores cidades de SC + Estado, chamando a API de produção sequencialmente (usa o IP do Vercel). node scripts/warm_compras.mjs |
 
+## 2b. Componentes (visões e molde do produto)
+
+| Componente | O que faz |
+|---|---|
+| `accountability-aps.tsx` | Calendário legal de prestação de contas (obrigações reais — base neutra, sem juízo). |
+| `assunto-atencao-primaria.tsx` | o que o numerador conta (a "produção" de cada indicador) |
+| `brand.tsx` | Marca PNIGP — monograma próprio (arcos concêntricos = inteligência/radar territorial 360°). |
+| `cabecalho-area.tsx` | Cabeçalho FRACTAL de área: repete o padrão de camadas (Estratégico→Tático→Operacional) dentro do bloco. |
+| `charts/area-empilhada.tsx` | Área empilhada — leitura de COMPOSIÇÃO ao longo do tempo (distinta da linha, que mostra trajetória). |
+| `folha-sc.tsx` | Limites LRF do Executivo (% sobre a RCL): alerta 48,6 · prudencial 51,3 · máximo 54 |
+| `panel-tabs.tsx` | ao trocar de grupo, abre a 1ª sub-aba dele |
+| `placar-estrategico.tsx` | liga a ação (Estratégico) ao lugar onde ela se executa (Tático/Operacional) — coordenação visível |
+| `repasses-saude-ficha.tsx` | Programas/repasses da saúde no MOLDE do Previne: o que é · por que importa · série · como melhorar. |
+| `resumo-executivo.tsx` | separa conformidade (legal) de desempenho (relativo): conformidade OK + posição ruim NÃO é "tudo bem" |
+| `termo.tsx` | Glossário central — explica siglas/jargão para o gestor não-técnico (público-alvo do PNIGP). |
+
 ## 3. Fontes de dados (catálogo de coleta)
 
 | Fonte | Provedor | Ano + recente | Última coleta | Situação |
 |---|---|---|---|---|
-| Déficit atuarial RPPS (CADPREV/DRAA) | cadprev | — | há 14h | em dia |
-| Transferências (CGU) | cgu | — | há 14h | em dia |
-| CNES — rede de saúde (Min. Saúde) | cnes | 2026 | há 14h | em dia |
-| Previne Brasil — indicadores APS (SISAB) | datasus | — | há 14h | em dia |
-| SIA — produção ambulatorial (DATASUS) | datasus | 2025 | há 14h | em dia |
-| SIH — produção hospitalar (DATASUS) | datasus | 2025 | há 14h | em dia |
-| Repasses federais FNS por bloco (Consulta Consolidada) | fns | 2026 | há 14h | em dia |
-| Indicadores (IBGE/CGU) | ibge | 2024 | há 14h | em dia |
-| População indígena (IBGE Censo 2022) | ibge | — | há 14h | em dia |
-| Atas de Registro de Preço (PNCP Consulta) | pncp | — | há 14h | em dia |
-| Compras (PNCP ano corrente) | pncp | 2026 | há 14h | em dia |
-| Contratos (PNCP ano corrente, append) | pncp | 2026 | há 14h | em dia |
-| Empenhos por contrato (PNCP Lei 14.133 — acende quando publicarem) | pncp | — | há 14h | em dia |
-| Itens de TODOS os processos (preço unitário) | pncp | 2025 | há 0h | pendente |
-| Notas fiscais / instrumentos de cobrança (PNCP — acende quando publicarem) | pncp | — | há 0h | pendente |
-| PCA (PNCP) | pncp | — | há 14h | em dia |
-| Processos PNCP — TODOS (todas modalidades/anos) | pncp | 2025 | há 14h | em dia |
-| Localidade dos fornecedores (CNPJ→UF/município) | receita | — | há 14h | em dia |
-| Finanças (SICONFI RREO an.1/2) | siconfi | 2025 | há 14h | em dia |
-| Metas Fiscais LDO (RREO an.6) | siconfi | 2025 | há 14h | em dia |
-| Pessoal/DCL (RGF) | siconfi | 2025 | há 14h | em dia |
-| Previdência RPPS (RREO Anexo 04) | siconfi | 2024 | há 10h | pendente |
-| Educação/RCL (RREO an.14/3) | siconfi | 2025 | há 14h | em dia |
-| Saúde ASPS (SIOPS) | siops | 2025 | há 14h | em dia |
-| Regularidade fiscal CAUC/CADIN (Tesouro) | tesouro | — | há 14h | em dia |
+| Déficit atuarial RPPS (CADPREV/DRAA) | cadprev | — | há 1d | em dia |
+| Transferências (CGU) | cgu | — | há 1d | em dia |
+| CNES — rede de saúde (Min. Saúde) | cnes | 2026 | há 1d | em dia |
+| Previne Brasil — indicadores APS (SISAB) | datasus | — | há 1d | em dia |
+| SIA — produção ambulatorial (DATASUS) | datasus | 2025 | há 1d | em dia |
+| SIH — produção hospitalar (DATASUS) | datasus | 2025 | há 1d | em dia |
+| Repasses federais FNS por bloco (Consulta Consolidada) | fns | 2026 | há 1d | em dia |
+| Indicadores (IBGE/CGU) | ibge | 2024 | há 1d | em dia |
+| População indígena (IBGE Censo 2022) | ibge | — | há 1d | em dia |
+| Atas de Registro de Preço (PNCP Consulta) | pncp | — | há 1d | em dia |
+| Compras (PNCP ano corrente) | pncp | 2026 | há 1d | em dia |
+| Contratos (PNCP ano corrente, append) | pncp | 2026 | há 1d | em dia |
+| Empenhos por contrato (PNCP Lei 14.133 — acende quando publicarem) | pncp | — | há 1d | em dia |
+| Itens de TODOS os processos (preço unitário) | pncp | 2025 | há 13h | em dia |
+| Notas fiscais / instrumentos de cobrança (PNCP — acende quando publicarem) | pncp | — | há 13h | em dia |
+| PCA (PNCP) | pncp | — | há 1d | em dia |
+| Processos PNCP — TODOS (todas modalidades/anos) | pncp | 2025 | há 1d | em dia |
+| Localidade dos fornecedores (CNPJ→UF/município) | receita | — | há 1d | em dia |
+| Despesa por subfunção (RREO an.2 — drill) | siconfi | 2023 | nunca | pendente |
+| Finanças (SICONFI RREO an.1/2) | siconfi | 2025 | há 1d | em dia |
+| Metas Fiscais LDO (RREO an.6) | siconfi | 2025 | há 1d | em dia |
+| Receitas detalhadas (ICMS/FPM/IPTU/FUNDEB — RREO an.3) | siconfi | 2024 | nunca | pendente |
+| Pessoal/DCL (RGF) | siconfi | 2025 | há 1d | em dia |
+| Previdência RPPS (RREO Anexo 04) | siconfi | 2025 | há 22h | em dia |
+| Educação/RCL (RREO an.14/3) | siconfi | 2025 | há 1d | em dia |
+| Saúde ASPS (SIOPS) | siops | 2025 | há 1d | em dia |
+| Regularidade fiscal CAUC/CADIN (Tesouro) | tesouro | — | há 1d | em dia |
 
 ## 4. Rotas e APIs (Next.js)
 
@@ -142,6 +168,7 @@
 - `/api/compras-sc/[codigo]`
 - `/api/contratos-processo/[cnpj]/[ano]/[seq]`
 - `/api/etl-catalogo`
+- `/api/serie-anotacao`
 - `/api/transferencias-sc/[codigo]`
 - `/cidadao`
 - `/cidadao/[codigo]`
@@ -166,7 +193,32 @@
 
 ## 6. Integridade (última validação)
 
-- status: **ok** · registros suspeitos (excluídos): 6 · sobrepreço unitário: 5784
+- status: **ok** · registros suspeitos (excluídos): 6 · sobrepreço unitário: 7106
+
+## 7. Fontes oficiais dos dados (proveniência)
+
+| Domínio | Fonte oficial | Acesso |
+|---|---|---|
+| Finanças (receita, despesa, MDE, ASPS, RCL, dívida, subfunção) | SICONFI / Tesouro Nacional (RREO/RGF) | apidatalake.tesouro.gov.br/ords/siconfi |
+| Receitas nominais (IPTU, ISS, FPM, ICMS, IPVA, FUNDEB) | SICONFI RREO Anexo 03 | idem |
+| Compras (processos, contratos, itens, atas) | PNCP — Portal Nacional de Contratações Públicas | pncp.gov.br/api |
+| Saúde — repasses federais por bloco | Fundo Nacional de Saúde (FNS) | consultafns.saude.gov.br |
+| Saúde — Atenção Primária (Previne) | SISAB / Previne Brasil (Min. Saúde) | sisab S3 (dados abertos SUS) |
+| Saúde — produção MAC (internações/ambulatorial) | SIH/SIA-SUS (DATASUS) | datasus / TabNet |
+| Saúde — rede | CNES (Min. Saúde) | cnes.datasus.gov.br |
+| Previdência — déficit atuarial RPPS | CADPREV / SPREV | apicadprev.trabalho.gov.br |
+| Educação — MDE/FUNDEB | SICONFI RREO Anexo 08 | idem SICONFI |
+| Regularidade fiscal (CAUC/CADIN) | Tesouro Transparente | tesourotransparente.gov.br |
+| Indicadores socioeconômicos | IBGE (Censo 2022, PIB) / CGU | ibge.gov.br |
+
+## 8. Conceitos do produto
+
+- **Molde 4 visões** (padrão de todo programa/assunto): *Estratégico* (como está/por que importa) · *Tático* (do que é feito/gargalo) · *Operacional* (como melhorar) · *Técnico* (série + cálculo + fonte).
+- **Cadeia de valor** 💰→🏭→❤️: Dinheiro → Produção → Benefício (ex.: APS, MAC) — mostra onde a cadeia se sustenta ou se rompe.
+- **Accountability**: Responsável · Compromisso × Entregue (lacuna) · Regularidade (CAUC) · Calendário legal de prestação · Evidência. Registro local auditável p/ causa real.
+- **Diário de gestão**: cada variação (evento) → causa provável (metodologia) → o que fazer; gestor confere e registra a causa real.
+- **Níveis de gestão** (organização do conteúdo) e **multi-UF** (um motor, configurado por estado: TCE/TCM variam) — ver `docs/arquitetura-multi-uf.md`.
+- **Tom**: neutro/didático, explica a metodologia; sem crítica nem viés político. Honesto sobre fato × hipótese × lacuna de dado.
 
 ---
-*Documentação viva — regenerada a cada coleta diária. Fontes oficiais: PNCP, SICONFI, SIOPS, IBGE, CGU.*
+*Documentação viva — regenerada a cada coleta diária. Fontes oficiais: PNCP, SICONFI, FNS, CADPREV, DATASUS, INEP, IBGE, Tesouro.*

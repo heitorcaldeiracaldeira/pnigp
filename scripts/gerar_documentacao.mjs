@@ -46,6 +46,14 @@ async function main() {
     md += `| \`scripts/${s}\` | ${cabecalho(path.join(ROOT, "scripts", s)).slice(0, 180) || "—"} |\n`;
   }
 
+  // 2b) Componentes (visões/molde do produto) — 1º comentário descritivo nas primeiras linhas
+  const primeiroComentario = (arq) => { try { for (const l of fs.readFileSync(arq, "utf8").split("\n").slice(0, 25)) { const t = l.trim(); if (t.startsWith("//") && t.length > 6) return t.replace(/^\/\/\s?/, ""); } } catch {} return ""; };
+  md += `\n## 2b. Componentes (visões e molde do produto)\n\n| Componente | O que faz |\n|---|---|\n`;
+  for (const c of walk(path.join(ROOT, "src", "components"), (f) => f.endsWith(".tsx")).sort()) {
+    const h = primeiroComentario(path.join(ROOT, "src", "components", c)).slice(0, 150);
+    if (h) md += `| \`${c}\` | ${h} |\n`;
+  }
+
   // 3) Catálogo de coleta (estado das fontes)
   md += `\n## 3. Fontes de dados (catálogo de coleta)\n\n| Fonte | Provedor | Ano + recente | Última coleta | Situação |\n|---|---|---|---|---|\n`;
   for (const f of await q(`SELECT id,label,api,max_ano,ultimo_status,devido, EXTRACT(EPOCH FROM (now()-ultima_exec))::int idade FROM etl_catalogo ORDER BY api,id`)) {
@@ -67,7 +75,32 @@ async function main() {
   const qa = (await q(`SELECT status,suspeitos,alertas FROM coleta_qa WHERE id=1`))[0];
   if (qa) md += `\n## 6. Integridade (última validação)\n\n- status: **${qa.status}** · registros suspeitos (excluídos): ${qa.suspeitos} · sobrepreço unitário: ${qa.alertas}\n`;
 
-  md += `\n---\n*Documentação viva — regenerada a cada coleta diária. Fontes oficiais: PNCP, SICONFI, SIOPS, IBGE, CGU.*\n`;
+  // 7) Fontes oficiais (proveniência dos dados)
+  md += `\n## 7. Fontes oficiais dos dados (proveniência)\n\n| Domínio | Fonte oficial | Acesso |\n|---|---|---|\n`;
+  for (const [dom, fonte, ac] of [
+    ["Finanças (receita, despesa, MDE, ASPS, RCL, dívida, subfunção)", "SICONFI / Tesouro Nacional (RREO/RGF)", "apidatalake.tesouro.gov.br/ords/siconfi"],
+    ["Receitas nominais (IPTU, ISS, FPM, ICMS, IPVA, FUNDEB)", "SICONFI RREO Anexo 03", "idem"],
+    ["Compras (processos, contratos, itens, atas)", "PNCP — Portal Nacional de Contratações Públicas", "pncp.gov.br/api"],
+    ["Saúde — repasses federais por bloco", "Fundo Nacional de Saúde (FNS)", "consultafns.saude.gov.br"],
+    ["Saúde — Atenção Primária (Previne)", "SISAB / Previne Brasil (Min. Saúde)", "sisab S3 (dados abertos SUS)"],
+    ["Saúde — produção MAC (internações/ambulatorial)", "SIH/SIA-SUS (DATASUS)", "datasus / TabNet"],
+    ["Saúde — rede", "CNES (Min. Saúde)", "cnes.datasus.gov.br"],
+    ["Previdência — déficit atuarial RPPS", "CADPREV / SPREV", "apicadprev.trabalho.gov.br"],
+    ["Educação — MDE/FUNDEB", "SICONFI RREO Anexo 08", "idem SICONFI"],
+    ["Regularidade fiscal (CAUC/CADIN)", "Tesouro Transparente", "tesourotransparente.gov.br"],
+    ["Indicadores socioeconômicos", "IBGE (Censo 2022, PIB) / CGU", "ibge.gov.br"],
+  ]) md += `| ${dom} | ${fonte} | ${ac} |\n`;
+
+  // 8) Conceitos do produto (molde e arquitetura)
+  md += `\n## 8. Conceitos do produto\n\n`;
+  md += `- **Molde 4 visões** (padrão de todo programa/assunto): *Estratégico* (como está/por que importa) · *Tático* (do que é feito/gargalo) · *Operacional* (como melhorar) · *Técnico* (série + cálculo + fonte).\n`;
+  md += `- **Cadeia de valor** 💰→🏭→❤️: Dinheiro → Produção → Benefício (ex.: APS, MAC) — mostra onde a cadeia se sustenta ou se rompe.\n`;
+  md += `- **Accountability**: Responsável · Compromisso × Entregue (lacuna) · Regularidade (CAUC) · Calendário legal de prestação · Evidência. Registro local auditável p/ causa real.\n`;
+  md += `- **Diário de gestão**: cada variação (evento) → causa provável (metodologia) → o que fazer; gestor confere e registra a causa real.\n`;
+  md += `- **Níveis de gestão** (organização do conteúdo) e **multi-UF** (um motor, configurado por estado: TCE/TCM variam) — ver \`docs/arquitetura-multi-uf.md\`.\n`;
+  md += `- **Tom**: neutro/didático, explica a metodologia; sem crítica nem viés político. Honesto sobre fato × hipótese × lacuna de dado.\n`;
+
+  md += `\n---\n*Documentação viva — regenerada a cada coleta diária. Fontes oficiais: PNCP, SICONFI, FNS, CADPREV, DATASUS, INEP, IBGE, Tesouro.*\n`;
 
   fs.writeFileSync(path.join(ROOT, "docs", "SISTEMA.md"), md);
   console.log(`docs/SISTEMA.md gerado (${md.length} bytes, ${tabs.length} tabelas, ${rotas.length} rotas)`);
