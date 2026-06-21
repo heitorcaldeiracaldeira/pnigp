@@ -61,12 +61,15 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
           <h3 className="font-semibold text-slate-800">📦 Itens dos maiores contratos</h3>
           <p className="mb-3 text-xs text-slate-500">Os itens vêm do processo licitatório vinculado (PNCP). Mostra preço estimado → homologado, economia, situação e benefício LC 123 (ME/EPP). Clique para expandir.</p>
           <div className="space-y-2">
-            {itens.map((c, i) => (
+            {itens.map((c, i) => {
+              const ecoContrato = c.itens.reduce((s, it) => (it.est != null && it.hom != null && it.est > 0 && it.hom <= it.est ? s + (it.est - it.hom) * it.quantidade : s), 0);
+              return (
               <details key={i} className="rounded-xl border border-slate-200 p-3">
                 <summary className="flex cursor-pointer flex-wrap items-center justify-between gap-2">
                   <span className="text-sm font-medium text-slate-800"><span className="line-clamp-1 inline">{c.objeto}</span></span>
                   <span className="flex items-center gap-2 text-[11px] text-slate-500">
                     <span className="rounded bg-slate-100 px-1.5 py-0.5">{dt(c.vigInicio)} → {dt(c.vigFim)}</span>
+                    {ecoContrato > 0 && <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-700">economia {fmtBRLCompact(ecoContrato)}</span>}
                     <span className="font-semibold text-slate-700">{fmtBRLCompact(c.valor)}</span>
                   </span>
                 </summary>
@@ -98,7 +101,8 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
                   </div>
                 ) : <div className="mt-2 text-xs text-slate-400">Itens deste processo ainda não coletados (coleta em andamento).</div>}
               </details>
-            ))}
+              );
+            })}
           </div>
         </section>
       )}
