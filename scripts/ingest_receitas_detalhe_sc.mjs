@@ -14,6 +14,8 @@ const ITENS = {
   "Cota-Parte do FPM": "FPM", "Cota-Parte do ICMS": "ICMS", "Cota-Parte do IPVA": "IPVA", "Cota-Parte do ITR": "ITR",
   "Transferências da LC nº 61/1989": "IPI-Exportação",
   "Transferências do FUNDEB": "FUNDEB",
+  // receitas PRÓPRIAS do Estado (nomes sem "cota-parte"; municípios não têm essas linhas):
+  "ICMS": "ICMS", "IPVA": "IPVA", "ITCD": "ITCD", "Cota-Parte do FPE": "FPE",
   "Rendimentos de Aplicação Financeira": "Rend. Aplicação",
   "RECEITA CORRENTE LÍQUIDA (III) = (I - II)": "RCL",
 };
