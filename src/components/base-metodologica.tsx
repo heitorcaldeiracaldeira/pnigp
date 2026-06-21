@@ -11,9 +11,10 @@ export function BaseMetodologica({ area }: { area: keyof typeof CONHECIMENTO | s
 
       <div className="grid gap-2 sm:grid-cols-3">
         {c.marcos.map((m) => (
-          <div key={m.titulo} className="rounded-xl border border-slate-200 p-3">
+          <div key={m.titulo} className="flex flex-col rounded-xl border border-slate-200 p-3">
             <div className="text-[13px] font-semibold text-slate-800">{m.titulo}</div>
-            <p className="mt-0.5 text-[11px] text-slate-500">{m.desc}</p>
+            <p className="mt-0.5 flex-1 text-[11px] text-slate-500">{m.desc}</p>
+            {m.url && <a href={m.url} target="_blank" rel="noopener noreferrer" className="mt-1.5 inline-flex w-fit items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700 hover:bg-teal-100">abrir ↗</a>}
           </div>
         ))}
       </div>

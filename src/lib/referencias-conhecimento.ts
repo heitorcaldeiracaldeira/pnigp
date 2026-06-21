@@ -1,7 +1,7 @@
 // Base metodológica por área — marcos legais + biblioteca de materiais oficiais (órgãos de controle e
 // normatizadores). Replica o modelo de Compras para os demais pilares. Exibição neutra e didática.
 
-export type Marco = { titulo: string; desc: string };
+export type Marco = { titulo: string; desc: string; url?: string };
 export type MaterialRef = { titulo: string; fonte: string; url: string };
 export type AutorRef = { nome: string; foco: string };
 export type AreaConhecimento = { titulo: string; marcos: Marco[]; autores?: AutorRef[]; materiais: MaterialRef[] };
@@ -10,10 +10,16 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
   financas: {
     titulo: "Finanças e responsabilidade fiscal",
     marcos: [
-      { titulo: "LRF — LC 101/2000", desc: "Limites de pessoal, dívida e regras de equilíbrio das contas públicas." },
-      { titulo: "CF, arts. 163–169", desc: "Finanças públicas, orçamento e limites de despesa." },
-      { titulo: "FPM/FPE — art. 159 CF + LC 62/1989", desc: "Fundos de Participação que distribuem parte do IR e do IPI a municípios e estados." },
-      { titulo: "Mínimos constitucionais", desc: "Saúde 15% (LC 141) e Educação 25% (art. 212)." },
+      { titulo: "Constituição Federal de 1988", desc: "Orçamento público (arts. 165–169); fiscalização contábil e financeira (arts. 70–75); mínimo em saúde (art. 198); educação e FUNDEB (arts. 212 e 212-A); limite do Legislativo municipal (art. 29-A).", url: "https://www.planalto.gov.br/ccivil_03/constituicao/constituicao.htm" },
+      { titulo: "Lei nº 4.320/1964", desc: "Normas gerais de direito financeiro; orçamentos e balanços (arts. 2º–8º); créditos adicionais (arts. 40–46); execução: empenho, liquidação e pagamento (arts. 58–70).", url: "https://www.planalto.gov.br/ccivil_03/leis/l4320.htm" },
+      { titulo: "LRF — LC 101/2000", desc: "PPA, LDO e LOA (arts. 3º–5º); metas (arts. 8º–9º); despesa com pessoal (arts. 18–23); dívida e operações de crédito (arts. 29–40); transparência e RGF (arts. 48–55).", url: "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp101.htm" },
+      { titulo: "LC nº 178/2021", desc: "Regime de recuperação fiscal; altera a LRF; regra de redução de excesso de despesa de pessoal; apuração por competência (art. 18, §2º).", url: "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp178.htm" },
+      { titulo: "Resolução SF nº 40/2001", desc: "Limites globais da dívida consolidada (art. 30 da LRF): 200% da RCL para Estados e 120% para Municípios.", url: "https://www2.camara.leg.br/legin/fed/ressen/2001/resolucao-40-20-dezembro-2001-429320-normaatualizada-pl.html" },
+      { titulo: "Resolução SF nº 43/2001", desc: "Operações de crédito, garantias e ARO (arts. 7º e 38 da LRF): montante 16%, comprometimento 11,5%, ARO 7%, garantias 22%/32% da RCL.", url: "https://www2.camara.leg.br/legin/fed/ressen/2001/resolucao-43-21-dezembro-2001-429342-norma-pl.html" },
+      { titulo: "Portaria MOG nº 42/1999", desc: "Classificação da despesa por função e subfunção de governo (base do módulo de áreas-fim).", url: "https://www2.camara.leg.br/legin/fed/portmog/1999/portaria-42-14-abril-1999-552031-norma-pe.html" },
+      { titulo: "Decreto-Lei nº 201/1967", desc: "Responsabilidade de prefeitos e vereadores; crimes de responsabilidade na gestão pública.", url: "https://www.planalto.gov.br/ccivil_03/decreto-lei/del0201.htm" },
+      { titulo: "Lei nº 10.028/2000", desc: "Crimes contra as finanças públicas (Lei de Crimes Fiscais); sanções por descumprir limites da LRF.", url: "https://www.planalto.gov.br/ccivil_03/leis/l10028.htm" },
+      { titulo: "FPM/FPE — art. 159 CF + LC 62/1989", desc: "Fundos de Participação que distribuem parte do IR e do IPI a municípios e estados.", url: "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp62.htm" },
     ],
     materiais: [
       { titulo: "Manual de Demonstrativos Fiscais (MDF) — interpreta a LRF (RREO/RGF)", fonte: "STN", url: "https://www.gov.br/tesouronacional/pt-br/contabilidade-e-custos/manuais/manual-de-demonstrativos-fiscais-mdf" },
