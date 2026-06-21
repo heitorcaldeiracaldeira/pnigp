@@ -1,13 +1,8 @@
 import type { PadroesComprasSC } from "@/lib/queries";
 import { fmtBRLCompact } from "@/lib/ui";
+import { CICLO_COMPRAS, DOUTRINADORES } from "@/lib/compras-doutrina";
 
 const MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-
-// Âncoras de doutrina (compras públicas) — base metodológica, sem juízo político
-const DOUTRINA = [
-  { autor: "Marçal Justen Filho", obra: "Comentários à Lei 14.133/2021", ideia: "O planejamento é pilar da Nova Lei; toda licitação tem custo (tempo, pessoal, recursos) × benefício." },
-  { autor: "Jorge U. Jacoby Fernandes", obra: "Sistema de Registro de Preços e Pregão / Lei 14.133", ideia: "Itens recorrentes pedem Registro de Preços (ata); é vedado fracionar a despesa para fugir da modalidade." },
-];
 
 export function AssuntoPadroesCompras({ dados, nome }: { dados: PadroesComprasSC; nome: string }) {
   if (!dados) return null;
@@ -28,6 +23,26 @@ export function AssuntoPadroesCompras({ dados, nome }: { dados: PadroesComprasSC
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-base font-semibold text-slate-800">🧭 Padrões de compras — apoio ao planejamento</h2>
         <p className="mt-1 text-sm text-slate-500">Como {nome} compra hoje (todos os processos do PNCP, qualquer situação) — para planejar melhor o próximo ano. {totalN.toLocaleString("pt-BR")} processos · {fmtBRLCompact(totalValor)} estimados.</p>
+      </div>
+
+      {/* Ciclo da contratação — ancorado na doutrina */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-800">🔄 O ciclo da contratação — como fazer uma boa compra</h3>
+        <p className="mb-3 text-xs text-slate-500">As quatro fases da contratação pública (Lei 14.133/2021), com as boas práticas e os autores que as fundamentam.</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {CICLO_COMPRAS.map((f) => (
+            <div key={f.id} className="rounded-xl border border-slate-200 p-3">
+              <div className="text-sm font-semibold text-slate-800">{f.emoji} {f.titulo}</div>
+              <p className="mt-0.5 text-xs text-slate-600">{f.resumo}</p>
+              <ul className="mt-2 space-y-1">
+                {f.praticas.map((p, i) => <li key={i} className="flex gap-1.5 text-[12px] text-slate-600"><span className="text-teal-600">•</span><span>{p}</span></li>)}
+              </ul>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {f.autores.map((a) => <span key={a} className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-500">{a}</span>)}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Sazonalidade */}
@@ -95,16 +110,15 @@ export function AssuntoPadroesCompras({ dados, nome }: { dados: PadroesComprasSC
         </div>
       </div>
 
-      {/* Doutrina */}
+      {/* Doutrina — rol completo */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-800">📚 Base metodológica (doutrina)</h3>
-        <p className="mb-3 text-xs text-slate-500">As recomendações seguem a doutrina de compras públicas — exibição neutra, sem juízo de valor.</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {DOUTRINA.map((d) => (
-            <div key={d.autor} className="rounded-xl border border-slate-200 p-3">
-              <div className="text-sm font-semibold text-slate-800">{d.autor}</div>
-              <div className="text-[11px] text-slate-400">{d.obra}</div>
-              <p className="mt-1 text-xs text-slate-600">{d.ideia}</p>
+        <h3 className="text-sm font-semibold text-slate-800">📚 Base metodológica (doutrina de compras públicas)</h3>
+        <p className="mb-3 text-xs text-slate-500">As orientações desta tela seguem a linha de contribuição destes autores — base metodológica, exibição neutra, sem juízo político.</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {DOUTRINADORES.map((d) => (
+            <div key={d.nome} className="rounded-xl border border-slate-200 p-3">
+              <div className="text-[13px] font-semibold text-slate-800">{d.nome}</div>
+              <p className="mt-0.5 text-[11px] text-slate-500">{d.foco}</p>
             </div>
           ))}
         </div>
