@@ -9,10 +9,105 @@ function H2({ children }: { children: React.ReactNode }) {
   return <h2 className="mt-9 border-t border-slate-200 pt-5 font-display text-xl font-bold text-slate-900">{children}</h2>;
 }
 
+// --- Catálogo de dados municipais (consolidado nesta base de conhecimento) ---
+type L = { d: string; f: string; s: "tem" | "facil" | "medio" | "dificil"; u: string };
+const CAT: { a: string; i: L[] }[] = [
+  { a: "👥 Identidade & demografia", i: [
+    { d: "Municípios, população, domicílios", f: "IBGE (Censo 2022, malhas)", s: "tem", u: "base de tudo, comparação por porte" },
+    { d: "População por idade/sexo, projeções", f: "IBGE", s: "facil", u: "demanda por serviço (creche, idoso)" },
+    { d: "IDHM (renda, educação, longevidade)", f: "Atlas Brasil / PNUD", s: "facil", u: "desenvolvimento humano" },
+    { d: "IFDM (emprego, saúde, educação)", f: "Firjan (anual)", s: "facil", u: "socioeconômico, série" },
+  ]},
+  { a: "💰 Finanças", i: [
+    { d: "Receita/despesa, MDE, ASPS, RCL, dívida, função/subfunção", f: "SICONFI (RREO/RGF/DCA)", s: "tem", u: "painel fiscal + drill" },
+    { d: "Receitas nominais (IPTU, ISS, FPM, ICMS, IPVA, FUNDEB)", f: "SICONFI An.3", s: "tem", u: "de onde vem o dinheiro" },
+    { d: "Cota do FPM (mensal)", f: "Tesouro/FNP", s: "facil", u: "fluxo de caixa, dependência" },
+    { d: "Royalties petróleo / CFEM mineração", f: "ANP / ANM", s: "medio", u: "receita extraordinária" },
+    { d: "Emendas e convênios", f: "Transferegov / Portal Transparência", s: "facil", u: "recurso federal + execução" },
+  ]},
+  { a: "🛒 Compras & fornecedores", i: [
+    { d: "Processos, contratos, itens, atas (preço unitário)", f: "PNCP", s: "tem", u: "sobrepreço, comportamento, B2B" },
+    { d: "Empresas, CNAE, porte, situação", f: "Receita (CNPJ)/Mapa de Empresas", s: "facil", u: "inteligência de mercado, due diligence" },
+    { d: "Sanções (CEIS, CNEP, CEPIM)", f: "Portal da Transparência", s: "facil", u: "risco de fornecedor (B2B)" },
+  ]},
+  { a: "🏥 Saúde", i: [
+    { d: "Repasses FNS, Previne, SIH/SIA, CNES, RPPS atuarial", f: "Min. Saúde/DATASUS/CADPREV", s: "tem", u: "cadeia 💰→🏭→❤️, previdência" },
+    { d: "Óbitos (SIM), nascimentos (SINASC)", f: "DATASUS", s: "medio", u: "mortalidade (benefício final)" },
+    { d: "Agravos (SINAN), vacina (PNI), nutrição (SISVAN)", f: "DATASUS", s: "medio", u: "vigilância, imunização" },
+  ]},
+  { a: "🎓 Educação", i: [
+    { d: "MDE/FUNDEB, alfabetização", f: "SICONFI / IBGE", s: "tem", u: "molde 4 visões" },
+    { d: "IDEB, SAEB, matrículas, infra, docentes", f: "INEP / Censo Escolar", s: "medio", u: "fecha cadeia (aprendizado)" },
+    { d: "Merenda (PNAE), transporte, PDDE", f: "FNDE", s: "facil", u: "repasses à escola" },
+  ]},
+  { a: "🤝 Assistência social", i: [
+    { d: "Bolsa Família, BPC, CadÚnico", f: "MDS / Portal Transparência", s: "facil", u: "proteção social, vulnerabilidade" },
+    { d: "CRAS/CREAS (Censo SUAS), FNAS", f: "MDS", s: "medio", u: "equipamentos × famílias" },
+  ]},
+  { a: "👷 Trabalho & economia", i: [
+    { d: "Emprego e salário (RAIS, Novo CAGED)", f: "Min. Trabalho", s: "medio", u: "mercado de trabalho" },
+    { d: "PIB municipal e setores", f: "IBGE", s: "tem", u: "perfil econômico" },
+    { d: "Exportações (Comex), agropecuária", f: "MDIC / IBGE", s: "facil", u: "vocação econômica" },
+  ]},
+  { a: "🚰 Infra & meio ambiente", i: [
+    { d: "Água, esgoto, resíduos", f: "SNIS / SINIR", s: "medio", u: "saneamento (impacto na saúde)" },
+    { d: "Uso do solo/desmatamento", f: "MapBiomas / INPE", s: "facil", u: "ambiental, ESG" },
+    { d: "Frota, energia, banda larga", f: "SENATRAN / ANEEL / Anatel", s: "facil", u: "mobilidade, conectividade" },
+  ]},
+  { a: "🛡️ Segurança", i: [
+    { d: "Homicídios e mortes violentas", f: "Atlas da Violência (IPEA)", s: "facil", u: "segurança (benefício)" },
+  ]},
+  { a: "⚖️ Controle & política", i: [
+    { d: "Qualidade da gestão (IEGM)", f: "TCE/IRB", s: "tem", u: "avaliação do controle externo" },
+    { d: "Regularidade (CAUC/CADIN)", f: "Tesouro", s: "tem", u: "apto a receber, accountability" },
+    { d: "Transparência ativa (Escala Brasil Transparente)", f: "CGU", s: "medio", u: "cumprimento da LAI" },
+    { d: "Eleitos, eleitorado, contas de campanha", f: "TSE", s: "facil", u: "gestor×ano (cruza com resultado)" },
+  ]},
+  { a: "🏠 Habitação & cultura", i: [
+    { d: "Déficit habitacional", f: "Fundação João Pinheiro", s: "medio", u: "demanda por moradia" },
+    { d: "Cultura (Aldir Blanc/Paulo Gustavo)", f: "MinC", s: "medio", u: "repasses culturais" },
+  ]},
+];
+const BADGE: Record<L["s"], { t: string; c: string }> = {
+  tem: { t: "✅ temos", c: "bg-emerald-100 text-emerald-700" },
+  facil: { t: "🟢 fácil", c: "bg-sky-100 text-sky-700" },
+  medio: { t: "🟡 médio", c: "bg-amber-100 text-amber-700" },
+  dificil: { t: "🔴 difícil", c: "bg-rose-100 text-rose-700" },
+};
+function Catalogo() {
+  const itens = CAT.flatMap((s) => s.i);
+  const tem = itens.filter((i) => i.s === "tem").length;
+  return (
+    <div className="mt-2">
+      <p className="text-[15px] text-slate-700"><b>{itens.length} fontes municipais</b> mapeadas (<b className="text-emerald-700">{tem} já integradas</b>) — tudo dado aberto oficial. Legenda: {Object.values(BADGE).map((b) => <span key={b.t} className={`mx-0.5 rounded-full px-2 py-0.5 text-[11px] font-medium ${b.c}`}>{b.t}</span>)}</p>
+      {CAT.map((s) => (
+        <div key={s.a} className="mt-4">
+          <h3 className="font-semibold text-slate-800">{s.a}</h3>
+          <div className="mt-1 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            <table className="w-full text-[13px]">
+              <thead className="bg-slate-50 text-left text-[11px] text-slate-500"><tr className="[&>th]:px-2.5 [&>th]:py-1.5 [&>th]:font-medium"><th>Dado</th><th>Fonte</th><th>Status</th><th>Destrava</th></tr></thead>
+              <tbody>
+                {s.i.map((i) => (
+                  <tr key={i.d} className="border-t border-slate-100 align-top">
+                    <td className="px-2.5 py-1.5 font-medium text-slate-800">{i.d}</td>
+                    <td className="px-2.5 py-1.5 text-slate-600">{i.f}</td>
+                    <td className="px-2.5 py-1.5 whitespace-nowrap"><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${BADGE[i.s].c}`}>{BADGE[i.s].t}</span></td>
+                    <td className="px-2.5 py-1.5 text-slate-600">{i.u}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function EstrategiaPage() {
   return (
     <div className="min-h-screen bg-slate-50 py-10">
-      <div className="mx-auto max-w-3xl px-5">
+      <div className="mx-auto max-w-4xl px-5">
         <header className="border-b-[3px] border-teal-600 pb-4">
           <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">PNIGP — Dossiê Estratégico</h1>
           <p className="mt-1 text-sm text-slate-500">Análise de produto, dados e mercado · jun/2026 · <span className="rounded-full bg-teal-600 px-2.5 py-0.5 text-xs font-semibold text-white">Confidencial — Instituto I10</span></p>
@@ -59,16 +154,8 @@ export default function EstrategiaPage() {
           <li><b>Mídia, consultoria, academia</b> — assinatura de dados/insights.</li>
         </ol>
 
-        <H2>4. Dados que podemos ter (roadmap)</H2>
-        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[15px] text-slate-700 marker:text-slate-400">
-          <li><b>Educação</b>: IDEB, matrículas, creche. <b>Saneamento</b>: SNIS. <b>Assistência</b>: CadÚnico/CRAS.</li>
-          <li><b>Saúde</b>: cobertura vacinal, leitos, mortalidade.</li>
-          <li><b>Pessoal</b>: folha por cargo. <b>Controle</b>: sanções CEIS/CNEP, convênios/emendas.</li>
-          <li><b>Mercado</b>: CNAE dos fornecedores, RAIS/CAGED, preços (em coleta).</li>
-          <li><b>Política</b>: prefeitos × município × ano (TSE) — cruza gestor ↔ resultado ↔ pareceres.</li>
-          <li><b>Geo</b>: camadas territoriais para mapas.</li>
-        </ul>
-        <p className="mt-2 text-[15px]"><a href="/catalogo-dados" className="font-semibold text-teal-700 underline">→ Catálogo geral de Dados Abertos</a> · <a href="/dados-municipais" className="font-semibold text-teal-700 underline">→ Catálogo Municipal completo</a> (todas as fontes por domínio, com status e o que destrava).</p>
+        <H2>4. Catálogo de Dados Municipais (o que temos + o que podemos ter)</H2>
+        <Catalogo />
 
         <H2>5. Prioridades (quando as compras fecharem)</H2>
         <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[15px] text-slate-700 marker:text-slate-400">
