@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BarChart3, BookOpen, ClipboardCheck, Database, Gauge } from "lucide-react";
-import type { FinancaSCAno, FuncaoSC } from "@/lib/queries";
+import type { FinancaSCAno, FuncaoSC, ReceitasDetalheSC } from "@/lib/queries";
 import { fmtBRLCompact } from "@/lib/ui";
 
 type Visao = "estrategico" | "tatico" | "operacional" | "tecnico";
@@ -44,9 +44,10 @@ function Barra({ label, valor, max, cor, sub }: { label: string; valor: number; 
 }
 
 // ============ RECEITAS — de onde vem o dinheiro ============
-export function AssuntoReceitas({ serie, nome }: { serie: FinancaSCAno[]; nome: string }) {
+export function AssuntoReceitas({ serie, detalhe, nome }: { serie: FinancaSCAno[]; detalhe: ReceitasDetalheSC; nome: string }) {
   const [v, setV] = useState<Visao>("estrategico");
   const u = serie[serie.length - 1];
+  const maxDet = detalhe ? Math.max(...detalhe.itens.map((i) => i.valor), 1) : 1;
   const propria = pct(u.tributaria, u.receita);
   const dep = pct(u.transferencias, u.receita);
   const execRec = pct(u.receita, u.receita_prevista);
@@ -73,6 +74,14 @@ export function AssuntoReceitas({ serie, nome }: { serie: FinancaSCAno[]; nome: 
             <Barra label="Tributária (própria: IPTU, ISS, taxas)" valor={u.tributaria} max={u.receita} cor="bg-emerald-500" sub={`${propria.toFixed(0)}%`} />
             <Barra label="Transferências (FPM, SUS, convênios)" valor={u.transferencias} max={u.receita} cor="bg-sky-500" sub={`${dep.toFixed(0)}%`} />
             <Barra label="Outras receitas" valor={u.outras} max={u.receita} cor="bg-slate-400" sub={`${pct(u.outras, u.receita).toFixed(0)}%`} />
+            {detalhe && detalhe.itens.length > 0 && (
+              <div className="mt-3 border-t border-slate-100 pt-3">
+                <p className="mb-2 text-xs font-semibold text-slate-700">Principais tributos e transferências (nominais · {detalhe.anoUlt})</p>
+                <div className="space-y-2">
+                  {detalhe.itens.map((it) => <Barra key={it.item} label={it.item} valor={it.valor} max={maxDet} cor="bg-teal-500" />)}
+                </div>
+              </div>
+            )}
           </div>
         )}
         {v === "operacional" && <Plano titulo="Como aumentar a receita própria" porque="Receita própria dá autonomia e não some quando o repasse cai. É o caminho para sair da dependência." passos={["Atualizar a Planta Genérica de Valores e o cadastro imobiliário (IPTU justo e atualizado).", "Modernizar a cobrança do ISS (nota fiscal eletrônica, fiscalização de serviços).", "Cobrar a dívida ativa (protesto em cartório, parcelamento, REFIS).", "Revisar taxas pelo custo real dos serviços prestados.", "Combater a sonegação e renúncias sem contrapartida."]} />}

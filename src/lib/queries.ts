@@ -1226,6 +1226,18 @@ export async function getRepassesSaudeFichaSC(cod: string): Promise<RepasseSaude
   return { anoUlt, totalUlt, programas };
 }
 
+// Receitas detalhadas por item nominal (ICMS, FPM, IPTU, ISS, IPVA, ITR, FUNDEB) — série anual
+export type ReceitasDetalheSC = { anoUlt: number; itens: { item: string; valor: number; serie: { ano: number; valor: number }[] }[] } | null;
+export async function getReceitasDetalheSC(cod: string): Promise<ReceitasDetalheSC> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, item, valor FROM receitas_detalhe_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const anoUlt = Math.max(...rows.map((r) => num(r.ano)));
+  const map = new Map<string, { ano: number; valor: number }[]>();
+  for (const r of rows) { const it = String(r.item); if (!map.has(it)) map.set(it, []); map.get(it)!.push({ ano: num(r.ano), valor: num(r.valor) }); }
+  const itens = [...map.entries()].map(([item, serie]) => ({ item, serie, valor: serie.find((s) => s.ano === anoUlt)?.valor ?? 0 })).filter((i) => i.valor > 0).sort((a, b) => b.valor - a.valor);
+  return { anoUlt, itens };
+}
+
 // Produção MAC (Média e Alta Complexidade) — série anual SIH (internações) + SIA (ambulatorial)
 export type MacProducaoSC = { ano: number; internacoes: number; sihValor: number; siaQtd: number; siaValor: number }[];
 export async function getMacProducaoSC(cod: string): Promise<MacProducaoSC> {

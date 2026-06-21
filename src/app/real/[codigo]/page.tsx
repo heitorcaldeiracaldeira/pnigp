@@ -15,6 +15,7 @@ import { AssuntoAtencaoPrimaria } from "@/components/assunto-atencao-primaria";
 import { RepassesSaudeFicha } from "@/components/repasses-saude-ficha";
 import { AccountabilityAPS } from "@/components/accountability-aps";
 import { AssuntoMAC } from "@/components/assunto-mac";
+import { AssuntoReceitas, AssuntoDespesas } from "@/components/assunto-financas";
 import { SerieExplicada } from "@/components/serie-explicada";
 import { PlacarEstrategico } from "@/components/placar-estrategico";
 import { CabecalhoArea } from "@/components/cabecalho-area";
@@ -33,7 +34,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -46,6 +47,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const fnsSerie = await getFnsSerieSC(codigo);
   const repassesSaude = await getRepassesSaudeFichaSC(codigo);
   const macProducao = await getMacProducaoSC(codigo);
+  const receitasDetalhe = await getReceitasDetalheSC(codigo);
   const seriesInd = serieRenda as Record<string, { ano: number; valor: number }[]>;
   if (!dados || dados.serie.length === 0) notFound();
   const minhaPos = rankingFiscal.find((r) => r.cod_ibge === codigo) ?? null;
@@ -606,6 +608,8 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     const mac = repassesSaude?.programas.find((p) => p.key === "mac");
     tabs.push({ id: "mac", label: "Média e Alta Complexidade (4 visões)", content: <AssuntoMAC producao={macProducao} repasseValor={mac?.valorUlt ?? null} repasseAno={repassesSaude?.anoUlt ?? null} internMil={saude.internMil} internMilPares={saude.internMilPares} nome={ente.nome} /> });
   }
+  tabs.push({ id: "receitas", label: "Receitas (de onde vem)", content: <AssuntoReceitas serie={dados.serie} detalhe={receitasDetalhe} nome={ente.nome} /> });
+  tabs.push({ id: "despesas", label: "Despesas (para onde vai)", content: <AssuntoDespesas serie={dados.serie} funcoes={dados.funcoesLatest} pessoalPct={rgfResumo?.pessoalPct ?? null} nome={ente.nome} /> });
   if (previneFicha) {
     const aps = repassesSaude?.programas.find((p) => p.key === "aps");
     tabs.push({ id: "accountability-aps", label: "Cadeia & Accountability (APS)", content: (
@@ -622,7 +626,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   // navegação temática (5 clusters): Resumo · Finanças · Compras · Setores · Análise
   const GRUPOS: [string, string[]][] = [
     ["Resumo", ["placar", "visao", "panorama", "diagnostico"]],
-    ["Finanças", ["financas", "execucao", "folha", "previdencia", "metas", "simulador"]],
+    ["Finanças", ["financas", "receitas", "despesas", "execucao", "folha", "previdencia", "metas", "simulador"]],
     ["Compras", ["compras", "contratos", "planejamento", "compras-sc"]],
     ["Setores", ["saude", "previne-ficha", "accountability-aps", "mac", "repasses-saude", "fns-historico", "educacao-cruz", "indicadores"]],
     ["Análise", ["cruzamentos", "ranking", "transferencias", "cauc", "auditoria"]],
