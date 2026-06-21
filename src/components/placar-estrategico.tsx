@@ -32,12 +32,14 @@ const PARECER = {
 } as const;
 
 export function PlacarEstrategico({
-  nome, posicao, total, scoreFiscal, tom, saudePct, educPct, pessoalPct, insights, ano,
+  nome, posicao, total, scoreFiscal, tom, saudePct, educPct, pessoalPct, insights, ano, iegm,
 }: {
   nome: string; posicao: number | null; total: number | null; scoreFiscal: number | null;
   tom: "ok" | "ressalva" | "critico" | null;
   saudePct: number | null; educPct: number | null; pessoalPct: number | null; insights: Insight[]; ano: number;
+  iegm?: { faixa: string; pct: number } | null;
 }) {
+  const iegmCor = iegm ? (iegm.faixa === "A" || iegm.faixa === "B+" ? "bg-emerald-100 text-emerald-700" : iegm.faixa === "B" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700") : "";
   const conformidades: Conf[] = [
     { label: "Saúde (ASPS)", valor: saudePct, ancora: "mín. 15% — LC 141", nivel: confNivel(saudePct, "saude") },
     { label: "Educação (MDE)", valor: educPct, ancora: "mín. 25% — CF art. 212", nivel: confNivel(educPct, "educacao") },
@@ -55,7 +57,10 @@ export function PlacarEstrategico({
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-bold text-slate-900">Visão do Prefeito — {nome}</h2>
-          {tom && <span className={`rounded-full px-3 py-1 text-sm font-semibold ${PARECER[tom].cls}`}>{PARECER[tom].rotulo}</span>}
+          <div className="flex flex-wrap items-center gap-2">
+            {iegm && <a href="#iegm" className={`rounded-full px-3 py-1 text-sm font-semibold hover:underline ${iegmCor}`}>IEGM (TCE): {iegm.faixa}</a>}
+            {tom && <span className={`rounded-full px-3 py-1 text-sm font-semibold ${PARECER[tom].cls}`}>{PARECER[tom].rotulo}</span>}
+          </div>
         </div>
         <p className="mt-1 text-sm text-slate-600">Em uma olhada: como o município está, o que a lei exige, onde há oportunidade e <b>o que fazer</b>. Os detalhes ficam nos níveis Tático e Operacional.</p>
       </div>

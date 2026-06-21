@@ -17,6 +17,7 @@ import { AccountabilityAPS } from "@/components/accountability-aps";
 import { AssuntoMAC } from "@/components/assunto-mac";
 import { AssuntoReceitas, AssuntoDespesas } from "@/components/assunto-financas";
 import { AssuntoEducacao } from "@/components/assunto-educacao";
+import { AssuntoIEGM } from "@/components/assunto-iegm";
 import { SerieExplicada } from "@/components/serie-explicada";
 import { PlacarEstrategico } from "@/components/placar-estrategico";
 import { CabecalhoArea } from "@/components/cabecalho-area";
@@ -35,7 +36,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getEducacaoSerieSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getEducacaoSerieSC, getIegmSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -51,6 +52,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const receitasDetalhe = await getReceitasDetalheSC(codigo);
   const despSubfuncao = await getDespesaSubfuncaoSC(codigo);
   const educacaoSerie = await getEducacaoSerieSC(codigo);
+  const iegmDados = await getIegmSC(codigo);
   const seriesInd = serieRenda as Record<string, { ano: number; valor: number }[]>;
   if (!dados || dados.serie.length === 0) notFound();
   const minhaPos = rankingFiscal.find((r) => r.cod_ibge === codigo) ?? null;
@@ -539,8 +541,10 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   tabs.push({ id: "placar", label: "Visão do Prefeito", content: (
     <PlacarEstrategico nome={ente.nome} posicao={minhaPos?.posicao ?? null} total={totalRank || null} scoreFiscal={minhaPos?.score ?? null}
       tom={!diag ? null : diag.nAlertas === 0 ? "ok" : diag.nAlertas <= 2 ? "ressalva" : "critico"}
-      saudePct={saude?.saudePct ?? null} educPct={educacao?.educPct ?? null} pessoalPct={rgfResumo?.pessoalPct ?? null} insights={insights} ano={diag?.ano ?? anoFim} />
+      saudePct={saude?.saudePct ?? null} educPct={educacao?.educPct ?? null} pessoalPct={rgfResumo?.pessoalPct ?? null} insights={insights} ano={diag?.ano ?? anoFim}
+      iegm={iegmDados ? { faixa: iegmDados.finalFaixa, pct: iegmDados.finalPct } : null} />
   ) });
+  if (iegmDados) tabs.push({ id: "iegm", label: "Qualidade da Gestão (IEGM/TCE)", content: <AssuntoIEGM dados={iegmDados} nome={ente.nome} /> });
   if (diag) tabs.splice(1, 0, { id: "diagnostico", label: "Diagnóstico", content: <DiagnosticoGestor data={diag} /> });
 
   // PANORAMA 360° — cruza todas as dimensões num radar (50 = mediana dos pares)
@@ -633,7 +637,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     ["Finanças", ["financas", "receitas", "despesas", "execucao", "folha", "previdencia", "metas", "simulador"]],
     ["Compras", ["compras", "contratos", "planejamento", "compras-sc"]],
     ["Setores", ["saude", "previne-ficha", "accountability-aps", "mac", "repasses-saude", "fns-historico", "educacao", "educacao-cruz", "indicadores"]],
-    ["Análise", ["cruzamentos", "ranking", "transferencias", "cauc", "auditoria"]],
+    ["Análise", ["cruzamentos", "iegm", "ranking", "transferencias", "cauc", "auditoria"]],
   ];
   const ORDEM = GRUPOS.flatMap(([, ids]) => ids);
   const grupoDe = (id: string) => GRUPOS.find(([, ids]) => ids.includes(id))?.[0];

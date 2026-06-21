@@ -1226,6 +1226,39 @@ export async function getRepassesSaudeFichaSC(cod: string): Promise<RepasseSaude
   return { anoUlt, totalUlt, programas };
 }
 
+// IEGM (TCE-SC/IRB) — qualidade da gestão: 7 dimensões + nota final (calculada c/ pesos oficiais)
+const PESO_IEGM: Record<string, number> = { "i-educ": 0.2, "i-saude": 0.2, "i-fiscal": 0.2, "i-plan": 0.1, "i-amb": 0.1, "i-cidade": 0.1, "i-gov ti": 0.1 };
+export function faixaIegm(pct: number): string { return pct >= 0.9 ? "A" : pct >= 0.75 ? "B+" : pct >= 0.6 ? "B" : pct >= 0.5 ? "C+" : "C"; }
+function finalIegm(dims: { nome: string; pct: number }[]): number {
+  let soma = 0, peso = 0;
+  for (const d of dims) { const w = PESO_IEGM[d.nome.toLowerCase()]; if (w && d.pct != null) { soma += d.pct * w; peso += w; } }
+  return peso > 0 ? soma / peso : 0;
+}
+export type IegmSC = { ano: number; dimensoes: { nome: string; pct: number; faixa: string }[]; finalPct: number; finalFaixa: string; serie: { ano: number; pct: number }[]; pctil: number | null; totalPares: number } | null;
+export async function getIegmSC(cod: string): Promise<IegmSC> {
+  const ent = (await query<Record<string, unknown>>(`SELECT populacao FROM entes_sc WHERE cod_ibge=$1`, [cod]))[0];
+  const meus = await query<Record<string, unknown>>(`SELECT ano, indicador, pct, faixa FROM iegm_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!meus.length) return null;
+  const anoUlt = Math.max(...meus.map((r) => num(r.ano)));
+  const dimensoes = meus.filter((r) => num(r.ano) === anoUlt).map((r) => ({ nome: String(r.indicador), pct: num(r.pct), faixa: String(r.faixa || "") }));
+  const finalPct = finalIegm(dimensoes);
+  // série: final por ano
+  const anos = [...new Set(meus.map((r) => num(r.ano)))].sort();
+  const serie = anos.map((a) => ({ ano: a, pct: finalIegm(meus.filter((r) => num(r.ano) === a).map((r) => ({ nome: String(r.indicador), pct: num(r.pct) }))) }));
+  // percentil entre pares do mesmo porte (ano mais recente)
+  let pctil: number | null = null, totalPares = 0;
+  if (ent) {
+    const gk = _fk(num(ent.populacao));
+    const todos = await query<Record<string, unknown>>(`SELECT i.cod_ibge, i.indicador, i.pct, e.populacao FROM iegm_sc i JOIN entes_sc e ON e.cod_ibge=i.cod_ibge WHERE i.ano=$1`, [anoUlt]).catch(() => []);
+    const porEnte = new Map<string, { nome: string; pct: number }[]>();
+    for (const r of todos) { if (_fk(num(r.populacao)) !== gk) continue; const c = String(r.cod_ibge); (porEnte.get(c) || porEnte.set(c, []).get(c)!).push({ nome: String(r.indicador), pct: num(r.pct) }); }
+    const finais = [...porEnte.values()].map((d) => finalIegm(d)).filter((x) => x > 0);
+    totalPares = finais.length;
+    if (finais.length) pctil = Math.round((finais.filter((x) => x <= finalPct).length / finais.length) * 100);
+  }
+  return { ano: anoUlt, dimensoes, finalPct, finalFaixa: faixaIegm(finalPct), serie, pctil, totalPares };
+}
+
 // Eficiência por porte — gasto (input) × resultado (output), percentil entre pares do mesmo porte
 export type EficienciaSC = {
   grupo: string; totalPares: number;
