@@ -259,6 +259,43 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
                 </div>
               </div>
 
+              {/* molde Niterói: cadeia de valor + accountability + como melhorar */}
+              {(() => {
+                const top1 = contratosResumo.por_fornecedor[0];
+                const top1Pct = top1 && contratosResumo.valor_total > 0 ? (top1.valor / contratosResumo.valor_total) * 100 : 0;
+                const irregulares = contratosResumo.por_fornecedor.filter((f) => f.situacao && f.situacao !== "ATIVA").length;
+                const temEmpenho = !!contratosResumo.execucao && contratosResumo.execucao.empenhoTotal > 0;
+                return (
+                  <>
+                    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+                      <h3 className="text-sm font-semibold text-slate-800">A cadeia de valor do contrato</h3>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                        <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3"><div className="text-sm font-semibold text-slate-800">💰 Dinheiro</div><div className="mt-1 text-base font-bold text-slate-800">{fmtBRLCompact(contratosResumo.valor_total)}</div><div className="text-[11px] text-slate-500">valor contratado</div></div>
+                        <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3"><div className="text-sm font-semibold text-slate-800">🏭 Produção</div><div className="mt-1 text-base font-bold text-slate-800">{contratosResumo.n} contratos</div><div className="text-[11px] text-slate-500">{contratosResumo.por_fornecedor.length}+ fornecedores</div></div>
+                        <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-3"><div className="text-sm font-semibold text-slate-800">❤️ Benefício</div><div className="mt-1 text-base font-bold text-slate-800">Bens e serviços</div><div className="text-[11px] text-slate-500">entregues à população</div></div>
+                      </div>
+                      <h4 className="mt-4 text-xs font-semibold text-slate-700">Do contrato à entrega (accountability)</h4>
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        <div className="rounded-xl border border-slate-200 p-3"><div className="text-[11px] text-slate-400">1. Contratado</div><div className="text-lg font-bold tabular-nums text-slate-800">{fmtBRLCompact(contratosResumo.valor_total)}</div></div>
+                        <div className="rounded-xl border border-slate-200 p-3"><div className="text-[11px] text-slate-400">2. Empenhado</div><div className="text-lg font-bold tabular-nums text-slate-800">{temEmpenho ? fmtBRLCompact(contratosResumo.execucao!.empenhoTotal) : "—"}</div><div className="text-[11px] text-slate-500">{temEmpenho ? "publicado no PNCP" : "ainda não publicado em SC"}</div></div>
+                        <div className="rounded-xl border border-slate-200 p-3"><div className="text-[11px] text-slate-400">3. Notas fiscais</div><div className="text-lg font-bold tabular-nums text-slate-800">{contratosResumo.execucao ? contratosResumo.execucao.nfTotal : 0}</div></div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-teal-200 bg-teal-50/40 p-5">
+                      <h3 className="text-sm font-semibold text-slate-800">✅ Como melhorar a gestão dos contratos</h3>
+                      <ul className="mt-2 space-y-2 text-sm text-slate-700">
+                        <li>⚖️ Designe <b>gestor e fiscal</b> para cada contrato e acompanhe a execução (prazos, qualidade, aderência). <span className="block text-[11px] text-slate-400">Base: Gabriela Verona Pércio / Tatiana Camarão — gestão de contratos</span></li>
+                        {top1Pct > 30 && <li>⚠️ Um fornecedor concentra <b>{top1Pct.toFixed(0)}%</b> do valor contratado — avalie ampliar a competição e revisar a especificação. <span className="block text-[11px] text-slate-400">Base: Joel de Menezes Niebuhr — competitividade</span></li>}
+                        {irregulares > 0 && <li>⚠️ <b>{irregulares}</b> fornecedor(es) com situação cadastral não-ATIVA — verifique a regularidade antes de pagar.</li>}
+                        {!temEmpenho && <li>📡 Publique o <b>ciclo de execução</b> (empenho, nota fiscal, pagamento) no PNCP — accountability e conformidade com a Lei 14.133.</li>}
+                        <li>📅 Acompanhe as <b>vigências</b> para renovar ou licitar com antecedência, evitando contratação emergencial. <span className="block text-[11px] text-slate-400">Base: Min. Zymler / Christianne Stroppa — governança e controle</span></li>
+                      </ul>
+                    </div>
+                  </>
+                );
+              })()}
+
               {contratosResumo.por_fornecedor.length > 0 && (
                 <section className="rounded-2xl border border-slate-200 bg-white p-5">
                   <h3 className="font-semibold text-slate-800">Maiores fornecedores</h3>
