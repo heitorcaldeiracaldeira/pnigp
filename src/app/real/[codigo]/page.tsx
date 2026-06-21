@@ -565,7 +565,15 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (radar.length >= 3) tabs.splice(1, 0, { id: "panorama", label: "Panorama", content: <PanoramaSC radar={radar} grupo={saude?.grupo || educacao?.grupo || cruz?.grupo || ""} /> });
 
   const toNoFin = (f: FuncaoSC): NoFin => ({ nome: f.nome, previsto: f.dotacao, realizado: f.empenhado, pct: f.dotacao > 0 ? (f.empenhado / f.dotacao) * 100 : 0, filhos: f.filhos && f.filhos.length ? f.filhos.map(toNoFin).sort((a, b) => b.previsto - a.previsto) : undefined });
-  const arvoreFunc: NoFin[] = funcoesLatest.map(toNoFin).sort((x, y) => y.previsto - x.previsto);
+  // injeta as subfunções DETALHADAS (RREO Anexo 02) em cada função — o financas traz só "Demais Subfunções"
+  const subDespFn = despSubfuncao?.porFuncao || {};
+  const arvoreFunc: NoFin[] = funcoesLatest.map((f): NoFin => {
+    const subs = subDespFn[f.nome];
+    const filhos = subs && subs.length
+      ? subs.map((s) => ({ nome: s.subfuncao, previsto: s.empenhado, realizado: s.empenhado, pct: 100 })).sort((a, b) => b.realizado - a.realizado)
+      : (f.filhos && f.filhos.length ? f.filhos.map(toNoFin) : undefined);
+    return { nome: f.nome, previsto: f.dotacao, realizado: f.empenhado, pct: f.dotacao > 0 ? (f.empenhado / f.dotacao) * 100 : 0, filhos };
+  }).sort((x, y) => y.previsto - x.previsto);
   const recToNoFin = (r: ReceitaSC): NoFin => ({ nome: r.nome, previsto: r.previsto, realizado: r.arrecadado, pct: r.previsto > 0 ? (r.arrecadado / r.previsto) * 100 : 0, filhos: r.filhos && r.filhos.length ? r.filhos.map(recToNoFin).sort((a, b) => b.realizado - a.realizado) : undefined });
   const arvoreRec: NoFin[] = (receitasLatest || []).map(recToNoFin).sort((x, y) => y.realizado - x.realizado);
   if (arvoreFunc.length || arvoreRec.length) tabs.push({
@@ -580,7 +588,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
         )}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-1 text-base font-semibold text-slate-800">🏛️ Onde é gasto — despesa por função → subfunção</h2>
-          <p className="mb-3 text-sm text-slate-500">Dotação atualizada × empenhado. Clique na função para abrir as subfunções; % de execução na barra.</p>
+          <p className="mb-3 text-sm text-slate-500">Dotação × empenhado por função; clique para abrir as <b>subfunções</b> (Atenção Básica, Ensino Fundamental…). Subfunção pelo empenhado (RREO Anexo 02, último exercício detalhado).</p>
           <ArvoreFinanceira raizes={arvoreFunc} colNome="Função" colV1="Dotação" colV2="Empenhado" />
         </div>
       </div>
