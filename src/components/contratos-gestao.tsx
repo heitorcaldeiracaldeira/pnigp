@@ -1,5 +1,5 @@
 import type { ContratosVencimentoSC, ContratoComItens } from "@/lib/queries";
-import { fmtBRLCompact } from "@/lib/ui";
+import { fmtBRL, fmtBRLCompact } from "@/lib/ui";
 
 function dt(s: string | null) {
   if (!s) return "—";
@@ -74,18 +74,21 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
                 {c.itens.length > 0 ? (
                   <div className="mt-2 overflow-x-auto">
                     <table className="w-full text-[13px]">
-                      <thead><tr className="border-b border-slate-100 text-left text-[11px] text-slate-500"><th className="p-1.5 font-medium">Item</th><th className="p-1.5 text-right font-medium">Qtd</th><th className="p-1.5 text-right font-medium">Estimado</th><th className="p-1.5 text-right font-medium">Homologado</th><th className="p-1.5 text-right font-medium">Economia</th><th className="p-1.5 font-medium">Situação</th></tr></thead>
+                      <thead><tr className="border-b border-slate-100 text-left text-[11px] text-slate-500"><th className="p-1.5 font-medium">Item</th><th className="p-1.5 text-right font-medium">Qtd</th><th className="p-1.5 text-right font-medium">Unit. estim.</th><th className="p-1.5 text-right font-medium">Unit. homol.</th><th className="p-1.5 text-right font-medium">Total (R$)</th><th className="p-1.5 text-right font-medium">Economia</th><th className="p-1.5 font-medium">Situação</th></tr></thead>
                       <tbody>
                         {c.itens.map((it, j) => {
                           const ok = it.est != null && it.hom != null && it.est > 0 && it.hom <= it.est;
                           const ecoPct = ok ? ((it.est! - it.hom!) / it.est!) * 100 : null;
+                          const totalNom = it.hom != null ? it.hom * it.quantidade : null;
+                          const ecoRs = ok ? (it.est! - it.hom!) * it.quantidade : null;
                           return (
                             <tr key={j} className="border-b border-slate-50 align-top">
                               <td className="p-1.5 text-slate-700"><span className="line-clamp-2">{it.descricao}</span>{it.lc123 && <span className="ml-1 rounded bg-emerald-100 px-1 py-0.5 text-[9px] font-bold text-emerald-700">LC 123 · {it.porte || "ME/EPP"}</span>}</td>
                               <td className="p-1.5 text-right tabular-nums text-slate-500">{it.quantidade.toLocaleString("pt-BR")}</td>
-                              <td className="p-1.5 text-right tabular-nums text-slate-400">{it.est != null ? fmtBRLCompact(it.est) : "—"}</td>
-                              <td className="p-1.5 text-right tabular-nums text-slate-700">{it.hom != null ? fmtBRLCompact(it.hom) : "—"}</td>
-                              <td className="p-1.5 text-right tabular-nums">{ecoPct != null ? <span className={ecoPct >= 0 ? "text-emerald-600" : "text-rose-600"}>{ecoPct >= 0 ? "−" : "+"}{Math.abs(ecoPct).toFixed(0)}%</span> : "—"}</td>
+                              <td className="p-1.5 text-right tabular-nums text-slate-400">{it.est != null ? fmtBRL(it.est) : "—"}</td>
+                              <td className="p-1.5 text-right tabular-nums text-slate-700">{it.hom != null ? fmtBRL(it.hom) : "—"}</td>
+                              <td className="p-1.5 text-right tabular-nums font-semibold text-slate-800">{totalNom != null ? fmtBRLCompact(totalNom) : "—"}</td>
+                              <td className="p-1.5 text-right tabular-nums">{ecoRs != null ? <span className="text-emerald-600">{fmtBRLCompact(ecoRs)} <span className="text-[10px] text-slate-400">({ecoPct!.toFixed(0)}%)</span></span> : "—"}</td>
                               <td className="p-1.5 text-[11px] text-slate-500">{it.situacao || "—"}</td>
                             </tr>
                           );

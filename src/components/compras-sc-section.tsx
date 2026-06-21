@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from "react";
 import { Building2, ChevronDown, ChevronRight, Database, Loader2, ShoppingCart, TriangleAlert } from "lucide-react";
 import { Donut } from "@/components/charts/donut";
 import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
-import { fmtBRL, fmtBRLCompact } from "@/lib/ui";
+import { fmtBRL, fmtBRLCompact, fmtCNPJ } from "@/lib/ui";
 
 type Contrato = { objeto: string; modalidade: string; orgao: string; estimado: number; homologado: number; economia_pct: number | null; data: string; cnpj?: string; ano?: number; seq?: number };
 type Item = { numero: number; descricao: string; unidade: string; quantidade: number; unitEstimado: number; totalEstimado: number; unitHomologado: number | null; fornecedor: string | null; cnpjFornecedor: string | null; porteFornecedor: string | null; beneficioLC: string | null; economiaPct: number | null };
@@ -311,7 +311,7 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
                   {f.porte && <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${porteCor(f.porte)}`} title={f.porte}>{porteSigla(f.porte)}</span>}
                 </div>
                 <dl className="mt-1.5 space-y-0.5 text-[11px] text-slate-500">
-                  {f.cnpj && <div className="flex justify-between gap-2"><dt>CNPJ</dt><dd className="tabular-nums text-slate-700">{f.cnpj}</dd></div>}
+                  {f.cnpj && <div className="flex justify-between gap-2"><dt>CNPJ</dt><dd className="tabular-nums text-slate-700">{fmtCNPJ(f.cnpj)}</dd></div>}
                   <div className="flex justify-between gap-2"><dt>Itens vencidos</dt><dd className="text-slate-700">{f.itens}</dd></div>
                   <div className="flex justify-between gap-2 border-t border-slate-100 pt-1"><dt>Contratado</dt><dd className="font-semibold text-slate-800">{fmtBRLCompact(f.valor)}</dd></div>
                   {f.lc && <div className="rounded bg-emerald-50 px-1.5 py-1 text-[10px] leading-snug text-emerald-700">LC 123: {f.lc}</div>}
@@ -341,7 +341,7 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
                 {contratos.map((ct, i) => (
                   <tr key={i} className="border-t border-slate-100 align-top">
                     <td className="p-1 text-slate-700"><span className="line-clamp-1">{ct.fornecedor}</span></td>
-                    <td className="hidden p-1 tabular-nums text-slate-500 sm:table-cell">{ct.ni}</td>
+                    <td className="hidden p-1 tabular-nums text-slate-500 sm:table-cell">{fmtCNPJ(ct.ni)}</td>
                     <td className="p-1 text-right font-semibold tabular-nums text-slate-800">{fmtBRLCompact(ct.valor)}</td>
                     <td className="hidden p-1 text-slate-500 md:table-cell">{ct.vigInicio || "—"}{ct.vigFim ? ` → ${ct.vigFim}` : ""}</td>
                     <td className="hidden p-1 text-slate-500 lg:table-cell">{ct.assinatura || "—"}</td>

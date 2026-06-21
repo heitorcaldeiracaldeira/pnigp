@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Gauge, BarChart3, ClipboardCheck, Database } from "lucide-react";
 import type { PadroesComprasSC, ContratosResumoSC, PcaResumoSC, EconomicidadeSC } from "@/lib/queries";
-import { fmtBRLCompact } from "@/lib/ui";
+import { fmtBRL, fmtBRLCompact } from "@/lib/ui";
 import { CICLO_COMPRAS, DOUTRINADORES, MATERIAIS_LIVRES } from "@/lib/compras-doutrina";
 
 const MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
@@ -102,7 +102,8 @@ export function AssuntoPadroesCompras({ dados, contratos, pca, economia, nome }:
               <p className="mb-2 text-xs text-slate-500">Diferença entre o preço estimado e o homologado nos itens (a economia que a licitação gerou).</p>
               <div className="flex flex-wrap items-end gap-6">
                 <div><div className="text-3xl font-bold text-emerald-600">{economia.economiaPct.toFixed(1)}%</div><div className="text-[11px] text-slate-500">economia média sobre o estimado</div></div>
-                <div><div className="text-lg font-semibold tabular-nums text-slate-700">{fmtBRLCompact(economia.estimado)} → {fmtBRLCompact(economia.homologado)}</div><div className="text-[11px] text-slate-500">{economia.nItens.toLocaleString("pt-BR")} itens homologados</div></div>
+                <div><div className="text-2xl font-bold tabular-nums text-emerald-600">{fmtBRL(economia.economia)}</div><div className="text-[11px] text-slate-500">economia nominal (estimado − homologado)</div></div>
+                <div><div className="text-base font-semibold tabular-nums text-slate-700">{fmtBRL(economia.estimado)} → {fmtBRL(economia.homologado)}</div><div className="text-[11px] text-slate-500">{economia.nItens.toLocaleString("pt-BR")} itens homologados</div></div>
               </div>
               <p className="mt-2 text-[11px] text-slate-400">Metodologia: exclui {economia.nOutliers.toLocaleString("pt-BR")} itens com erro de digitação (homologado &gt; estimado). O <b>%</b> é robusto; os valores absolutos incluem atas de registro de preços (quantidade máxima registrada, nem sempre comprada).</p>
             </div>

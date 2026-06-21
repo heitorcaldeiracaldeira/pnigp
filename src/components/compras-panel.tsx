@@ -6,7 +6,7 @@ import { ComprasRiscos } from "@/components/compras-riscos";
 import { analisarRiscosCompras, fornecedorConcentrado, riscoContratacao, type NivelContrato, type RiscoContrato } from "@/lib/compras-risco";
 import { empenhosDoContrato, fornecedoresDoProcesso, itensDoContrato } from "@/lib/contratacao-detalhe";
 import type { Compras, Contratacao } from "@/lib/queries";
-import { fmtBRL, fmtBRLCompact, fmtValor } from "@/lib/ui";
+import { fmtBRL, fmtBRLCompact, fmtValor, fmtCNPJ } from "@/lib/ui";
 
 const MOD_COR: Record<string, string> = {
   "Pregão Eletrônico": "bg-emerald-100 text-emerald-700",
@@ -327,7 +327,7 @@ function DetalheContrato({ contrato, risco }: { contrato: Contratacao; risco: Ri
               <dl className="mt-2 space-y-0.5 text-xs text-slate-500">
                 <div className="flex justify-between gap-2">
                   <dt>CNPJ</dt>
-                  <dd className="tabular-nums text-slate-700">{f.cnpj}</dd>
+                  <dd className="tabular-nums text-slate-700">{fmtCNPJ(f.cnpj)}</dd>
                 </div>
                 <div className="flex justify-between gap-2">
                   <dt>Município/UF</dt>
