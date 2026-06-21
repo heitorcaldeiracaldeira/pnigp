@@ -68,6 +68,7 @@ export default function EstrategiaPage() {
           <li><b>Política</b>: prefeitos × município × ano (TSE) — cruza gestor ↔ resultado ↔ pareceres.</li>
           <li><b>Geo</b>: camadas territoriais para mapas.</li>
         </ul>
+        <p className="mt-2 text-[15px]"><a href="/catalogo-dados" className="font-semibold text-teal-700 underline">→ Ver o Catálogo completo de Dados Abertos</a> (o que já temos + o que podemos ter, por domínio, com fonte e esforço).</p>
 
         <H2>5. Prioridades (quando as compras fecharem)</H2>
         <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[15px] text-slate-700 marker:text-slate-400">
