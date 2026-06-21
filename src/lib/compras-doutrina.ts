@@ -21,16 +21,30 @@ export const DOUTRINADORES: Doutrinador[] = [
   { nome: "Thiago Guterres", foco: "Fase preparatória e panorama prático da Nova Lei", obra: "A Nova Lei de Licitações — panorama (e-book gratuito, UFSC)" },
 ];
 
-// Biblioteca de materiais GRATUITOS e oficiais — apoio direto às prefeituras
-export type Material = { titulo: string; fonte: string; url: string };
+// Biblioteca de materiais GRATUITOS e oficiais — apoio direto às prefeituras, agrupados por instituição
+export type Material = { titulo: string; fonte: string; url: string; cat: string };
 export const MATERIAIS_LIVRES: Material[] = [
-  { titulo: "Licitações e Contratos — guia completo (PCA, ETP, pesquisa de preços)", fonte: "TCU", url: "https://licitacoesecontratos.tcu.gov.br/" },
-  { titulo: "Manual de Boas Práticas em Contratações Públicas", fonte: "gov.br / Compras", url: "https://www.gov.br/compras/pt-br/acesso-a-informacao/manuais/manual-governanca-nas-contratacoes/manual-de-boas-praticas-em-contratacoes-publicas.pdf" },
-  { titulo: "Observatório da Nova Lei de Licitações (artigos dos doutrinadores)", fonte: "Novaleilicitacao", url: "https://www.novaleilicitacao.com.br/" },
-  { titulo: "A Nova Lei de Licitações — e-book gratuito", fonte: "Thiago Guterres / UFSC", url: "https://repositorio.ufsc.br/bitstream/handle/123456789/222330/ebook%20-%20a%20nova%20lei%20de%20licita%C3%A7%C3%B5es%20-%20thiago%20guterres.pdf?sequence=1" },
-  { titulo: "Orientações para a implementação da Nova Lei (NLLCA)", fonte: "Ronny Charles", url: "https://ronnycharles.com.br/wp-content/uploads/2022/07/Orientacoes-para-a-implementacao-da-NLLCA.pdf" },
-  { titulo: "Cartilha da Nova Lei de Licitações e Contratos", fonte: "TCE-SP", url: "https://www.tce.sp.gov.br/sites/default/files/publicacoes/cartilha_nova_lei_licitacoes_contratos.pdf" },
-  { titulo: "Lei nº 14.133/2021 (texto oficial atualizado)", fonte: "Planalto", url: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" },
+  // TCU
+  { cat: "TCU — controle federal", titulo: "Licitações e Contratos: Orientações e Jurisprudência (Manual, com PCA, ETP, pesquisa de preços)", fonte: "TCU", url: "https://licitacoesecontratos.tcu.gov.br/" },
+  { cat: "TCU — controle federal", titulo: "Riscos e Controles nas Aquisições (RCA) — catálogo de riscos e controles", fonte: "TCU", url: "https://tcu.gov.br/arquivosrca/ManualOnLine.htm" },
+  { cat: "TCU — controle federal", titulo: "Análise e gestão de riscos das contratações", fonte: "TCU", url: "https://licitacoesecontratos.tcu.gov.br/4-2-analise-de-riscos/" },
+  // TCE-SC
+  { cat: "TCE/SC — controle estadual (SC)", titulo: "Cartilha “Perguntas e Respostas: Licitações e Contratações” (Lei 14.133)", fonte: "TCE/SC", url: "https://www.tcesc.tc.br/tcesc-publica-cartilha-perguntas-e-respostas-licitacoes-e-contratacoes" },
+  { cat: "TCE/SC — controle estadual (SC)", titulo: "Decisões e prejulgados que interpretam a Nova Lei (apoio ao gestor)", fonte: "TCE/SC", url: "https://www.tcesc.tc.br/decisoes-do-tcesc-auxiliam-gestores-publicos-interpretarem-melhor-nova-lei-de-licitacoes" },
+  { cat: "TCE/SC — controle estadual (SC)", titulo: "Orientações sobre licitações a partir de dúvidas de gestores", fonte: "TCE/SC", url: "https://www.tcesc.tc.br/tcesc-elabora-documento-com-algumas-orientacoes-sobre-licitacoes-e-contratacoes-partir-de-duvidas" },
+  // Ministério Público
+  { cat: "Ministério Público", titulo: "MPSC — licitações, recomendações e atuação contra irregularidades", fonte: "MPSC", url: "https://www.mpsc.mp.br/" },
+  { cat: "Ministério Público", titulo: "CNMP — contratações públicas e temas recorrentes (ex.: dispensas)", fonte: "CNMP", url: "https://www.cnmp.mp.br/portal/transparencia/prestacao-de-contas/licitacoes" },
+  { cat: "Ministério Público", titulo: "MPU — legislação relacionada às contratações", fonte: "MPU", url: "https://www.mpu.mp.br/contratacoes/legislacao-relacionada" },
+  // CGU — superfaturamento (base do sobrepreço)
+  { cat: "CGU — integridade e preços", titulo: "Guia de Superfaturamento em Contratos de Bens e Serviços", fonte: "CGU", url: "https://repositorio.cgu.gov.br/bitstream/1/94699/1/Guia_Superfaturamento_Contratos_Bens_Servicos.pdf" },
+  // Doutrina / guias gerais
+  { cat: "Doutrina e guias gerais", titulo: "Manual de Boas Práticas em Contratações Públicas", fonte: "gov.br / Compras", url: "https://www.gov.br/compras/pt-br/acesso-a-informacao/manuais/manual-governanca-nas-contratacoes/manual-de-boas-praticas-em-contratacoes-publicas.pdf" },
+  { cat: "Doutrina e guias gerais", titulo: "Observatório da Nova Lei de Licitações (artigos dos doutrinadores)", fonte: "Observatório", url: "https://www.novaleilicitacao.com.br/" },
+  { cat: "Doutrina e guias gerais", titulo: "A Nova Lei de Licitações — e-book gratuito", fonte: "Thiago Guterres / UFSC", url: "https://repositorio.ufsc.br/bitstream/handle/123456789/222330/ebook%20-%20a%20nova%20lei%20de%20licita%C3%A7%C3%B5es%20-%20thiago%20guterres.pdf?sequence=1" },
+  { cat: "Doutrina e guias gerais", titulo: "Orientações para a implementação da Nova Lei (NLLCA)", fonte: "Ronny Charles", url: "https://ronnycharles.com.br/wp-content/uploads/2022/07/Orientacoes-para-a-implementacao-da-NLLCA.pdf" },
+  { cat: "Doutrina e guias gerais", titulo: "Cartilha da Nova Lei de Licitações e Contratos", fonte: "TCE-SP", url: "https://www.tce.sp.gov.br/sites/default/files/publicacoes/cartilha_nova_lei_licitacoes_contratos.pdf" },
+  { cat: "Doutrina e guias gerais", titulo: "Lei nº 14.133/2021 — texto oficial atualizado", fonte: "Planalto", url: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" },
 ];
 
 export type FaseContratacao = { id: string; emoji: string; titulo: string; resumo: string; praticas: string[]; autores: string[] };
