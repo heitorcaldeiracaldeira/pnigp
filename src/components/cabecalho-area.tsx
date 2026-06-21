@@ -97,6 +97,7 @@ export function CabecalhoArea({
             ))}
           </div>
         )}
+        <p className="border-t border-slate-100 pt-2 text-[11px] text-slate-400">Indicadores e conformidade a partir de dados oficiais (SICONFI, SIOPS, DATASUS, IBGE). Detalhe e fonte de cada número nas seções abaixo.</p>
       </div>
     </div>
   );
