@@ -594,7 +594,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
         )}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-1 text-base font-semibold text-slate-800">🏛️ Onde é gasto — despesa por função → subfunção</h2>
-          <p className="mb-3 text-sm text-slate-500">Dotação × empenhado por função (RREO An.2, exercício {despSubfuncao?.anoUlt ?? ""}); clique para abrir as <b>subfunções</b> — a função é a <b>soma das subfunções</b> e a barra da subfunção mostra sua <b>participação na função</b>.</p>
+          <p className="mb-3 text-sm text-slate-500">Dotação × empenhado por função (RREO An.2, exercício {despSubfuncao?.anoUlt ?? ""}); clique para abrir as <b>subfunções</b> — a função é a <b>soma das subfunções</b> e a barra da subfunção mostra sua <b>participação na função</b>. <span className="text-slate-400">(inclui intra-orçamentárias; alinhamento ao total do resumo em andamento)</span></p>
           <ArvoreFinanceira raizes={arvoreFunc} colNome="Função" colV1="Dotação" colV2="Empenhado" />
         </div>
       </div>
