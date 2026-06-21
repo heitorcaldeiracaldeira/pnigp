@@ -1,6 +1,6 @@
 import type { PadroesComprasSC } from "@/lib/queries";
 import { fmtBRLCompact } from "@/lib/ui";
-import { CICLO_COMPRAS, DOUTRINADORES } from "@/lib/compras-doutrina";
+import { CICLO_COMPRAS, DOUTRINADORES, MATERIAIS_LIVRES } from "@/lib/compras-doutrina";
 
 const MES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
@@ -119,7 +119,22 @@ export function AssuntoPadroesCompras({ dados, nome }: { dados: PadroesComprasSC
             <div key={d.nome} className="rounded-xl border border-slate-200 p-3">
               <div className="text-[13px] font-semibold text-slate-800">{d.nome}</div>
               <p className="mt-0.5 text-[11px] text-slate-500">{d.foco}</p>
+              {d.obra && <p className="mt-1 text-[11px] italic text-slate-400">📖 {d.obra}</p>}
             </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Biblioteca de materiais gratuitos */}
+      <div className="rounded-2xl border border-teal-200 bg-teal-50/40 p-5">
+        <h3 className="text-sm font-semibold text-slate-800">🔗 Biblioteca de materiais (gratuitos e oficiais)</h3>
+        <p className="mb-3 text-xs text-slate-500">Guias e referências para a equipe de compras estudar e aplicar — todos de acesso livre.</p>
+        <div className="space-y-1.5">
+          {MATERIAIS_LIVRES.map((m) => (
+            <a key={m.url} href={m.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-2.5 text-sm transition hover:border-teal-400 hover:bg-teal-50/50">
+              <span className="text-slate-700">{m.titulo}</span>
+              <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">{m.fonte} ↗</span>
+            </a>
           ))}
         </div>
       </div>

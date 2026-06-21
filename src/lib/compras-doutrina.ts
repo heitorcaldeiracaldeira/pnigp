@@ -2,23 +2,35 @@
 // prefeituras. Atribuição por LINHA DE CONTRIBUIÇÃO conhecida de cada autor (não são citações literais).
 // Exibição neutra e didática, sem juízo político.
 
-export type Doutrinador = { nome: string; foco: string };
+export type Doutrinador = { nome: string; foco: string; obra?: string };
 
-// Roll completo de doutrinadores e suas áreas de referência em contratações públicas
+// Roll completo de doutrinadores, áreas de referência e obras principais em contratações públicas
 export const DOUTRINADORES: Doutrinador[] = [
-  { nome: "Marçal Justen Filho", foco: "Teoria geral da Lei 14.133; planejamento como pilar; custo × benefício da contratação" },
-  { nome: "Jorge Ulisses Jacoby Fernandes", foco: "Sistema de Registro de Preços, dispensa e vedação ao fracionamento; sanções" },
-  { nome: "Murilo Queiroz M. Jacoby Fernandes", foco: "Pregão, registro de preços e operacionalização prática da Nova Lei" },
-  { nome: "Ronny Charles Lopes de Torres", foco: "Pesquisa de preços, planejamento, gestão de riscos e sustentabilidade (AGU)" },
-  { nome: "Joel de Menezes Niebuhr", foco: "Princípios licitatórios, competitividade/isonomia e fase de seleção" },
-  { nome: "Tatiana Camarão", foco: "Planejamento das contratações, Estudo Técnico Preliminar (ETP) e gestão de contratos" },
-  { nome: "Gabriela Verona Pércio", foco: "Gestão e fiscalização de contratos; governança das contratações" },
-  { nome: "Christianne de Carvalho Stroppa", foco: "Controle externo (TCU) e jurisprudência aplicada às contratações" },
-  { nome: "Viviane Mafissoni", foco: "Atuação prática na fase de seleção (pregoeira) e operacionalização" },
-  { nome: "Min. Benjamin Zymler", foco: "Controle externo, governança e gestão de riscos (jurisprudência TCU)" },
-  { nome: "Min. Antônio Anastasia", foco: "Concepção da Lei 14.133 (relator no Senado); governança pública" },
-  { nome: "Cristiane Nardes", foco: "Auditoria e governança das aquisições; instrução do processo" },
-  { nome: "Thiago Guterres", foco: "Fase preparatória e jurisprudência prática da Nova Lei" },
+  { nome: "Marçal Justen Filho", foco: "Teoria geral da Lei 14.133; planejamento como pilar; custo × benefício da contratação", obra: "Comentários à Lei de Licitações e Contratações Administrativas (RT)" },
+  { nome: "Jorge Ulisses Jacoby Fernandes", foco: "Sistema de Registro de Preços, dispensa e vedação ao fracionamento; sanções", obra: "Sistema de Registro de Preços e Pregão; Contratação direta sem licitação (Fórum)" },
+  { nome: "Murilo Queiroz M. Jacoby Fernandes", foco: "Pregão, registro de preços e operacionalização prática da Nova Lei (Diretor INCP)", obra: "Contratação direta sem licitação na Lei 14.133 (Fórum, coautor)" },
+  { nome: "Ronny Charles Lopes de Torres", foco: "Pesquisa de preços, planejamento, gestão de riscos e sustentabilidade (AGU)", obra: "Leis de Licitações Públicas Comentadas (Juspodivm)" },
+  { nome: "Joel de Menezes Niebuhr", foco: "Princípios licitatórios, competitividade/isonomia e fase de seleção", obra: "Licitação Pública e Contrato Administrativo (Fórum)" },
+  { nome: "Tatiana Camarão", foco: "Planejamento das contratações, Estudo Técnico Preliminar (ETP) e gestão de contratos", obra: "Comentários à Lei 14.133 (Fórum); estudos sobre ETP" },
+  { nome: "Gabriela Verona Pércio", foco: "Gestão e fiscalização de contratos; governança das contratações (Presidente INCP)", obra: "Obras sobre gestão de contratos e contratação direta" },
+  { nome: "Christianne de Carvalho Stroppa", foco: "Controle externo (TCU) e jurisprudência aplicada às contratações (PUC-SP)", obra: "O regime jurídico do controle nas contratações públicas" },
+  { nome: "Viviane Mafissoni", foco: "Fase de seleção (pregoeira), procedimentos auxiliares e sanções (Diretora acad. INCP)", obra: "Artigos no Observatório da Nova Lei de Licitações; coautora de livros" },
+  { nome: "Min. Benjamin Zymler", foco: "Controle externo, governança e gestão de riscos (jurisprudência TCU)", obra: "Obras sobre controle e direito das licitações" },
+  { nome: "Min. Antônio Anastasia", foco: "Concepção da Lei 14.133 (relator no Senado); governança pública", obra: "Relatoria e estudos da Nova Lei de Licitações" },
+  { nome: "Cristiane Nardes", foco: "Auditoria e governança das aquisições; instrução do processo (Pres. Rede Governança Brasil)", obra: "Coordenação de obras sobre governança pública (Fórum)" },
+  { nome: "Thiago Guterres", foco: "Fase preparatória e panorama prático da Nova Lei", obra: "A Nova Lei de Licitações — panorama (e-book gratuito, UFSC)" },
+];
+
+// Biblioteca de materiais GRATUITOS e oficiais — apoio direto às prefeituras
+export type Material = { titulo: string; fonte: string; url: string };
+export const MATERIAIS_LIVRES: Material[] = [
+  { titulo: "Licitações e Contratos — guia completo (PCA, ETP, pesquisa de preços)", fonte: "TCU", url: "https://licitacoesecontratos.tcu.gov.br/" },
+  { titulo: "Manual de Boas Práticas em Contratações Públicas", fonte: "gov.br / Compras", url: "https://www.gov.br/compras/pt-br/acesso-a-informacao/manuais/manual-governanca-nas-contratacoes/manual-de-boas-praticas-em-contratacoes-publicas.pdf" },
+  { titulo: "Observatório da Nova Lei de Licitações (artigos dos doutrinadores)", fonte: "Novaleilicitacao", url: "https://www.novaleilicitacao.com.br/" },
+  { titulo: "A Nova Lei de Licitações — e-book gratuito", fonte: "Thiago Guterres / UFSC", url: "https://repositorio.ufsc.br/bitstream/handle/123456789/222330/ebook%20-%20a%20nova%20lei%20de%20licita%C3%A7%C3%B5es%20-%20thiago%20guterres.pdf?sequence=1" },
+  { titulo: "Orientações para a implementação da Nova Lei (NLLCA)", fonte: "Ronny Charles", url: "https://ronnycharles.com.br/wp-content/uploads/2022/07/Orientacoes-para-a-implementacao-da-NLLCA.pdf" },
+  { titulo: "Cartilha da Nova Lei de Licitações e Contratos", fonte: "TCE-SP", url: "https://www.tce.sp.gov.br/sites/default/files/publicacoes/cartilha_nova_lei_licitacoes_contratos.pdf" },
+  { titulo: "Lei nº 14.133/2021 (texto oficial atualizado)", fonte: "Planalto", url: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" },
 ];
 
 export type FaseContratacao = { id: string; emoji: string; titulo: string; resumo: string; praticas: string[]; autores: string[] };
