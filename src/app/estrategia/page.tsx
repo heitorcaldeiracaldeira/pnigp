@@ -139,6 +139,7 @@ export default function EstrategiaPage() {
           <li><b>Inteligência de compras do ente</b> — preço de referência, sobrepreço, PCA, comportamento.</li>
           <li><b>Prestação de contas facilitada</b> (Câmara, Conselhos, TCE).</li>
           <li><b>Painéis para Câmara e TCE</b> — fiscalização por risco.</li>
+          <li>⭐ <b>Captação de Recursos (Convênios e Programas da União)</b> — sugere os programas federais com proposta ABERTA casados com os gargalos do município (IDEB→FNDE, saúde→MS, saneamento→FUNASA), mostra convênios ativos e quanto o ente deixa na mesa vs pares. Fonte: Transferegov/SICONV (dados abertos).</li>
         </ol>
 
         <H2>3. Produtos B2B (setor privado) — monetização do moat</H2>
