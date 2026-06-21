@@ -14,6 +14,7 @@ import { SaudeSC } from "@/components/saude-sc";
 import { AssuntoAtencaoPrimaria } from "@/components/assunto-atencao-primaria";
 import { RepassesSaudeFicha } from "@/components/repasses-saude-ficha";
 import { AccountabilityAPS } from "@/components/accountability-aps";
+import { AssuntoMAC } from "@/components/assunto-mac";
 import { SerieExplicada } from "@/components/serie-explicada";
 import { PlacarEstrategico } from "@/components/placar-estrategico";
 import { CabecalhoArea } from "@/components/cabecalho-area";
@@ -32,7 +33,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -44,6 +45,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const previneFicha = await getPrevineFichaSC(codigo);
   const fnsSerie = await getFnsSerieSC(codigo);
   const repassesSaude = await getRepassesSaudeFichaSC(codigo);
+  const macProducao = await getMacProducaoSC(codigo);
   const seriesInd = serieRenda as Record<string, { ano: number; valor: number }[]>;
   if (!dados || dados.serie.length === 0) notFound();
   const minhaPos = rankingFiscal.find((r) => r.cod_ibge === codigo) ?? null;
@@ -600,6 +602,10 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (previneFicha) tabs.push({ id: "previne-ficha", label: "Atenção Primária (4 visões)", content: <AssuntoAtencaoPrimaria dados={previneFicha} nome={ente.nome} cod={codigo} /> });
   if (fnsSerie.length > 1) tabs.push({ id: "fns-historico", label: "Repasses (histórico explicado)", content: <SerieExplicada serie={fnsSerie} escopo="fns" cod={codigo} nome={ente.nome} /> });
   if (repassesSaude) tabs.push({ id: "repasses-saude", label: "Repasses da Saúde (como melhorar)", content: <RepassesSaudeFicha dados={repassesSaude} nome={ente.nome} /> });
+  if (macProducao.length && saude) {
+    const mac = repassesSaude?.programas.find((p) => p.key === "mac");
+    tabs.push({ id: "mac", label: "Média e Alta Complexidade (4 visões)", content: <AssuntoMAC producao={macProducao} repasseValor={mac?.valorUlt ?? null} repasseAno={repassesSaude?.anoUlt ?? null} internMil={saude.internMil} internMilPares={saude.internMilPares} nome={ente.nome} /> });
+  }
   if (previneFicha) {
     const aps = repassesSaude?.programas.find((p) => p.key === "aps");
     tabs.push({ id: "accountability-aps", label: "Cadeia & Accountability (APS)", content: (
@@ -618,7 +624,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     ["Resumo", ["placar", "visao", "panorama", "diagnostico"]],
     ["Finanças", ["financas", "execucao", "folha", "previdencia", "metas", "simulador"]],
     ["Compras", ["compras", "contratos", "planejamento", "compras-sc"]],
-    ["Setores", ["saude", "previne-ficha", "accountability-aps", "repasses-saude", "fns-historico", "educacao-cruz", "indicadores"]],
+    ["Setores", ["saude", "previne-ficha", "accountability-aps", "mac", "repasses-saude", "fns-historico", "educacao-cruz", "indicadores"]],
     ["Análise", ["cruzamentos", "ranking", "transferencias", "cauc", "auditoria"]],
   ];
   const ORDEM = GRUPOS.flatMap(([, ids]) => ids);

@@ -1226,6 +1226,13 @@ export async function getRepassesSaudeFichaSC(cod: string): Promise<RepasseSaude
   return { anoUlt, totalUlt, programas };
 }
 
+// Produção MAC (Média e Alta Complexidade) — série anual SIH (internações) + SIA (ambulatorial)
+export type MacProducaoSC = { ano: number; internacoes: number; sihValor: number; siaQtd: number; siaValor: number }[];
+export async function getMacProducaoSC(cod: string): Promise<MacProducaoSC> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, internacoes, valor_internacoes, sia_qtd, sia_valor FROM saude_producao_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  return rows.map((r) => ({ ano: num(r.ano), internacoes: num(r.internacoes), sihValor: num(r.valor_internacoes), siaQtd: num(r.sia_qtd), siaValor: num(r.sia_valor) }));
+}
+
 // Repasses federais do FNS por bloco/área (fundo-a-fundo) — último ano com dado
 export type FnsSC = { ano: number; total: number; custeio: number; investimento: number; areas: { nome: string; valor: number }[] } | null;
 export async function getFnsSC(cod: string): Promise<FnsSC> {
