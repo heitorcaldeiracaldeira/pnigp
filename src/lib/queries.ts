@@ -1187,6 +1187,20 @@ export async function getPrevineFichaSC(cod: string): Promise<PrevineFichaSC> {
   return { competenciaUlt: ult, grupo: _faixa(num(ent.populacao)), indicadores };
 }
 
+// Série histórica anual do FNS (para a Série Explicada) — total + custeio + investimento por ano
+export type FnsSerieSC = { ano: number; total: number; custeio: number; investimento: number }[];
+export async function getFnsSerieSC(cod: string): Promise<FnsSerieSC> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT ano,
+            sum(vl_liquido) total,
+            sum(vl_liquido) FILTER (WHERE bloco_cod=10) custeio,
+            sum(vl_liquido) FILTER (WHERE bloco_cod=11) investimento
+     FROM fns_repasse_sc WHERE cod_ibge=$1 AND area_cod=0 GROUP BY ano ORDER BY ano`,
+    [cod]
+  ).catch(() => []);
+  return rows.map((r) => ({ ano: num(r.ano), total: num(r.total), custeio: num(r.custeio), investimento: num(r.investimento) }));
+}
+
 // Repasses federais do FNS por bloco/área (fundo-a-fundo) — último ano com dado
 export type FnsSC = { ano: number; total: number; custeio: number; investimento: number; areas: { nome: string; valor: number }[] } | null;
 export async function getFnsSC(cod: string): Promise<FnsSC> {
