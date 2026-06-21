@@ -1345,6 +1345,79 @@ export async function getDespesaSubfuncaoSC(cod: string): Promise<DespesaSubfunc
   return { anoUlt, porFuncao, dotacaoPorFuncao };
 }
 
+// Economicidade das compras — economia entre preço estimado e homologado (item-level, itens_sc)
+// Vigências dos contratos — alerta de vencimento por faixa (gestão de contratos)
+export type ContratosVencimentoSC = {
+  faixas: { id: string; label: string; n: number; valor: number }[];
+  criticos: { objeto: string; fornecedor: string; valor: number; vigInicio: string | null; vigFim: string; dias: number }[];
+  vencidos: number; totalAtivos: number;
+} | null;
+export async function getContratosVencimentoSC(cod: string): Promise<ContratosVencimentoSC> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT objeto, fornecedor, valor_global, vig_inicio, vig_fim, (vig_fim::date - CURRENT_DATE) AS dias
+     FROM contratos_sc WHERE cod_ibge=$1 AND vig_fim IS NOT NULL AND vig_fim ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const FAIXAS = [
+    { id: "critico", label: "Crítico (< 30 dias)", min: 0, max: 30 },
+    { id: "m1_2", label: "1–2 meses", min: 31, max: 60 },
+    { id: "m2_3", label: "2–3 meses", min: 61, max: 90 },
+    { id: "m3_6", label: "3–6 meses", min: 91, max: 180 },
+    { id: "m6_12", label: "6–12 meses", min: 181, max: 365 },
+  ];
+  const faixas = FAIXAS.map((f) => ({ id: f.id, label: f.label, n: 0, valor: 0 }));
+  const criticos: NonNullable<ContratosVencimentoSC>["criticos"] = [];
+  let vencidos = 0, totalAtivos = 0;
+  for (const r of rows) {
+    const dias = num(r.dias); const v = num(r.valor_global);
+    if (dias < 0) { vencidos++; continue; }
+    totalAtivos++;
+    const fi = FAIXAS.findIndex((f) => dias >= f.min && dias <= f.max);
+    if (fi >= 0) { faixas[fi].n++; faixas[fi].valor += v; }
+    if (dias <= 30) criticos.push({ objeto: String(r.objeto || ""), fornecedor: String(r.fornecedor || ""), valor: v, vigInicio: (r.vig_inicio as string) || null, vigFim: String(r.vig_fim), dias });
+  }
+  criticos.sort((a, b) => a.dias - b.dias);
+  return { faixas, criticos: criticos.slice(0, 30), vencidos, totalAtivos };
+}
+
+// Economia entre estimado e homologado. Exclui outliers (homologado > estimado = erro de digitação unidade×total).
+// O % é robusto; o R$ absoluto é inflado por atas de registro de preço (quantidade máxima registrada ≠ comprada).
+export type EconomicidadeSC = { estimado: number; homologado: number; economia: number; economiaPct: number; nItens: number; nOutliers: number } | null;
+export async function getEconomicidadeSC(cod: string): Promise<EconomicidadeSC> {
+  const r = (await query<Record<string, unknown>>(
+    `SELECT
+       COALESCE(SUM(unit_estimado*quantidade) FILTER (WHERE unit_homologado<=unit_estimado),0) est,
+       COALESCE(SUM(unit_homologado*quantidade) FILTER (WHERE unit_homologado<=unit_estimado),0) hom,
+       COUNT(*) FILTER (WHERE unit_homologado<=unit_estimado) n,
+       COUNT(*) FILTER (WHERE unit_homologado>unit_estimado) outliers
+     FROM itens_sc WHERE cod_ibge=$1 AND unit_homologado IS NOT NULL AND unit_estimado IS NOT NULL AND unit_estimado>0 AND quantidade>0`, [cod]).catch(() => []))[0];
+  if (!r || num(r.n) === 0) return null;
+  const estimado = num(r.est), homologado = num(r.hom);
+  const economia = estimado - homologado;
+  return { estimado, homologado, economia, economiaPct: estimado > 0 ? (economia / estimado) * 100 : 0, nItens: num(r.n), nOutliers: num(r.outliers) };
+}
+
+// Itens vinculados aos maiores contratos (contrato → processo via cnpj/ano/seq → itens_sc)
+export type ContratoComItens = { objeto: string; fornecedor: string; valor: number; assinatura: string | null; vigInicio: string | null; vigFim: string | null; itens: { descricao: string; quantidade: number; est: number | null; hom: number | null; situacao: string | null; lc123: boolean; porte: string | null; fornecedor: string | null }[] };
+export async function getContratosComItensSC(cod: string): Promise<ContratoComItens[]> {
+  const rows = await query<Record<string, unknown>>(
+    `WITH topc AS (
+       SELECT cnpj_compra, ano_compra, seq_compra, objeto, fornecedor, valor_global, assinatura, vig_inicio, vig_fim
+       FROM contratos_sc WHERE cod_ibge=$1 AND cnpj_compra IS NOT NULL
+       ORDER BY valor_global DESC NULLS LAST LIMIT 15)
+     SELECT t.objeto, t.fornecedor, t.valor_global, t.assinatura, t.vig_inicio, t.vig_fim, t.cnpj_compra, t.ano_compra, t.seq_compra,
+            i.descricao, i.quantidade, i.unit_homologado, i.unit_estimado, i.situacao, i.beneficio_lc, i.porte_fornecedor, i.fornecedor AS item_fornecedor
+     FROM topc t LEFT JOIN itens_sc i ON i.cnpj=t.cnpj_compra AND i.ano=t.ano_compra AND i.seq=t.seq_compra
+     ORDER BY t.valor_global DESC NULLS LAST, i.unit_homologado DESC NULLS LAST`, [cod]).catch(() => []);
+  const map = new Map<string, ContratoComItens>();
+  const lcBenef = (v: unknown) => { const s = String(v || "").toLowerCase(); return /me\/epp|micro|pequen|\bepp\b|\bme\b|cooperativa/.test(s); };
+  for (const r of rows) {
+    const k = `${r.cnpj_compra}-${r.ano_compra}-${r.seq_compra}`;
+    if (!map.has(k)) map.set(k, { objeto: String(r.objeto || ""), fornecedor: String(r.fornecedor || ""), valor: num(r.valor_global), assinatura: (r.assinatura as string) || null, vigInicio: (r.vig_inicio as string) || null, vigFim: (r.vig_fim as string) || null, itens: [] });
+    if (r.descricao && map.get(k)!.itens.length < 12) map.get(k)!.itens.push({ descricao: String(r.descricao), quantidade: num(r.quantidade), est: r.unit_estimado != null ? num(r.unit_estimado) : null, hom: r.unit_homologado != null ? num(r.unit_homologado) : null, situacao: (r.situacao as string) || null, lc123: lcBenef(r.beneficio_lc) || lcBenef(r.porte_fornecedor), porte: (r.porte_fornecedor as string) || null, fornecedor: (r.item_fornecedor as string) || null });
+  }
+  return [...map.values()];
+}
+
 // Padrões de compras (planejamento) — sazonalidade, modalidades, taxa de sucesso, série anual (processos_sc)
 export type PadroesComprasSC = {
   totalN: number; totalValor: number;

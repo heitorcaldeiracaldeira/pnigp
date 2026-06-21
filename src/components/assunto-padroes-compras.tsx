@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Gauge, BarChart3, ClipboardCheck, Database } from "lucide-react";
-import type { PadroesComprasSC, ContratosResumoSC, PcaResumoSC } from "@/lib/queries";
+import type { PadroesComprasSC, ContratosResumoSC, PcaResumoSC, EconomicidadeSC } from "@/lib/queries";
 import { fmtBRLCompact } from "@/lib/ui";
 import { CICLO_COMPRAS, DOUTRINADORES, MATERIAIS_LIVRES } from "@/lib/compras-doutrina";
 
@@ -15,7 +15,7 @@ const PILULAS: { id: Visao; label: string; icon: typeof Gauge; desc: string }[] 
   { id: "tecnico", label: "Técnico", icon: Database, desc: "A prova: série, doutrina e fontes" },
 ];
 
-export function AssuntoPadroesCompras({ dados, contratos, pca, nome }: { dados: PadroesComprasSC; contratos?: ContratosResumoSC | null; pca?: PcaResumoSC | null; nome: string }) {
+export function AssuntoPadroesCompras({ dados, contratos, pca, economia, nome }: { dados: PadroesComprasSC; contratos?: ContratosResumoSC | null; pca?: PcaResumoSC | null; economia?: EconomicidadeSC; nome: string }) {
   const [v, setV] = useState<Visao>("estrategico");
   if (!dados) return null;
   const { totalN, totalValor, porModalidade, porMes, serieAnual, dispensaPct, q4Pct, mesPico } = dados;
@@ -95,6 +95,18 @@ export function AssuntoPadroesCompras({ dados, contratos, pca, nome }: { dados: 
               ))}
             </div>
           </div>
+
+          {economia && (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5">
+              <h3 className="text-sm font-semibold text-slate-800">💸 Economicidade (estimado → homologado)</h3>
+              <p className="mb-2 text-xs text-slate-500">Diferença entre o preço estimado e o homologado nos itens (a economia que a licitação gerou).</p>
+              <div className="flex flex-wrap items-end gap-6">
+                <div><div className="text-3xl font-bold text-emerald-600">{economia.economiaPct.toFixed(1)}%</div><div className="text-[11px] text-slate-500">economia média sobre o estimado</div></div>
+                <div><div className="text-lg font-semibold tabular-nums text-slate-700">{fmtBRLCompact(economia.estimado)} → {fmtBRLCompact(economia.homologado)}</div><div className="text-[11px] text-slate-500">{economia.nItens.toLocaleString("pt-BR")} itens homologados</div></div>
+              </div>
+              <p className="mt-2 text-[11px] text-slate-400">Metodologia: exclui {economia.nOutliers.toLocaleString("pt-BR")} itens com erro de digitação (homologado &gt; estimado). O <b>%</b> é robusto; os valores absolutos incluem atas de registro de preços (quantidade máxima registrada, nem sempre comprada).</p>
+            </div>
+          )}
 
           <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600"><b>Leitura:</b> {nome} mobiliza {fmtBRLCompact(totalValor)} em {totalN.toLocaleString("pt-BR")} processos. {dispensaPct > 40 ? `A alta proporção de dispensa (${dispensaPct.toFixed(0)}%) e ` : ""}{q4Pct > 35 ? `a concentração no fim do ano (${q4Pct.toFixed(0)}%) sugerem ganhos com planejamento antecipado.` : "o padrão pode ser otimizado com planejamento e registro de preços."} Veja o que fazer na visão <b>Operacional</b>.</p>
         </div>
