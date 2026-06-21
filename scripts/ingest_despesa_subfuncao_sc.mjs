@@ -42,9 +42,13 @@ async function main() {
       if (items == null) continue;
       const emp = items.filter((x) => x.coluna === COL_EMP); // ordem preserva hierarquia
       let funcAtual = null;
-      const acc = new Map(); // "funcao|subfuncao" -> soma (normal + intra)
+      let intraMode = false; // ao entrar no bloco INTRA-ORÇAMENTÁRIAS, ignora o resto (padrão financas = só normal)
+      const acc = new Map(); // "funcao|subfuncao" -> soma (somente despesa normal, exceto intra)
       for (const x of emp) {
         const conta = String(x.conta || "").trim();
+        // cabeçalho do bloco intra ("(INTRA-ORÇAMENTÁRIAS)" mas NÃO "EXCETO INTRA") → daqui pra frente é intra
+        if (/intra/i.test(conta) && !/exceto/i.test(conta)) { intraMode = true; funcAtual = null; continue; }
+        if (intraMode) continue;
         if (ehAgreg(conta)) { funcAtual = null; continue; }
         if (FSET.has(norm(conta))) { funcAtual = conta; continue; } // linha de função (total) — pula
         if (!funcAtual) continue;
