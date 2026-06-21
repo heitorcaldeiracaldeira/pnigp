@@ -746,6 +746,21 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
           </p>
         </div>
 
+        {/* Alerta de contratos críticos a vencer */}
+        {contratosVenc && contratosVenc.nCriticos > 0 && (
+          <a href="#contratos" className="block rounded-2xl border border-rose-300 bg-rose-50 p-4 transition hover:bg-rose-100">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⚠️</span>
+              <div className="flex-1">
+                <div className="font-semibold text-rose-800">{contratosVenc.nCriticos} contrato(s) crítico(s) a vencer em menos de 30 dias</div>
+                <div className="text-sm text-rose-700">
+                  {(() => { const c = contratosVenc.aVencer.find((x) => x.dias <= 30); return c ? `Mais próximo: "${c.objeto.slice(0, 60)}" vence em ${c.dias} dia(s).` : ""; })()} Planeje renovação ou nova licitação. <span className="font-semibold underline">Ver contratos →</span>
+                </div>
+              </div>
+            </div>
+          </a>
+        )}
+
         {/* Resumo executivo + Insights agora vivem no Placar (aba Visão do Prefeito), num fluxo único */}
 
         {/* Seções em abas (mesmo layout do painel) */}
