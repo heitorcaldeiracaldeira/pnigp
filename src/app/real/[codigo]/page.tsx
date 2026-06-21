@@ -565,15 +565,21 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (radar.length >= 3) tabs.splice(1, 0, { id: "panorama", label: "Panorama", content: <PanoramaSC radar={radar} grupo={saude?.grupo || educacao?.grupo || cruz?.grupo || ""} /> });
 
   const toNoFin = (f: FuncaoSC): NoFin => ({ nome: f.nome, previsto: f.dotacao, realizado: f.empenhado, pct: f.dotacao > 0 ? (f.empenhado / f.dotacao) * 100 : 0, filhos: f.filhos && f.filhos.length ? f.filhos.map(toNoFin).sort((a, b) => b.previsto - a.previsto) : undefined });
-  // injeta as subfunções DETALHADAS (RREO Anexo 02) em cada função — o financas traz só "Demais Subfunções"
-  const subDespFn = despSubfuncao?.porFuncao || {};
-  const arvoreFunc: NoFin[] = funcoesLatest.map((f): NoFin => {
-    const subs = subDespFn[f.nome];
-    const filhos = subs && subs.length
-      ? subs.map((s) => ({ nome: s.subfuncao, previsto: s.empenhado, realizado: s.empenhado, pct: 100 })).sort((a, b) => b.realizado - a.realizado)
-      : (f.filhos && f.filhos.length ? f.filhos.map(toNoFin) : undefined);
-    return { nome: f.nome, previsto: f.dotacao, realizado: f.empenhado, pct: f.dotacao > 0 ? (f.empenhado / f.dotacao) * 100 : 0, filhos };
-  }).sort((x, y) => y.previsto - x.previsto);
+  // árvore de despesa com subfunções DETALHADAS (RREO Anexo 02), tudo no MESMO exercício:
+  // função = soma das subfunções (batem exato); dotação da função no mesmo ano → % execução real.
+  let arvoreFunc: NoFin[];
+  if (despSubfuncao && Object.keys(despSubfuncao.porFuncao).length) {
+    arvoreFunc = Object.entries(despSubfuncao.porFuncao).map(([nome, subs]): NoFin => {
+      const empenhado = subs.reduce((s, x) => s + x.empenhado, 0);
+      const dotacao = despSubfuncao.dotacaoPorFuncao[nome] || empenhado;
+      return {
+        nome, previsto: dotacao, realizado: empenhado, pct: dotacao > 0 ? (empenhado / dotacao) * 100 : 100,
+        filhos: subs.map((s) => ({ nome: s.subfuncao, previsto: s.empenhado, realizado: s.empenhado, pct: empenhado > 0 ? (s.empenhado / empenhado) * 100 : 0 })).sort((a, b) => b.realizado - a.realizado),
+      };
+    }).sort((x, y) => y.realizado - x.realizado);
+  } else {
+    arvoreFunc = funcoesLatest.map(toNoFin).sort((x, y) => y.previsto - x.previsto);
+  }
   const recToNoFin = (r: ReceitaSC): NoFin => ({ nome: r.nome, previsto: r.previsto, realizado: r.arrecadado, pct: r.previsto > 0 ? (r.arrecadado / r.previsto) * 100 : 0, filhos: r.filhos && r.filhos.length ? r.filhos.map(recToNoFin).sort((a, b) => b.realizado - a.realizado) : undefined });
   const arvoreRec: NoFin[] = (receitasLatest || []).map(recToNoFin).sort((x, y) => y.realizado - x.realizado);
   if (arvoreFunc.length || arvoreRec.length) tabs.push({
@@ -588,7 +594,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
         )}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="mb-1 text-base font-semibold text-slate-800">🏛️ Onde é gasto — despesa por função → subfunção</h2>
-          <p className="mb-3 text-sm text-slate-500">Dotação × empenhado por função; clique para abrir as <b>subfunções</b> (Atenção Básica, Ensino Fundamental…). Subfunção pelo empenhado (RREO Anexo 02, último exercício detalhado).</p>
+          <p className="mb-3 text-sm text-slate-500">Dotação × empenhado por função (RREO An.2, exercício {despSubfuncao?.anoUlt ?? ""}); clique para abrir as <b>subfunções</b> — a função é a <b>soma das subfunções</b> e a barra da subfunção mostra sua <b>participação na função</b>.</p>
           <ArvoreFinanceira raizes={arvoreFunc} colNome="Função" colV1="Dotação" colV2="Empenhado" />
         </div>
       </div>

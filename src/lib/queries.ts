@@ -1321,7 +1321,7 @@ export async function getEducacaoSerieSC(cod: string): Promise<EducacaoSerieSC> 
 }
 
 // Despesa por subfunção (drill da função) — último ano
-export type DespesaSubfuncaoSC = { anoUlt: number; porFuncao: Record<string, { subfuncao: string; empenhado: number }[]> } | null;
+export type DespesaSubfuncaoSC = { anoUlt: number; porFuncao: Record<string, { subfuncao: string; empenhado: number }[]>; dotacaoPorFuncao: Record<string, number> } | null;
 export async function getDespesaSubfuncaoSC(cod: string): Promise<DespesaSubfuncaoSC> {
   const rows = await query<Record<string, unknown>>(`SELECT ano, funcao, subfuncao, empenhado FROM despesa_subfuncao_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
   if (!rows.length) return null;
@@ -1337,7 +1337,12 @@ export async function getDespesaSubfuncaoSC(cod: string): Promise<DespesaSubfunc
     (porFuncao[f] = porFuncao[f] || []).push({ subfuncao: String(r.subfuncao), empenhado: num(r.empenhado) });
   }
   for (const f of Object.keys(porFuncao)) porFuncao[f].sort((a, b) => b.empenhado - a.empenhado);
-  return { anoUlt, porFuncao };
+  // dotação por função no MESMO ano (financas_sc) — para o drill ser consistente (função = soma das subfunções)
+  const dotacaoPorFuncao: Record<string, number> = {};
+  const finRow = (await query<Record<string, unknown>>(`SELECT funcoes FROM financas_sc WHERE cod_ibge=$1 AND ano=$2`, [cod, anoUlt]).catch(() => []))[0];
+  const fns = (finRow?.funcoes as { nome?: string; dotacao?: number }[] | undefined) || [];
+  for (const f of fns) if (f?.nome) dotacaoPorFuncao[f.nome] = num(f.dotacao);
+  return { anoUlt, porFuncao, dotacaoPorFuncao };
 }
 
 // Receitas detalhadas por item nominal (ICMS, FPM, IPTU, ISS, IPVA, ITR, FUNDEB) — série anual
