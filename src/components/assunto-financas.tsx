@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { BarChart3, BookOpen, ClipboardCheck, Database, Gauge } from "lucide-react";
-import type { FinancaSCAno, FuncaoSC, ReceitasDetalheSC, DespesaSubfuncaoSC } from "@/lib/queries";
+import type { FinancaSCAno, FuncaoSC, ReceitasDetalheSC, DespesaSubfuncaoSC, ReceitaConexaoSC, CaucSC } from "@/lib/queries";
 import { fmtBRLCompact } from "@/lib/ui";
 
 type Visao = "estrategico" | "tatico" | "operacional" | "tecnico";
@@ -44,7 +44,7 @@ function Barra({ label, valor, max, cor, sub }: { label: string; valor: number; 
 }
 
 // ============ RECEITAS — de onde vem o dinheiro ============
-export function AssuntoReceitas({ serie, detalhe, nome }: { serie: FinancaSCAno[]; detalhe: ReceitasDetalheSC; nome: string }) {
+export function AssuntoReceitas({ serie, detalhe, conexao, cauc, nome }: { serie: FinancaSCAno[]; detalhe: ReceitasDetalheSC; conexao?: ReceitaConexaoSC; cauc?: CaucSC; nome: string }) {
   const [v, setV] = useState<Visao>("estrategico");
   const u = serie[serie.length - 1];
   const maxDet = detalhe ? Math.max(...detalhe.itens.map((i) => i.valor), 1) : 1;
@@ -66,6 +66,30 @@ export function AssuntoReceitas({ serie, detalhe, nome }: { serie: FinancaSCAno[
               <div className="rounded-xl border border-slate-200 p-3"><div className="text-xs text-slate-500">Arrecadado/previsto</div><div className={`text-xl font-bold tabular-nums ${execRec >= 95 ? "text-emerald-600" : "text-amber-600"}`}>{execRec.toFixed(0)}%</div></div>
             </div>
             <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600"><b>Leitura:</b> {nome} arrecada {propria.toFixed(0)}% por conta própria e depende {dep.toFixed(0)}% de transferências. Mais receita própria = mais autonomia e menos vulnerabilidade a cortes federais/estaduais.</p>
+
+            {/* conexão: o que entra → o que pode entrar → o que não estamos aptos */}
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3">
+                <div className="text-xs font-semibold text-emerald-800">📥 O que entra</div>
+                <div className="mt-1 text-lg font-bold tabular-nums text-slate-900">{fmtBRLCompact(u.receita)}</div>
+                <div className="text-[11px] text-slate-500">receita total · {propria.toFixed(0)}% própria</div>
+              </div>
+              <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-3">
+                <div className="text-xs font-semibold text-sky-800">📈 O que pode entrar</div>
+                {conexao ? (() => { const gap = conexao.transfPCpares - conexao.transfPC; return (
+                  <><div className={`mt-1 text-lg font-bold tabular-nums ${gap > 0 ? "text-amber-600" : "text-emerald-600"}`}>{gap > 0 ? `+${fmtBRLCompact(gap)}/hab` : "no nível dos pares"}</div>
+                  <div className="text-[11px] text-slate-500">{gap > 0 ? `recebe menos transferências/hab que os pares (${fmtBRLCompact(conexao.transfPCpares)}/hab) — espaço a captar` : `transferências/hab ≥ pares (${fmtBRLCompact(conexao.transfPCpares)}/hab)`}</div></>
+                ); })() : <div className="mt-1 text-sm text-slate-400">—</div>}
+                <div className="mt-1 text-[10px] text-teal-700">+ Radar de Convênios (União+Estado) — em breve</div>
+              </div>
+              <div className={`rounded-xl border p-3 ${cauc && !cauc.apto ? "border-rose-200 bg-rose-50/50" : "border-emerald-200 bg-emerald-50/50"}`}>
+                <div className="text-xs font-semibold text-slate-700">🔒 O que não estamos aptos</div>
+                {cauc ? (cauc.apto
+                  ? <><div className="mt-1 text-lg font-bold text-emerald-700">Apto ✓</div><div className="text-[11px] text-slate-500">sem pendências p/ transferências voluntárias (CAUC)</div></>
+                  : <><div className="mt-1 text-lg font-bold text-rose-700">{cauc.nPendencias} pendência(s)</div><div className="text-[11px] text-slate-500">bloqueiam voluntárias (CAUC): {cauc.grupos.slice(0, 3).join(" · ") || "—"}</div></>)
+                  : <div className="mt-1 text-sm text-slate-400">sem dado CAUC</div>}
+              </div>
+            </div>
           </div>
         )}
         {v === "tatico" && (

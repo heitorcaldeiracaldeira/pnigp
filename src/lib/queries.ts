@@ -1226,6 +1226,21 @@ export async function getRepassesSaudeFichaSC(cod: string): Promise<RepasseSaude
   return { anoUlt, totalUlt, programas };
 }
 
+// Conexão de receitas — entra (próprio×transferências) vs pares do mesmo porte (potencial de captação)
+export type ReceitaConexaoSC = { transfPC: number; transfPCpares: number; propriaPct: number; propriaPctPares: number; receita: number } | null;
+export async function getReceitaConexaoSC(cod: string): Promise<ReceitaConexaoSC> {
+  const ent = (await query<Record<string, unknown>>(`SELECT populacao FROM entes_sc WHERE cod_ibge=$1 AND tipo='M'`, [cod]))[0];
+  if (!ent) return null;
+  const gk = _fk(num(ent.populacao));
+  const fin = await query<Record<string, unknown>>(`SELECT DISTINCT ON (cod_ibge) cod_ibge, receita, tributaria, transferencias FROM financas_sc ORDER BY cod_ibge, ano DESC`).catch(() => []);
+  const ent2 = await query<Record<string, unknown>>(`SELECT cod_ibge, populacao FROM entes_sc WHERE tipo='M' AND populacao>0`).catch(() => []);
+  const pop = new Map(ent2.map((e) => [String(e.cod_ibge), num(e.populacao)]));
+  const pares = fin.map((f) => { const c = String(f.cod_ibge); const p = pop.get(c) || 0; if (p <= 0 || _fk(p) !== gk) return null; return { cod: c, transfPC: num(f.transferencias) / p, propriaPct: num(f.receita) > 0 ? (num(f.tributaria) / num(f.receita)) * 100 : 0 }; }).filter(Boolean) as { cod: string; transfPC: number; propriaPct: number }[];
+  const eu = pares.find((p) => p.cod === cod); const meuFin = fin.find((f) => String(f.cod_ibge) === cod);
+  if (!eu || !meuFin) return null;
+  return { transfPC: eu.transfPC, transfPCpares: _median(pares.map((p) => p.transfPC)), propriaPct: eu.propriaPct, propriaPctPares: _median(pares.map((p) => p.propriaPct)), receita: num(meuFin.receita) };
+}
+
 // IEGM (TCE-SC/IRB) — qualidade da gestão: 7 dimensões + nota final (calculada c/ pesos oficiais)
 const PESO_IEGM: Record<string, number> = { "i-educ": 0.2, "i-saude": 0.2, "i-fiscal": 0.2, "i-plan": 0.1, "i-amb": 0.1, "i-cidade": 0.1, "i-gov ti": 0.1 };
 export function faixaIegm(pct: number): string { return pct >= 0.9 ? "A" : pct >= 0.75 ? "B+" : pct >= 0.6 ? "B" : pct >= 0.5 ? "C+" : "C"; }
