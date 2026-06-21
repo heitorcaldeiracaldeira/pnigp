@@ -3,7 +3,8 @@
 
 export type Marco = { titulo: string; desc: string };
 export type MaterialRef = { titulo: string; fonte: string; url: string };
-export type AreaConhecimento = { titulo: string; marcos: Marco[]; materiais: MaterialRef[] };
+export type AutorRef = { nome: string; foco: string };
+export type AreaConhecimento = { titulo: string; marcos: Marco[]; autores?: AutorRef[]; materiais: MaterialRef[] };
 
 export const CONHECIMENTO: Record<string, AreaConhecimento> = {
   financas: {
@@ -11,6 +12,7 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
     marcos: [
       { titulo: "LRF — LC 101/2000", desc: "Limites de pessoal, dívida e regras de equilíbrio das contas públicas." },
       { titulo: "CF, arts. 163–169", desc: "Finanças públicas, orçamento e limites de despesa." },
+      { titulo: "FPM/FPE — art. 159 CF + LC 62/1989", desc: "Fundos de Participação que distribuem parte do IR e do IPI a municípios e estados." },
       { titulo: "Mínimos constitucionais", desc: "Saúde 15% (LC 141) e Educação 25% (art. 212)." },
     ],
     materiais: [
@@ -23,9 +25,17 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
   saude: {
     titulo: "Saúde (SUS / Atenção Primária)",
     marcos: [
+      { titulo: "FNS — Lei 8.142/1990", desc: "Cria os fundos de saúde e o repasse fundo-a-fundo do SUS (FNS instituído pelo Decreto 64.867/1969)." },
       { titulo: "LC 141/2012", desc: "Aplicação mínima de 15% das receitas em saúde (ASPS)." },
       { titulo: "PNAB", desc: "Política Nacional de Atenção Básica — organização da APS." },
       { titulo: "Cofinanciamento da APS", desc: "Previne Brasil (Port. 2.979/2019) → novo modelo (Port. GM/MS 3.493/2024)." },
+    ],
+    autores: [
+      { nome: "Lenir Santos", foco: "Direito sanitário e organização do SUS (fundadora/presidente do IDISA)" },
+      { nome: "Sueli Gandolfi Dallari", foco: "Direito sanitário e saúde pública (USP)" },
+      { nome: "Gilson Carvalho", foco: "Financiamento do SUS (idealizador da Domingueira da Saúde)" },
+      { nome: "Áquilas Mendes", foco: "Economia e financiamento da saúde (USP)" },
+      { nome: "Francisco Funcia", foco: "Financiamento do SUS e mínimos constitucionais" },
     ],
     materiais: [
       { titulo: "Financiamento da Atenção Primária (gestor)", fonte: "Min. Saúde / SAPS", url: "https://aps.saude.gov.br/gestor/financiamento" },
@@ -38,8 +48,14 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
     titulo: "Educação básica",
     marcos: [
       { titulo: "Art. 212 da CF", desc: "Aplicação mínima de 25% das receitas em manutenção e desenvolvimento do ensino (MDE)." },
-      { titulo: "FUNDEB — Lei 14.113/2020", desc: "Art. 212-A; VAAF/VAAT/VAAR e complementação da União (23% até 2026)." },
+      { titulo: "FUNDEB — Lei 14.113/2020", desc: "Fundo permanente (EC 108/2020, art. 212-A); VAAF/VAAT/VAAR. Sucede o FUNDEF (Lei 9.424/1996) e o FUNDEB original (Lei 11.494/2007)." },
       { titulo: "PNE e CAQ", desc: "Plano Nacional de Educação e Custo Aluno-Qualidade como referência." },
+    ],
+    autores: [
+      { nome: "José Marcelino de Rezende Pinto", foco: "Financiamento da educação e Custo Aluno-Qualidade (USP)" },
+      { nome: "Romualdo Portela de Oliveira", foco: "Financiamento da educação básica e federalismo (USP)" },
+      { nome: "Nicholas Davies", foco: "FUNDEB e fiscalização dos recursos da educação (UFF)" },
+      { nome: "FINEDUCA / Campanha Nacional pelo Direito à Educação", foco: "Rede de pesquisa em financiamento e CAQ" },
     ],
     materiais: [
       { titulo: "FUNDEB — legislação e manuais de orientação", fonte: "FNDE", url: "https://www.gov.br/fnde/pt-br/acesso-a-informacao/acoes-e-programas/financiamento/fundeb" },
@@ -51,6 +67,7 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
   previdencia: {
     titulo: "Previdência (RPPS)",
     marcos: [
+      { titulo: "RPPS — Lei 9.717/1998", desc: "Normas gerais dos regimes próprios; cada ente institui seu fundo previdenciário por lei municipal." },
       { titulo: "EC 103/2019", desc: "Reforma da Previdência — regras gerais aplicáveis aos RPPS subnacionais." },
       { titulo: "Portaria MTP 1.467/2022", desc: "Parâmetros e diretrizes de organização e funcionamento dos RPPS." },
       { titulo: "Equilíbrio financeiro e atuarial", desc: "Avaliação atuarial anual (atuário registrado no IBA); art. 40 CF." },
@@ -72,6 +89,24 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
       { titulo: "Referencial Básico de Governança Organizacional (3ª ed.)", fonte: "TCU", url: "https://portal.tcu.gov.br/referencial-basico-de-governanca-organizacional.htm" },
       { titulo: "IEGM — Índice de Efetividade da Gestão Municipal", fonte: "IRB", url: "https://irbcontas.org.br/" },
       { titulo: "TCE/SC — orientações e jurisprudência", fonte: "TCE/SC", url: "https://www.tcesc.tc.br/" },
+    ],
+  },
+  assistencia: {
+    titulo: "Assistência social (SUAS)",
+    marcos: [
+      { titulo: "FNAS / LOAS — Lei 8.742/1993", desc: "Lei Orgânica da Assistência Social cria o Fundo Nacional de Assistência Social (art. 28) e o BPC." },
+      { titulo: "SUAS — Lei 12.435/2011", desc: "Institui o Sistema Único de Assistência Social na LOAS (cofinanciamento e gestão)." },
+      { titulo: "Bolsa Família / CadÚnico — Lei 14.601/2023", desc: "Programa de transferência de renda; CadÚnico como porta de entrada da proteção social." },
+    ],
+    autores: [
+      { nome: "Aldaíza Sposati", foco: "Construção do SUAS e da proteção social (PUC-SP / NEPSAS)" },
+      { nome: "Maria Carmelita Yazbek", foco: "Assistência social e classes subalternas (PUC-SP)" },
+      { nome: "Berenice Rojas Couto", foco: "Direito socioassistencial e SUAS (PUCRS)" },
+    ],
+    materiais: [
+      { titulo: "Assistência social — programas e Censo SUAS", fonte: "MDS", url: "https://www.gov.br/mds/" },
+      { titulo: "LOAS — Lei 8.742/1993 (texto oficial)", fonte: "Planalto", url: "https://www.planalto.gov.br/ccivil_03/leis/l8742.htm" },
+      { titulo: "Conselho Nacional de Assistência Social (normas e resoluções)", fonte: "CNAS", url: "https://www.gov.br/mds/pt-br/orgaos-colegiados/conselho-nacional-de-assistencia-social-cnas" },
     ],
   },
 };

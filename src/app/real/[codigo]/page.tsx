@@ -20,6 +20,7 @@ import { AssuntoEducacao } from "@/components/assunto-educacao";
 import { AssuntoIEGM } from "@/components/assunto-iegm";
 import { AssuntoPadroesCompras } from "@/components/assunto-padroes-compras";
 import { ContratosGestao } from "@/components/contratos-gestao";
+import { BaseMetodologica } from "@/components/base-metodologica";
 import { SerieExplicada } from "@/components/serie-explicada";
 import { PlacarEstrategico } from "@/components/placar-estrategico";
 import { CabecalhoArea } from "@/components/cabecalho-area";
@@ -586,7 +587,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       saudePct={saude?.saudePct ?? null} educPct={educacao?.educPct ?? null} pessoalPct={rgfResumo?.pessoalPct ?? null} insights={insights} ano={diag?.ano ?? anoFim}
       iegm={iegmDados ? { faixa: iegmDados.finalFaixa, pct: iegmDados.finalPct } : null} />
   ) });
-  if (iegmDados) tabs.push({ id: "iegm", label: "Qualidade da Gestão (IEGM/TCE)", content: <AssuntoIEGM dados={iegmDados} nome={ente.nome} /> });
+  if (iegmDados) tabs.push({ id: "iegm", label: "Qualidade da Gestão (IEGM/TCE)", content: <><AssuntoIEGM dados={iegmDados} nome={ente.nome} /><div className="mt-4"><BaseMetodologica area="controle" /></div></> });
   if (diag) tabs.splice(1, 0, { id: "diagnostico", label: "Diagnóstico", content: <DiagnosticoGestor data={diag} /> });
 
   // PANORAMA 360° — cruza todas as dimensões num radar (50 = mediana dos pares)
@@ -661,6 +662,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       <>
         <CabecalhoArea titulo="Saúde" intro="Como a saúde do município está hoje, o que a lei exige, o que fazer e onde aprofundar — da visão geral ao indicador." conformidade={saudeConf} indicadores={saudeInd} insights={insights.filter((i) => /sa[úu]de/i.test(i.area))} links={saudeLinks} />
         <SaudeSC data={saude} previne={previne} fns={fns} />
+        <div className="mt-4"><BaseMetodologica area="saude" /></div>
       </>
     ) });
   }
@@ -672,17 +674,17 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     tabs.push({ id: "mac", label: "Média e Alta Complexidade (4 visões)", content: <AssuntoMAC producao={macProducao} repasseValor={mac?.valorUlt ?? null} repasseAno={repassesSaude?.anoUlt ?? null} internMil={saude.internMil} internMilPares={saude.internMilPares} nome={ente.nome} /> });
   }
   tabs.push({ id: "receitas", label: "Receitas (de onde vem)", content: <AssuntoReceitas serie={dados.serie} detalhe={receitasDetalhe} nome={ente.nome} /> });
-  tabs.push({ id: "despesas", label: "Despesas (para onde vai)", content: <AssuntoDespesas serie={dados.serie} funcoes={dados.funcoesLatest} subfuncoes={despSubfuncao} pessoalPct={rgfResumo?.pessoalPct ?? null} nome={ente.nome} /> });
+  tabs.push({ id: "despesas", label: "Despesas (para onde vai)", content: <><AssuntoDespesas serie={dados.serie} funcoes={dados.funcoesLatest} subfuncoes={despSubfuncao} pessoalPct={rgfResumo?.pessoalPct ?? null} nome={ente.nome} /><div className="mt-4"><BaseMetodologica area="financas" /></div></> });
   if (previneFicha) {
     const aps = repassesSaude?.programas.find((p) => p.key === "aps");
     tabs.push({ id: "accountability-aps", label: "Cadeia & Accountability (APS)", content: (
       <AccountabilityAPS previne={previneFicha} apsValor={aps?.valorUlt ?? null} apsAno={repassesSaude?.anoUlt ?? null} saudePct={saude?.saudePct ?? null} cauc={cauc} nome={ente.nome} cod={codigo} />
     ) });
   }
-  if (educacao && educacaoSerie.length) tabs.push({ id: "educacao", label: "Educação (4 visões)", content: <AssuntoEducacao serie={educacaoSerie} edu={educacao} fundebValor={receitasDetalhe?.itens.find((i) => i.item === "FUNDEB")?.valor ?? null} nome={ente.nome} /> });
+  if (educacao && educacaoSerie.length) tabs.push({ id: "educacao", label: "Educação (4 visões)", content: <><AssuntoEducacao serie={educacaoSerie} edu={educacao} fundebValor={receitasDetalhe?.itens.find((i) => i.item === "FUNDEB")?.valor ?? null} nome={ente.nome} /><div className="mt-4"><BaseMetodologica area="educacao" /></div></> });
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Educação (comparativo)", content: <EducacaoSC data={educacao} /> });
   if (rgfResumo) tabs.push({ id: "folha", label: "Folha / Pessoal", content: <FolhaSC rgf={rgfResumo} serie={serie} /> });
-  if (rpps) tabs.push({ id: "previdencia", label: "Previdência", content: <PrevidenciaSC data={rpps} /> });
+  if (rpps) tabs.push({ id: "previdencia", label: "Previdência", content: <><PrevidenciaSC data={rpps} /><div className="mt-4"><BaseMetodologica area="previdencia" /></div></> });
   if (cauc) tabs.push({ id: "cauc", label: "Regularidade (CAUC)", content: <CaucSCView data={cauc} /> });
   if (cruz) tabs.push({ id: "cruzamentos", label: "Cruzamentos", content: <CruzamentosSC data={cruz} /> });
   if (comprasDestinos) tabs.push({ id: "compras-sc", label: codigo === "42" ? "Para onde vai (SC)" : "Para onde vai", content: <ComprasDestinosSCView data={comprasDestinos} escopo={codigo === "42" ? "dos municípios de SC" : `de ${ente.nome}`} /> });

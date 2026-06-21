@@ -19,6 +19,15 @@ export const DOUTRINADORES: Doutrinador[] = [
   { nome: "Min. Antônio Anastasia", foco: "Concepção da Lei 14.133 (relator no Senado); governança pública", obra: "Relatoria e estudos da Nova Lei de Licitações" },
   { nome: "Cristiane Nardes", foco: "Auditoria e governança das aquisições; instrução do processo (Pres. Rede Governança Brasil)", obra: "Coordenação de obras sobre governança pública (Fórum)" },
   { nome: "Thiago Guterres", foco: "Fase preparatória e panorama prático da Nova Lei", obra: "A Nova Lei de Licitações — panorama (e-book gratuito, UFSC)" },
+  // Especialistas frequentemente citados nas obras e decisões do TCU, Ministério Público e Tribunais de Contas
+  { nome: "Carlos Ari Sundfeld", foco: "Teoria do direito administrativo; controle e segurança jurídica nas contratações (FGV)", obra: "Direito Administrativo para Céticos" },
+  { nome: "Egon Bockmann Moreira", foco: "Concessões, PPP e contratos de longo prazo; 'direito administrativo da escassez' (UFPR)", obra: "Direito das Concessões de Serviço Público" },
+  { nome: "Floriano de Azevedo Marques Neto", foco: "Regulação, concessões e contratos administrativos (USP)", obra: "Estudos sobre regulação e contratos públicos" },
+  { nome: "Marcos Nóbrega", foco: "Economia dos contratos, matriz de riscos e infraestrutura/PPP (UFPE; conselheiro TCE-PE)", obra: "Teoria dos Contratos Públicos / direito e economia" },
+  { nome: "Emerson Garcia", foco: "Improbidade administrativa e controle (Ministério Público)", obra: "Improbidade Administrativa (com Rogério Pacheco Alves)" },
+  { nome: "Fábio Medina Osório", foco: "Direito administrativo sancionador e improbidade", obra: "Teoria da Improbidade Administrativa" },
+  { nome: "Rafael Carvalho Rezende Oliveira", foco: "Licitações, contratos e improbidade (manuais)", obra: "Licitações e Contratos Administrativos; Manual de Improbidade" },
+  { nome: "José dos Santos Carvalho Filho", foco: "Referência clássica de direito administrativo", obra: "Manual de Direito Administrativo" },
 ];
 
 // Biblioteca de materiais GRATUITOS e oficiais — apoio direto às prefeituras, agrupados por instituição
@@ -38,6 +47,10 @@ export const MATERIAIS_LIVRES: Material[] = [
   { cat: "Ministério Público", titulo: "MPU — legislação relacionada às contratações", fonte: "MPU", url: "https://www.mpu.mp.br/contratacoes/legislacao-relacionada" },
   // CGU — superfaturamento (base do sobrepreço)
   { cat: "CGU — integridade e preços", titulo: "Guia de Superfaturamento em Contratos de Bens e Serviços", fonte: "CGU", url: "https://repositorio.cgu.gov.br/bitstream/1/94699/1/Guia_Superfaturamento_Contratos_Bens_Servicos.pdf" },
+  // Revistas técnicas dos Tribunais de Contas (artigos dos especialistas)
+  { cat: "Revistas técnicas (Tribunais de Contas)", titulo: "IRB — Instituto Rui Barbosa (publicações e Revista Técnica dos TCs)", fonte: "IRB", url: "https://publicacoes.irbcontas.org.br/" },
+  { cat: "Revistas técnicas (Tribunais de Contas)", titulo: "Revista do TCE/SC — artigos de controle externo", fonte: "TCE/SC", url: "https://www.tcesc.tc.br/" },
+  { cat: "Revistas técnicas (Tribunais de Contas)", titulo: "Revista do TCU — doutrina e jurisprudência", fonte: "TCU", url: "https://revista.tcu.gov.br/ojs/index.php/RTCU" },
   // Doutrina / guias gerais
   { cat: "Doutrina e guias gerais", titulo: "Manual de Boas Práticas em Contratações Públicas", fonte: "gov.br / Compras", url: "https://www.gov.br/compras/pt-br/acesso-a-informacao/manuais/manual-governanca-nas-contratacoes/manual-de-boas-praticas-em-contratacoes-publicas.pdf" },
   { cat: "Doutrina e guias gerais", titulo: "Observatório da Nova Lei de Licitações (artigos dos doutrinadores)", fonte: "Observatório", url: "https://www.novaleilicitacao.com.br/" },

@@ -18,6 +18,20 @@ export function BaseMetodologica({ area }: { area: keyof typeof CONHECIMENTO | s
         ))}
       </div>
 
+      {c.autores && c.autores.length > 0 && (
+        <div className="mt-3">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Especialistas de referência</div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {c.autores.map((a) => (
+              <div key={a.nome} className="rounded-xl border border-slate-200 p-3">
+                <div className="text-[13px] font-semibold text-slate-800">{a.nome}</div>
+                <p className="mt-0.5 text-[11px] text-slate-500">{a.foco}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-3 space-y-1.5">
         {c.materiais.map((mt) => (
           <a key={mt.url} href={mt.url} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-2.5 text-sm transition hover:border-teal-400 hover:bg-teal-50/50">
