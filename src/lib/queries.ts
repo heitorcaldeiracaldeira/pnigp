@@ -1349,8 +1349,8 @@ export async function getDespesaSubfuncaoSC(cod: string): Promise<DespesaSubfunc
 // Vigências dos contratos — alerta de vencimento por faixa (gestão de contratos)
 export type ContratosVencimentoSC = {
   faixas: { id: string; label: string; n: number; valor: number }[];
-  criticos: { objeto: string; fornecedor: string; valor: number; vigInicio: string | null; vigFim: string; dias: number }[];
-  vencidos: number; totalAtivos: number;
+  aVencer: { objeto: string; fornecedor: string; valor: number; vigInicio: string | null; vigFim: string; dias: number }[];
+  nCriticos: number; vencidos: number; totalAtivos: number;
 } | null;
 export async function getContratosVencimentoSC(cod: string): Promise<ContratosVencimentoSC> {
   const rows = await query<Record<string, unknown>>(
@@ -1365,18 +1365,19 @@ export async function getContratosVencimentoSC(cod: string): Promise<ContratosVe
     { id: "m6_12", label: "6–12 meses", min: 181, max: 365 },
   ];
   const faixas = FAIXAS.map((f) => ({ id: f.id, label: f.label, n: 0, valor: 0 }));
-  const criticos: NonNullable<ContratosVencimentoSC>["criticos"] = [];
-  let vencidos = 0, totalAtivos = 0;
+  const aVencer: NonNullable<ContratosVencimentoSC>["aVencer"] = [];
+  let vencidos = 0, totalAtivos = 0, nCriticos = 0;
   for (const r of rows) {
     const dias = num(r.dias); const v = num(r.valor_global);
     if (dias < 0) { vencidos++; continue; }
     totalAtivos++;
     const fi = FAIXAS.findIndex((f) => dias >= f.min && dias <= f.max);
     if (fi >= 0) { faixas[fi].n++; faixas[fi].valor += v; }
-    if (dias <= 30) criticos.push({ objeto: String(r.objeto || ""), fornecedor: String(r.fornecedor || ""), valor: v, vigInicio: (r.vig_inicio as string) || null, vigFim: String(r.vig_fim), dias });
+    if (dias <= 30) nCriticos++;
+    if (dias <= 365) aVencer.push({ objeto: String(r.objeto || ""), fornecedor: String(r.fornecedor || ""), valor: v, vigInicio: (r.vig_inicio as string) || null, vigFim: String(r.vig_fim), dias });
   }
-  criticos.sort((a, b) => a.dias - b.dias);
-  return { faixas, criticos: criticos.slice(0, 30), vencidos, totalAtivos };
+  aVencer.sort((a, b) => a.dias - b.dias);
+  return { faixas, aVencer: aVencer.slice(0, 60), nCriticos, vencidos, totalAtivos };
 }
 
 // Economia entre estimado e homologado. Exclui outliers (homologado > estimado = erro de digitação unidade×total).
