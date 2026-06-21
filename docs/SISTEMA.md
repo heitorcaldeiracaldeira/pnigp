@@ -20,24 +20,25 @@
 | `contratos_sc` | 765.146 | 14 (id, cod_ibge, numero_controle_compra, cnpj_compra, ano_compra, seq_compra, fornecedor, ni_fornecedor…) |
 | `contratos_sc_feitos` | 295 | 2 (cod_ibge, n) |
 | `contratos_sc_feitos_inc` | 295 | 2 (cod_ibge, n) |
-| `despesa_sub_check` | 394 | 2 (cod_ibge, ano) |
-| `despesa_subfuncao_sc` | 10.704 | 5 (cod_ibge, ano, funcao, subfuncao, empenhado) |
+| `despesa_sub_check` | 1.184 | 2 (cod_ibge, ano) |
+| `despesa_subfuncao_sc` | 31.330 | 5 (cod_ibge, ano, funcao, subfuncao, empenhado) |
 | `empenhos_check` | 189 | 5 (cnpj_compra, ano_compra, seq_compra, checado, n) |
 | `empenhos_sc` | 0 | 10 (cod_ibge, cnpj_compra, ano_compra, seq_compra, seq_empenho, numero, valor, data…) |
 | `entes_sc` | 296 | 6 (cod_ibge, nome, uf, tipo, populacao, pop_indigena) |
 | `estado_indicador_valores` | 2.160 | 4 (estado_id, indicador_id, ano, valor) |
 | `estados` | 27 | 8 (id, uf, nome, regiao, populacao, capital, governador, pib_per_capita) |
-| `etl_catalogo` | 27 | 10 (id, label, api, max_ano, ultima_exec, ultimo_status, devido, msg…) |
+| `etl_catalogo` | 28 | 10 (id, label, api, max_ano, ultima_exec, ultimo_status, devido, msg…) |
 | `financas` | 106 | 19 (ente_tipo, ente_id, ano, receita_total, rec_tributaria, rec_transferencias, rec_outras, despesa_total…) |
 | `financas_sc` | 1.969 | 23 (cod_ibge, ano, receita, receita_prevista, tributaria, transferencias, outras, despesa…) |
 | `fns_repasse_sc` | 45.606 | 8 (cod_ibge, ano, bloco_cod, bloco_nome, area_cod, area_nome, vl_total, vl_liquido) |
+| `iegm_sc` | 4.039 | 5 (cod_ibge, ano, indicador, pct, faixa) |
 | `indicador_valores` | 2.080 | 4 (municipio_id, indicador_id, ano, valor) |
 | `indicadores` | 16 | 8 (id, codigo, nome, area, unidade, fonte, direcao_melhor, descricao) |
 | `indicadores_sc` | 4.672 | 7 (cod_ibge, ano, codigo, area, valor, unidade, fonte) |
 | `indices_pnigp` | 130 | 9 (municipio_id, ano, iceb, invp, igp360, cap_planejamento, cap_fiscal, cap_gestao…) |
 | `indices_pnigp_estados` | 135 | 9 (estado_id, ano, iceb, invp, igp360, cap_planejamento, cap_fiscal, cap_gestao…) |
-| `itens_proc_feitos` | 44.693 | 3 (numero_controle, n, feito_em) |
-| `itens_sc` | 683.005 | 19 (cod_ibge, cnpj, ano, seq, numero, descricao, unidade, quantidade…) |
+| `itens_proc_feitos` | 54.013 | 3 (numero_controle, n, feito_em) |
+| `itens_sc` | 765.270 | 19 (cod_ibge, cnpj, ano, seq, numero, descricao, unidade, quantidade…) |
 | `itens_sc_feitos` | 0 | 2 (cod_ibge, ano) |
 | `metas` | 130 | 6 (id, municipio_id, indicador_id, ano_alvo, valor_alvo, descricao) |
 | `metas_estados` | 135 | 6 (id, estado_id, indicador_id, ano_alvo, valor_alvo, descricao) |
@@ -51,8 +52,8 @@
 | `previne_sc` | 5.310 | 7 (cod_ibge, competencia, indicador, ind_nome, numerador, denominador, pct) |
 | `processos_feitos` | 54 | 4 (modalidade, ano, n, concluido_em) |
 | `processos_sc` | 78.481 | 12 (numero_controle, cod_ibge, cnpj_orgao, ano, sequencial, modalidade_id, modalidade, objeto…) |
-| `receitas_det_check` | 1.027 | 2 (cod_ibge, ano) |
-| `receitas_detalhe_sc` | 10.594 | 4 (cod_ibge, ano, item, valor) |
+| `receitas_det_check` | 1.480 | 2 (cod_ibge, ano) |
+| `receitas_detalhe_sc` | 15.160 | 4 (cod_ibge, ano, item, valor) |
 | `rgf_sc` | 1.270 | 10 (cod_ibge, ano, pessoal_pct, pessoal_valor, limite_pct, rcl_ajustada, dcl_valor, dcl_pct…) |
 | `rpps_atuarial_sc` | 418 | 5 (cod_ibge, exercicio, deficit_atuarial, ativos, no_ente) |
 | `rpps_check` | 1.480 | 2 (cod_ibge, ano) |
@@ -68,6 +69,7 @@
 | Script | O que faz |
 |---|---|
 | `scripts/_reset_pca_feitos.mjs` | Limpa pca_sc_feitos p/ re-rodar PCA 2024-2027 em todos os entes (dados em pca_sc são preservados via UPSERT). |
+| `scripts/_uf.mjs` | Config central de UF para os ETLs. Define o estado-alvo da coleta via env UF (padrão SC). Para coletar outro estado: UF=PR node scripts/ingest_*.mjs |
 | `scripts/auditoria_dados_sc.mjs` | Auditoria de COMPLETUDE e INTEGRIDADE dos dados de SC (leitura pura, não altera nada). Cobertura por dataset/ano + anomalias que ameaçam a fidelidade. node scripts/auditoria_dados_ |
 | `scripts/backup_neon.mjs` | Backup LÓGICO do Neon — dump de todas as tabelas em JSONL.gz local (backups/, gitignored). Dado sensível: NUNCA vai pro GitHub. Camada primária = PITR nativo do Neon; isto é o dump |
 | `scripts/diagnostico_gestor.mjs` | MOTOR DE DIAGNÓSTICO DO GESTOR — pontos de análise + sugestões acionáveis. Benchmark por GRUPO DE PARES (porte populacional) e ANO FECHADO (exclui ano em curso). Regras ancoradas e |
@@ -82,7 +84,9 @@
 | `scripts/ingest_contratos_sc.mjs` | ETL — Contratos ASSINADOS do PNCP por município de SC, conectados ao processo licitatório. Descobre os CNPJs dos órgãos municipais (via contratações esfera M) e puxa /contratos?cnp |
 | `scripts/ingest_despesa_subfuncao_sc.mjs` | ETL — Despesa por FUNÇÃO → SUBFUNÇÃO (drill real: Atenção Básica, Ensino Fundamental…) via SICONFI RREO Anexo 02. Hierarquia é por ordem: linha de função (lista oficial) e depois s |
 | `scripts/ingest_empenhos_sc.mjs` | ETL — Empenhos por contrato (PNCP, Lei 14.133). Endpoint /contratos/{ano}/{seq}/empenhos. Hoje a cobertura em SC é ~0 (municípios ainda não publicam o ciclo), mas o coletor "acende |
+| `scripts/ingest_entes_uf.mjs` | ETL — carrega os ENTES (municípios + governo estadual) de qualquer UF na tabela entes_sc. Fonte: IBGE (localidades + população estimada). Pré-requisito para coletar um novo estado. |
 | `scripts/ingest_fns_sc.mjs` | ETL — Repasses federais fundo-a-fundo do FNS por bloco/área, por município de SC. Fonte: API REST da Consulta Consolidada do FNS (consultafns.saude.gov.br) — descoberta via app Ang |
+| `scripts/ingest_iegm_sc.mjs` | ETL — IEGM (Índice de Efetividade da Gestão Municipal) do TCE-SC, por município, via IRB. Fonte: iegm.irbcontas.org.br/dados_abertos/{ano}/calculo/calculo_iegm_{ano}_TCESC_completo |
 | `scripts/ingest_indicadores_sc.mjs` | ETL — Indicadores setoriais REAIS (infraestrutura extensível). Inicia com ECONOMIA via IBGE (PIB per capita). Tabela genérica indicadores_sc (cod_ibge, ano, codigo, area, valor, un |
 | `scripts/ingest_indigena_sc.mjs` | ETL — população indígena por município de SC (IBGE Censo 2022, SIDRA tabela 9605, cor/raça Indígena). Fonte sólida e agregada por município (a saúde indígena é responsabilidade com |
 | `scripts/ingest_itens_sc.mjs` | ETL — Itens dos processos licitatórios (PNCP API principal) persistidos no Neon. Lê as maiores contratações (compras_sc.top) de cada ente e grava os itens (descrição, qtd, unitário |
@@ -118,6 +122,7 @@
 |---|---|
 | `accountability-aps.tsx` | Calendário legal de prestação de contas (obrigações reais — base neutra, sem juízo). |
 | `assunto-atencao-primaria.tsx` | o que o numerador conta (a "produção" de cada indicador) |
+| `assunto-iegm.tsx` | conhecimento de cada dimensão (o que mede + como melhorar + cruzamento com nossos dados) |
 | `brand.tsx` | Marca PNIGP — monograma próprio (arcos concêntricos = inteligência/radar territorial 360°). |
 | `cabecalho-area.tsx` | Cabeçalho FRACTAL de área: repete o padrão de camadas (Estratégico→Tático→Operacional) dentro do bloco. |
 | `charts/area-empilhada.tsx` | Área empilhada — leitura de COMPOSIÇÃO ao longo do tempo (distinta da linha, que mostra trajetória). |
@@ -141,21 +146,22 @@
 | Repasses federais FNS por bloco (Consulta Consolidada) | fns | 2026 | há 1d | em dia |
 | Indicadores (IBGE/CGU) | ibge | 2024 | há 1d | em dia |
 | População indígena (IBGE Censo 2022) | ibge | — | há 1d | em dia |
+| IEGM — qualidade da gestão (TCE-SC/IRB, dados abertos) | irb | 2025 | nunca | em dia |
 | Atas de Registro de Preço (PNCP Consulta) | pncp | — | há 1d | em dia |
 | Compras (PNCP ano corrente) | pncp | 2026 | há 1d | em dia |
 | Contratos (PNCP ano corrente, append) | pncp | 2026 | há 1d | em dia |
 | Empenhos por contrato (PNCP Lei 14.133 — acende quando publicarem) | pncp | — | há 1d | em dia |
-| Itens de TODOS os processos (preço unitário) | pncp | 2025 | há 13h | em dia |
-| Notas fiscais / instrumentos de cobrança (PNCP — acende quando publicarem) | pncp | — | há 13h | em dia |
+| Itens de TODOS os processos (preço unitário) | pncp | 2025 | há 15h | em dia |
+| Notas fiscais / instrumentos de cobrança (PNCP — acende quando publicarem) | pncp | — | há 15h | em dia |
 | PCA (PNCP) | pncp | — | há 1d | em dia |
 | Processos PNCP — TODOS (todas modalidades/anos) | pncp | 2025 | há 1d | em dia |
 | Localidade dos fornecedores (CNPJ→UF/município) | receita | — | há 1d | em dia |
-| Despesa por subfunção (RREO an.2 — drill) | siconfi | 2023 | nunca | pendente |
+| Despesa por subfunção (RREO an.2 — drill) | siconfi | 2024 | há 0h | pendente |
 | Finanças (SICONFI RREO an.1/2) | siconfi | 2025 | há 1d | em dia |
 | Metas Fiscais LDO (RREO an.6) | siconfi | 2025 | há 1d | em dia |
-| Receitas detalhadas (ICMS/FPM/IPTU/FUNDEB — RREO an.3) | siconfi | 2024 | nunca | pendente |
+| Receitas detalhadas (ICMS/FPM/IPTU/FUNDEB — RREO an.3) | siconfi | 2024 | há 0h | pendente |
 | Pessoal/DCL (RGF) | siconfi | 2025 | há 1d | em dia |
-| Previdência RPPS (RREO Anexo 04) | siconfi | 2025 | há 22h | em dia |
+| Previdência RPPS (RREO Anexo 04) | siconfi | 2025 | há 1d | em dia |
 | Educação/RCL (RREO an.14/3) | siconfi | 2025 | há 1d | em dia |
 | Saúde ASPS (SIOPS) | siops | 2025 | há 1d | em dia |
 | Regularidade fiscal CAUC/CADIN (Tesouro) | tesouro | — | há 1d | em dia |
@@ -193,7 +199,7 @@
 
 ## 6. Integridade (última validação)
 
-- status: **ok** · registros suspeitos (excluídos): 6 · sobrepreço unitário: 7106
+- status: **ok** · registros suspeitos (excluídos): 6 · sobrepreço unitário: 7709
 
 ## 7. Fontes oficiais dos dados (proveniência)
 
