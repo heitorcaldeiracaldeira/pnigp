@@ -1226,6 +1226,45 @@ export async function getRepassesSaudeFichaSC(cod: string): Promise<RepasseSaude
   return { anoUlt, totalUlt, programas };
 }
 
+// Eficiência por porte — gasto (input) × resultado (output), percentil entre pares do mesmo porte
+export type EficienciaSC = {
+  grupo: string; totalPares: number;
+  saude: { gastoPC: number; gastoPctil: number; resultado: number; resultadoPctil: number; eficiencia: number } | null;
+  educacao: { gastoPC: number; gastoPctil: number; resultado: number; resultadoPctil: number; eficiencia: number } | null;
+} | null;
+export async function getEficienciaSC(cod: string): Promise<EficienciaSC> {
+  const ent = (await query<Record<string, unknown>>(`SELECT populacao FROM entes_sc WHERE cod_ibge=$1 AND tipo='M'`, [cod]))[0];
+  if (!ent) return null;
+  const gk = _fk(num(ent.populacao));
+  const fin = await query<Record<string, unknown>>(`SELECT DISTINCT ON (cod_ibge) cod_ibge, saude, educacao FROM financas_sc ORDER BY cod_ibge, ano DESC`).catch(() => []);
+  const prod = await query<Record<string, unknown>>(`SELECT DISTINCT ON (cod_ibge) cod_ibge, internacoes FROM saude_producao_sc ORDER BY cod_ibge, ano DESC`).catch(() => []);
+  const alf = await query<Record<string, unknown>>(`SELECT DISTINCT ON (cod_ibge) cod_ibge, valor FROM indicadores_sc WHERE codigo='taxa_alfabetizacao' ORDER BY cod_ibge, ano DESC`).catch(() => []);
+  const ent2 = await query<Record<string, unknown>>(`SELECT cod_ibge, populacao FROM entes_sc WHERE tipo='M' AND populacao>0`).catch(() => []);
+  const pop = new Map(ent2.map((e) => [String(e.cod_ibge), num(e.populacao)]));
+  const mProd = new Map(prod.map((p) => [String(p.cod_ibge), num(p.internacoes)]));
+  const mAlf = new Map(alf.map((a) => [String(a.cod_ibge), num(a.valor)]));
+  // pares do mesmo porte com dados
+  const pares = fin.map((f) => {
+    const c = String(f.cod_ibge); const p = pop.get(c) || 0;
+    if (p <= 0 || _fk(p) !== gk) return null;
+    return { cod: c, gSau: num(f.saude) / (p / 1000), gEdu: num(f.educacao) / (p / 1000), rSau: (mProd.get(c) || 0) / (p / 1000), rEdu: mAlf.get(c) ?? null };
+  }).filter(Boolean) as { cod: string; gSau: number; gEdu: number; rSau: number; rEdu: number | null }[];
+  const eu = pares.find((p) => p.cod === cod);
+  if (!eu) return null;
+  const pctil = (arr: number[], v: number) => arr.length ? Math.round((arr.filter((x) => x <= v).length / arr.length) * 100) : 0;
+  const dim = (gArr: number[], rArr: number[], g: number, r: number) => {
+    const gp = pctil(gArr, g), rp = pctil(rArr, r);
+    return { gastoPC: g, gastoPctil: gp, resultado: r, resultadoPctil: rp, eficiencia: rp - gp }; // entrega alto gastando baixo = eficiente
+  };
+  const saudePares = pares.filter((p) => p.gSau > 0 && p.rSau > 0);
+  const educPares = pares.filter((p) => p.gEdu > 0 && p.rEdu != null);
+  return {
+    grupo: _faixa(num(ent.populacao)), totalPares: pares.length,
+    saude: eu.gSau > 0 && eu.rSau > 0 ? dim(saudePares.map((p) => p.gSau), saudePares.map((p) => p.rSau), eu.gSau, eu.rSau) : null,
+    educacao: eu.gEdu > 0 && eu.rEdu != null ? dim(educPares.map((p) => p.gEdu), educPares.map((p) => p.rEdu as number), eu.gEdu, eu.rEdu) : null,
+  };
+}
+
 // Educação — série anual de MDE (% e R$) + FUNDEB, para o molde Ficha
 export type EducacaoSerieSC = { ano: number; educPct: number; educValor: number; fundebPct: number | null }[];
 export async function getEducacaoSerieSC(cod: string): Promise<EducacaoSerieSC> {
