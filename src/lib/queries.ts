@@ -1201,6 +1201,31 @@ export async function getFnsSerieSC(cod: string): Promise<FnsSerieSC> {
   return rows.map((r) => ({ ano: num(r.ano), total: num(r.total), custeio: num(r.custeio), investimento: num(r.investimento) }));
 }
 
+// Repasses de saúde por PROGRAMA (canônico) com série anual — para o molde Ficha (4 visões)
+export type RepasseSaudeFichaSC = { anoUlt: number; totalUlt: number; programas: { key: string; serie: { ano: number; valor: number }[]; valorUlt: number; pctTotal: number }[] } | null;
+export async function getRepassesSaudeFichaSC(cod: string): Promise<RepasseSaudeFichaSC> {
+  const { canonRepasse } = await import("@/lib/saude-repasses-saber");
+  const rows = await query<Record<string, unknown>>(`SELECT ano, area_nome, vl_liquido FROM fns_repasse_sc WHERE cod_ibge=$1 AND area_cod<>0 AND vl_liquido IS NOT NULL`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const anoUlt = Math.max(...rows.map((r) => num(r.ano)));
+  const acc = new Map<string, Map<number, number>>(); // key -> ano -> valor
+  for (const r of rows) {
+    const k = canonRepasse(String(r.area_nome));
+    if (!acc.has(k)) acc.set(k, new Map());
+    const m = acc.get(k)!;
+    const ano = num(r.ano);
+    m.set(ano, (m.get(ano) || 0) + num(r.vl_liquido));
+  }
+  const programas = [...acc.entries()].map(([key, m]) => {
+    const serie = [...m.entries()].map(([ano, valor]) => ({ ano, valor })).sort((a, b) => a.ano - b.ano);
+    return { key, serie, valorUlt: m.get(anoUlt) || 0, pctTotal: 0 };
+  }).filter((p) => p.valorUlt > 0);
+  const totalUlt = programas.reduce((s, p) => s + p.valorUlt, 0);
+  programas.forEach((p) => { p.pctTotal = totalUlt > 0 ? (p.valorUlt / totalUlt) * 100 : 0; });
+  programas.sort((a, b) => b.valorUlt - a.valorUlt);
+  return { anoUlt, totalUlt, programas };
+}
+
 // Repasses federais do FNS por bloco/área (fundo-a-fundo) — último ano com dado
 export type FnsSC = { ano: number; total: number; custeio: number; investimento: number; areas: { nome: string; valor: number }[] } | null;
 export async function getFnsSC(cod: string): Promise<FnsSC> {
