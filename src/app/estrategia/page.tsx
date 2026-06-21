@@ -74,6 +74,64 @@ const BADGE: Record<L["s"], { t: string; c: string }> = {
   medio: { t: "🟡 médio", c: "bg-amber-100 text-amber-700" },
   dificil: { t: "🔴 difícil", c: "bg-rose-100 text-rose-700" },
 };
+// --- Mapa "siga o dinheiro": todo recurso financeiro que entra no município ---
+const REC: { g: string; i: L[] }[] = [
+  { g: "Receita própria (arrecada sozinho)", i: [
+    { d: "IPTU, ISS, ITBI, IRRF, Taxas, COSIP, Receita patrimonial", f: "SICONFI An.1/An.3", s: "tem", u: "autonomia tributária" },
+  ]},
+  { g: "Transferências constitucionais/legais (federais)", i: [
+    { d: "FPM, Cota-parte ICMS, IPVA, ITR, IPI-Exportação, FUNDEB", f: "SICONFI An.3", s: "tem", u: "o grosso da receita municipal" },
+    { d: "FPM mensal + constitucionais detalhadas", f: "Tesouro (Transf. Constitucionais)", s: "facil", u: "fluxo de caixa mensal" },
+    { d: "Lei Kandir (LC 87), CIDE-combustíveis, salário-educação", f: "Tesouro / FNDE", s: "medio", u: "compensações e vinculadas" },
+  ]},
+  { g: "Fundo-a-fundo (federais)", i: [
+    { d: "Saúde (SUS/FNS) por bloco", f: "Fundo Nacional de Saúde", s: "tem", u: "custeio/investimento da saúde" },
+    { d: "Educação (PNAE merenda, PNATE transporte, PDDE)", f: "FNDE", s: "facil", u: "recurso direto à escola" },
+    { d: "Assistência (FNAS) fundo-a-fundo", f: "MDS", s: "facil", u: "custeio do SUAS" },
+  ]},
+  { g: "Royalties e participações", i: [
+    { d: "Royalties de petróleo/gás", f: "ANP", s: "medio", u: "receita extraordinária (municípios produtores)" },
+    { d: "CFEM (compensação mineral)", f: "ANM", s: "medio", u: "receita de mineração" },
+  ]},
+  { g: "Transferências voluntárias — UNIÃO", i: [
+    { d: "Convênios, termos, programas com proposta aberta", f: "Transferegov/SICONV", s: "facil", u: "captação federal (Radar)" },
+    { d: "Emendas parlamentares (incl. Pix/individuais)", f: "Portal da Transparência", s: "facil", u: "recurso por emenda + execução" },
+  ]},
+  { g: "Transferências voluntárias — ESTADO de SC", i: [
+    { d: "Transferências voluntárias a municípios, Plano 1000", f: "dados.sc.gov.br (SIGEF)", s: "facil", u: "captação estadual (Radar)" },
+    { d: "Cota-parte estadual repassada (ICMS/IPVA)", f: "SEF-SC / dados.sc.gov.br", s: "facil", u: "repasse estadual detalhado" },
+  ]},
+  { g: "Crédito e outras entradas", i: [
+    { d: "Operações de crédito (financiamentos)", f: "SICONFI (receita de capital)", s: "tem", u: "investimento financiado" },
+    { d: "Precatórios/depósitos, alienação de bens", f: "SICONFI / Tesouro", s: "medio", u: "entradas pontuais" },
+  ]},
+];
+function Recursos() {
+  return (
+    <div className="mt-2">
+      <p className="text-[15px] text-slate-700">Todo R$ que entra no caixa do município — por origem. É a base do "de onde vem o dinheiro" e do Radar de Captação.</p>
+      {REC.map((s) => (
+        <div key={s.g} className="mt-4">
+          <h3 className="font-semibold text-slate-800">{s.g}</h3>
+          <div className="mt-1 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            <table className="w-full text-[13px]">
+              <tbody>
+                {s.i.map((i) => (
+                  <tr key={i.d} className="border-t border-slate-100 align-top first:border-t-0">
+                    <td className="px-2.5 py-1.5 font-medium text-slate-800">{i.d}</td>
+                    <td className="px-2.5 py-1.5 text-slate-600">{i.f}</td>
+                    <td className="px-2.5 py-1.5 whitespace-nowrap"><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${BADGE[i.s].c}`}>{BADGE[i.s].t}</span></td>
+                    <td className="px-2.5 py-1.5 text-slate-600">{i.u}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 function Catalogo() {
   const itens = CAT.flatMap((s) => s.i);
   const tem = itens.filter((i) => i.s === "tem").length;
@@ -155,10 +213,13 @@ export default function EstrategiaPage() {
           <li><b>Mídia, consultoria, academia</b> — assinatura de dados/insights.</li>
         </ol>
 
-        <H2>4. Catálogo de Dados Municipais (o que temos + o que podemos ter)</H2>
+        <H2>4. Mapa de Recursos Financeiros do Município (todo R$ que entra)</H2>
+        <Recursos />
+
+        <H2>5. Catálogo de Dados Municipais (o que temos + o que podemos ter)</H2>
         <Catalogo />
 
-        <H2>5. Prioridades (quando as compras fecharem)</H2>
+        <H2>6. Prioridades (quando as compras fecharem)</H2>
         <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[15px] text-slate-700 marker:text-slate-400">
           <li><b>Sobrepreço por descrição + comportamento de compras</b> — B2G e base do B2B.</li>
           <li><b>Surfacar Eficiência + Alertas</b> (rápido, moat).</li>
@@ -166,7 +227,7 @@ export default function EstrategiaPage() {
           <li><b>Protótipo B2B</b>: "Inteligência de Mercado de Compras".</li>
         </ol>
 
-        <H2>6. Deep-dive: o produto-âncora B2B</H2>
+        <H2>7. Deep-dive: o produto-âncora B2B</H2>
         <div className="mt-2 rounded-2xl border border-teal-200 bg-teal-50/50 p-5">
           <p className="text-[15px] text-slate-700">Mercado (fontes públicas 2025):</p>
           <p className="mt-1 text-2xl font-bold text-teal-700">~R$ 1 trilhão/ano <span className="text-base font-normal text-slate-600">em compras públicas (12–16% do PIB)</span></p>
