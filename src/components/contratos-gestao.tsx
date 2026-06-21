@@ -49,7 +49,8 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
               { nivel: "Baixo", cls: "border-teal-200 bg-teal-50 text-teal-700" },
             ];
             const cont: Record<string, number> = { "Crítico": 0, "Alto": 0, "Médio": 0, "Baixo": 0 };
-            lista.forEach((c) => { cont[criticidade(c.dias, c.valor, vmax).nivel]++; });
+            const contV: Record<string, number> = { "Crítico": 0, "Alto": 0, "Médio": 0, "Baixo": 0 };
+            lista.forEach((c) => { const nv = criticidade(c.dias, c.valor, vmax).nivel; cont[nv]++; contV[nv] += c.valor; });
             return (
             <div className="mt-4">
               <h4 className="text-xs font-semibold text-slate-700">⏳ Contratos a vencer (próximos 12 meses) — por criticidade {vencimento.nCriticos > 0 && <span className="text-rose-700">· {vencimento.nCriticos} crítico(s) &lt; 30 dias</span>}</h4>
@@ -59,6 +60,7 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
                   <div key={n.nivel} className={`rounded-xl border p-3 ${n.cls}`}>
                     <div className="text-2xl font-bold tabular-nums">{cont[n.nivel]}</div>
                     <div className="text-[11px] font-medium">{n.nivel}</div>
+                    <div className="mt-0.5 text-[11px] tabular-nums opacity-80">{fmtBRLCompact(contV[n.nivel])}</div>
                   </div>
                 ))}
               </div>
