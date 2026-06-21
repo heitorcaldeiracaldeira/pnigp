@@ -14,6 +14,7 @@ import { SaudeSC } from "@/components/saude-sc";
 import { PrevineFicha } from "@/components/previne-ficha";
 import { SerieExplicada } from "@/components/serie-explicada";
 import { PlacarEstrategico } from "@/components/placar-estrategico";
+import { CabecalhoArea } from "@/components/cabecalho-area";
 import { EducacaoSC } from "@/components/educacao-sc";
 import { CruzamentosSC } from "@/components/cruzamentos-sc";
 import { PanoramaSC } from "@/components/panorama-sc";
@@ -573,7 +574,26 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   });
   if (diag) tabs.push({ id: "auditoria", label: "Auditoria", content: <AuditoriaSC data={diag} radar={radar} /> });
   if (rgfResumo) tabs.push({ id: "simulador", label: "Simulador", content: <SimuladorFiscal ano={rgfResumo.ano} receita={a.receita} despesa={a.despesa} pessoal={a.pessoal} investimento={a.investimento} rclAjustada={rgfResumo.rclAjustada} pessoalPctBase={rgfResumo.pessoalPct} /> });
-  if (saude) tabs.push({ id: "saude", label: "Saúde", content: <SaudeSC data={saude} previne={previne} fns={fns} /> });
+  if (saude) {
+    const saudeConf = saude.saudePct != null
+      ? { label: "Aplicação em saúde (ASPS)", valor: saude.saudePct, ancora: "mín. 15% — LC 141", nivel: (saude.saudePct >= 15 ? "ok" : saude.saudePct >= 14 ? "warn" : "bad") as "ok" | "warn" | "bad" }
+      : null;
+    const saudeInd = [
+      { label: "Estabelecimentos/mil hab", valor: saude.estabMil.toFixed(1), sub: `pares: ${saude.estabMilPares.toFixed(1)}` },
+      { label: "Internações/mil hab", valor: saude.internMil.toFixed(1), sub: `pares: ${saude.internMilPares.toFixed(1)}` },
+      ...(saude.transfUniaoPct != null ? [{ label: "Saúde via União", valor: `${saude.transfUniaoPct.toFixed(1)}%`, sub: "% das transferências de saúde" }] : []),
+    ];
+    const saudeLinks = [
+      ...(previneFicha ? [{ label: "Previne — como melhorar", href: "#previne-ficha" }] : []),
+      ...(fnsSerie.length > 1 ? [{ label: "Repasses (histórico)", href: "#fns-historico" }] : []),
+    ];
+    tabs.push({ id: "saude", label: "Saúde", content: (
+      <>
+        <CabecalhoArea titulo="Saúde" intro="Como a saúde do município está hoje, o que a lei exige, o que fazer e onde aprofundar — da visão geral ao indicador." conformidade={saudeConf} indicadores={saudeInd} insights={insights.filter((i) => /sa[úu]de/i.test(i.area))} links={saudeLinks} />
+        <SaudeSC data={saude} previne={previne} fns={fns} />
+      </>
+    ) });
+  }
   if (previneFicha) tabs.push({ id: "previne-ficha", label: "Previne (como melhorar)", content: <PrevineFicha dados={previneFicha} nome={ente.nome} /> });
   if (fnsSerie.length > 1) tabs.push({ id: "fns-historico", label: "Repasses (histórico explicado)", content: <SerieExplicada serie={fnsSerie} escopo="fns" cod={codigo} nome={ente.nome} /> });
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Educação", content: <EducacaoSC data={educacao} /> });
