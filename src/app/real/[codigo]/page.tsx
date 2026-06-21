@@ -11,7 +11,7 @@ import { DiagnosticoGestor } from "@/components/diagnostico-gestor";
 import { AuditoriaSC } from "@/components/auditoria-sc";
 import { SimuladorFiscal } from "@/components/simulador-fiscal";
 import { SaudeSC } from "@/components/saude-sc";
-import { PrevineFicha } from "@/components/previne-ficha";
+import { AssuntoAtencaoPrimaria } from "@/components/assunto-atencao-primaria";
 import { SerieExplicada } from "@/components/serie-explicada";
 import { PlacarEstrategico } from "@/components/placar-estrategico";
 import { CabecalhoArea } from "@/components/cabecalho-area";
@@ -594,7 +594,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       </>
     ) });
   }
-  if (previneFicha) tabs.push({ id: "previne-ficha", label: "Previne (como melhorar)", content: <PrevineFicha dados={previneFicha} nome={ente.nome} /> });
+  if (previneFicha) tabs.push({ id: "previne-ficha", label: "Atenção Primária (4 visões)", content: <AssuntoAtencaoPrimaria dados={previneFicha} nome={ente.nome} /> });
   if (fnsSerie.length > 1) tabs.push({ id: "fns-historico", label: "Repasses (histórico explicado)", content: <SerieExplicada serie={fnsSerie} escopo="fns" cod={codigo} nome={ente.nome} /> });
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Educação", content: <EducacaoSC data={educacao} /> });
   if (rgfResumo) tabs.push({ id: "folha", label: "Folha / Pessoal", content: <FolhaSC rgf={rgfResumo} serie={serie} /> });
