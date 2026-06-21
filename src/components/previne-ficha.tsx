@@ -17,7 +17,7 @@ function fmtComp(c: string) {
 }
 
 function Ficha({ ind }: { ind: PrevineFichaSC extends null ? never : NonNullable<PrevineFichaSC>["indicadores"][number] }) {
-  const [aberto, setAberto] = useState(false);
+  const [aberto, setAberto] = useState(true); // "como melhorar" aberto por padrão — a ação é o foco
   const saber = PREVINE_SABER[ind.codigo];
   if (!saber) return null;
   const nv = nivelPrevine(ind.pct, saber.meta);
