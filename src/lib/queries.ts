@@ -1325,7 +1325,12 @@ export type DespesaSubfuncaoSC = { anoUlt: number; porFuncao: Record<string, { s
 export async function getDespesaSubfuncaoSC(cod: string): Promise<DespesaSubfuncaoSC> {
   const rows = await query<Record<string, unknown>>(`SELECT ano, funcao, subfuncao, empenhado FROM despesa_subfuncao_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
   if (!rows.length) return null;
-  const anoUlt = Math.max(...rows.map((r) => num(r.ano)));
+  // escolhe o ano com MAIS detalhe real (subfunções distintas que não sejam "Demais") — evita ano corrente agregado
+  const detalhePorAno = new Map<number, number>();
+  for (const r of rows) { if (!/demais subfun/i.test(String(r.subfuncao))) { const a = num(r.ano); detalhePorAno.set(a, (detalhePorAno.get(a) || 0) + 1); } }
+  const anoUlt = detalhePorAno.size
+    ? [...detalhePorAno.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0])[0][0]
+    : Math.max(...rows.map((r) => num(r.ano)));
   const porFuncao: Record<string, { subfuncao: string; empenhado: number }[]> = {};
   for (const r of rows.filter((r) => num(r.ano) === anoUlt)) {
     const f = String(r.funcao);
