@@ -17,7 +17,6 @@ import { PlacarEstrategico } from "@/components/placar-estrategico";
 import { EducacaoSC } from "@/components/educacao-sc";
 import { CruzamentosSC } from "@/components/cruzamentos-sc";
 import { PanoramaSC } from "@/components/panorama-sc";
-import { ResumoExecutivo } from "@/components/resumo-executivo";
 import { PrintButton } from "@/components/print-button";
 import { ComprasDestinosSCView } from "@/components/compras-destinos-sc";
 import { FolhaSC } from "@/components/folha-sc";
@@ -528,6 +527,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const insights = gerarInsightsSC({ diag, cruz, saude, educacao, pos: minhaPos, total: totalRank }); // análise automática (dado real)
   tabs.push({ id: "placar", label: "Visão do Prefeito", content: (
     <PlacarEstrategico nome={ente.nome} posicao={minhaPos?.posicao ?? null} total={totalRank || null} scoreFiscal={minhaPos?.score ?? null}
+      tom={!diag ? null : diag.nAlertas === 0 ? "ok" : diag.nAlertas <= 2 ? "ressalva" : "critico"}
       saudePct={saude?.saudePct ?? null} educPct={educacao?.educPct ?? null} pessoalPct={rgfResumo?.pessoalPct ?? null} insights={insights} ano={diag?.ano ?? anoFim} />
   ) });
   if (diag) tabs.splice(1, 0, { id: "diagnostico", label: "Diagnóstico", content: <DiagnosticoGestor data={diag} /> });
@@ -642,21 +642,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
           </p>
         </div>
 
-        {/* Resumo executivo — parecer + prioridade nº1 (dado real do Diagnóstico) */}
-        {diag && (
-          <ResumoExecutivo
-            nome={ente.nome}
-            tom={diag.nAlertas === 0 ? "ok" : diag.nAlertas <= 2 ? "ressalva" : "critico"}
-            nAlertas={diag.nAlertas}
-            prioridade={(() => { const p = diag.pontos.find((x) => x.alerta); return p ? { titulo: p.titulo, sugestao: p.sugestao } : null; })()}
-            posicao={minhaPos?.posicao ?? null}
-            total={totalRank || null}
-            scoreFiscal={minhaPos?.score ?? null}
-            ano={diag.ano}
-          />
-        )}
-
-        {/* Insights agora vivem no Placar (aba Visão do Prefeito), evitando duplicação */}
+        {/* Resumo executivo + Insights agora vivem no Placar (aba Visão do Prefeito), num fluxo único */}
 
         {/* Seções em abas (mesmo layout do painel) */}
         <PanelTabs tabs={tabs} />

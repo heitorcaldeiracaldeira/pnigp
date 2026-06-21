@@ -19,10 +19,17 @@ function confNivel(valor: number | null, tipo: "saude" | "educacao" | "pessoal")
 const CONF_COR = { ok: "text-emerald-600", warn: "text-amber-600", bad: "text-rose-600" };
 const CONF_BG = { ok: "border-emerald-200 bg-emerald-50", warn: "border-amber-200 bg-amber-50", bad: "border-rose-200 bg-rose-50" };
 
+const PARECER = {
+  ok: { rotulo: "Contas em ordem", cls: "bg-emerald-100 text-emerald-700" },
+  ressalva: { rotulo: "Atenção em alguns pontos", cls: "bg-amber-100 text-amber-700" },
+  critico: { rotulo: "Pontos críticos a tratar", cls: "bg-rose-100 text-rose-700" },
+} as const;
+
 export function PlacarEstrategico({
-  nome, posicao, total, scoreFiscal, saudePct, educPct, pessoalPct, insights, ano,
+  nome, posicao, total, scoreFiscal, tom, saudePct, educPct, pessoalPct, insights, ano,
 }: {
   nome: string; posicao: number | null; total: number | null; scoreFiscal: number | null;
+  tom: "ok" | "ressalva" | "critico" | null;
   saudePct: number | null; educPct: number | null; pessoalPct: number | null; insights: Insight[]; ano: number;
 }) {
   const conformidades: Conf[] = [
@@ -40,7 +47,10 @@ export function PlacarEstrategico({
     <div className="space-y-4">
       {/* faixa de boas-vindas pedagógica */}
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
-        <h2 className="text-lg font-bold text-slate-900">Visão do Prefeito — {nome}</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-bold text-slate-900">Visão do Prefeito — {nome}</h2>
+          {tom && <span className={`rounded-full px-3 py-1 text-sm font-semibold ${PARECER[tom].cls}`}>{PARECER[tom].rotulo}</span>}
+        </div>
         <p className="mt-1 text-sm text-slate-600">Em uma olhada: como o município está, o que a lei exige, onde há oportunidade e <b>o que fazer</b>. Os detalhes ficam nos níveis Tático e Operacional.</p>
       </div>
 
