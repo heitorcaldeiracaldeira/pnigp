@@ -1,6 +1,12 @@
 import { AlertTriangle, CheckCircle2, ClipboardList, Gauge, Scale, Sparkles, TrendingUp } from "lucide-react";
 import type { Insight } from "@/lib/insights-sc";
 
+// liga a ação (Estratégico) ao lugar onde ela se executa (Tático/Operacional) — coordenação visível
+const AREA_TAB: Record<string, string> = {
+  "Saúde": "saude", "Saúde indígena": "saude", "Educação": "educacao-cruz",
+  "Fiscal": "financas", "Compras": "compras",
+};
+
 const SEV = {
   critico: { chip: "bg-rose-100 text-rose-700", dot: "bg-rose-500", n: "border-rose-300" },
   atencao: { chip: "bg-amber-100 text-amber-700", dot: "bg-amber-500", n: "border-amber-300" },
@@ -132,9 +138,13 @@ export function PlacarEstrategico({
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-semibold text-slate-800">{p.acao}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${SEV[p.severidade].chip}`}>{p.area}</span>
+                    {AREA_TAB[p.area] ? (
+                      <a href={`#${AREA_TAB[p.area]}`} className={`rounded-full px-2 py-0.5 text-[10px] font-semibold hover:underline ${SEV[p.severidade].chip}`}>{p.area} ↗</a>
+                    ) : (
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${SEV[p.severidade].chip}`}>{p.area}</span>
+                    )}
                   </div>
-                  <p className="mt-0.5 text-xs text-slate-500"><b>Por quê:</b> {p.detalhe}</p>
+                  <p className="mt-0.5 text-xs text-slate-500"><b>Por quê:</b> {p.detalhe}{AREA_TAB[p.area] && <a href={`#${AREA_TAB[p.area]}`} className="ml-1 font-medium text-teal-700 hover:underline">ver onde executar →</a>}</p>
                 </div>
               </li>
             ))}
