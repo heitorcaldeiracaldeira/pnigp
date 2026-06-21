@@ -225,7 +225,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       ),
     },
     { id: "compras", label: "Compras", content: <ComprasSCSection codigo={ente.cod_ibge} tipo={ente.tipo} /> },
-    ...(padroesCompras ? [{ id: "padroes-compras", label: "Planejamento de Compras", content: <AssuntoPadroesCompras dados={padroesCompras} nome={ente.nome} /> }] : []),
+    ...(padroesCompras ? [{ id: "padroes-compras", label: "Planejamento de Compras", content: <AssuntoPadroesCompras dados={padroesCompras} contratos={contratosResumo} pca={pcaResumo} nome={ente.nome} /> }] : []),
     ...(contratosResumo
       ? [{
           id: "contratos",
