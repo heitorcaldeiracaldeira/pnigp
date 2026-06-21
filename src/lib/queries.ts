@@ -1095,12 +1095,16 @@ export async function getCruzamentosSC(cod: string): Promise<Cruzamentos> {
   // COMPRAS
   const comp = await query<Record<string, unknown>>(`SELECT DISTINCT ON (cod_ibge) cod_ibge, dispensa_pct, por_modalidade FROM compras_sc ORDER BY cod_ibge, ano DESC`).catch(() => []);
   const ca = comp.find((x) => String(x.cod_ibge) === cod);
-  const it = (await query<Record<string, unknown>>(`SELECT avg(economia_pct) m, count(*) n FROM itens_sc WHERE cod_ibge=$1 AND economia_pct IS NOT NULL`, [cod]).catch(() => []))[0];
+  // economia unitária: ponderada por valor, EXCLUI outliers (homologado>estimado = erro de digitação unidade×total)
+  const it = (await query<Record<string, unknown>>(
+    `SELECT COALESCE(SUM(unit_estimado*quantidade),0) est, COALESCE(SUM(unit_homologado*quantidade),0) hom, COUNT(*) n
+     FROM itens_sc WHERE cod_ibge=$1 AND unit_homologado IS NOT NULL AND unit_estimado IS NOT NULL AND unit_estimado>0 AND quantidade>0 AND unit_homologado<=unit_estimado`, [cod]).catch(() => []))[0];
+  const itEst = num(it?.est);
   const compras = ca ? {
     dispensaPct: num(ca.dispensa_pct),
     dispensaPares: _median(comp.filter((x) => noGrupo(String(x.cod_ibge))).map((x) => num(x.dispensa_pct))),
     competPct: compet(ca.por_modalidade),
-    economiaUnit: it && num(it.n) > 0 ? num(it.m) : null,
+    economiaUnit: it && num(it.n) > 0 && itEst > 0 ? ((itEst - num(it.hom)) / itEst) * 100 : null,
     itensCobertura: num(it?.n),
   } : null;
 
