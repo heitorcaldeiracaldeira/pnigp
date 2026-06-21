@@ -13,6 +13,7 @@ import { SimuladorFiscal } from "@/components/simulador-fiscal";
 import { SaudeSC } from "@/components/saude-sc";
 import { AssuntoAtencaoPrimaria } from "@/components/assunto-atencao-primaria";
 import { RepassesSaudeFicha } from "@/components/repasses-saude-ficha";
+import { AccountabilityAPS } from "@/components/accountability-aps";
 import { SerieExplicada } from "@/components/serie-explicada";
 import { PlacarEstrategico } from "@/components/placar-estrategico";
 import { CabecalhoArea } from "@/components/cabecalho-area";
@@ -599,6 +600,12 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (previneFicha) tabs.push({ id: "previne-ficha", label: "Atenção Primária (4 visões)", content: <AssuntoAtencaoPrimaria dados={previneFicha} nome={ente.nome} /> });
   if (fnsSerie.length > 1) tabs.push({ id: "fns-historico", label: "Repasses (histórico explicado)", content: <SerieExplicada serie={fnsSerie} escopo="fns" cod={codigo} nome={ente.nome} /> });
   if (repassesSaude) tabs.push({ id: "repasses-saude", label: "Repasses da Saúde (como melhorar)", content: <RepassesSaudeFicha dados={repassesSaude} nome={ente.nome} /> });
+  if (previneFicha) {
+    const aps = repassesSaude?.programas.find((p) => p.key === "aps");
+    tabs.push({ id: "accountability-aps", label: "Cadeia & Accountability (APS)", content: (
+      <AccountabilityAPS previne={previneFicha} apsValor={aps?.valorUlt ?? null} apsAno={repassesSaude?.anoUlt ?? null} saudePct={saude?.saudePct ?? null} cauc={cauc} nome={ente.nome} cod={codigo} />
+    ) });
+  }
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Educação", content: <EducacaoSC data={educacao} /> });
   if (rgfResumo) tabs.push({ id: "folha", label: "Folha / Pessoal", content: <FolhaSC rgf={rgfResumo} serie={serie} /> });
   if (rpps) tabs.push({ id: "previdencia", label: "Previdência", content: <PrevidenciaSC data={rpps} /> });
@@ -611,7 +618,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     ["Resumo", ["placar", "visao", "panorama", "diagnostico"]],
     ["Finanças", ["financas", "execucao", "folha", "previdencia", "metas", "simulador"]],
     ["Compras", ["compras", "contratos", "planejamento", "compras-sc"]],
-    ["Setores", ["saude", "previne-ficha", "repasses-saude", "fns-historico", "educacao-cruz", "indicadores"]],
+    ["Setores", ["saude", "previne-ficha", "accountability-aps", "repasses-saude", "fns-historico", "educacao-cruz", "indicadores"]],
     ["Análise", ["cruzamentos", "ranking", "transferencias", "cauc", "auditoria"]],
   ];
   const ORDEM = GRUPOS.flatMap(([, ids]) => ids);
