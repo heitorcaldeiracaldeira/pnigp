@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Activity, ArrowRight, BarChart3, BookOpen, ClipboardCheck, CircleDollarSign, Database, Gauge, HeartPulse } from "lucide-react";
 import type { MacProducaoSC } from "@/lib/queries";
 import { SABER_REPASSE } from "@/lib/saude-repasses-saber";
@@ -45,6 +46,10 @@ export function AssuntoMAC({ producao, repasseValor, repasseAno, internMil, inte
         {/* ESTRATÉGICO — cadeia de valor */}
         {v === "estrategico" && (
           <div className="space-y-4">
+            <div className="space-y-2 rounded-xl bg-slate-50 p-3 text-xs">
+              <p className="text-slate-700"><b className="text-slate-900">O que é:</b> {saber.oQueE}</p>
+              <p className="text-slate-700"><b className="text-slate-900">Por que importa:</b> {saber.porQueImporta}</p>
+            </div>
             <div className="grid items-stretch gap-2 md:grid-cols-[1fr_auto_1fr_auto_1fr]">
               <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800"><CircleDollarSign className="h-4 w-4" /> 💰 Dinheiro</div>
@@ -104,6 +109,34 @@ export function AssuntoMAC({ producao, repasseValor, repasseAno, internMil, inte
         {v === "tecnico" && (
           <div className="space-y-3">
             <p className="text-sm text-slate-600">Produção por ano, com a variação a cada ano (o que de fato mudou na ponta).</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="mb-1 text-xs font-semibold text-slate-700">🏥 Internações (SIH) por ano</div>
+                <ResponsiveContainer width="100%" height={160}>
+                  <AreaChart data={producao} margin={{ top: 6, right: 12, left: 4, bottom: 2 }}>
+                    <defs><linearGradient id="gSih" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e11d48" stopOpacity={0.5} /><stop offset="100%" stopColor="#e11d48" stopOpacity={0.05} /></linearGradient></defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis dataKey="ano" tick={{ fontSize: 11, fill: "#64748b" }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={44} tickFormatter={(v) => nf(Number(v))} />
+                    <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }} formatter={(v) => [nf(Number(v)), "internações"]} />
+                    <Area type="monotone" dataKey="internacoes" stroke="#e11d48" strokeWidth={2} fill="url(#gSih)" isAnimationActive={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-3">
+                <div className="mb-1 text-xs font-semibold text-slate-700">🩻 Procedimentos ambulatoriais (SIA) por ano</div>
+                <ResponsiveContainer width="100%" height={160}>
+                  <AreaChart data={producao} margin={{ top: 6, right: 12, left: 4, bottom: 2 }}>
+                    <defs><linearGradient id="gSia" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#2563eb" stopOpacity={0.5} /><stop offset="100%" stopColor="#2563eb" stopOpacity={0.05} /></linearGradient></defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <XAxis dataKey="ano" tick={{ fontSize: 11, fill: "#64748b" }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={44} tickFormatter={(v) => Number(v) >= 1e6 ? (Number(v) / 1e6).toFixed(0) + "M" : nf(Number(v))} />
+                    <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }} formatter={(v) => [nf(Number(v)), "procedimentos"]} />
+                    <Area type="monotone" dataKey="siaQtd" stroke="#2563eb" strokeWidth={2} fill="url(#gSia)" isAnimationActive={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
             <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 text-left text-xs text-slate-500"><tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:font-medium"><th>Ano</th><th className="text-right">Internações</th><th className="text-right">Δ</th><th className="text-right">Proc. ambulatoriais</th><th className="text-right">Δ</th><th className="text-right">Valor (SIH+SIA)</th></tr></thead>

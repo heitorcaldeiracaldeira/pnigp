@@ -24,6 +24,8 @@ const FONTES = [
     devido: async (st) => (await maxAno("financas_sc")) < ANO_FECHADO || diasDesde(st?.ultima_exec) > 35 },
   { id: "metas", label: "Metas Fiscais LDO (RREO an.6)", api: "siconfi", script: "scripts/ingest_metas_fiscais_sc.mjs", env: { ANOS: `${ANO_FECHADO},${ANO_CORRENTE}` },
     devido: async () => (await maxAno("metas_fiscais_sc")) < ANO_FECHADO },
+  { id: "receitas_det", label: "Receitas detalhadas (ICMS/FPM/IPTU/FUNDEB — RREO an.3)", api: "siconfi", script: "scripts/ingest_receitas_detalhe_sc.mjs", env: {},
+    devido: async () => (await maxAno("receitas_detalhe_sc")) < ANO_FECHADO },
   { id: "rreo_const", label: "Educação/RCL (RREO an.14/3)", api: "siconfi", script: "scripts/ingest_rreo_constitucional_sc.mjs", env: {},
     devido: async () => (await maxAno("rreo_const_sc")) < ANO_FECHADO },
   { id: "rgf", label: "Pessoal/DCL (RGF)", api: "siconfi", script: "scripts/ingest_rgf_sc.mjs", env: {},
@@ -83,7 +85,7 @@ const estado = async (id) => (await db.query(`SELECT * FROM etl_catalogo WHERE i
 
 // ===== SUPERVISÃO (lógica do PNCP aplicada a TODA fonte) =====
 // Tabela cujo count(*) cresce durante a coleta = sinal de progresso de cada fonte.
-const TAB = { financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc_feitos", processos: "processos_sc", itens: "itens_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", cnes: "cnes_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc" };
+const TAB = { financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", receitas_det: "receitas_detalhe_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc_feitos", processos: "processos_sc", itens: "itens_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", cnes: "cnes_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc" };
 const conta = async (id) => { try { return Number((await db.query(`SELECT count(*) n FROM ${TAB[id] || "financas_sc"}`)).rows[0].n) || 0; } catch { return 0; } };
 const STALL_MS = 20 * 60 * 1000;   // 20 min sem progresso => mata e religa (folga p/ não matar ente pesado)
 const CHECK_MS = 60 * 1000;
@@ -134,7 +136,7 @@ async function main() {
     const solicitado = st?.solicitado === true;
     const ma = f.id === "cnes"
       ? (Number((await db.query(`SELECT max(extract(year from atualizado))::int y FROM cnes_sc`).catch(() => ({ rows: [{}] }))).rows[0]?.y) || 0) // CNES é snapshot por competência (sem coluna ano)
-      : await maxAno({ financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc" }[f.id] || "financas_sc", f.id === "contratos" ? "ano_compra" : "ano");
+      : await maxAno({ financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", receitas_det: "receitas_detalhe_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc" }[f.id] || "financas_sc", f.id === "contratos" ? "ano_compra" : "ano");
     await db.query(`UPDATE etl_catalogo SET max_ano=$1, devido=$2, atualizado_em=now() WHERE id=$3`, [ma, devido, f.id]);
     const roda = SOLIC ? solicitado : (devido || solicitado);
     plano.push({ f, roda });
