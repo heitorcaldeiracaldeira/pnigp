@@ -1,3 +1,6 @@
+"use client";
+
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { BookOpen, TrendingDown, TrendingUp } from "lucide-react";
 import type { RepasseSaudeFichaSC } from "@/lib/queries";
 import { SABER_REPASSE } from "@/lib/saude-repasses-saber";
@@ -38,10 +41,27 @@ export function RepassesSaudeFicha({ dados, nome }: { dados: NonNullable<Repasse
                 <span className="pb-1 text-xs text-slate-500">em {dados.anoUlt}</span>
               </div>
               {p.serie.length >= 2 && (
-                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500">
-                  {tend >= 0 ? <TrendingUp className="h-3 w-3 text-emerald-600" /> : <TrendingDown className="h-3 w-3 text-rose-600" />}
-                  {p.serie[0].ano}–{dados.anoUlt}: {tend >= 0 ? "+" : ""}{tend.toFixed(0)}% · série {p.serie.map((x) => fmtBRLCompact(x.valor)).slice(-5).join(" → ")}
-                </div>
+                <>
+                  <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500">
+                    {tend >= 0 ? <TrendingUp className="h-3 w-3 text-emerald-600" /> : <TrendingDown className="h-3 w-3 text-rose-600" />}
+                    {p.serie[0].ano}–{dados.anoUlt}: {tend >= 0 ? "+" : ""}{tend.toFixed(0)}% no período
+                  </div>
+                  <div className="mt-1.5">
+                    <ResponsiveContainer width="100%" height={90}>
+                      <AreaChart data={p.serie} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id={`g-${p.key}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#0d9488" stopOpacity={0.5} />
+                            <stop offset="100%" stopColor="#0d9488" stopOpacity={0.05} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="ano" tick={{ fontSize: 10, fill: "#94a3b8" }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                        <Tooltip contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }} formatter={(v) => [fmtBRLCompact(Number(v)), "repasse"]} labelFormatter={(l) => `Ano ${l}`} />
+                        <Area type="monotone" dataKey="valor" stroke="#0d9488" strokeWidth={1.5} fill={`url(#g-${p.key})`} isAnimationActive={false} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </>
               )}
 
               <div className="mt-3 space-y-2 rounded-xl bg-slate-50 p-3 text-xs">
