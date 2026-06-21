@@ -91,7 +91,6 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
       { titulo: "Referencial Básico de Governança Organizacional (3ª ed.)", fonte: "TCU", url: "https://portal.tcu.gov.br/referencial-basico-de-governanca-organizacional.htm" },
       { titulo: "IEGM — Índice de Efetividade da Gestão Municipal", fonte: "IRB", url: "https://irbcontas.org.br/" },
       { titulo: "e-Sfinge — prestação de contas dos municípios de SC", fonte: "TCE/SC", url: "https://www.tcesc.tc.br/" },
-      { titulo: "AUDESP — auditoria eletrônica (referência; modelo de SP)", fonte: "TCE-SP", url: "https://www.tce.sp.gov.br/audesp" },
     ],
   },
   assistencia: {
