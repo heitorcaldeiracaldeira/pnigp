@@ -11,6 +11,7 @@ import { DiagnosticoGestor } from "@/components/diagnostico-gestor";
 import { AuditoriaSC } from "@/components/auditoria-sc";
 import { SimuladorFiscal } from "@/components/simulador-fiscal";
 import { SaudeSC } from "@/components/saude-sc";
+import { PrevineFicha } from "@/components/previne-ficha";
 import { EducacaoSC } from "@/components/educacao-sc";
 import { CruzamentosSC } from "@/components/cruzamentos-sc";
 import { PanoramaSC } from "@/components/panorama-sc";
@@ -28,7 +29,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getPrevineSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -37,6 +38,7 @@ export const dynamic = "force-dynamic";
 export default async function RealEntePage({ params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params;
   const [dados, entes, contratosResumo, pcaResumo, metasFiscais, rankingFiscal, pibPerCapita, indicadores, serieRenda, diagnostico, rgfResumo, saude, educacao, cruz, diagEstado, previne, fns, rpps, cauc] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo), getMetasFiscaisSC(codigo), getRankingFiscalSC(), getPibPerCapitaSC(codigo), getIndicadoresSetoriaisSC(codigo), getSeriesIndicadoresSC(codigo), getDiagnosticoGestorSC(codigo), getRgfResumoSC(codigo), getSaudeSC(codigo), getEducacaoSC(codigo), getCruzamentosSC(codigo), getDiagnosticoEstadoSC(codigo), getPrevineSC(codigo), getFnsSC(codigo), getRppsSC(codigo), getCaucSC(codigo)]);
+  const previneFicha = await getPrevineFichaSC(codigo);
   const seriesInd = serieRenda as Record<string, { ano: number; valor: number }[]>;
   if (!dados || dados.serie.length === 0) notFound();
   const minhaPos = rankingFiscal.find((r) => r.cod_ibge === codigo) ?? null;
@@ -566,6 +568,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (diag) tabs.push({ id: "auditoria", label: "Auditoria", content: <AuditoriaSC data={diag} radar={radar} /> });
   if (rgfResumo) tabs.push({ id: "simulador", label: "Simulador", content: <SimuladorFiscal ano={rgfResumo.ano} receita={a.receita} despesa={a.despesa} pessoal={a.pessoal} investimento={a.investimento} rclAjustada={rgfResumo.rclAjustada} pessoalPctBase={rgfResumo.pessoalPct} /> });
   if (saude) tabs.push({ id: "saude", label: "Saúde", content: <SaudeSC data={saude} previne={previne} fns={fns} /> });
+  if (previneFicha) tabs.push({ id: "previne-ficha", label: "Previne (como melhorar)", content: <PrevineFicha dados={previneFicha} nome={ente.nome} /> });
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Educação", content: <EducacaoSC data={educacao} /> });
   if (rgfResumo) tabs.push({ id: "folha", label: "Folha / Pessoal", content: <FolhaSC rgf={rgfResumo} serie={serie} /> });
   if (rpps) tabs.push({ id: "previdencia", label: "Previdência", content: <PrevidenciaSC data={rpps} /> });
@@ -578,7 +581,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     ["Resumo", ["visao", "panorama", "diagnostico"]],
     ["Finanças", ["financas", "execucao", "folha", "previdencia", "metas", "simulador"]],
     ["Compras", ["compras", "contratos", "planejamento", "compras-sc"]],
-    ["Setores", ["saude", "educacao-cruz", "indicadores"]],
+    ["Setores", ["saude", "previne-ficha", "educacao-cruz", "indicadores"]],
     ["Análise", ["cruzamentos", "ranking", "transferencias", "cauc", "auditoria"]],
   ];
   const ORDEM = GRUPOS.flatMap(([, ids]) => ids);

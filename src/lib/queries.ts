@@ -1159,6 +1159,34 @@ export async function getPrevineSC(cod: string): Promise<PrevineSC> {
   return { competencia: ult, grupo: _faixa(num(ent.populacao)), indicadores };
 }
 
+// Previne — Ficha do Indicador: série por competência + pares, por indicador (para a visão pedagógica)
+export type PrevineFichaSC = {
+  competenciaUlt: string; grupo: string;
+  indicadores: { codigo: string; nome: string; pct: number; paresPct: number; numerador: number; denominador: number; serie: { competencia: string; pct: number }[] }[];
+} | null;
+export async function getPrevineFichaSC(cod: string): Promise<PrevineFichaSC> {
+  const ent = (await query<Record<string, unknown>>(`SELECT populacao FROM entes_sc WHERE cod_ibge=$1 AND tipo='M'`, [cod]))[0];
+  if (!ent) return null;
+  const ult = (await query<Record<string, unknown>>(`SELECT max(competencia) m FROM previne_sc`).catch(() => []))[0]?.m as string | undefined;
+  if (!ult) return null;
+  const gk = _fk(num(ent.populacao));
+  const meus = await query<Record<string, unknown>>(`SELECT competencia, indicador, ind_nome, numerador, denominador, pct FROM previne_sc WHERE cod_ibge=$1 ORDER BY competencia`, [cod]).catch(() => []);
+  if (!meus.length) return null;
+  const pares = await query<Record<string, unknown>>(`SELECT p.indicador, p.pct, e.populacao FROM previne_sc p JOIN entes_sc e ON e.cod_ibge=p.cod_ibge WHERE p.competencia=$1 AND p.pct IS NOT NULL`, [ult]).catch(() => []);
+  const codigos = [...new Set(meus.map((r) => String(r.indicador)))].sort((a, b) => Number(a) - Number(b));
+  const indicadores = codigos.map((codigo) => {
+    const linhas = meus.filter((r) => String(r.indicador) === codigo);
+    const ultLinha = linhas.find((r) => String(r.competencia) === ult) || linhas[linhas.length - 1];
+    const paresPct = _median(pares.filter((r) => String(r.indicador) === codigo && _fk(num(r.populacao)) === gk).map((r) => num(r.pct)));
+    return {
+      codigo, nome: String(ultLinha?.ind_nome || codigo),
+      pct: num(ultLinha?.pct), paresPct, numerador: num(ultLinha?.numerador), denominador: num(ultLinha?.denominador),
+      serie: linhas.map((r) => ({ competencia: String(r.competencia), pct: num(r.pct) })),
+    };
+  });
+  return { competenciaUlt: ult, grupo: _faixa(num(ent.populacao)), indicadores };
+}
+
 // Repasses federais do FNS por bloco/área (fundo-a-fundo) — último ano com dado
 export type FnsSC = { ano: number; total: number; custeio: number; investimento: number; areas: { nome: string; valor: number }[] } | null;
 export async function getFnsSC(cod: string): Promise<FnsSC> {
