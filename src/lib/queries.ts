@@ -1345,6 +1345,38 @@ export async function getDespesaSubfuncaoSC(cod: string): Promise<DespesaSubfunc
   return { anoUlt, porFuncao, dotacaoPorFuncao };
 }
 
+// Padrões de compras (planejamento) — sazonalidade, modalidades, taxa de sucesso, série anual (processos_sc)
+export type PadroesComprasSC = {
+  totalN: number; totalValor: number;
+  porModalidade: { modalidade: string; n: number; valor: number; pct: number }[];
+  porMes: { mes: number; n: number }[];
+  serieAnual: { ano: number; n: number; valor: number }[];
+  dispensaPct: number; q4Pct: number; mesPico: number;
+} | null;
+export async function getPadroesComprasSC(cod: string): Promise<PadroesComprasSC> {
+  const rows = await query<Record<string, unknown>>(`SELECT modalidade, valor_estimado, data_pub, ano FROM processos_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const totalN = rows.length;
+  const totalValor = rows.reduce((s, r) => s + num(r.valor_estimado), 0);
+  const mod = new Map<string, { n: number; valor: number }>();
+  const mes = new Map<number, number>();
+  const ano = new Map<number, { n: number; valor: number }>();
+  let dispensaN = 0, q4N = 0;
+  for (const r of rows) {
+    const m = String(r.modalidade || "—"); const v = num(r.valor_estimado);
+    const cur = mod.get(m) || { n: 0, valor: 0 }; cur.n++; cur.valor += v; mod.set(m, cur);
+    if (/dispensa|inexig/i.test(m)) dispensaN++;
+    const a = num(r.ano); const ca = ano.get(a) || { n: 0, valor: 0 }; ca.n++; ca.valor += v; ano.set(a, ca);
+    const d = r.data_pub ? new Date(String(r.data_pub)) : null;
+    if (d && !isNaN(d.getTime())) { const mm = d.getUTCMonth() + 1; mes.set(mm, (mes.get(mm) || 0) + 1); if (mm >= 10) q4N++; }
+  }
+  const porModalidade = [...mod.entries()].map(([modalidade, x]) => ({ modalidade, n: x.n, valor: x.valor, pct: (x.n / totalN) * 100 })).sort((a, b) => b.n - a.n);
+  const porMes = Array.from({ length: 12 }, (_, i) => ({ mes: i + 1, n: mes.get(i + 1) || 0 }));
+  const serieAnual = [...ano.entries()].map(([ano, x]) => ({ ano, n: x.n, valor: x.valor })).sort((a, b) => a.ano - b.ano);
+  const mesPico = porMes.reduce((mx, c) => (c.n > mx.n ? c : mx), porMes[0]).mes;
+  return { totalN, totalValor, porModalidade, porMes, serieAnual, dispensaPct: (dispensaN / totalN) * 100, q4Pct: (q4N / totalN) * 100, mesPico };
+}
+
 // Receitas detalhadas por item nominal (ICMS, FPM, IPTU, ISS, IPVA, ITR, FUNDEB) — série anual
 export type ReceitasDetalheSC = { anoUlt: number; itens: { item: string; valor: number; serie: { ano: number; valor: number }[] }[] } | null;
 export async function getReceitasDetalheSC(cod: string): Promise<ReceitasDetalheSC> {
