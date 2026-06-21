@@ -75,4 +75,29 @@ diferencial: **inteligência analítica profunda** sobre o comprador e o mercado
 3. **IDEB/SNIS** (fechar cadeias municipais).
 4. **Protótipo B2B**: "Inteligência de Mercado de Compras" — provar a tese pública→privada com os itens já coletados.
 
-*Atualizado em modo autônomo; refino a cada ciclo.*
+---
+
+## 6. Deep-dive: "Inteligência de Mercado de Compras Públicas" (produto-âncora B2B)
+**Tamanho do mercado (fontes públicas 2025):** compras públicas movimentam **~R$ 1 trilhão/ano** (12-16% do
+PIB), com **1 milhão+ de processos/ano** e **481 mil compras com ME/EPP (R$ 272,6 bi)**. É um mercado enorme
+com **centenas de milhares de fornecedores PME** que precisam de inteligência — e pagam por ela.
+
+**Concorrentes (Effecti, RadarLicita, BLL, Lance Fácil):** focam em *achar edital* e *gerir o lance*.
+**Nosso diferencial (moat):** a base **integrada** já traz o que eles não têm:
+- **Preço de referência histórico por item** (homologado, por região/porte) → a empresa sabe a que preço ganhar.
+- **Saúde fiscal do comprador** (o município paga em dia? tem capacidade? CAUC?) → risco de receber.
+- **Comportamento de compras** (fracasso/deserção/dispensa) → onde há oportunidade real.
+- **Quem ganha o quê** (concorrentes, market share por CATMAT/descrição, concentração).
+
+**Quem paga:** fornecedores PME do governo (assinatura SaaS), distribuidores, indústrias, bancos/fintechs
+(risco de crédito do ente), construtoras (PCA/obras), consultorias.
+
+**Por que vencemos:** os concorrentes vendem "lista de editais"; nós vendemos **decisão** ("concorra NESTE,
+a ESTE preço, porque o comprador paga e o histórico do item é X"). É o mesmo motor do B2G, monetizado 2x.
+
+**Caminho:** quando os itens fecharem (≈agora, 88%), construir o **detector de sobrepreço por descrição** (B2G)
+e, com a mesma base, um **protótipo de "preço de referência por item + comprador"** (B2B) — prova da tese
+pública→privada com dado real de SC. Depois escala nacional (PNCP é nacional).
+
+---
+*Atualizado em modo autônomo; refino a cada ciclo. Coleta de compras em 88% — sobrepreço/comportamento ficam para montar com o usuário (conforme combinado).*
