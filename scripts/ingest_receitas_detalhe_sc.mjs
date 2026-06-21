@@ -10,9 +10,12 @@ const ANOS = (process.env.ANOS || `${ANO - 4},${ANO - 3},${ANO - 2},${ANO - 1}`)
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 // conta oficial -> rótulo curto
 const ITENS = {
-  "IPTU": "IPTU", "ISS": "ISS", "ITBI": "ITBI",
+  "IPTU": "IPTU", "ISS": "ISS", "ITBI": "ITBI", "IRRF": "IRRF",
   "Cota-Parte do FPM": "FPM", "Cota-Parte do ICMS": "ICMS", "Cota-Parte do IPVA": "IPVA", "Cota-Parte do ITR": "ITR",
+  "Transferências da LC nº 61/1989": "IPI-Exportação",
   "Transferências do FUNDEB": "FUNDEB",
+  "Rendimentos de Aplicação Financeira": "Rend. Aplicação",
+  "RECEITA CORRENTE LÍQUIDA (III) = (I - II)": "RCL",
 };
 
 async function fetchAnexo(ano, id, esfera) {
