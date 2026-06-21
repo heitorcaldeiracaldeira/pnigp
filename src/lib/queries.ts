@@ -1226,6 +1226,13 @@ export async function getRepassesSaudeFichaSC(cod: string): Promise<RepasseSaude
   return { anoUlt, totalUlt, programas };
 }
 
+// Educação — série anual de MDE (% e R$) + FUNDEB, para o molde Ficha
+export type EducacaoSerieSC = { ano: number; educPct: number; educValor: number; fundebPct: number | null }[];
+export async function getEducacaoSerieSC(cod: string): Promise<EducacaoSerieSC> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, educacao_pct, educacao_valor, fundeb_pct FROM rreo_const_sc WHERE cod_ibge=$1 AND educacao_pct IS NOT NULL ORDER BY ano`, [cod]).catch(() => []);
+  return rows.map((r) => ({ ano: num(r.ano), educPct: num(r.educacao_pct), educValor: num(r.educacao_valor), fundebPct: r.fundeb_pct != null ? num(r.fundeb_pct) : null }));
+}
+
 // Despesa por subfunção (drill da função) — último ano
 export type DespesaSubfuncaoSC = { anoUlt: number; porFuncao: Record<string, { subfuncao: string; empenhado: number }[]> } | null;
 export async function getDespesaSubfuncaoSC(cod: string): Promise<DespesaSubfuncaoSC> {
