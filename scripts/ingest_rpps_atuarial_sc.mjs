@@ -2,6 +2,7 @@
 // Fonte: apicadprev.trabalho.gov.br /DRAA_VALORES_COMPROMISSOS (item "Déficit Atuarial" + ativos garantidores).
 // Casa nome do ente → cod_ibge. node scripts/ingest_rpps_atuarial_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { SG_UF, COD_ESTADO, NOME_ESTADO } from "./_uf.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const API = "https://apicadprev.trabalho.gov.br/DRAA_VALORES_COMPROMISSOS";
@@ -12,7 +13,7 @@ const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-
 async function pagina(ano, offset) {
   for (let t = 0; t < 4; t++) {
     try {
-      const r = await fetch(`${API}?sg_uf=SC&dt_exercicio=${ano}&limit=5000&offset=${offset}`, { signal: AbortSignal.timeout(45000) });
+      const r = await fetch(`${API}?sg_uf=${SG_UF}&dt_exercicio=${ano}&limit=5000&offset=${offset}`, { signal: AbortSignal.timeout(45000) });
       if (!r.ok) throw 0;
       return (await r.json()).data || [];
     } catch { await sleep(2000 * (t + 1)); }
@@ -28,7 +29,7 @@ async function main() {
   // mapa nome→cod_ibge (município) + Estado
   const ents = (await db.query(`SELECT cod_ibge, nome, tipo FROM entes_sc`)).rows;
   const byName = new Map(ents.filter((e) => e.tipo === "M").map((e) => [norm(e.nome), e.cod_ibge]));
-  const estado = "42";
+  const estado = COD_ESTADO;
 
   let gravados = 0;
   for (const ano of ANOS) {

@@ -2,6 +2,7 @@
 // Fonte: CSV oficial do Tesouro Transparente (CAUC lê o CADIN diariamente). Mostra se o ente está
 // APTO a receber transferências voluntárias e quais requisitos estão pendentes. node scripts/ingest_cauc_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { SG_UF, COD_ESTADO, NOME_ESTADO } from "./_uf.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const CKAN = "https://www.tesourotransparente.gov.br/ckan/dataset/72b5f371-0c35-4613-8076-c99c821a6410/resource";
@@ -43,7 +44,7 @@ async function main() {
       const c = splitCsv(lines[r]);
       if (c[0] !== "SC") continue;
       const ibge = (c[2] || "").replace(/\D/g, "");
-      const cod = esfera === "E" ? "42" : cod6.get(ibge.slice(0, 6));
+      const cod = esfera === "E" ? COD_ESTADO : cod6.get(ibge.slice(0, 6));
       if (!cod) continue;
       const pend = codCols.filter((cc) => c[cc.i] === "!").map((cc) => cc.code);
       const grupos = [...new Set(pend.map((p) => GRUPO[p[0]] || "Outros"))];

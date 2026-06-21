@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import pg from "pg";
+import { SG_UF, COD_ESTADO, NOME_ESTADO } from "./_uf.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const env = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8");
@@ -124,7 +125,7 @@ async function main() {
 
   const munis = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "scripts", "sc_munis.json"), "utf8"));
   const entes = [
-    { cod: "42", esfera: "E", tipo: "E", nome: "Estado de Santa Catarina" },
+    { cod: COD_ESTADO, esfera: "E", tipo: "E", nome: `Estado de ${NOME_ESTADO}` },
     ...munis.map((m) => ({ cod: String(m.id), esfera: "M", tipo: "M", nome: m.nome })),
   ];
   console.log(`Ingerindo ${entes.length} entes (1 estado + ${munis.length} municípios) × ${ANOS.length} anos...`);

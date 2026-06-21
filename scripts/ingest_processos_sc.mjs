@@ -3,6 +3,7 @@
 // Universo completo para a coleta de itens (preço unitário). Idempotente/resumível por (modalidade, ano).
 // node scripts/ingest_processos_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { SG_UF, COD_ESTADO, NOME_ESTADO } from "./_uf.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const B = "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao";
@@ -15,7 +16,7 @@ const d10 = (s) => (s ? String(s).slice(0, 10) : null);
 async function pagina(mod, ano, pg_) {
   for (let t = 0; t < 4; t++) {
     try {
-      const r = await fetch(`${B}?dataInicial=${ano}0101&dataFinal=${ano}1231&uf=SC&codigoModalidadeContratacao=${mod}&pagina=${pg_}&tamanhoPagina=50`, { signal: AbortSignal.timeout(40000) });
+      const r = await fetch(`${B}?dataInicial=${ano}0101&dataFinal=${ano}1231&uf=${SG_UF}&codigoModalidadeContratacao=${mod}&pagina=${pg_}&tamanhoPagina=50`, { signal: AbortSignal.timeout(40000) });
       if (r.status === 204 || r.status === 404) return { data: [], totalPaginas: 0 };
       if (!r.ok) throw 0;
       return await r.json();

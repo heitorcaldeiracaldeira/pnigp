@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import pg from "pg";
+import { SG_UF, COD_ESTADO, NOME_ESTADO } from "./_uf.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const env = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8");
@@ -31,7 +32,7 @@ const MODALIDADES = [
 const r2 = (n) => Math.round((n || 0) * 100) / 100;
 
 async function fetchPagina(modId, esfera, codIbge, pagina) {
-  const geo = codIbge === "42" ? "uf=SC" : `codigoMunicipioIbge=${codIbge}`;
+  const geo = codIbge === COD_ESTADO ? `uf=${SG_UF}` : `codigoMunicipioIbge=${codIbge}`;
   const url = `${PNCP}?dataInicial=${DI}&dataFinal=${DF}&codigoModalidadeContratacao=${modId}&${geo}&pagina=${pagina}&tamanhoPagina=50`;
   for (let t = 0; t < 7; t++) {
     try {

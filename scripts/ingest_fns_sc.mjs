@@ -3,6 +3,7 @@
 // Estrutura: bloco 10=Custeio (APS, MAC, Farmácia, Vigilância, Gestão) · bloco 11=Investimento.
 // Idempotente/resumível por (cod_ibge, ano). node scripts/ingest_fns_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { SG_UF, COD_ESTADO, NOME_ESTADO } from "./_uf.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const API = "https://consultafns.saude.gov.br/recursos/consulta-consolidada/repasse-bloco";
@@ -11,7 +12,7 @@ const ANOS = (process.env.ANOS || `2020,2021,2022,2023,2024,${ANO_ATUAL}`).split
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 
 async function buscar(co6, ano) {
-  const url = `${API}?ano=${ano}&coMunicipioIbge=${co6}&coTipoRepasse=M&count=50&page=1&sgUf=SC`;
+  const url = `${API}?ano=${ano}&coMunicipioIbge=${co6}&coTipoRepasse=M&count=50&page=1&sgUf=${SG_UF}`;
   for (let t = 0; t < 4; t++) {
     try {
       const r = await fetch(url, { signal: AbortSignal.timeout(45000), headers: { Accept: "application/json" } });

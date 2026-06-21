@@ -35,12 +35,21 @@ Haverá estados onde os dois tribunais coexistem — e o motor já trata:
   Estado→TCE; município→TCM ou TCE conforme a UF (e trata a capital separadamente). Assim a aba de
   Accountability cita o tribunal CORRETO de cada ente automaticamente.
 
-## Como habilitar um novo estado
-1. Adicionar a entrada da UF em `UF_CONFIG` (TCE/TCM, onde julga municípios, IEGM, observações).
-2. Coletar as bases — as **federais já aceitam UF como parâmetro** (SICONFI por `id_ente`, PNCP por
-   `uf`, FNS por `sgUf`, etc.), então os ETLs são replicáveis trocando o filtro de UF.
-3. Dimensionar o dado por UF (tabelas por UF ou coluna `uf`) — hoje a referência é SC (`*_sc`).
-4. Os componentes/molde (4 visões, cadeia de valor, accountability) **não mudam** — leem config + dados.
+## Como habilitar um novo estado (receita pronta)
+O motor já está **parametrizado por UF** via env `UF` (`scripts/_uf.mjs` → sigla, cód. estadual, nome).
+Modelo: **uma base por estado** (deploy por cliente-estado) — assim as comparações por pares ficam
+naturalmente dentro da UF, sem refatorar queries. Passos:
+
+1. **Config**: adicionar a UF em `UF_CONFIG` (`src/lib/uf-config.ts`) — TCE/TCM e onde julga municípios.
+2. **Entes**: `UF=PR node scripts/ingest_entes_uf.mjs` — carrega municípios + governo estadual do IBGE.
+3. **Coletar**: rodar os ETLs com a UF — `UF=PR node scripts/ingest_sc.mjs`, `ingest_fns_sc.mjs`,
+   `ingest_compras_sc.mjs`, `ingest_processos_sc.mjs`, `ingest_rpps_atuarial_sc.mjs`, `ingest_cauc_sc.mjs`,
+   e os SICONFI (rgf/rreo_const/rpps/receitas_detalhe/subfuncao/siops — já genéricos, iteram `entes_sc`).
+4. **Pronto**: os componentes/molde (4 visões, cadeia de valor, accountability) **não mudam** —
+   leem `uf-config` + os dados. O nome das tabelas segue `*_sc` (histórico), mas o conteúdo é da UF da base.
+
+> Coletores já parametrizados (sem "SC" cravado): FNS, Compras, Processos, RPPS atuarial, Finanças (DCA),
+> CAUC. SICONFI por `id_ente`/esfera já era genérico. `cod_ibge` (7 díg) carrega a UF nos 2 primeiros dígitos.
 
 ## Estratégia (recomendada)
 Provar o modelo 100% em **SC** (estado de referência), e depois **"ligar" estado a estado sob demanda**
