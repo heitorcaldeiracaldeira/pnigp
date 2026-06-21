@@ -1,0 +1,101 @@
+// Dossiê estratégico — página discreta para compartilhar com a equipe (fora do menu, sem indexação).
+export const metadata = {
+  title: "PNIGP — Dossiê Estratégico",
+  robots: { index: false, follow: false },
+};
+export const dynamic = "force-static";
+
+function H2({ children }: { children: React.ReactNode }) {
+  return <h2 className="mt-9 border-t border-slate-200 pt-5 font-display text-xl font-bold text-slate-900">{children}</h2>;
+}
+
+export default function EstrategiaPage() {
+  return (
+    <div className="min-h-screen bg-slate-50 py-10">
+      <div className="mx-auto max-w-3xl px-5">
+        <header className="border-b-[3px] border-teal-600 pb-4">
+          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">PNIGP — Dossiê Estratégico</h1>
+          <p className="mt-1 text-sm text-slate-500">Análise de produto, dados e mercado · jun/2026 · <span className="rounded-full bg-teal-600 px-2.5 py-0.5 text-xs font-semibold text-white">Confidencial — Instituto I10</span></p>
+        </header>
+
+        <div className="mt-4 rounded-2xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-white p-5">
+          <h3 className="font-semibold text-teal-800">0. A tese central</h3>
+          <p className="mt-1 text-[15px] text-slate-700">O ativo do PNIGP <b>não é a tela</b> — é a <b>base integrada e cruzada</b> (finanças + compras + saúde + educação + controle externo) <b>+ o motor analítico</b> (cadeia de valor 💰→🏭→❤️, accountability, eficiência por porte). O <b>mesmo dado</b> serve dois mercados: <b>governo</b> (gerir) e <b>privado</b> (vender ao governo, investir, emprestar). O <b>B2B tende a ser a maior receita</b> — milhares de empresas pagantes vs. nº limitado de governos.</p>
+        </div>
+
+        <H2>1. Melhorias da plataforma (curto prazo)</H2>
+        <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[15px] text-slate-700 marker:text-slate-400">
+          <li><b>Surfacar o que já existe</b>: eficiência por porte + alertas ainda sem tela — ganho rápido, é o moat.</li>
+          <li><b>Performance</b>: ~20 queries por acesso (force-dynamic) — avaliar cache/ISR + índices.</li>
+          <li><b>Comparador entre municípios</b> + busca rápida.</li>
+          <li><b>Exportação executiva</b> (PDF de 1 página).</li>
+          <li><b>Mobile</b> nas tabelas densas.</li>
+          <li><b>Infra</b>: Neon free satura no harvest → plano pago / réplica de leitura.</li>
+          <li><b>Onboarding/pedagogia</b> (tour dos níveis, glossário).</li>
+          <li><b>Completar cadeias</b>: IDEB, SNIS, produção de saúde.</li>
+        </ol>
+
+        <H2>2. Produtos B2G (governo)</H2>
+        <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[15px] text-slate-700 marker:text-slate-400">
+          <li><b>Painel do Gestor</b> (core, existe).</li>
+          <li><b>Radar de Conformidade & Alertas</b> — avisa antes de descumprir mínimo, estourar pessoal (LRF), perder prazo. <i>Evitar rejeição de contas vale muito a um prefeito.</i></li>
+          <li><b>Benchmarking de Eficiência</b> — quem entrega mais por R$ entre pares.</li>
+          <li><b>Diagnóstico de transição / 100 dias</b> (e campanha).</li>
+          <li><b>Inteligência de compras do ente</b> — preço de referência, sobrepreço, PCA, comportamento.</li>
+          <li><b>Prestação de contas facilitada</b> (Câmara, Conselhos, TCE).</li>
+          <li><b>Painéis para Câmara e TCE</b> — fiscalização por risco.</li>
+        </ol>
+
+        <H2>3. Produtos B2B (setor privado) — monetização do moat</H2>
+        <p className="mt-1 text-[15px] text-slate-700">Concorrentes (Effecti, RadarLicita, BLL, Lance Fácil) focam em <b>achar edital e dar lance</b>. Nós vendemos <b>decisão</b>.</p>
+        <ol className="mt-2 list-decimal space-y-1.5 rounded-2xl border border-amber-200 bg-amber-50/50 p-5 pl-9 text-[15px] text-slate-700 marker:text-slate-400">
+          <li>⭐ <b>Inteligência de Mercado para Fornecedores</b> — quem compra o quê, quando, <b>a que preço</b> (histórico homologado por item/região), market share, concorrentes. SaaS recorrente.</li>
+          <li><b>Radar de Oportunidades com preço de referência</b> — edital + preço histórico → onde concorrer e a que preço.</li>
+          <li><b>Análise de concorrentes</b> — quem ganha, preços, concentração.</li>
+          <li><b>Due diligence</b> — risco do fornecedor (sanções CEIS/CNEP) e <b>saúde fiscal do comprador</b> (paga em dia?).</li>
+          <li><b>Precificação</b> — base de preços homologados.</li>
+          <li><b>Crédito & risco</b> (bancos/fintechs/FIDC) — capacidade de pagamento dos entes, antecipação de recebíveis, precatórios.</li>
+          <li><b>Construção/infraestrutura</b> — investimento planejado por região (PCA, obras).</li>
+          <li><b>Mídia, consultoria, academia</b> — assinatura de dados/insights.</li>
+        </ol>
+
+        <H2>4. Dados que podemos ter (roadmap)</H2>
+        <ul className="mt-2 list-disc space-y-1.5 pl-5 text-[15px] text-slate-700 marker:text-slate-400">
+          <li><b>Educação</b>: IDEB, matrículas, creche. <b>Saneamento</b>: SNIS. <b>Assistência</b>: CadÚnico/CRAS.</li>
+          <li><b>Saúde</b>: cobertura vacinal, leitos, mortalidade.</li>
+          <li><b>Pessoal</b>: folha por cargo. <b>Controle</b>: sanções CEIS/CNEP, convênios/emendas.</li>
+          <li><b>Mercado</b>: CNAE dos fornecedores, RAIS/CAGED, preços (em coleta).</li>
+          <li><b>Política</b>: prefeitos × município × ano (TSE) — cruza gestor ↔ resultado ↔ pareceres.</li>
+          <li><b>Geo</b>: camadas territoriais para mapas.</li>
+        </ul>
+
+        <H2>5. Prioridades (quando as compras fecharem)</H2>
+        <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-[15px] text-slate-700 marker:text-slate-400">
+          <li><b>Sobrepreço por descrição + comportamento de compras</b> — B2G e base do B2B.</li>
+          <li><b>Surfacar Eficiência + Alertas</b> (rápido, moat).</li>
+          <li><b>IDEB / SNIS</b> (fechar cadeias municipais).</li>
+          <li><b>Protótipo B2B</b>: "Inteligência de Mercado de Compras".</li>
+        </ol>
+
+        <H2>6. Deep-dive: o produto-âncora B2B</H2>
+        <div className="mt-2 rounded-2xl border border-teal-200 bg-teal-50/50 p-5">
+          <p className="text-[15px] text-slate-700">Mercado (fontes públicas 2025):</p>
+          <p className="mt-1 text-2xl font-bold text-teal-700">~R$ 1 trilhão/ano <span className="text-base font-normal text-slate-600">em compras públicas (12–16% do PIB)</span></p>
+          <p className="text-sm text-slate-600">1 milhão+ de processos/ano · 481 mil compras com ME/EPP (R$ 272,6 bi).</p>
+          <table className="mt-3 w-full border-collapse text-sm">
+            <thead><tr className="bg-slate-100 text-left text-slate-600 [&>th]:border [&>th]:border-slate-200 [&>th]:px-3 [&>th]:py-2"><th>Camada de inteligência</th><th>O que entrega</th></tr></thead>
+            <tbody className="[&_td]:border [&_td]:border-slate-200 [&_td]:px-3 [&_td]:py-2 text-slate-700">
+              <tr><td>Preço de referência histórico por item</td><td>a que preço ganhar (por região/porte)</td></tr>
+              <tr><td>Saúde fiscal do comprador</td><td>risco de receber (paga em dia? CAUC?)</td></tr>
+              <tr><td>Comportamento de compras</td><td>onde há oportunidade real (fracasso/deserção)</td></tr>
+              <tr><td>Quem ganha o quê</td><td>concorrentes, market share, concentração</td></tr>
+            </tbody>
+          </table>
+          <p className="mt-3 text-[15px] text-slate-700"><b>Por que vencemos:</b> os concorrentes vendem "lista de editais"; nós vendemos <b>decisão</b> — "concorra NESTE, a ESTE preço, porque o comprador paga e o histórico do item é X". <b>É o mesmo motor do B2G, monetizado 2×</b>, e escala nacional (o PNCP é nacional).</p>
+        </div>
+
+        <p className="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-400">PNIGP · Instituto I10 · documento vivo · dados de mercado de fontes públicas 2025 (PNCP, Min. da Gestão, IPEA).</p>
+      </div>
+    </div>
+  );
+}

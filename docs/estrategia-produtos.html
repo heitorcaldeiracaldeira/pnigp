@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PNIGP — Dossiê Estratégico</title>
+<style>
+  :root{--teal:#0d9488;--ink:#0f172a;--slate:#475569;--muted:#94a3b8;--line:#e2e8f0;--bg:#f8fafc;}
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;line-height:1.6;}
+  .wrap{max-width:880px;margin:0 auto;padding:40px 24px 80px;}
+  header{border-bottom:3px solid var(--teal);padding-bottom:16px;margin-bottom:8px;}
+  h1{font-size:30px;margin:0 0 4px;letter-spacing:-.5px;}
+  .sub{color:var(--slate);font-size:15px;}
+  h2{font-size:21px;margin:34px 0 10px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink);}
+  h2:first-of-type{border-top:none;}
+  h3{font-size:16px;color:var(--teal);margin:20px 0 6px;}
+  p,li{font-size:15px;color:#1e293b;}
+  ul,ol{padding-left:22px;}
+  li{margin:5px 0;}
+  .tese{background:linear-gradient(135deg,#ecfeff,#fff);border:1px solid #a5f3fc;border-radius:16px;padding:18px 20px;margin:14px 0;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 20px;margin:12px 0;box-shadow:0 1px 2px rgba(0,0,0,.03);}
+  .star{background:#fffbeb;border-color:#fde68a;}
+  .moat{background:#f0fdfa;border-color:#99f6e4;}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;}
+  th{background:#f1f5f9;color:var(--slate);font-weight:600;}
+  .pill{display:inline-block;background:var(--teal);color:#fff;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;}
+  .big{font-size:26px;font-weight:800;color:var(--teal);}
+  .foot{color:var(--muted);font-size:12px;margin-top:40px;border-top:1px solid var(--line);padding-top:14px;}
+  strong{color:#0f172a;}
+  code{background:#f1f5f9;padding:1px 6px;border-radius:5px;font-size:13px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>PNIGP — Dossiê Estratégico</h1>
+    <div class="sub">Análise de produto, dados e mercado · jun/2026 · <span class="pill">Confidencial — Instituto I10</span></div>
+  </header>
+
+  <div class="tese">
+    <h3 style="margin-top:0">0. A tese central</h3>
+    <p>O ativo do PNIGP <strong>não é a tela</strong> — é a <strong>base integrada e cruzada</strong> (finanças + compras + saúde + educação + controle externo) <strong>+ o motor analítico</strong> (cadeia de valor 💰→🏭→❤️, accountability, eficiência por porte). O <strong>mesmo dado</strong> serve dois mercados: <strong>governo</strong> (para gerir) e <strong>privado</strong> (para vender ao governo, investir, emprestar). O <strong>B2B tende a ser a maior receita</strong> — milhares de empresas pagantes vs. nº limitado de governos.</p>
+  </div>
+
+  <h2>1. Melhorias da plataforma <span style="font-size:13px;color:var(--muted)">(curto prazo, alta alavancagem)</span></h2>
+  <ol>
+    <li><strong>Surfacar o que já está pronto</strong>: eficiência por porte + alertas ainda sem tela — ganho rápido, é o moat analítico.</li>
+    <li><strong>Performance</strong>: a página faz ~20 queries por acesso (<code>force-dynamic</code>) — avaliar cache/ISR + índices.</li>
+    <li><strong>Comparador entre municípios</strong> (lado a lado) + busca rápida.</li>
+    <li><strong>Exportação executiva</strong> (PDF de 1 página do Placar).</li>
+    <li><strong>Mobile</strong> nas tabelas densas (compras/itens).</li>
+    <li><strong>Infra</strong>: Neon free satura no harvest → plano pago/réplica de leitura.</li>
+    <li><strong>Onboarding/pedagogia</strong> (tour dos níveis, glossário sempre visível).</li>
+    <li><strong>Completar cadeias</strong>: IDEB/matrículas, SNIS, produção de saúde.</li>
+  </ol>
+
+  <h2>2. Produtos B2G <span style="font-size:13px;color:var(--muted)">(governo — assinatura por ente)</span></h2>
+  <div class="card">
+    <ol>
+      <li><strong>Painel do Gestor</strong> (core, existe).</li>
+      <li><strong>Radar de Conformidade & Alertas</strong> — avisa <em>antes</em> de descumprir mínimo (saúde/educação), estourar pessoal (LRF), perder prazo ou repasse cair. <em>Evitar rejeição de contas vale muito a um prefeito.</em></li>
+      <li><strong>Benchmarking de Eficiência</strong> — quem entrega mais por R$ entre pares (o moat).</li>
+      <li><strong>Diagnóstico de transição / 100 dias</strong> (e para campanha).</li>
+      <li><strong>Inteligência de compras do ente</strong> — preço de referência, sobrepreço, PCA, comportamento.</li>
+      <li><strong>Prestação de contas facilitada</strong> — relatórios para Câmara, Conselhos, TCE.</li>
+      <li><strong>Painéis Câmara e TCE</strong> — fiscalização por risco (outros compradores públicos).</li>
+    </ol>
+  </div>
+
+  <h2>3. Produtos B2B <span style="font-size:13px;color:var(--muted)">(setor privado — monetização do moat)</span></h2>
+  <p>Concorrentes (Effecti, RadarLicita, BLL, Lance Fácil) focam em <strong>achar edital e dar lance</strong>. Nós vendemos <strong>decisão</strong> — inteligência analítica sobre o comprador e o mercado.</p>
+  <div class="card star">
+    <ol>
+      <li>⭐ <strong>Inteligência de Mercado para Fornecedores</strong> — quem compra o quê, quando, <strong>a que preço</strong> (histórico homologado por item/região), market share por CATMAT, sazonalidade, concorrentes. SaaS recorrente.</li>
+      <li><strong>Radar de Oportunidades com preço de referência</strong> — edital + preço histórico → onde concorrer e a que preço.</li>
+      <li><strong>Análise de concorrentes</strong> — quem ganha, preços, concentração, vínculos.</li>
+      <li><strong>Due diligence</strong> — risco do fornecedor (cadastro, sanções CEIS/CNEP) E <strong>saúde fiscal do comprador</strong> (paga em dia?).</li>
+      <li><strong>Precificação</strong> — base de preços homologados para propostas competitivas.</li>
+      <li><strong>Crédito & risco</strong> (bancos/fintechs/FIDC) — capacidade de pagamento dos entes, antecipação de recebíveis, risco de precatório.</li>
+      <li><strong>Construção/infraestrutura</strong> — investimento planejado por região (PCA, obras).</li>
+      <li><strong>Mídia, consultoria, academia</strong> — assinatura de dados/insights.</li>
+    </ol>
+  </div>
+
+  <h2>4. Dados que podemos ter <span style="font-size:13px;color:var(--muted)">(roadmap)</span></h2>
+  <ul>
+    <li><strong>Educação</strong>: IDEB, matrículas, creche (INEP/Censo). <strong>Saneamento</strong>: SNIS. <strong>Assistência</strong>: CadÚnico/CRAS.</li>
+    <li><strong>Saúde</strong>: cobertura vacinal (PNI), leitos (CNES), mortalidade (SIM/SINASC).</li>
+    <li><strong>Pessoal</strong>: folha por cargo/vínculo. <strong>Controle</strong>: sanções CEIS/CNEP, convênios/emendas (Transferegov).</li>
+    <li><strong>Mercado</strong>: CNAE/porte dos fornecedores, RAIS/CAGED, preços (já em coleta).</li>
+    <li><strong>Política</strong>: prefeitos × município × ano (TSE) — desbloqueia cruzar gestor ↔ resultado ↔ pareceres.</li>
+    <li><strong>Geo</strong>: camadas territoriais para mapas e análise regional.</li>
+  </ul>
+
+  <h2>5. Prioridades <span style="font-size:13px;color:var(--muted)">(quando as compras fecharem)</span></h2>
+  <ol>
+    <li><strong>Sobrepreço por descrição + comportamento de compras</strong> — produto B2G E base do B2B.</li>
+    <li><strong>Surfacar Eficiência + Alertas</strong> (rápido, moat).</li>
+    <li><strong>IDEB / SNIS</strong> (fechar cadeias municipais).</li>
+    <li><strong>Protótipo B2B</strong>: "Inteligência de Mercado de Compras".</li>
+  </ol>
+
+  <h2>6. Deep-dive: o produto-âncora B2B</h2>
+  <div class="card moat">
+    <p>Tamanho do mercado (fontes públicas 2025):</p>
+    <p><span class="big">~R$ 1 trilhão/ano</span> em compras públicas (12–16% do PIB) · <strong>1 milhão+ de processos/ano</strong> · <strong>481 mil compras com ME/EPP (R$ 272,6 bi)</strong>.</p>
+    <p><strong>Nosso diferencial</strong> (que os concorrentes não têm):</p>
+    <table>
+      <tr><th>Camada de inteligência</th><th>O que entrega</th></tr>
+      <tr><td>Preço de referência histórico por item</td><td>a que preço ganhar (homologado, por região/porte)</td></tr>
+      <tr><td>Saúde fiscal do comprador</td><td>risco de receber (paga em dia? CAUC? capacidade?)</td></tr>
+      <tr><td>Comportamento de compras</td><td>onde há oportunidade real (fracasso/deserção)</td></tr>
+      <tr><td>Quem ganha o quê</td><td>concorrentes, market share, concentração</td></tr>
+    </table>
+    <p><strong>Por que vencemos:</strong> os concorrentes vendem "lista de editais"; nós vendemos <strong>decisão</strong> — "concorra NESTE, a ESTE preço, porque o comprador paga e o histórico do item é X". <strong>É o mesmo motor do B2G, monetizado 2×</strong>, e escala nacional (o PNCP é nacional).</p>
+  </div>
+
+  <div class="foot">PNIGP · Instituto I10 · Dossiê gerado pela plataforma · dados de mercado: PNCP, Min. da Gestão, IPEA (fontes públicas 2025). Documento vivo.</div>
+</div>
+</body>
+</html>
