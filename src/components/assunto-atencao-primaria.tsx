@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { BarChart3, ClipboardCheck, Database, Gauge, LineChart as LineIcon } from "lucide-react";
 import type { PrevineFichaSC } from "@/lib/queries";
@@ -26,8 +26,18 @@ const UNIDADE: Record<string, string> = {
   "40": "exames citopatológicos", "50": "crianças vacinadas", "70": "exames de HbA1c",
 };
 
-export function AssuntoAtencaoPrimaria({ dados, nome }: { dados: Dados; nome: string }) {
+export function AssuntoAtencaoPrimaria({ dados, nome, cod }: { dados: Dados; nome: string; cod: string }) {
   const [v, setV] = useState<Visao>("estrategico");
+  const [causas, setCausas] = useState<{ ano: number; texto: string }[]>([]);
+  const [formEv, setFormEv] = useState<string | null>(null);
+  const [txt, setTxt] = useState("");
+  useEffect(() => { fetch(`/api/serie-anotacao?escopo=causa-aps&cod=${cod}`, { cache: "no-store" }).then((r) => r.json()).then((d) => setCausas(d.anotacoes || [])).catch(() => {}); }, [cod]);
+  async function salvarCausa(label: string) {
+    if (!txt.trim()) return;
+    const texto = `${label} — ${txt.trim()}`;
+    await fetch("/api/serie-anotacao", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ escopo: "causa-aps", cod, ano: 2024, texto }) }).catch(() => {});
+    setCausas((c) => [...c, { ano: 2024, texto }]); setFormEv(null); setTxt("");
+  }
   const inds = dados.indicadores.filter((i) => PREVINE_SABER[i.codigo]);
   const comMeta = inds.map((i) => ({ ...i, meta: PREVINE_SABER[i.codigo].meta, nv: nivelPrevine(i.pct, PREVINE_SABER[i.codigo].meta), saber: PREVINE_SABER[i.codigo] }));
   const naMeta = comMeta.filter((i) => i.nv === "ok").length;
@@ -43,6 +53,12 @@ export function AssuntoAtencaoPrimaria({ dados, nome }: { dados: Dados; nome: st
   const recuaram = trends.filter((t) => t.d < -0.5);
   const maiorAlta = [...trends].sort((a, b) => b.d - a.d)[0];
   const maiorQueda = [...trends].sort((a, b) => a.d - b.d)[0];
+  // EVENTOS: cada variação de produção entre quadrimestres (fato → causa provável → ação)
+  const eventos = comMeta.flatMap((i) => i.serie.slice(1).map((s, idx) => ({ i, comp: s.competencia, compAnt: i.serie[idx].competencia, delta: s.numerador - i.serie[idx].numerador })))
+    .filter((e) => e.delta !== 0).sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 5);
+  const causaProvavel = (delta: number) => delta < 0
+    ? "Queda na produção registrada. Causa provável: subnotificação no e-SUS, falta de insumo/equipe ou menor procura — verifique o registro antes de concluir."
+    : "Aumento na produção. Provável efeito de busca ativa, mais cadastro ou melhor registro — boa prática a manter.";
   const parecer = naMeta === comMeta.length ? { t: "Todos os indicadores na meta", c: "bg-emerald-100 text-emerald-700" }
     : naMeta >= comMeta.length / 2 ? { t: "Maioria na meta — alguns pontos a subir", c: "bg-amber-100 text-amber-700" }
     : { t: "Vários indicadores abaixo da meta", c: "bg-rose-100 text-rose-700" };
@@ -179,6 +195,37 @@ export function AssuntoAtencaoPrimaria({ dados, nome }: { dados: Dados; nome: st
               </div>
               <p className="mt-2 text-[10px] text-slate-400">Número absoluto registrado (numerador do indicador). A variação a cada quadrimestre mostra o que de fato mudou na ponta — ex.: mais exames/consultas realizados.</p>
             </div>
+            {eventos.length > 0 && (
+              <div className="rounded-xl border border-teal-200 bg-teal-50/30 p-3">
+                <div className="mb-2 text-xs font-semibold text-teal-800">🧭 Diário de gestão — evento → por quê → o que fazer (confira e, se quiser, registre a causa real)</div>
+                <div className="space-y-2">
+                  {eventos.map((e) => {
+                    const label = `${e.i.saber.curto} (${fmtComp(e.compAnt)}→${fmtComp(e.comp)})`;
+                    return (
+                      <div key={label} className="rounded-lg border border-slate-200 bg-white p-2.5 text-xs">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-semibold text-slate-800">{e.i.saber.emoji} {e.i.saber.curto}</span>
+                          <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${e.delta >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>{e.delta >= 0 ? "▲ +" : "▼ "}{e.delta.toLocaleString("pt-BR")} {UNIDADE[e.i.codigo] || ""}</span>
+                          <span className="text-[10px] text-slate-400">{fmtComp(e.compAnt)} → {fmtComp(e.comp)}</span>
+                        </div>
+                        <p className="mt-1 text-slate-600"><span className="font-semibold text-violet-700">Por quê (provável):</span> {causaProvavel(e.delta)}</p>
+                        <p className="mt-0.5 text-slate-600"><span className="font-semibold text-teal-700">O que fazer:</span> {e.i.saber.comoMelhorar[0]}</p>
+                        {causas.filter((c) => c.texto.startsWith(label)).map((c, ci) => <p key={ci} className="mt-0.5 text-emerald-700">✓ Registrado: {c.texto.replace(label + " — ", "")}</p>)}
+                        {formEv === label ? (
+                          <div className="mt-1.5 flex gap-1.5">
+                            <input value={txt} onChange={(e2) => setTxt(e2.target.value)} placeholder="o que aconteceu de verdade neste período?" className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-xs" />
+                            <button onClick={() => salvarCausa(label)} className="rounded bg-emerald-600 px-2 py-1 text-[11px] font-medium text-white">Salvar</button>
+                            <button onClick={() => { setFormEv(null); setTxt(""); }} className="px-1 text-slate-400">✕</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => { setFormEv(label); setTxt(""); }} className="mt-1 text-[11px] font-medium text-slate-500 hover:text-slate-700">+ registrar a causa real</button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div className="overflow-x-auto rounded-xl border border-slate-200">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 text-left text-xs text-slate-500">

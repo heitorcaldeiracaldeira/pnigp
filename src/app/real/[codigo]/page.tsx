@@ -597,7 +597,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       </>
     ) });
   }
-  if (previneFicha) tabs.push({ id: "previne-ficha", label: "Atenção Primária (4 visões)", content: <AssuntoAtencaoPrimaria dados={previneFicha} nome={ente.nome} /> });
+  if (previneFicha) tabs.push({ id: "previne-ficha", label: "Atenção Primária (4 visões)", content: <AssuntoAtencaoPrimaria dados={previneFicha} nome={ente.nome} cod={codigo} /> });
   if (fnsSerie.length > 1) tabs.push({ id: "fns-historico", label: "Repasses (histórico explicado)", content: <SerieExplicada serie={fnsSerie} escopo="fns" cod={codigo} nome={ente.nome} /> });
   if (repassesSaude) tabs.push({ id: "repasses-saude", label: "Repasses da Saúde (como melhorar)", content: <RepassesSaudeFicha dados={repassesSaude} nome={ente.nome} /> });
   if (previneFicha) {
