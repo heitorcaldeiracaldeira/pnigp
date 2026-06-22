@@ -684,7 +684,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       ...(previneFicha ? [{ label: "Previne — como melhorar", href: "#previne-ficha" }] : []),
       ...(fnsSerie.length > 1 ? [{ label: "Repasses (histórico)", href: "#fns-historico" }] : []),
     ];
-    tabs.push({ id: "saude", label: "Saúde", content: (
+    tabs.push({ id: "saude", label: "Visão geral", content: (
       <>
         <CabecalhoArea titulo="Saúde" intro="Como a saúde do município está hoje, o que a lei exige, o que fazer e onde aprofundar — da visão geral ao indicador." conformidade={saudeConf} indicadores={saudeInd} insights={insights.filter((i) => /sa[úu]de/i.test(i.area))} links={saudeLinks} />
         <div className="mb-4"><AnaliseSaude previne={previne} fns={fns} saude={saude} nome={ente.nome} /></div>
@@ -693,23 +693,23 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       </>
     ) });
   }
-  if (previneFicha) tabs.push({ id: "previne-ficha", label: "Atenção Primária (4 visões)", content: <AssuntoAtencaoPrimaria dados={previneFicha} nome={ente.nome} cod={codigo} /> });
-  if (fnsSerie.length > 1) tabs.push({ id: "fns-historico", label: "Repasses (histórico explicado)", content: <SerieExplicada serie={fnsSerie} escopo="fns" cod={codigo} nome={ente.nome} /> });
-  if (repassesSaude) tabs.push({ id: "repasses-saude", label: "Repasses da Saúde (como melhorar)", content: <RepassesSaudeFicha dados={repassesSaude} nome={ente.nome} /> });
+  if (previneFicha) tabs.push({ id: "previne-ficha", label: "Atenção Primária", content: <AssuntoAtencaoPrimaria dados={previneFicha} nome={ente.nome} cod={codigo} /> });
+  if (fnsSerie.length > 1) tabs.push({ id: "fns-historico", label: "Histórico de Repasses", content: <SerieExplicada serie={fnsSerie} escopo="fns" cod={codigo} nome={ente.nome} /> });
+  if (repassesSaude) tabs.push({ id: "repasses-saude", label: "Repasses da Saúde", content: <RepassesSaudeFicha dados={repassesSaude} nome={ente.nome} /> });
   if (macProducao.length && saude) {
     const mac = repassesSaude?.programas.find((p) => p.key === "mac");
-    tabs.push({ id: "mac", label: "Média e Alta Complexidade (4 visões)", content: <AssuntoMAC producao={macProducao} repasseValor={mac?.valorUlt ?? null} repasseAno={repassesSaude?.anoUlt ?? null} internMil={saude.internMil} internMilPares={saude.internMilPares} nome={ente.nome} /> });
+    tabs.push({ id: "mac", label: "Hospitais e Especialidades", content: <AssuntoMAC producao={macProducao} repasseValor={mac?.valorUlt ?? null} repasseAno={repassesSaude?.anoUlt ?? null} internMil={saude.internMil} internMilPares={saude.internMilPares} nome={ente.nome} /> });
   }
   tabs.push({ id: "receitas", label: "Receitas (de onde vem)", content: <AssuntoReceitas serie={dados.serie} detalhe={receitasDetalhe} nome={ente.nome} /> });
   tabs.push({ id: "despesas", label: "Despesas (para onde vai)", content: <><AssuntoDespesas serie={dados.serie} funcoes={dados.funcoesLatest} subfuncoes={despSubfuncao} pessoalPct={rgfResumo?.pessoalPct ?? null} nome={ente.nome} /><div className="mt-4"><BaseMetodologica area="financas" /></div></> });
   if (previneFicha) {
     const aps = repassesSaude?.programas.find((p) => p.key === "aps");
-    tabs.push({ id: "accountability-aps", label: "Cadeia & Accountability (APS)", content: (
+    tabs.push({ id: "accountability-aps", label: "Da verba ao resultado", content: (
       <AccountabilityAPS previne={previneFicha} apsValor={aps?.valorUlt ?? null} apsAno={repassesSaude?.anoUlt ?? null} saudePct={saude?.saudePct ?? null} cauc={cauc} nome={ente.nome} cod={codigo} />
     ) });
   }
-  if (educacao && educacaoSerie.length) tabs.push({ id: "educacao", label: "Educação (4 visões)", content: <>{(ideb || fndeEdu) && <div className="mb-4"><AnaliseEducacao ideb={ideb} fnde={fndeEdu} censo={censoMatricula} nome={ente.nome} /></div>}<AssuntoEducacao serie={educacaoSerie} edu={educacao} fundebValor={receitasDetalhe?.itens.find((i) => i.item === "FUNDEB")?.valor ?? null} nome={ente.nome} />{censoMatricula && <div className="mt-4"><MatriculasCard dados={censoMatricula} nome={ente.nome} /></div>}{ideb && <div className="mt-4"><IdebPainel dados={ideb} nome={ente.nome} /></div>}{fndeEdu && <div className="mt-4"><FndeEducacaoCard dados={fndeEdu} nome={ente.nome} /></div>}<div className="mt-4"><BaseMetodologica area="educacao" /></div></> });
-  if (educacao) tabs.push({ id: "educacao-cruz", label: "Educação (comparativo)", content: <EducacaoSC data={educacao} /> });
+  if (educacao && educacaoSerie.length) tabs.push({ id: "educacao", label: "Educação", content: <>{(ideb || fndeEdu) && <div className="mb-4"><AnaliseEducacao ideb={ideb} fnde={fndeEdu} censo={censoMatricula} nome={ente.nome} /></div>}<AssuntoEducacao serie={educacaoSerie} edu={educacao} fundebValor={receitasDetalhe?.itens.find((i) => i.item === "FUNDEB")?.valor ?? null} nome={ente.nome} />{censoMatricula && <div className="mt-4"><MatriculasCard dados={censoMatricula} nome={ente.nome} /></div>}{ideb && <div className="mt-4"><IdebPainel dados={ideb} nome={ente.nome} /></div>}{fndeEdu && <div className="mt-4"><FndeEducacaoCard dados={fndeEdu} nome={ente.nome} /></div>}<div className="mt-4"><BaseMetodologica area="educacao" /></div></> });
+  if (educacao) tabs.push({ id: "educacao-cruz", label: "Comparativo", content: <EducacaoSC data={educacao} /> });
   if (rgfResumo) tabs.push({ id: "folha", label: "Folha / Pessoal", content: <FolhaSC rgf={rgfResumo} serie={serie} /> });
   if (rpps) tabs.push({ id: "previdencia", label: "Previdência", content: <><PrevidenciaSC data={rpps} /><div className="mt-4"><BaseMetodologica area="previdencia" /></div></> });
   if (cauc) tabs.push({ id: "cauc", label: "Regularidade (CAUC)", content: <CaucSCView data={cauc} /> });
@@ -718,13 +718,14 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
 
   if (captacao) tabs.push({ id: "captacao", label: "Captação", content: <AssuntoCaptacao dados={captacao} cod={codigo} nome={ente.nome} /> });
 
-  // navegação temática (5 clusters): Resumo · Finanças · Compras · Setores · Análise
+  // navegação temática (6 clusters): Resumo · Finanças · Compras & Contratos · Saúde · Educação · Análise & Controle
   const GRUPOS: [string, string[]][] = [
     ["Resumo", ["placar", "visao", "panorama", "diagnostico"]],
-    ["Finanças", ["financas", "receitas", "captacao", "despesas", "execucao", "folha", "previdencia", "metas", "simulador"]],
-    ["Compras", ["compras", "padroes-compras", "atas", "contratos", "planejamento", "compras-sc"]],
-    ["Setores", ["saude", "previne-ficha", "accountability-aps", "mac", "repasses-saude", "fns-historico", "educacao", "educacao-cruz", "indicadores"]],
-    ["Análise", ["cruzamentos", "iegm", "ranking", "transferencias", "cauc", "auditoria"]],
+    ["Finanças", ["financas", "receitas", "despesas", "execucao", "captacao", "folha", "previdencia", "metas", "simulador"]],
+    ["Compras & Contratos", ["compras", "padroes-compras", "atas", "contratos", "planejamento", "compras-sc"]],
+    ["Saúde", ["saude", "previne-ficha", "mac", "repasses-saude", "fns-historico", "accountability-aps"]],
+    ["Educação", ["educacao", "educacao-cruz", "indicadores"]],
+    ["Análise & Controle", ["cruzamentos", "iegm", "ranking", "transferencias", "cauc", "auditoria"]],
   ];
   const ORDEM = GRUPOS.flatMap(([, ids]) => ids);
   const grupoDe = (id: string) => GRUPOS.find(([, ids]) => ids.includes(id))?.[0];
