@@ -31,8 +31,8 @@ async function main() {
   await db.query(`CREATE TABLE IF NOT EXISTS fnde_simad_sc (cod_ibge TEXT, ano INTEGER, data_pgto DATE, ob TEXT, valor NUMERIC, parcela TEXT, programa TEXT, cnpj_recebedor TEXT, nome_recebedor TEXT, banco TEXT, agencia TEXT, conta TEXT, PRIMARY KEY (cod_ibge, ano, ob, programa, parcela, cnpj_recebedor))`);
   await db.query(`CREATE TABLE IF NOT EXISTS fnde_fundos_check (cod_ibge TEXT PRIMARY KEY, n_fundos INTEGER, n_lib INTEGER)`);
   const q = async (s, p) => { for (let t = 0; t < 8; t++) { try { return await db.query(s, p); } catch { await sleep(1200 * (t + 1)); } } throw new Error("db"); };
-  const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' ${process.env.MUN ? "AND cod_ibge=$1" : ""} ORDER BY cod_ibge`, process.env.MUN ? [process.env.MUN] : [])).rows
-    .map((e) => ({ ibge7: e.cod_ibge, ibge6: String(e.cod_ibge).slice(0, 6) }));
+  const entes = (await db.query(`SELECT e.cod_ibge, coalesce(s.cod_simad, substring(e.cod_ibge,1,6)) cs FROM entes_sc e LEFT JOIN simad_municipio s ON s.cod_ibge=e.cod_ibge WHERE e.tipo='M' ${process.env.MUN ? "AND e.cod_ibge=$1" : ""} ORDER BY e.cod_ibge`, process.env.MUN ? [process.env.MUN] : [])).rows
+    .map((e) => ({ ibge7: e.cod_ibge, ibge6: e.cs }));
   const feitos = new Set((await db.query(`SELECT cod_ibge FROM fnde_fundos_check`)).rows.map((r) => r.cod_ibge));
 
   const browser = await chromium.launch({ headless: true });
