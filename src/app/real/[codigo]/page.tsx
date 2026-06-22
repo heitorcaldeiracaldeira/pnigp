@@ -712,8 +712,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Comparativo", content: <EducacaoSC data={educacao} /> });
   if (rgfResumo) tabs.push({ id: "folha", label: "Folha / Pessoal", content: <FolhaSC rgf={rgfResumo} serie={serie} /> });
   if (rpps) tabs.push({ id: "previdencia", label: "Previdência", content: <>
-    <PrevidenciaSC data={rpps} />
-    <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/40 p-4 text-sm text-slate-700">
+    <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/40 p-4 text-sm text-slate-700">
       <div className="font-semibold text-slate-800">🔖 Certidão de Regularidade Previdenciária (CRP)</div>
       <p className="mt-1">A CRP atesta que o RPPS de {ente.nome} cumpre os critérios da Lei 9.717/1998 — é <b>exigida para receber transferências voluntárias da União e contratar operações de crédito</b>. É emitida semestralmente pelo Ministério da Previdência, com validade própria.</p>
       {cauc && (() => {
@@ -732,6 +731,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       <a href="https://cadprev.previdencia.gov.br/Cadprev/pages/publico/crp/pesquisarEnteCrp.xhtml" target="_blank" rel="noopener noreferrer" className="mt-2 inline-block rounded-lg bg-teal-600 px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-teal-700">Consultar a CRP de {ente.nome} no CADPREV ↗</a>
       <p className="mt-2 text-[11px] text-slate-400">Fonte: CADPREV / Ministério da Previdência Social. (A consulta é pública; busque o ente pela UF/nome.)</p>
     </div>
+    <PrevidenciaSC data={rpps} />
     <div className="mt-4"><BaseMetodologica area="previdencia" /></div>
   </> });
   if (cauc) tabs.push({ id: "cauc", label: "Regularidade (CAUC)", content: <CaucSCView data={cauc} /> });
