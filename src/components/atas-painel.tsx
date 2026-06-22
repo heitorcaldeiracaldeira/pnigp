@@ -1,6 +1,9 @@
 import type { AtasSC } from "@/lib/queries";
 import { fmtBRL, fmtData } from "@/lib/ui";
 
+const CRIT: Record<string, string> = { "Crítico": "border-rose-200 bg-rose-50 text-rose-700", "Alto": "border-orange-200 bg-orange-50 text-orange-700", "Médio": "border-amber-200 bg-amber-50 text-amber-700", "Baixo": "border-teal-200 bg-teal-50 text-teal-700" };
+function nivelDe(dias: number | null) { if (dias == null || dias < 0) return null; return dias <= 30 ? "Crítico" : dias <= 90 ? "Alto" : dias <= 180 ? "Médio" : "Baixo"; }
+
 // Atas de Registro de Preço — visão própria (preço registrado + quantidade máxima; gasto real = empenhos contra a ata).
 export function AtasPainel({ dados, nome }: { dados: AtasSC; nome: string }) {
   if (!dados) return null;
@@ -20,9 +23,22 @@ export function AtasPainel({ dados, nome }: { dados: AtasSC; nome: string }) {
         <Kpi v={dados.canceladas.toLocaleString("pt-BR")} l="canceladas" cor={dados.canceladas > 0 ? "text-rose-600" : undefined} />
       </div>
 
+      <div className="mt-4">
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Criticidade do vencimento (mesma metodologia dos contratos, por prazo)</div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {dados.criticidade.map((c) => (
+            <div key={c.nivel} className={`rounded-xl border p-3 ${CRIT[c.nivel]}`}>
+              <div className="text-2xl font-bold tabular-nums">{c.n}</div>
+              <div className="text-[11px] font-medium">{c.nivel}</div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-1 text-[11px] text-slate-400">Crítico ≤30 dias · Alto ≤90 · Médio ≤180 · Baixo ≤365. (Valor não pondera aqui — a quantidade da ata é teto registrado, não compra efetiva.)</p>
+      </div>
+
       {dados.lista.length > 0 && (
         <div className="mt-4">
-          <h4 className="text-xs font-semibold text-slate-700">Atas recentes — itens e preços registrados</h4>
+          <h4 className="text-xs font-semibold text-slate-700">Atas a vencer (ordenadas por criticidade) — itens e preços registrados</h4>
           <div className="mt-2 space-y-2">
             {dados.lista.map((a, i) => (
               <details key={i} className="rounded-xl border border-slate-200 p-3">
@@ -30,8 +46,7 @@ export function AtasPainel({ dados, nome }: { dados: AtasSC; nome: string }) {
                   <span className="text-sm font-medium text-slate-800"><span className="line-clamp-1 inline">{a.objeto}</span></span>
                   <span className="flex items-center gap-2 text-[11px] text-slate-500">
                     <span className="rounded bg-slate-100 px-1.5 py-0.5">{fmtData(a.vigInicio)} → {fmtData(a.vigFim)}</span>
-                    {a.dias != null && a.dias >= 0 && a.dias <= 90 && <span className="rounded bg-amber-100 px-1.5 py-0.5 font-semibold text-amber-700">vence em {a.dias}d</span>}
-                    {a.dias != null && a.dias < 0 && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-500">vencida</span>}
+                    {(() => { const nv = nivelDe(a.dias); return nv ? <span className={`rounded border px-1.5 py-0.5 font-semibold ${CRIT[nv]}`}>{nv} · {a.dias}d · {a.score}</span> : <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-500">vencida</span>; })()}
                   </span>
                 </summary>
                 {a.fornecedor && <div className="mt-1 text-[11px] text-slate-400">{a.fornecedor}</div>}

@@ -1353,22 +1353,32 @@ export async function getDespesaSubfuncaoSC(cod: string): Promise<DespesaSubfunc
 // Atas de Registro de Preço — visão própria (preço registrado + quantidade máxima; gasto real = empenhos)
 export type AtasSC = {
   total: number; vigentes: number; vencidas: number; canceladas: number; aVencer90: number;
-  lista: { objeto: string; fornecedor: string | null; vigInicio: string | null; vigFim: string | null; dias: number | null; cancelada: boolean; itens: { descricao: string; quantidade: number; preco: number | null; est: number | null }[] }[];
+  criticidade: { nivel: string; n: number }[]; // mesma metodologia dos contratos (por prazo, pois valor = qtd máx registrada)
+  lista: { objeto: string; fornecedor: string | null; vigInicio: string | null; vigFim: string | null; dias: number | null; cancelada: boolean; score: number; itens: { descricao: string; quantidade: number; preco: number | null; est: number | null }[] }[];
 } | null;
+// criticidade por PRAZO (mesma escala/níveis dos contratos): score = 100×(1 − dias/365)
+function critPrazo(dias: number) {
+  const score = Math.max(0, Math.min(100, Math.round((1 - Math.min(dias, 365) / 365) * 100)));
+  const nivel = dias <= 30 ? "Crítico" : dias <= 90 ? "Alto" : dias <= 180 ? "Médio" : "Baixo";
+  return { score, nivel };
+}
 export async function getAtasSC(cod: string): Promise<AtasSC> {
   const rows = await query<Record<string, unknown>>(
     `SELECT numero_controle_compra, objeto, vigencia_inicio, vigencia_fim, cancelado, (vigencia_fim::date - CURRENT_DATE) AS dias, cnpj_orgao, ano_ata
      FROM atas_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
   if (!rows.length) return null;
   let vigentes = 0, vencidas = 0, canceladas = 0, aVencer90 = 0;
+  const cont: Record<string, number> = { "Crítico": 0, "Alto": 0, "Médio": 0, "Baixo": 0 };
   for (const r of rows) {
     if (r.cancelado === true || String(r.cancelado) === "true") { canceladas++; continue; }
     const d = r.dias != null ? num(r.dias) : null;
     if (d == null) continue;
-    if (d < 0) vencidas++; else { vigentes++; if (d <= 90) aVencer90++; }
+    if (d < 0) vencidas++; else { vigentes++; if (d <= 90) aVencer90++; if (d <= 365) cont[critPrazo(d).nivel]++; }
   }
-  // top atas vigentes/recentes (não canceladas), com itens registrados via processo
-  const top = rows.filter((r) => !(r.cancelado === true)).sort((a, b) => String(b.vigencia_fim || "").localeCompare(String(a.vigencia_fim || ""))).slice(0, 12);
+  const criticidade = ["Crítico", "Alto", "Médio", "Baixo"].map((nivel) => ({ nivel, n: cont[nivel] }));
+  // atas a vencer (vigentes), ordenadas por criticidade (menor prazo = mais crítico); com itens registrados
+  const top = rows.filter((r) => !(r.cancelado === true) && r.dias != null && num(r.dias) >= 0)
+    .sort((a, b) => num(a.dias) - num(b.dias)).slice(0, 12);
   const lista: NonNullable<AtasSC>["lista"] = [];
   for (const a of top) {
     const ncc = String(a.numero_controle_compra || "");
@@ -1380,10 +1390,11 @@ export async function getAtasSC(cod: string): Promise<AtasSC> {
       objeto: String(a.objeto || ""), fornecedor: its[0] ? (its[0].fornecedor as string) || null : null,
       vigInicio: (a.vigencia_inicio as string) || null, vigFim: (a.vigencia_fim as string) || null,
       dias: a.dias != null ? num(a.dias) : null, cancelada: a.cancelado === true,
+      score: a.dias != null && num(a.dias) >= 0 ? critPrazo(num(a.dias)).score : 0,
       itens: its.map((i) => ({ descricao: String(i.descricao), quantidade: num(i.quantidade), preco: i.unit_homologado != null ? num(i.unit_homologado) : null, est: i.unit_estimado != null ? num(i.unit_estimado) : null })),
     });
   }
-  return { total: rows.length, vigentes, vencidas, canceladas, aVencer90, lista };
+  return { total: rows.length, vigentes, vencidas, canceladas, aVencer90, criticidade, lista };
 }
 
 // Vigências dos contratos — alerta de vencimento por faixa (gestão de contratos)

@@ -2,6 +2,12 @@ import type { ContratosVencimentoSC, ContratoComItens } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtData } from "@/lib/ui";
 
 const dt = (s: string | Date | null | undefined) => fmtData(s);
+function diasAte(s: string | null) {
+  if (!s) return null;
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return null;
+  const fim = Date.UTC(+m[1], +m[2] - 1, +m[3]); const hoje = new Date(); const h = Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate());
+  return Math.round((fim - h) / 86400000);
+}
 const CORF: Record<string, string> = { critico: "bg-rose-500", m1_2: "bg-orange-400", m2_3: "bg-amber-400", m3_6: "bg-yellow-400", m6_12: "bg-teal-400" };
 
 // Índice de criticidade do vencimento — combina URGÊNCIA do prazo (70%) e MAGNITUDE do valor (30%).
@@ -101,7 +107,8 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
           <h3 className="font-semibold text-slate-800">📦 Itens dos maiores contratos</h3>
           <p className="mb-3 text-xs text-slate-500">Cada linha mostra o <b>valor global do contrato</b> (à direita) e a <b>economia da licitação</b> que o originou (verde) — uma licitação pode gerar vários contratos, então a economia do processo costuma superar um contrato isolado. Os itens vêm do processo vinculado (PNCP): preço estimado → homologado, total, economia, situação e benefício LC 123 (ME/EPP). Clique para expandir.</p>
           <div className="space-y-2">
-            {itens.map((c, i) => {
+            {(() => { const vmaxI = Math.max(1, ...itens.map((c) => c.valor)); return itens.map((c, i) => {
+              const dias = diasAte(c.vigFim); const k = dias != null && dias >= 0 ? criticidade(dias, c.valor, vmaxI) : null;
               const cons = c.itens.filter((it) => it.est != null && it.hom != null && it.est > 0 && it.hom <= it.est);
               const ecoProc = cons.reduce((s, it) => s + (it.est! - it.hom!) * it.quantidade, 0);
               const homProc = cons.reduce((s, it) => s + it.hom! * it.quantidade, 0);
@@ -113,6 +120,7 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
                   <span className="text-sm font-medium text-slate-800"><span className="line-clamp-1 inline">{c.objeto}</span></span>
                   <span className="flex items-center gap-2 text-[11px] text-slate-500">
                     <span className="rounded bg-slate-100 px-1.5 py-0.5">{dt(c.vigInicio)} → {dt(c.vigFim)}</span>
+                    {k && <span className={`rounded border px-1.5 py-0.5 font-semibold ${k.badge}`} title="Criticidade do vencimento (prazo + valor)">{k.nivel} {k.score}{dias != null && dias <= 90 ? ` · ${dias}d` : ""}</span>}
                     {ecoRateada > 0 && <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-700" title={`Economia atribuída a este contrato (rateio da economia da licitação pela participação no valor homologado). Economia total da licitação: ${fmtBRLCompact(ecoProc)}.`}>economia ~{fmtBRLCompact(ecoRateada)}</span>}
                     <span className="font-semibold text-slate-700">{fmtBRLCompact(c.valor)}</span>
                   </span>
@@ -152,7 +160,7 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
                 ) : <div className="mt-2 text-xs text-slate-400">Itens deste processo ainda não coletados (coleta em andamento).</div>}
               </details>
               );
-            })}
+            }); })()}
           </div>
         </section>
       )}
