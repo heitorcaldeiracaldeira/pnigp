@@ -226,24 +226,40 @@ export function AssuntoAtencaoPrimaria({ dados, nome, cod }: { dados: Dados; nom
                 </div>
               </div>
             )}
-            <div className="overflow-x-auto rounded-xl border border-slate-200">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-left text-xs text-slate-500">
-                  <tr className="[&>th]:px-3 [&>th]:py-2 [&>th]:font-medium">
-                    <th>Indicador</th><th className="text-center">Série (quadrimestres)</th><th className="text-right">Último (num/den)</th><th className="text-center">Meta</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {comMeta.map((i) => (
-                    <tr key={i.codigo} className="border-t border-slate-100">
-                      <td className="px-3 py-2 text-slate-700">{i.saber.emoji} {i.saber.curto}</td>
-                      <td className="px-3 py-2 text-center tabular-nums text-slate-600">{i.serie.map((s) => `${fmtComp(s.competencia)}: ${s.pct.toFixed(0)}%`).join("  ·  ")}</td>
-                      <td className="px-3 py-2 text-right tabular-nums text-slate-600">{i.numerador.toLocaleString("pt-BR")} / {i.denominador.toLocaleString("pt-BR")}</td>
-                      <td className="px-3 py-2 text-center tabular-nums text-slate-500">{i.meta}%</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              {comMeta.map((i) => {
+                return (
+                  <div key={i.codigo} className="rounded-xl border border-slate-200 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-sm font-semibold text-slate-800">{i.saber.emoji} {i.saber.curto}</span>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${i.nv === "ok" ? "bg-emerald-100 text-emerald-700" : i.nv === "warn" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>
+                        {i.nv === "ok" ? "✓ Atingiu a meta" : i.nv === "warn" ? "Quase na meta" : "Abaixo da meta"}
+                      </span>
+                    </div>
+                    {/* barra: desempenho atual com marcador da meta */}
+                    <div className="mt-2 flex items-center gap-2">
+                      <div className="relative h-3 flex-1 overflow-hidden rounded-full bg-slate-100">
+                        <div className={`h-3 rounded-full ${BAR[i.nv]}`} style={{ width: `${Math.min(100, i.pct)}%` }} />
+                        <div className="absolute inset-y-0" style={{ left: `${Math.min(100, i.meta)}%` }} title={`meta ${i.meta}%`}><div className="h-3 w-0.5 bg-slate-800" /></div>
+                      </div>
+                      <span className="w-16 shrink-0 text-right text-sm font-bold tabular-nums text-slate-800">{i.pct.toFixed(0)}%<span className="text-[10px] font-normal text-slate-400"> /{i.meta}%</span></span>
+                    </div>
+                    {/* série por quadrimestre com tendência */}
+                    <div className="mt-2 flex flex-wrap items-center gap-1">
+                      {i.serie.map((s, idx) => {
+                        const d = idx > 0 ? s.pct - i.serie[idx - 1].pct : 0;
+                        return (
+                          <span key={s.competencia} className="inline-flex items-center gap-1 rounded bg-slate-50 px-1.5 py-0.5 text-[11px] tabular-nums text-slate-600">
+                            <span className="text-slate-400">{fmtComp(s.competencia)}</span> {s.pct.toFixed(0)}%
+                            {idx > 0 && <b className={d >= 0 ? "text-emerald-600" : "text-rose-500"}>{d >= 0 ? "▲" : "▼"}{Math.abs(d).toFixed(0)}</b>}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-1.5 text-[11px] text-slate-500"><b className="tabular-nums text-slate-700">{i.numerador.toLocaleString("pt-BR")}</b> de {i.denominador.toLocaleString("pt-BR")} {UNIDADE[i.codigo] || "registros"}</div>
+                  </div>
+                );
+              })}
             </div>
             <p className="text-[11px] text-slate-500">Fonte: SISAB / Previne Brasil (Min. Saúde). Cálculo: numerador ÷ denominador, conforme a metodologia oficial de cada indicador. Competência: {dados.competenciaUlt}.</p>
           </div>
