@@ -1756,7 +1756,7 @@ export type EscolasSC = {
   ano: number; total: number; matriculas: number; docentes: number; profissionais: number;
   alunoPorDocente: number | null; alunoPorProf: number | null; infraMedia: number;
   lacunas: { semInternet: number; semBiblioteca: number; semQuadra: number; semEsgoto: number; semAcessibilidade: number };
-  lista: { nome: string; matriculas: number; docentes: number; profissionais: number; alunoPorDoc: number | null; infraScore: number; zona: number; lat: number | null; lon: number | null; bairro: string; infra: { agua: boolean; energia: boolean; esgoto: boolean; internet: boolean; biblioteca: boolean; labInfo: boolean; quadra: boolean; refeitorio: boolean; acessibilidade: boolean } }[];
+  lista: { nome: string; matriculas: number; docentes: number; profissionais: number; turmas: number; alunoPorTurma: number | null; etapas: { etapa: string; n: number }[]; especial: number; alunoPorDoc: number | null; infraScore: number; zona: number; lat: number | null; lon: number | null; bairro: string; infra: { agua: boolean; energia: boolean; esgoto: boolean; internet: boolean; biblioteca: boolean; labInfo: boolean; quadra: boolean; refeitorio: boolean; acessibilidade: boolean } }[];
 } | null;
 // Índice de Infraestrutura (0–100): essenciais pesam 2, complementares 1.
 const _infraScore = (i: { agua: boolean; energia: boolean; esgoto: boolean; internet: boolean; biblioteca: boolean; labInfo: boolean; quadra: boolean; refeitorio: boolean; acessibilidade: boolean }) => {
@@ -1765,15 +1765,21 @@ const _infraScore = (i: { agua: boolean; energia: boolean; esgoto: boolean; inte
   return Math.round((W.reduce((s, [v, w]) => s + (v ? w : 0), 0) / tot) * 100);
 };
 export async function getEscolasSC(cod: string): Promise<EscolasSC> {
-  const rows = await query<Record<string, unknown>>(`SELECT nome, coalesce(matriculas,0) matriculas, coalesce(docentes,0) docentes, coalesce(profissionais,0) profissionais, localizacao, latitude, longitude, bairro, ano, tem_agua, tem_energia, tem_esgoto, tem_internet, tem_biblioteca, tem_lab_info, tem_quadra, tem_refeitorio, tem_acessibilidade FROM escolas_sc WHERE cod_ibge=$1 AND dependencia=3 ORDER BY matriculas DESC NULLS LAST`, [cod]).catch(() => []);
+  const rows = await query<Record<string, unknown>>(`SELECT s.nome, coalesce(s.matriculas,0) matriculas, coalesce(s.docentes,0) docentes, coalesce(s.profissionais,0) profissionais, coalesce(s.n_turmas,0) n_turmas, s.localizacao, s.latitude, s.longitude, s.bairro, s.ano, s.tem_agua, s.tem_energia, s.tem_esgoto, s.tem_internet, s.tem_biblioteca, s.tem_lab_info, s.tem_quadra, s.tem_refeitorio, s.tem_acessibilidade, h.modalidade FROM escolas_sc s LEFT JOIN escolas_hist_sc h ON h.co_entidade=s.co_entidade AND h.ano=2025 WHERE s.cod_ibge=$1 AND s.dependencia=3 ORDER BY s.matriculas DESC NULLS LAST`, [cod]).catch(() => []);
   if (!rows.length) return null;
   const b = (v: unknown) => v === true;
   const matriculas = rows.reduce((s, r) => s + num(r.matriculas), 0);
   const docentes = rows.reduce((s, r) => s + num(r.docentes), 0);
   const profissionais = rows.reduce((s, r) => s + num(r.profissionais), 0);
+  // etapas REGULARES somam ao total de matrículas; "educação especial" é recorte sobreposto (inclusão) → separado, não somar.
+  const ETAPA_LABEL: Record<string, string> = { creche: "Creche", pre: "Pré-escola", fund_ai: "Fundamental — anos iniciais", fund_af: "Fundamental — anos finais", medio: "Ensino Médio", eja: "EJA", prof: "Profissional" };
+  const ETAPA_ORD = ["creche", "pre", "fund_ai", "fund_af", "medio", "eja", "prof"];
   const lista = rows.map((r) => {
     const infra = { agua: b(r.tem_agua), energia: b(r.tem_energia), esgoto: b(r.tem_esgoto), internet: b(r.tem_internet), biblioteca: b(r.tem_biblioteca), labInfo: b(r.tem_lab_info), quadra: b(r.tem_quadra), refeitorio: b(r.tem_refeitorio), acessibilidade: b(r.tem_acessibilidade) };
-    return { nome: String(r.nome || ""), matriculas: num(r.matriculas), docentes: num(r.docentes), profissionais: num(r.profissionais), alunoPorDoc: num(r.docentes) > 0 ? Math.round((num(r.matriculas) / num(r.docentes)) * 10) / 10 : null, infraScore: _infraScore(infra), zona: num(r.localizacao), lat: r.latitude != null ? num(r.latitude) : null, lon: r.longitude != null ? num(r.longitude) : null, bairro: String(r.bairro || ""), infra };
+    const mod = (r.modalidade && typeof r.modalidade === "object" ? r.modalidade : {}) as Record<string, number>;
+    const etapas = ETAPA_ORD.filter((k) => num(mod[k]) > 0).map((k) => ({ etapa: ETAPA_LABEL[k], n: num(mod[k]) }));
+    const turmas = num(r.n_turmas);
+    return { nome: String(r.nome || ""), matriculas: num(r.matriculas), docentes: num(r.docentes), profissionais: num(r.profissionais), turmas, alunoPorTurma: turmas > 0 ? Math.round((num(r.matriculas) / turmas) * 10) / 10 : null, etapas, especial: num(mod.especial), alunoPorDoc: num(r.docentes) > 0 ? Math.round((num(r.matriculas) / num(r.docentes)) * 10) / 10 : null, infraScore: _infraScore(infra), zona: num(r.localizacao), lat: r.latitude != null ? num(r.latitude) : null, lon: r.longitude != null ? num(r.longitude) : null, bairro: String(r.bairro || ""), infra };
   });
   return {
     ano: num(rows[0].ano), total: rows.length, matriculas, docentes, profissionais,
