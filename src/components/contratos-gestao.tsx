@@ -23,7 +23,7 @@ function criticidade(dias: number, valor: number, valorMax: number) {
   return { nivel: "Baixo", score, badge: "bg-teal-100 text-teal-700", bar: "bg-teal-400" };
 }
 
-export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosVencimentoSC; itens?: ContratoComItens[] }) {
+export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosVencimentoSC | null; itens?: ContratoComItens[] | null }) {
   const maxF = vencimento ? Math.max(1, ...vencimento.faixas.map((f) => f.n)) : 1;
   return (
     <>
