@@ -23,8 +23,11 @@ export function EscolasDrill({ dados, nome }: { dados: EscolasSC; nome: string }
       </div>
       <p className="text-sm text-slate-500">{dados.total} escolas municipais em {nome} · {dados.matriculas.toLocaleString("pt-BR")} matrículas. Quadro de pessoal, relação aluno/professor e infraestrutura — para estudar atendimento e distribuição.</p>
 
-      {/* quadro de pessoal / distribuição */}
-      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {/* índice de infraestrutura + quadro de pessoal */}
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {(() => { const m = dados.infraMedia; const cls = m >= 75 ? "border-emerald-200 bg-emerald-50/60 text-emerald-700" : m >= 50 ? "border-amber-200 bg-amber-50/60 text-amber-700" : "border-rose-200 bg-rose-50/60 text-rose-700"; return (
+          <div className={`rounded-xl border p-3 ${cls}`}><div className="text-xl font-bold tabular-nums">{m}<span className="text-sm">/100</span></div><div className="text-[11px] text-slate-600">índice de infraestrutura (média)</div></div>
+        ); })()}
         <div className="rounded-xl border border-slate-200 p-3"><div className="text-xl font-bold tabular-nums text-slate-800">{dados.docentes.toLocaleString("pt-BR")}</div><div className="text-[11px] text-slate-600">docentes (professores)</div></div>
         <div className="rounded-xl border border-slate-200 p-3"><div className="text-xl font-bold tabular-nums text-slate-800">{dados.profissionais.toLocaleString("pt-BR")}</div><div className="text-[11px] text-slate-600">profissionais de apoio</div></div>
         <div className="rounded-xl border border-teal-200 bg-teal-50/50 p-3"><div className="text-xl font-bold tabular-nums text-teal-700">{media ?? "—"}</div><div className="text-[11px] text-slate-600">alunos por professor (média)</div></div>
@@ -49,7 +52,10 @@ export function EscolasDrill({ dados, nome }: { dados: EscolasSC; nome: string }
           <div key={i} className="border-b border-slate-50 p-2.5 last:border-0">
             <div className="flex flex-wrap items-baseline justify-between gap-1">
               <span className="text-[13px] font-medium text-slate-800">{e.nome}{e.bairro ? <span className="font-normal text-slate-400"> · {e.bairro}</span> : null}</span>
-              {e.lat != null && e.lon != null && <a href={mapa(e.lat, e.lon)} target="_blank" rel="noopener noreferrer" className="shrink-0 text-[11px] font-medium text-teal-600 hover:underline">📍 mapa</a>}
+              <span className="flex shrink-0 items-center gap-2">
+                <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${e.infraScore >= 75 ? "bg-emerald-100 text-emerald-700" : e.infraScore >= 50 ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>infra {e.infraScore}</span>
+                {e.lat != null && e.lon != null && <a href={mapa(e.lat, e.lon)} target="_blank" rel="noopener noreferrer" className="text-[11px] font-medium text-teal-600 hover:underline">📍 mapa</a>}
+              </span>
             </div>
             <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
               <span>{e.matriculas.toLocaleString("pt-BR")} alunos</span>

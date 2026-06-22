@@ -1659,10 +1659,16 @@ export async function getPadroesComprasSC(cod: string): Promise<PadroesComprasSC
 // Escolas do município (INEP Censo) — drill escola a escola: matrículas + infraestrutura + lacunas. Rede municipal.
 export type EscolasSC = {
   ano: number; total: number; matriculas: number; docentes: number; profissionais: number;
-  alunoPorDocente: number | null; alunoPorProf: number | null;
+  alunoPorDocente: number | null; alunoPorProf: number | null; infraMedia: number;
   lacunas: { semInternet: number; semBiblioteca: number; semQuadra: number; semEsgoto: number; semAcessibilidade: number };
-  lista: { nome: string; matriculas: number; docentes: number; profissionais: number; alunoPorDoc: number | null; zona: number; lat: number | null; lon: number | null; bairro: string; infra: { agua: boolean; energia: boolean; esgoto: boolean; internet: boolean; biblioteca: boolean; labInfo: boolean; quadra: boolean; refeitorio: boolean; acessibilidade: boolean } }[];
+  lista: { nome: string; matriculas: number; docentes: number; profissionais: number; alunoPorDoc: number | null; infraScore: number; zona: number; lat: number | null; lon: number | null; bairro: string; infra: { agua: boolean; energia: boolean; esgoto: boolean; internet: boolean; biblioteca: boolean; labInfo: boolean; quadra: boolean; refeitorio: boolean; acessibilidade: boolean } }[];
 } | null;
+// Índice de Infraestrutura (0–100): essenciais pesam 2, complementares 1.
+const _infraScore = (i: { agua: boolean; energia: boolean; esgoto: boolean; internet: boolean; biblioteca: boolean; labInfo: boolean; quadra: boolean; refeitorio: boolean; acessibilidade: boolean }) => {
+  const W: [boolean, number][] = [[i.agua, 2], [i.energia, 2], [i.esgoto, 2], [i.acessibilidade, 2], [i.internet, 2], [i.biblioteca, 1], [i.quadra, 1], [i.labInfo, 1], [i.refeitorio, 1]];
+  const tot = W.reduce((s, [, w]) => s + w, 0);
+  return Math.round((W.reduce((s, [v, w]) => s + (v ? w : 0), 0) / tot) * 100);
+};
 export async function getEscolasSC(cod: string): Promise<EscolasSC> {
   const rows = await query<Record<string, unknown>>(`SELECT nome, coalesce(matriculas,0) matriculas, coalesce(docentes,0) docentes, coalesce(profissionais,0) profissionais, localizacao, latitude, longitude, bairro, ano, tem_agua, tem_energia, tem_esgoto, tem_internet, tem_biblioteca, tem_lab_info, tem_quadra, tem_refeitorio, tem_acessibilidade FROM escolas_sc WHERE cod_ibge=$1 AND dependencia=3 ORDER BY matriculas DESC NULLS LAST`, [cod]).catch(() => []);
   if (!rows.length) return null;
@@ -1670,16 +1676,21 @@ export async function getEscolasSC(cod: string): Promise<EscolasSC> {
   const matriculas = rows.reduce((s, r) => s + num(r.matriculas), 0);
   const docentes = rows.reduce((s, r) => s + num(r.docentes), 0);
   const profissionais = rows.reduce((s, r) => s + num(r.profissionais), 0);
+  const lista = rows.map((r) => {
+    const infra = { agua: b(r.tem_agua), energia: b(r.tem_energia), esgoto: b(r.tem_esgoto), internet: b(r.tem_internet), biblioteca: b(r.tem_biblioteca), labInfo: b(r.tem_lab_info), quadra: b(r.tem_quadra), refeitorio: b(r.tem_refeitorio), acessibilidade: b(r.tem_acessibilidade) };
+    return { nome: String(r.nome || ""), matriculas: num(r.matriculas), docentes: num(r.docentes), profissionais: num(r.profissionais), alunoPorDoc: num(r.docentes) > 0 ? Math.round((num(r.matriculas) / num(r.docentes)) * 10) / 10 : null, infraScore: _infraScore(infra), zona: num(r.localizacao), lat: r.latitude != null ? num(r.latitude) : null, lon: r.longitude != null ? num(r.longitude) : null, bairro: String(r.bairro || ""), infra };
+  });
   return {
     ano: num(rows[0].ano), total: rows.length, matriculas, docentes, profissionais,
     alunoPorDocente: docentes > 0 ? Math.round((matriculas / docentes) * 10) / 10 : null,
     alunoPorProf: profissionais > 0 ? Math.round((matriculas / profissionais) * 10) / 10 : null,
+    infraMedia: lista.length ? Math.round(lista.reduce((s, e) => s + e.infraScore, 0) / lista.length) : 0,
     lacunas: {
       semInternet: rows.filter((r) => !b(r.tem_internet)).length, semBiblioteca: rows.filter((r) => !b(r.tem_biblioteca)).length,
       semQuadra: rows.filter((r) => !b(r.tem_quadra)).length, semEsgoto: rows.filter((r) => !b(r.tem_esgoto)).length,
       semAcessibilidade: rows.filter((r) => !b(r.tem_acessibilidade)).length,
     },
-    lista: rows.map((r) => ({ nome: String(r.nome || ""), matriculas: num(r.matriculas), docentes: num(r.docentes), profissionais: num(r.profissionais), alunoPorDoc: num(r.docentes) > 0 ? Math.round((num(r.matriculas) / num(r.docentes)) * 10) / 10 : null, zona: num(r.localizacao), lat: r.latitude != null ? num(r.latitude) : null, lon: r.longitude != null ? num(r.longitude) : null, bairro: String(r.bairro || ""), infra: { agua: b(r.tem_agua), energia: b(r.tem_energia), esgoto: b(r.tem_esgoto), internet: b(r.tem_internet), biblioteca: b(r.tem_biblioteca), labInfo: b(r.tem_lab_info), quadra: b(r.tem_quadra), refeitorio: b(r.tem_refeitorio), acessibilidade: b(r.tem_acessibilidade) } })),
+    lista,
   };
 }
 
