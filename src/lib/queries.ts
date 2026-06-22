@@ -1384,6 +1384,19 @@ export async function getContratosVencimentoSC(cod: string): Promise<ContratosVe
   return { faixas, aVencer: aVencer.slice(0, 60), nCriticos, vencidos, totalAtivos };
 }
 
+// Censo Escolar — matrículas por etapa (produção da cadeia educação) (INEP Sinopse)
+export type CensoMatriculaSC = { ano: number; total: number; etapas: { etapa: string; matriculas: number }[] } | null;
+export async function getCensoMatriculaSC(cod: string): Promise<CensoMatriculaSC> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, etapa, matriculas FROM censo_matricula_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const ano = Math.max(...rows.map((r) => num(r.ano)));
+  const doAno = rows.filter((r) => num(r.ano) === ano);
+  const total = num(doAno.find((r) => String(r.etapa) === "Total")?.matriculas);
+  const ORDEM = ["Educação Infantil", "Creche", "Pré-Escola", "Ensino Fundamental", "Anos Iniciais", "Anos Finais", "Ensino Médio", "Educação Profissional", "EJA", "Educação Especial"];
+  const etapas = ORDEM.map((e) => { const r = doAno.find((x) => String(x.etapa) === e); return r ? { etapa: e, matriculas: num(r.matriculas) } : null; }).filter(Boolean) as { etapa: string; matriculas: number }[];
+  return { ano, total, etapas };
+}
+
 // IDEB por etapa (Anos Iniciais/Finais/EM) — observado × meta + série histórica (INEP)
 export type IdebSC = { etapas: { etapa: string; label: string; rede: string; atual: { ano: number; ideb: number; meta: number | null } | null; serie: { ano: number; ideb: number; meta: number | null }[]; cumpriu: boolean | null }[] } | null;
 export async function getIdebSC(cod: string): Promise<IdebSC> {
