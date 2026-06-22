@@ -48,19 +48,29 @@ export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: 
         <p className="text-[11px] text-slate-400">Índice de criticidade por urgência da janela: Crítico ≤15 dias · Alto ≤45 · Médio ≤120 · Baixo &gt;120. Quanto menos dias, mais urgente agir.</p>
         {dados.abertos.length > 0 ? (
           <div className="mt-2 space-y-1.5">
-            {dados.abertos.map((o) => (
-              <div key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 p-3">
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium text-slate-800"><span className="line-clamp-1">{o.nome}</span></div>
-                  <div className="text-[11px] text-slate-500">{o.orgao}</div>
+            {dados.abertos.map((o) => {
+              const k = o.dias != null ? critPrazo(o.dias) : null;
+              return (
+              <div key={o.id} className="rounded-xl border border-slate-200 p-3.5">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-slate-900">{o.nome}</div>
+                    {o.objetivo && <p className="mt-0.5 line-clamp-2 text-[12px] text-slate-600">{o.objetivo}</p>}
+                  </div>
+                  {k && <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${k.cls}`} title={`Janela fecha em ${o.dias} dias`}>{k.nivel}</span>}
                 </div>
-                <div className="flex items-center gap-2">
-                  {o.dias != null && (() => { const k = critPrazo(o.dias); return <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${k.cls}`} title={`Janela fecha em ${o.dias} dias`}>{k.nivel} · {o.dias}d · até {dt(o.dtFim)}</span>; })()}
-                  <a href={docLink(o.id)} className="rounded-lg bg-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-teal-700">Gerar Plano de Trabalho ↓</a>
-                  <a href="https://discricionarias.transferegov.sistema.gov.br/" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-teal-600 px-2.5 py-1 text-[11px] font-semibold text-teal-700 hover:bg-teal-50">Abrir no Transferegov ↗</a>
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px]">
+                  <span className="text-slate-500">🏛️ <span className="text-slate-700">{o.orgao}</span></span>
+                  {o.valor > 0 && <span className="text-slate-500">💰 até <b className="text-emerald-700">{fmtBRLCompact(o.valor)}</b> disponíveis</span>}
+                  <span className={o.dias != null && o.dias <= 15 ? "font-semibold text-rose-700" : "text-slate-500"}>⏰ inscrições até <b>{dt(o.dtFim)}</b>{o.dias != null && ` — restam ${o.dias} dia${o.dias === 1 ? "" : "s"}`}</span>
+                </div>
+                <div className="mt-2.5 flex flex-wrap gap-2 border-t border-slate-100 pt-2.5">
+                  <a href={docLink(o.id)} className="rounded-lg bg-teal-600 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-teal-700">📄 Gerar Plano de Trabalho (.docx)</a>
+                  <a href="https://discricionarias.transferegov.sistema.gov.br/" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-teal-600 px-3 py-1.5 text-[12px] font-semibold text-teal-700 hover:bg-teal-50">Abrir no Transferegov ↗</a>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p className="mt-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-500">Sem janela aberta neste momento nos programas monitorados. O monitoramento é contínuo — quando abrir um programa, ele aparece aqui (e poderá disparar alerta).</p>

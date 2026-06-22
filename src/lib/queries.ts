@@ -1438,7 +1438,7 @@ export type CaptacaoSC = {
   porOrgao: { orgao: string; valor: number; n: number }[];
   porAno: { ano: number; valor: number }[];
   lista: { nome: string; orgao: string; valor: number; situacao: string }[];
-  abertos: { id: string; nome: string; orgao: string; dtFim: string | null; dias: number | null }[];
+  abertos: { id: string; nome: string; orgao: string; objetivo: string; valor: number; modalidade: string; dtFim: string | null; dias: number | null }[];
   benchmark: { media: number; max: number; melhores: { nome: string; valor: number }[] };
   universo: { nProgramas: number; nAbertos: number; totalSC: number; nMunicipios: number };
 } | null;
@@ -1448,7 +1448,7 @@ export async function getCaptacaoTransferegovSC(cod: string): Promise<CaptacaoSC
     query<Record<string, unknown>>(`SELECT orgao_repassador o, count(*) n, coalesce(sum(valor_total_repasse),0) v FROM captacao_transferegov_sc WHERE cod_ibge=$1 GROUP BY 1 ORDER BY v DESC NULLS LAST LIMIT 8`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT extract(year from dt_inicio)::int ano, coalesce(sum(valor_total_repasse),0) v FROM captacao_transferegov_sc WHERE cod_ibge=$1 AND dt_inicio IS NOT NULL GROUP BY 1 ORDER BY 1`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT c.valor_total_repasse v, c.situacao s, c.orgao_repassador o, p.nome FROM captacao_transferegov_sc c LEFT JOIN programas_transferegov p ON p.id_programa=c.id_programa WHERE c.cod_ibge=$1 ORDER BY v DESC NULLS LAST LIMIT 15`, [cod]).catch(() => []),
-    query<Record<string, unknown>>(`SELECT id_programa id, nome, orgao, to_char(dt_fim_vol,'YYYY-MM-DD') dt_fim_vol, (dt_fim_vol - CURRENT_DATE) dias FROM programas_transferegov WHERE dt_fim_vol >= CURRENT_DATE ORDER BY dt_fim_vol LIMIT 20`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT id_programa id, nome, orgao, objetivo, modalidade, coalesce(valor_global,0) valor, to_char(dt_fim_vol,'YYYY-MM-DD') dt_fim_vol, (dt_fim_vol - CURRENT_DATE) dias FROM programas_transferegov WHERE dt_fim_vol >= CURRENT_DATE ORDER BY dt_fim_vol LIMIT 20`).catch(() => []),
     query<Record<string, unknown>>(`SELECT coalesce(avg(t),0) media, coalesce(max(t),0) maxv FROM (SELECT cod_ibge, sum(valor_total_repasse) t FROM captacao_transferegov_sc GROUP BY cod_ibge) s`).catch(() => []),
     query<Record<string, unknown>>(`SELECT e.nome, sum(c.valor_total_repasse) v FROM captacao_transferegov_sc c JOIN entes_sc e ON e.cod_ibge=c.cod_ibge GROUP BY e.nome ORDER BY v DESC NULLS LAST LIMIT 5`).catch(() => []),
     query<Record<string, unknown>>(`SELECT (SELECT count(*) FROM programas_transferegov) np, (SELECT count(*) FROM programas_transferegov WHERE dt_fim_vol >= CURRENT_DATE) na, (SELECT coalesce(sum(valor_total_repasse),0) FROM captacao_transferegov_sc) tsc, (SELECT count(distinct cod_ibge) FROM captacao_transferegov_sc) nm`).catch(() => []),
@@ -1460,7 +1460,7 @@ export async function getCaptacaoTransferegovSC(cod: string): Promise<CaptacaoSC
     porOrgao: porOrgao.map((r) => ({ orgao: String(r.o || "—"), valor: num(r.v), n: num(r.n) })),
     porAno: porAno.map((r) => ({ ano: num(r.ano), valor: num(r.v) })),
     lista: lista.map((r) => ({ nome: String(r.nome || r.o || "Programa"), orgao: String(r.o || ""), valor: num(r.v), situacao: String(r.s || "") })),
-    abertos: abertos.map((r) => ({ id: String(r.id), nome: String(r.nome || ""), orgao: String(r.orgao || ""), dtFim: (r.dt_fim_vol as string) || null, dias: r.dias != null ? num(r.dias) : null })),
+    abertos: abertos.map((r) => ({ id: String(r.id), nome: String(r.nome || ""), orgao: String(r.orgao || ""), objetivo: String(r.objetivo || ""), valor: num(r.valor), modalidade: String(r.modalidade || ""), dtFim: (r.dt_fim_vol as string) || null, dias: r.dias != null ? num(r.dias) : null })),
     benchmark: { media: num(bench[0]?.media), max: num(bench[0]?.maxv), melhores: melhores.map((r) => ({ nome: String(r.nome), valor: num(r.v) })) },
     universo: { nProgramas: num(uni[0]?.np), nAbertos: num(uni[0]?.na), totalSC: num(uni[0]?.tsc), nMunicipios: num(uni[0]?.nm) },
   };
