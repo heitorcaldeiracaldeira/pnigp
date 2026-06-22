@@ -1431,6 +1431,28 @@ export async function getContratosVencimentoSC(cod: string): Promise<ContratosVe
   return { faixas, aVencer: aVencer.slice(0, 60), nCriticos, vencidos, totalAtivos };
 }
 
+// Radar de Captação — programas que o município PODE captar (elegibilidade SICONV) + janela de proposta
+export type RadarCaptacaoSC = {
+  total: number; abertos: number;
+  porOrgao: { orgao: string; n: number }[];
+  oportunidades: { nome: string; orgao: string; modalidade: string; dtFim: string | null; dias: number | null }[];
+} | null;
+export async function getRadarCaptacaoSC(cod: string): Promise<RadarCaptacaoSC> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT nome_programa, orgao, modalidade, dt_fim_prop, (dt_fim_prop - CURRENT_DATE) AS dias
+     FROM radar_captacao_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const total = rows.length;
+  const abertasRows = rows.filter((r) => r.dias != null && num(r.dias) >= 0);
+  const orgMap = new Map<string, number>();
+  for (const r of rows) { const o = String(r.orgao || "—"); orgMap.set(o, (orgMap.get(o) || 0) + 1); }
+  const porOrgao = [...orgMap.entries()].map(([orgao, n]) => ({ orgao, n })).sort((a, b) => b.n - a.n).slice(0, 8);
+  const oportunidades = abertasRows
+    .map((r) => ({ nome: String(r.nome_programa || ""), orgao: String(r.orgao || ""), modalidade: String(r.modalidade || ""), dtFim: (r.dt_fim_prop as string) || null, dias: r.dias != null ? num(r.dias) : null }))
+    .sort((a, b) => (a.dias ?? 1e9) - (b.dias ?? 1e9)).slice(0, 30);
+  return { total, abertos: abertasRows.length, porOrgao, oportunidades };
+}
+
 // Censo Escolar — matrículas por etapa (produção da cadeia educação) (INEP Sinopse)
 export type CensoMatriculaSC = { ano: number; total: number; etapas: { etapa: string; matriculas: number }[] } | null;
 export async function getCensoMatriculaSC(cod: string): Promise<CensoMatriculaSC> {
