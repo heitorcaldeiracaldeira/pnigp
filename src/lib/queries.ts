@@ -1656,6 +1656,42 @@ export async function getPadroesComprasSC(cod: string): Promise<PadroesComprasSC
 }
 
 // Receitas detalhadas por item nominal (ICMS, FPM, IPTU, ISS, IPVA, ITR, FUNDEB) — série anual
+// Otimizador de Receitas Próprias — IPTU/ISS/ITBI per capita vs pares de mesmo porte → potencial de arrecadação (R$)
+export type OtimizadorReceitaSC = {
+  ano: number; pop: number; nPares: number; potencialTotal: number;
+  tributos: { tributo: string; valor: number; pc: number; medianaPc: number; potencial: number; abaixo: boolean; posicaoPct: number; acao: string }[];
+} | null;
+export async function getOtimizadorReceitaSC(cod: string): Promise<OtimizadorReceitaSC> {
+  const ente = (await query<Record<string, unknown>>(`SELECT populacao FROM entes_sc WHERE cod_ibge=$1 AND tipo='M'`, [cod]).catch(() => []))[0];
+  const pop = num(ente?.populacao);
+  if (!pop) return null;
+  const ano = num((await query<Record<string, unknown>>(`SELECT max(ano) m FROM receitas_detalhe_sc WHERE cod_ibge=$1 AND item IN ('IPTU','ISS','ITBI')`, [cod]).catch(() => []))[0]?.m);
+  if (!ano) return null;
+  const all = await query<Record<string, unknown>>(`SELECT r.cod_ibge, r.item, r.valor, e.populacao FROM receitas_detalhe_sc r JOIN entes_sc e ON e.cod_ibge=r.cod_ibge AND e.tipo='M' WHERE r.ano=$1 AND r.item IN ('IPTU','ISS','ITBI') AND e.populacao>0`, [ano]).catch(() => []);
+  const faixa = _fk(pop);
+  const ACAO: Record<string, string> = {
+    IPTU: "Atualizar a Planta Genérica de Valores + recadastramento imobiliário (georreferenciamento) — a maior alavanca do IPTU.",
+    ISS: "Nota fiscal de serviços eletrônica + fiscalização e cadastro de prestadores (construção civil, saúde, profissionais liberais).",
+    ITBI: "Atualizar o valor venal de referência e integrar com cartórios para coibir subavaliação na transmissão.",
+  };
+  const NOME: Record<string, string> = { IPTU: "IPTU (imóveis)", ISS: "ISS (serviços)", ITBI: "ITBI (transmissão de imóveis)" };
+  const tributos: NonNullable<OtimizadorReceitaSC>["tributos"] = [];
+  let potencialTotal = 0, nPares = 0;
+  for (const t of ["IPTU", "ISS", "ITBI"]) {
+    const meu = all.find((r) => String(r.cod_ibge) === cod && String(r.item) === t);
+    const valor = meu ? num(meu.valor) : 0;
+    const pc = valor / pop;
+    const paresPc = all.filter((r) => String(r.item) === t && _fk(num(r.populacao)) === faixa).map((r) => num(r.valor) / num(r.populacao)).filter((v) => v > 0).sort((a, b) => a - b);
+    nPares = paresPc.length;
+    const medianaPc = paresPc.length ? paresPc[Math.floor(paresPc.length / 2)] : 0;
+    const potencial = Math.max(0, medianaPc - pc) * pop;
+    const abaixoN = paresPc.filter((v) => v < pc).length;
+    potencialTotal += potencial;
+    tributos.push({ tributo: NOME[t], valor, pc, medianaPc, potencial, abaixo: pc < medianaPc, posicaoPct: paresPc.length ? Math.round((abaixoN / paresPc.length) * 100) : 0, acao: ACAO[t] });
+  }
+  return { ano, pop, nPares, potencialTotal, tributos };
+}
+
 export type ReceitasDetalheSC = { anoUlt: number; itens: { item: string; valor: number; serie: { ano: number; valor: number }[] }[] } | null;
 export async function getReceitasDetalheSC(cod: string): Promise<ReceitasDetalheSC> {
   const rows = await query<Record<string, unknown>>(`SELECT ano, item, valor FROM receitas_detalhe_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
