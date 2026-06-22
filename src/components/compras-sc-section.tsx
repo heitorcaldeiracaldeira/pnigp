@@ -263,39 +263,57 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
       ) : !itens || itens.length === 0 ? (
         <p className="text-xs text-slate-500">Sem itens detalhados disponíveis no PNCP para este processo.</p>
       ) : (
+        (() => {
+          const totEstim = itens.reduce((s, it) => s + it.unitEstimado * it.quantidade, 0);
+          const totReal = itens.reduce((s, it) => s + (it.unitHomologado ?? it.unitEstimado) * it.quantidade, 0);
+          const totEcon = itens.reduce((s, it) => s + (it.unitHomologado != null ? (it.unitEstimado - it.unitHomologado) * it.quantidade : 0), 0);
+          const pctEcon = totEstim > 0 ? (totEcon / totEstim) * 100 : 0;
+          return (
         <>
-          <div className="mb-1 text-xs font-semibold text-slate-600">Itens do processo licitatório</div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+          <div className="mb-1 flex items-center justify-between"><div className="text-xs font-semibold text-slate-600">Itens do processo licitatório</div><span className="text-[11px] text-slate-500">{itens.length} itens</span></div>
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+        <table className="w-full min-w-[640px] text-xs">
           <thead>
-            <tr className="text-left text-slate-500">
-              <th className="p-1 font-medium">Item</th>
-              <th className="p-1 text-right font-medium">Qtd</th>
-              <th className="p-1 text-right font-medium">Unit. estimado</th>
-              <th className="p-1 text-right font-medium">Unit. homologado</th>
-              <th className="hidden p-1 font-medium md:table-cell">Fornecedor vencedor</th>
-              <th className="p-1 text-right font-medium">Economia</th>
+            <tr className="border-b border-slate-200 text-slate-500">
+              <th rowSpan={2} className="p-2 text-left align-bottom font-medium">Item</th>
+              <th rowSpan={2} className="hidden p-2 text-left align-bottom font-medium md:table-cell">Fornecedor vencedor</th>
+              <th rowSpan={2} className="p-2 text-right align-bottom font-medium">Qtd.</th>
+              <th colSpan={2} className="border-l border-slate-200 p-2 text-center font-medium">Valor unitário (R$)</th>
+              <th rowSpan={2} className="border-l border-slate-200 p-2 text-right align-bottom font-medium">Valor total</th>
+              <th rowSpan={2} className="border-l border-slate-200 p-2 text-right align-bottom font-medium">Economia</th>
+            </tr>
+            <tr className="border-b border-slate-200 text-[11px] text-slate-500">
+              <th className="border-l border-slate-200 p-2 text-right font-medium">Estimado</th>
+              <th className="p-2 text-right font-medium">Homologado</th>
             </tr>
           </thead>
           <tbody>
             {itens.map((it) => (
-              <tr key={it.numero} className="border-t border-slate-100 align-top">
-                <td className="p-1 text-slate-700">
-                  <span className="line-clamp-2">{it.descricao}</span>
+              <tr key={it.numero} className="border-b border-slate-50 align-top last:border-0">
+                <td className="p-2 text-slate-700">
+                  <span className="line-clamp-2">{it.descricao} <span className="text-slate-400">({it.unidade})</span></span>
                   {it.beneficioLC && <span className="mt-0.5 inline-block rounded bg-teal-100 px-1 py-0.5 text-[10px] font-semibold text-teal-700">LC 123: {it.beneficioLC}</span>}
                 </td>
-                <td className="p-1 text-right tabular-nums text-slate-600">{it.quantidade.toLocaleString("pt-BR")} {it.unidade}</td>
-                <td className="p-1 text-right tabular-nums text-slate-500">{fmtBRL(it.unitEstimado)}</td>
-                <td className="p-1 text-right tabular-nums text-slate-800">{it.unitHomologado != null ? fmtBRL(it.unitHomologado) : "—"}</td>
-                <td className="hidden p-1 text-slate-600 md:table-cell">{it.fornecedor || "—"}</td>
-                <td className="p-1 text-right tabular-nums">{it.economiaPct != null && it.economiaPct > 0 ? <span className="text-emerald-600">−{it.economiaPct.toFixed(0)}%</span> : <span className="text-slate-400">—</span>}</td>
+                <td className="hidden p-2 text-slate-500 md:table-cell">{it.fornecedor || "—"}</td>
+                <td className="p-2 text-right tabular-nums text-slate-500">{it.quantidade.toLocaleString("pt-BR")}</td>
+                <td className="border-l border-slate-100 p-2 text-right tabular-nums text-slate-500">{fmtBRL(it.unitEstimado)}</td>
+                <td className="p-2 text-right tabular-nums font-medium text-slate-800">{it.unitHomologado != null ? fmtBRL(it.unitHomologado) : "—"}</td>
+                <td className="border-l border-slate-100 p-2 text-right tabular-nums text-slate-700">{fmtBRL((it.unitHomologado ?? it.unitEstimado) * it.quantidade)}</td>
+                <td className="border-l border-slate-100 p-2 text-right tabular-nums">{it.economiaPct != null && it.economiaPct > 0 ? <span className="text-emerald-600">−{it.economiaPct.toFixed(0)}%</span> : <span className="text-slate-400">—</span>}</td>
               </tr>
             ))}
+            <tr className="border-t border-slate-200 bg-slate-50 font-semibold text-slate-700">
+              <td className="p-2" colSpan={5}>Total do processo</td>
+              <td className="border-l border-slate-200 p-2 text-right tabular-nums">{fmtBRLCompact(totReal)}</td>
+              <td className="border-l border-slate-200 p-2 text-right tabular-nums text-emerald-700">{totEcon > 0 ? `−${pctEcon.toFixed(1)}%` : "—"}</td>
+            </tr>
           </tbody>
         </table>
       </div>
-          <p className="mt-1 text-[10px] text-slate-400">Fonte: PNCP (itens e resultados). Valor unitário homologado e fornecedor exibidos quando já publicados.</p>
+          <p className="mt-1 text-[10px] text-slate-400">Economia = (unitário estimado − homologado) × quantidade. Estimado: preço de referência do edital · Homologado: preço do vencedor. Fonte: PNCP (itens e resultados).</p>
         </>
+          );
+        })()
       )}
 
       {/* #3 Fornecedores consolidados do processo */}
