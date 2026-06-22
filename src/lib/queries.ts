@@ -1656,6 +1656,44 @@ export async function getPadroesComprasSC(cod: string): Promise<PadroesComprasSC
 }
 
 // Receitas detalhadas por item nominal (ICMS, FPM, IPTU, ISS, IPVA, ITR, FUNDEB) — série anual
+// Índice de Eficiência (Educação) — custo por aluno × resultado (IDEB) vs pares de mesmo porte.
+// Quadrante: gasta mais e entrega menos = potencial de economia; gasta menos e entrega mais = eficiente (referência).
+export type EficienciaEducacaoSC = {
+  ano: number; matriculas: number; custoAluno: number; medianaCusto: number; ideb: number | null; medianaIdeb: number | null;
+  quadrante: "eficiente" | "alto_custo" | "investir" | "atencao"; potencialEconomia: number; nPares: number;
+} | null;
+export async function getEficienciaEducacaoSC(cod: string): Promise<EficienciaEducacaoSC> {
+  const ano = num((await query<Record<string, unknown>>(`SELECT max(ano) m FROM despesa_subfuncao_sc WHERE funcao='Educação'`).catch(() => []))[0]?.m);
+  if (!ano) return null;
+  const desp = await query<Record<string, unknown>>(`SELECT cod_ibge, sum(empenhado) d FROM despesa_subfuncao_sc WHERE funcao='Educação' AND ano=$1 GROUP BY cod_ibge`, [ano]).catch(() => []);
+  const mat = await query<Record<string, unknown>>(`SELECT cod_ibge, matriculas m FROM censo_matricula_sc WHERE etapa='Total' AND ano=(SELECT max(ano) FROM censo_matricula_sc)`).catch(() => []);
+  const ideb = await query<Record<string, unknown>>(`SELECT cod_ibge, avg(ideb) i FROM (SELECT DISTINCT ON (cod_ibge,etapa) cod_ibge,etapa,ideb FROM ideb_sc WHERE ideb IS NOT NULL ORDER BY cod_ibge,etapa,ano DESC) s GROUP BY cod_ibge`).catch(() => []);
+  const pops = await query<Record<string, unknown>>(`SELECT cod_ibge, populacao FROM entes_sc WHERE tipo='M'`).catch(() => []);
+  const mDesp = new Map(desp.map((r) => [String(r.cod_ibge), num(r.d)]));
+  const mMat = new Map(mat.map((r) => [String(r.cod_ibge), num(r.m)]));
+  const mIdeb = new Map(ideb.map((r) => [String(r.cod_ibge), num(r.i)]));
+  const mPop = new Map(pops.map((r) => [String(r.cod_ibge), num(r.populacao)]));
+  const faixa = _fk(num(mPop.get(cod)));
+  // custo-aluno + ideb por município (mesma faixa)
+  const reg = [...mMat.entries()].filter(([c, m]) => m > 0 && mDesp.get(c) && _fk(num(mPop.get(c))) === faixa)
+    .map(([c, m]) => ({ c, custo: num(mDesp.get(c)) / m, ideb: mIdeb.has(c) ? num(mIdeb.get(c)) : null }));
+  if (!mMat.get(cod) || !mDesp.get(cod)) return null;
+  const matriculas = num(mMat.get(cod));
+  const custoAluno = num(mDesp.get(cod)) / matriculas;
+  const idebMun = mIdeb.has(cod) ? num(mIdeb.get(cod)) : null;
+  const med = (arr: number[]) => arr.length ? [...arr].sort((a, b) => a - b)[Math.floor(arr.length / 2)] : 0;
+  const medianaCusto = med(reg.map((r) => r.custo));
+  const idebArr = reg.filter((r) => r.ideb != null).map((r) => r.ideb as number);
+  const medianaIdeb = idebArr.length ? med(idebArr) : null;
+  const caroCusto = custoAluno > medianaCusto;
+  const idebBaixo = idebMun != null && medianaIdeb != null ? idebMun < medianaIdeb : false;
+  const idebAlto = idebMun != null && medianaIdeb != null ? idebMun >= medianaIdeb : false;
+  const quadrante = caroCusto && idebAlto ? "alto_custo" : caroCusto && idebBaixo ? "atencao" : !caroCusto && idebAlto ? "eficiente" : "investir";
+  // potencial de economia: gasta acima da mediana E não entrega resultado acima → margem até a mediana
+  const potencialEconomia = caroCusto && !idebAlto ? (custoAluno - medianaCusto) * matriculas : 0;
+  return { ano, matriculas, custoAluno, medianaCusto, ideb: idebMun, medianaIdeb, quadrante, potencialEconomia, nPares: reg.length };
+}
+
 // Otimizador de Receitas Próprias — IPTU/ISS/ITBI per capita vs pares de mesmo porte → potencial de arrecadação (R$)
 export type OtimizadorReceitaSC = {
   ano: number; pop: number; nPares: number; potencialTotal: number;
