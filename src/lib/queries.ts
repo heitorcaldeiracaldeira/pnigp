@@ -1656,6 +1656,29 @@ export async function getPadroesComprasSC(cod: string): Promise<PadroesComprasSC
 }
 
 // Receitas detalhadas por item nominal (ICMS, FPM, IPTU, ISS, IPVA, ITR, FUNDEB) — série anual
+// Estabelecimentos de saúde do município (CNES) — rede completa para regulação: cada unidade + composição da rede.
+export type EstabSaudeSC = {
+  total: number; comGeo: number;
+  natureza: { publico: number; privado: number; filantropico: number };
+  capacidade: { hospitalar: number; cirurgico: number; obstetrico: number; sus: number };
+  porTipo: { tipo: string; n: number }[];
+  lista: { nome: string; tipo: string; tipoCodigo: number; natureza: string; gestao: string; esfera: string; sus: boolean; hospitalar: boolean; cirurgico: boolean; obstetrico: boolean; lat: number | null; lon: number | null; bairro: string }[];
+} | null;
+export async function getEstabSaudeSC(cod: string): Promise<EstabSaudeSC> {
+  const rows = await query<Record<string, unknown>>(`SELECT nome, tipo, tipo_codigo, natureza_grupo, gestao, esfera, sus_ambulatorial, hospitalar, centro_cirurgico, centro_obstetrico, latitude, longitude, bairro FROM estabelecimentos_saude_sc WHERE cod_ibge=$1 ORDER BY (natureza_grupo='Público') DESC, hospitalar DESC, nome`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const b = (v: unknown) => v === true;
+  const porTipoMap = new Map<string, number>();
+  for (const r of rows) { const t = String(r.tipo || "Outro"); porTipoMap.set(t, (porTipoMap.get(t) || 0) + 1); }
+  return {
+    total: rows.length, comGeo: rows.filter((r) => r.latitude != null).length,
+    natureza: { publico: rows.filter((r) => r.natureza_grupo === "Público").length, privado: rows.filter((r) => r.natureza_grupo === "Privado").length, filantropico: rows.filter((r) => r.natureza_grupo === "Filantrópico").length },
+    capacidade: { hospitalar: rows.filter((r) => b(r.hospitalar)).length, cirurgico: rows.filter((r) => b(r.centro_cirurgico)).length, obstetrico: rows.filter((r) => b(r.centro_obstetrico)).length, sus: rows.filter((r) => b(r.sus_ambulatorial)).length },
+    porTipo: [...porTipoMap.entries()].map(([tipo, n]) => ({ tipo, n })).sort((a, b2) => b2.n - a.n),
+    lista: rows.map((r) => ({ nome: String(r.nome || ""), tipo: String(r.tipo || ""), tipoCodigo: num(r.tipo_codigo), natureza: String(r.natureza_grupo || ""), gestao: String(r.gestao || ""), esfera: String(r.esfera || ""), sus: b(r.sus_ambulatorial), hospitalar: b(r.hospitalar), cirurgico: b(r.centro_cirurgico), obstetrico: b(r.centro_obstetrico), lat: r.latitude != null ? num(r.latitude) : null, lon: r.longitude != null ? num(r.longitude) : null, bairro: String(r.bairro || "") })),
+  };
+}
+
 // Perfil da rede municipal de educação (Censo) — quem é atendido: sexo, raça/cor, idade, inclusão, integral, turmas, transporte.
 export type PerfilEducacaoSC = {
   matriculas: number; turmas: number; alunoPorTurma: number | null;

@@ -33,6 +33,7 @@ import { EficienciaEducacao } from "@/components/eficiencia-educacao";
 import { EficienciaSaude } from "@/components/eficiencia-saude";
 import { CatalogoBoasPraticas } from "@/components/catalogo-boas-praticas";
 import { EscolasDrill } from "@/components/escolas-drill";
+import { EstabSaudeDrill } from "@/components/estab-saude-drill";
 import { PerfilEducacao } from "@/components/perfil-educacao";
 import { SerieExplicada } from "@/components/serie-explicada";
 import { PlacarEstrategico } from "@/components/placar-estrategico";
@@ -52,7 +53,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop, fmtData } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -75,6 +76,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const eficEdu = await getEficienciaEducacaoSC(codigo);
   const eficSaude = await getEficienciaSaudeSC(codigo);
   const escolas = await getEscolasSC(codigo);
+  const estabSaude = await getEstabSaudeSC(codigo);
   const perfilEdu = await getPerfilEducacaoSC(codigo);
   const seriesInd = serieRenda as Record<string, { ano: number; valor: number }[]>;
   if (!dados || dados.serie.length === 0) notFound();
@@ -706,6 +708,13 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       </>
     ) });
   }
+  if (estabSaude) tabs.push({ id: "equipamentos-saude", label: "Equipamentos Públicos", content: <>
+    <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-teal-50 to-white p-5">
+      <h3 className="text-base font-bold text-slate-900">🏥 Equipamentos Públicos — Saúde</h3>
+      <p className="text-sm text-slate-500">A rede de saúde de {ente.nome}, estabelecimento a estabelecimento (UBS, hospitais, UPA, CAPS) — composição, capacidade instalada e localização. Base para a regulação, referência e contrarreferência.</p>
+    </div>
+    <div className="mt-4"><EstabSaudeDrill dados={estabSaude} nome={ente.nome} /></div>
+  </> });
   if (previneFicha) tabs.push({ id: "previne-ficha", label: "Atenção Primária", content: <AssuntoAtencaoPrimaria dados={previneFicha} nome={ente.nome} cod={codigo} /> });
   if (fnsSerie.length > 1) tabs.push({ id: "fns-historico", label: "Histórico de Repasses", content: <SerieExplicada serie={fnsSerie} escopo="fns" cod={codigo} nome={ente.nome} /> });
   if (repassesSaude) tabs.push({ id: "repasses-saude", label: "Repasses da Saúde", content: <RepassesSaudeFicha dados={repassesSaude} nome={ente.nome} /> });
@@ -766,7 +775,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     ["Resumo", ["placar", "visao", "panorama", "diagnostico"]],
     ["Finanças", ["financas", "receitas", "despesas", "execucao", "captacao", "folha", "previdencia", "metas", "simulador"]],
     ["Compras & Contratos", ["compras", "padroes-compras", "atas", "contratos", "planejamento", "compras-sc"]],
-    ["Saúde", ["saude", "previne-ficha", "mac", "repasses-saude", "fns-historico", "accountability-aps"]],
+    ["Saúde", ["saude", "previne-ficha", "mac", "repasses-saude", "fns-historico", "accountability-aps", "equipamentos-saude"]],
     ["Educação", ["educacao", "educacao-cruz", "equipamentos", "indicadores"]],
     ["Análise & Controle", ["cruzamentos", "iegm", "ranking", "transferencias", "cauc", "auditoria"]],
   ];

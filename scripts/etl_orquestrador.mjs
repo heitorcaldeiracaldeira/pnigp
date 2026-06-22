@@ -86,6 +86,8 @@ const FONTES = [
     devido: async (st) => diasDesde(st?.ultima_exec) > 60 }, // browser-only; recoleta esparsa
   { id: "escolas", label: "Escolas por município + infraestrutura (INEP Censo Escolar)", api: "inep", script: "scripts/ingest_escolas_sc.mjs", env: { ANO: "2025" },
     devido: async (st) => diasDesde(st?.ultima_exec) > 300 }, // anual
+  { id: "cnes_estab", label: "Estabelecimentos de saúde por município (CNES — rede p/ regulação, API DEMAS)", api: "datasus", script: "scripts/ingest_cnes_estab_sc.mjs", env: {},
+    devido: async (st) => diasDesde(st?.ultima_exec) > 45 }, // CNES atualiza mensalmente
 ];
 
 async function ensure() {
