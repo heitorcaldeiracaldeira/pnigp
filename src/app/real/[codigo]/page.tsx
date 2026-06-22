@@ -243,7 +243,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       ),
     },
     { id: "compras", label: "Compras", content: <ComprasSCSection codigo={ente.cod_ibge} tipo={ente.tipo} /> },
-    ...(padroesCompras ? [{ id: "padroes-compras", label: "Planejamento de Compras", content: <AssuntoPadroesCompras dados={padroesCompras} contratos={contratosResumo} pca={pcaResumo} economia={economicidade} nome={ente.nome} /> }] : []),
+    ...(padroesCompras ? [{ id: "padroes-compras", label: "Planejamento de Compras", content: <><AssuntoPadroesCompras dados={padroesCompras} contratos={contratosResumo} pca={pcaResumo} economia={economicidade} nome={ente.nome} /><div className="mt-4"><CatalogoBoasPraticas area="compras" /></div></> }] : []),
     ...(atas ? [{ id: "atas", label: "Atas (Registro de Preço)", content: <AtasPainel dados={atas} nome={ente.nome} /> }] : []),
     ...(contratosResumo
       ? [{
@@ -719,7 +719,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   }
   if (educacao && educacaoSerie.length) tabs.push({ id: "educacao", label: "Educação", content: <>{(ideb || fndeEdu) && <div className="mb-4"><AnaliseEducacao ideb={ideb} fnde={fndeEdu} censo={censoMatricula} nome={ente.nome} /></div>}<AssuntoEducacao serie={educacaoSerie} edu={educacao} fundebValor={receitasDetalhe?.itens.find((i) => i.item === "FUNDEB")?.valor ?? null} nome={ente.nome} />{censoMatricula && <div className="mt-4"><MatriculasCard dados={censoMatricula} nome={ente.nome} /></div>}{ideb && <div className="mt-4"><IdebPainel dados={ideb} nome={ente.nome} /></div>}{fndeEdu && <div className="mt-4"><FndeEducacaoCard dados={fndeEdu} nome={ente.nome} /></div>}{eficEdu && <div className="mt-4"><EficienciaEducacao dados={eficEdu} nome={ente.nome} /></div>}<div className="mt-4"><CatalogoBoasPraticas area="educacao" /></div><div className="mt-4"><BaseMetodologica area="educacao" /></div></> });
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Comparativo", content: <EducacaoSC data={educacao} /> });
-  if (rgfResumo) tabs.push({ id: "folha", label: "Folha / Pessoal", content: <FolhaSC rgf={rgfResumo} serie={serie} /> });
+  if (rgfResumo) tabs.push({ id: "folha", label: "Folha / Pessoal", content: <><FolhaSC rgf={rgfResumo} serie={serie} /><div className="mt-4"><CatalogoBoasPraticas area="fiscal" /></div></> });
   if (rpps) tabs.push({ id: "previdencia", label: "Previdência", content: <>
     <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/40 p-4 text-sm text-slate-700">
       <div className="font-semibold text-slate-800">🔖 Certidão de Regularidade Previdenciária (CRP)</div>
