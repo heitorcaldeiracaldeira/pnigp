@@ -1384,6 +1384,25 @@ export async function getContratosVencimentoSC(cod: string): Promise<ContratosVe
   return { faixas, aVencer: aVencer.slice(0, 60), nCriticos, vencidos, totalAtivos };
 }
 
+// IDEB por etapa (Anos Iniciais/Finais/EM) — observado × meta + série histórica (INEP)
+export type IdebSC = { etapas: { etapa: string; label: string; rede: string; atual: { ano: number; ideb: number; meta: number | null } | null; serie: { ano: number; ideb: number; meta: number | null }[]; cumpriu: boolean | null }[] } | null;
+export async function getIdebSC(cod: string): Promise<IdebSC> {
+  const rows = await query<Record<string, unknown>>(`SELECT etapa, rede, ano, ideb, meta FROM ideb_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const LBL: Record<string, string> = { AI: "Anos Iniciais (1º–5º)", AF: "Anos Finais (6º–9º)", EM: "Ensino Médio" };
+  const PREF = ["Municipal", "Pública", "Estadual"]; // preferência de rede por etapa
+  const etapas = ["AI", "AF", "EM"].map((et) => {
+    const doEt = rows.filter((r) => String(r.etapa) === et);
+    if (!doEt.length) return null;
+    const rede = PREF.find((p) => doEt.some((r) => String(r.rede) === p)) || String(doEt[0].rede);
+    const serie = doEt.filter((r) => String(r.rede) === rede).map((r) => ({ ano: num(r.ano), ideb: num(r.ideb), meta: r.meta != null ? num(r.meta) : null })).sort((a, b) => a.ano - b.ano);
+    if (!serie.length) return null;
+    const atual = serie[serie.length - 1];
+    return { etapa: et, label: LBL[et], rede, atual, serie, cumpriu: atual.meta != null ? atual.ideb >= atual.meta : null };
+  }).filter(Boolean) as NonNullable<IdebSC>["etapas"];
+  return etapas.length ? { etapas } : null;
+}
+
 // Economia entre estimado e homologado. Exclui outliers (homologado > estimado = erro de digitação unidade×total).
 // O % é robusto; o R$ absoluto é inflado por atas de registro de preço (quantidade máxima registrada ≠ comprada).
 export type EconomicidadeSC = { estimado: number; homologado: number; economia: number; economiaPct: number; nItens: number; nOutliers: number } | null;

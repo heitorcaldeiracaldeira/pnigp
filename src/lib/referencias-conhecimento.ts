@@ -56,7 +56,10 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
     marcos: [
       { titulo: "Art. 212 da CF", desc: "Aplicação mínima de 25% das receitas em manutenção e desenvolvimento do ensino (MDE)." },
       { titulo: "FUNDEB — Lei 14.113/2020", desc: "Fundo permanente (EC 108/2020, art. 212-A); VAAF/VAAT/VAAR. Sucede o FUNDEF (Lei 9.424/1996) e o FUNDEB original (Lei 11.494/2007)." },
-      { titulo: "PNE e CAQ", desc: "Plano Nacional de Educação e Custo Aluno-Qualidade como referência." },
+      { titulo: "IDEB — Decreto nº 6.094/2007", desc: "Cria o IDEB (art. 3º) como indicador objetivo de qualidade da educação básica, calculado pelo INEP a partir do Censo Escolar + SAEB.", url: "https://www.planalto.gov.br/ccivil_03/_ato2007-2010/2007/decreto/d6094.htm" },
+      { titulo: "PNE — Lei nº 13.005/2014 (Meta 7)", desc: "Plano Nacional de Educação; a Meta 7 fixa as metas do IDEB por etapa de ensino.", url: "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l13005.htm" },
+      { titulo: "CAQ — Custo Aluno-Qualidade", desc: "Padrão de referência de financiamento por aluno (PNE e art. 211 da CF)." },
+      { titulo: "Acordo de Cooperação 7/2019 (SC)", desc: "TCE/SC + MPC + MPSC + Undime + Fecam + CEE/SC monitoram as metas dos Planos de Educação com base de dados comum." },
     ],
     autores: [
       { nome: "José Marcelino de Rezende Pinto", foco: "Financiamento da educação e Custo Aluno-Qualidade (USP)" },
@@ -70,6 +73,8 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
       { titulo: "Referências normativas do financiamento da educação", fonte: "MEC", url: "https://www.gov.br/mec/pt-br/financiamento-da-educacao-basica/RefernciasNormativas2024.pdf" },
       { titulo: "SIOPE — orçamentos públicos em educação (acompanha o mínimo de 25%)", fonte: "FNDE/MEC", url: "https://www.fnde.gov.br/siope/" },
       { titulo: "INEP — IDEB e indicadores educacionais", fonte: "INEP", url: "https://www.gov.br/inep/pt-br/areas-de-atuacao/pesquisas-estatisticas-e-indicadores/ideb" },
+      { titulo: "TCE/SC Educação — painéis das metas dos Planos de Educação (IDEB, infantil, integral)", fonte: "TCE/SC", url: "https://servicos.tcesc.tc.br/tceeducacao/" },
+      { titulo: "Índice ICMS Educação / IQESC — qualidade das escolas de SC", fonte: "TCE/SC", url: "https://servicos.tcesc.tc.br/tceeducacao/#despesas" },
     ],
   },
   previdencia: {
