@@ -32,6 +32,7 @@ import { OtimizadorReceita } from "@/components/otimizador-receita";
 import { EficienciaEducacao } from "@/components/eficiencia-educacao";
 import { EficienciaSaude } from "@/components/eficiencia-saude";
 import { CatalogoBoasPraticas } from "@/components/catalogo-boas-praticas";
+import { EscolasDrill } from "@/components/escolas-drill";
 import { SerieExplicada } from "@/components/serie-explicada";
 import { PlacarEstrategico } from "@/components/placar-estrategico";
 import { CabecalhoArea } from "@/components/cabecalho-area";
@@ -50,7 +51,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop, fmtData } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -72,6 +73,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const otimReceita = await getOtimizadorReceitaSC(codigo);
   const eficEdu = await getEficienciaEducacaoSC(codigo);
   const eficSaude = await getEficienciaSaudeSC(codigo);
+  const escolas = await getEscolasSC(codigo);
   const seriesInd = serieRenda as Record<string, { ano: number; valor: number }[]>;
   if (!dados || dados.serie.length === 0) notFound();
   const minhaPos = rankingFiscal.find((r) => r.cod_ibge === codigo) ?? null;
@@ -749,13 +751,21 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
 
   if (captacao) tabs.push({ id: "captacao", label: "Captação", content: <AssuntoCaptacao dados={captacao} cod={codigo} nome={ente.nome} /> });
 
-  // navegação temática (6 clusters): Resumo · Finanças · Compras & Contratos · Saúde · Educação · Análise & Controle
+  if (escolas) tabs.push({ id: "equipamentos", label: "Equipamentos Públicos", content: <>
+    <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-teal-50 to-white p-5">
+      <h3 className="text-base font-bold text-slate-900">🏛️ Equipamentos Públicos — Educação</h3>
+      <p className="text-sm text-slate-500">As escolas da rede municipal de {ente.nome}, uma a uma, com infraestrutura e lacunas — o nível mais concreto da gestão. (Saúde e Assistência terão suas próprias páginas de equipamentos.)</p>
+    </div>
+    <div className="mt-4"><EscolasDrill dados={escolas} nome={ente.nome} /></div>
+  </> });
+
+  // navegação temática (7 clusters): Resumo · Finanças · Compras & Contratos · Saúde · Educação · Equipamentos · Análise & Controle
   const GRUPOS: [string, string[]][] = [
     ["Resumo", ["placar", "visao", "panorama", "diagnostico"]],
     ["Finanças", ["financas", "receitas", "despesas", "execucao", "captacao", "folha", "previdencia", "metas", "simulador"]],
     ["Compras & Contratos", ["compras", "padroes-compras", "atas", "contratos", "planejamento", "compras-sc"]],
     ["Saúde", ["saude", "previne-ficha", "mac", "repasses-saude", "fns-historico", "accountability-aps"]],
-    ["Educação", ["educacao", "educacao-cruz", "indicadores"]],
+    ["Educação", ["educacao", "educacao-cruz", "equipamentos", "indicadores"]],
     ["Análise & Controle", ["cruzamentos", "iegm", "ranking", "transferencias", "cauc", "auditoria"]],
   ];
   const ORDEM = GRUPOS.flatMap(([, ids]) => ids);

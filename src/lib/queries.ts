@@ -1656,6 +1656,27 @@ export async function getPadroesComprasSC(cod: string): Promise<PadroesComprasSC
 }
 
 // Receitas detalhadas por item nominal (ICMS, FPM, IPTU, ISS, IPVA, ITR, FUNDEB) — série anual
+// Escolas do município (INEP Censo) — drill escola a escola: matrículas + infraestrutura + lacunas. Rede municipal.
+export type EscolasSC = {
+  ano: number; total: number; matriculas: number;
+  lacunas: { semInternet: number; semBiblioteca: number; semQuadra: number; semEsgoto: number; semAcessibilidade: number };
+  lista: { nome: string; matriculas: number; zona: number; infra: { agua: boolean; energia: boolean; esgoto: boolean; internet: boolean; biblioteca: boolean; labInfo: boolean; quadra: boolean; refeitorio: boolean; acessibilidade: boolean } }[];
+} | null;
+export async function getEscolasSC(cod: string): Promise<EscolasSC> {
+  const rows = await query<Record<string, unknown>>(`SELECT nome, coalesce(matriculas,0) matriculas, localizacao, ano, tem_agua, tem_energia, tem_esgoto, tem_internet, tem_biblioteca, tem_lab_info, tem_quadra, tem_refeitorio, tem_acessibilidade FROM escolas_sc WHERE cod_ibge=$1 AND dependencia=3 ORDER BY matriculas DESC NULLS LAST`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const b = (v: unknown) => v === true;
+  return {
+    ano: num(rows[0].ano), total: rows.length, matriculas: rows.reduce((s, r) => s + num(r.matriculas), 0),
+    lacunas: {
+      semInternet: rows.filter((r) => !b(r.tem_internet)).length, semBiblioteca: rows.filter((r) => !b(r.tem_biblioteca)).length,
+      semQuadra: rows.filter((r) => !b(r.tem_quadra)).length, semEsgoto: rows.filter((r) => !b(r.tem_esgoto)).length,
+      semAcessibilidade: rows.filter((r) => !b(r.tem_acessibilidade)).length,
+    },
+    lista: rows.map((r) => ({ nome: String(r.nome || ""), matriculas: num(r.matriculas), zona: num(r.localizacao), infra: { agua: b(r.tem_agua), energia: b(r.tem_energia), esgoto: b(r.tem_esgoto), internet: b(r.tem_internet), biblioteca: b(r.tem_biblioteca), labInfo: b(r.tem_lab_info), quadra: b(r.tem_quadra), refeitorio: b(r.tem_refeitorio), acessibilidade: b(r.tem_acessibilidade) } })),
+  };
+}
+
 // Índice de Eficiência (Educação) — custo por aluno × resultado (IDEB) vs pares de mesmo porte.
 // Quadrante: gasta mais e entrega menos = potencial de economia; gasta menos e entrega mais = eficiente (referência).
 export type EficienciaEducacaoSC = {

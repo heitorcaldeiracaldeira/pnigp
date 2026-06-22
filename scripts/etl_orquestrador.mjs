@@ -82,6 +82,10 @@ const FONTES = [
     devido: async (st) => diasDesde(st?.ultima_exec) > 300 }, // anual
   { id: "programas_transferegov", label: "Radar de Captação — programas + planos (Transferegov fundo a fundo, API viva)", api: "transferegov", script: "scripts/ingest_transferegov_api.mjs", env: { UF: "SC" },
     devido: async (st) => diasDesde(st?.ultima_exec) > 7 }, // janelas de proposta mudam — recoleta semanal
+  { id: "fnde_simad", label: "FNDE liberações por município (SIMAD, Playwright)", api: "inep", script: "scripts/ingest_fnde_simad.mjs", env: { UF: "SC" },
+    devido: async (st) => diasDesde(st?.ultima_exec) > 60 }, // browser-only; recoleta esparsa
+  { id: "escolas", label: "Escolas por município + infraestrutura (INEP Censo Escolar)", api: "inep", script: "scripts/ingest_escolas_sc.mjs", env: { ANO: "2025" },
+    devido: async (st) => diasDesde(st?.ultima_exec) > 300 }, // anual
 ];
 
 async function ensure() {
