@@ -49,6 +49,9 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
       { titulo: "LC 141/2012 (mínimo em saúde)", fonte: "Planalto", url: "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp141.htm" },
       { titulo: "SIOPS — orçamentos públicos em saúde (acompanha o mínimo de 15%)", fonte: "DataSUS/MS", url: "https://www.gov.br/saude/pt-br/acesso-a-informacao/siops" },
       { titulo: "CONASEMS — apoio aos municípios", fonte: "CONASEMS", url: "https://www.conasems.org.br/" },
+      { titulo: "SES/SC — apoio técnico aos municípios e instrumentos de gestão", fonte: "SES/SC", url: "https://www.saude.sc.gov.br/" },
+      { titulo: "Guia para Elaboração do Plano Municipal de Saúde", fonte: "SES/SC", url: "https://antigo.saude.sc.gov.br/index.php/documentos/informacoes-gerais/planejamento-em-saude/instrumentos-de-gestao-municipal/guia-elaboracao-plano-municipal/3301-guia-para-elaboracao-do-plano-municipal-de-saude/file" },
+      { titulo: "MPSC — programas de monitoramento da saúde", fonte: "MPSC", url: "https://www.mpsc.mp.br/programas" },
     ],
   },
   educacao: {
@@ -75,6 +78,9 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
       { titulo: "INEP — IDEB e indicadores educacionais", fonte: "INEP", url: "https://www.gov.br/inep/pt-br/areas-de-atuacao/pesquisas-estatisticas-e-indicadores/ideb" },
       { titulo: "TCE/SC Educação — painéis das metas dos Planos de Educação (IDEB, infantil, integral)", fonte: "TCE/SC", url: "https://servicos.tcesc.tc.br/tceeducacao/" },
       { titulo: "Índice ICMS Educação / IQESC — qualidade das escolas de SC", fonte: "TCE/SC", url: "https://servicos.tcesc.tc.br/tceeducacao/#despesas" },
+      { titulo: "Undime/SC — Orientações ao Dirigente Municipal de Educação (fundamentos e práticas)", fonte: "Undime/SC", url: "https://undime-sc.org.br/wp-content/uploads/2025/01/Orientacoes-ao-Dirigente-Municipal-de-Educacao-Fundamentos-Politicas-e-Praticas-edicao-2025-1.pdf" },
+      { titulo: "INEP — Censo Escolar: resumo técnico e conceitos", fonte: "INEP", url: "https://download.inep.gov.br/publicacoes/institucionais/estatisticas_e_indicadores/resumo_tecnico_censo_escolar_2024.pdf" },
+      { titulo: "Controle do FUNDEB (Sinapse — auditoria contínua)", fonte: "TCU/MPF", url: "https://www.gov.br/fnde/pt-br/acesso-a-informacao/acoes-e-programas/financiamento/fundeb/avisos-informes-tcu-mpf" },
     ],
   },
   previdencia: {
@@ -102,6 +108,8 @@ export const CONHECIMENTO: Record<string, AreaConhecimento> = {
       { titulo: "Referencial Básico de Governança Organizacional (3ª ed.)", fonte: "TCU", url: "https://portal.tcu.gov.br/referencial-basico-de-governanca-organizacional.htm" },
       { titulo: "IEGM — Índice de Efetividade da Gestão Municipal", fonte: "IRB", url: "https://irbcontas.org.br/" },
       { titulo: "e-Sfinge — prestação de contas dos municípios de SC", fonte: "TCE/SC", url: "https://www.tcesc.tc.br/" },
+      { titulo: "MPSC — programas de controle (ex.: 'Unindo Forças' — controle interno municipal)", fonte: "MPSC", url: "https://www.mpsc.mp.br/programas" },
+      { titulo: "Sinapse — auditoria contínua em programas de educação", fonte: "TCU / IRB / Atricon", url: "https://portal.tcu.gov.br/imprensa/noticias/mpf-e-tcu-unem-esforcos-para-garantir-transparencia-na-gestao-dos-recursos-do-fundeb" },
     ],
   },
   assistencia: {
