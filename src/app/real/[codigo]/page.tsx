@@ -36,6 +36,7 @@ import { EscolasDrill } from "@/components/escolas-drill";
 import { EstabSaudeDrill } from "@/components/estab-saude-drill";
 import { PerfilSaude } from "@/components/perfil-saude";
 import { PerfilEducacao } from "@/components/perfil-educacao";
+import { CensoTendencias } from "@/components/censo-tendencias";
 import { SerieExplicada } from "@/components/serie-explicada";
 import { PlacarEstrategico } from "@/components/placar-estrategico";
 import { CabecalhoArea } from "@/components/cabecalho-area";
@@ -54,7 +55,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPerfilSaudeSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPerfilSaudeSC, getCensoTendenciaSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop, fmtData } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -80,6 +81,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const estabSaude = await getEstabSaudeSC(codigo);
   const perfilSaude = await getPerfilSaudeSC(codigo);
   const perfilEdu = await getPerfilEducacaoSC(codigo);
+  const censoTend = await getCensoTendenciaSC(codigo);
   const seriesInd = serieRenda as Record<string, { ano: number; valor: number }[]>;
   if (!dados || dados.serie.length === 0) notFound();
   const minhaPos = rankingFiscal.find((r) => r.cod_ibge === codigo) ?? null;
@@ -733,7 +735,8 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       <AccountabilityAPS previne={previneFicha} apsValor={aps?.valorUlt ?? null} apsAno={repassesSaude?.anoUlt ?? null} saudePct={saude?.saudePct ?? null} cauc={cauc} nome={ente.nome} cod={codigo} />
     ) });
   }
-  if (educacao && educacaoSerie.length) tabs.push({ id: "educacao", label: "Educação", content: <>{(ideb || fndeEdu) && <div className="mb-4"><AnaliseEducacao ideb={ideb} fnde={fndeEdu} censo={censoMatricula} nome={ente.nome} /></div>}<AssuntoEducacao serie={educacaoSerie} edu={educacao} fundebValor={receitasDetalhe?.itens.find((i) => i.item === "FUNDEB")?.valor ?? null} nome={ente.nome} />{censoMatricula && <div className="mt-4"><MatriculasCard dados={censoMatricula} nome={ente.nome} /></div>}{perfilEdu && <div className="mt-4"><PerfilEducacao dados={perfilEdu} nome={ente.nome} /></div>}{ideb && <div className="mt-4"><IdebPainel dados={ideb} nome={ente.nome} /></div>}{fndeEdu && <div className="mt-4"><FndeEducacaoCard dados={fndeEdu} nome={ente.nome} /></div>}{eficEdu && <div className="mt-4"><EficienciaEducacao dados={eficEdu} nome={ente.nome} /></div>}<div className="mt-4"><CatalogoBoasPraticas area="educacao" /></div><div className="mt-4"><BaseMetodologica area="educacao" /></div></> });
+  if (educacao && educacaoSerie.length) tabs.push({ id: "educacao", label: "Educação", content: <>{(ideb || fndeEdu) && <div className="mb-4"><AnaliseEducacao ideb={ideb} fnde={fndeEdu} censo={censoMatricula} nome={ente.nome} /></div>}<AssuntoEducacao serie={educacaoSerie} edu={educacao} fundebValor={receitasDetalhe?.itens.find((i) => i.item === "FUNDEB")?.valor ?? null} nome={ente.nome} />{censoMatricula && <div className="mt-4"><MatriculasCard dados={censoMatricula} nome={ente.nome} /></div>}{perfilEdu && <div className="mt-4"><PerfilEducacao dados={perfilEdu} nome={ente.nome} /></div>}{censoTend && <div className="mt-4"><CensoTendencias dados={censoTend} nome={ente.nome} /></div>}{ideb && <div className="mt-4"><IdebPainel dados={ideb} nome={ente.nome} /></div>}{fndeEdu && <div className="mt-4"><FndeEducacaoCard dados={fndeEdu} nome={ente.nome} /></div>}{eficEdu && <div className="mt-4"><EficienciaEducacao dados={eficEdu} nome={ente.nome} /></div>}<div className="mt-4"><CatalogoBoasPraticas area="educacao" /></div><div className="mt-4"><BaseMetodologica area="educacao" /></div></> });
+  else if (fndeEdu || perfilEdu || escolas) tabs.push({ id: "educacao", label: "Educação", content: <>{perfilEdu && <div className="mb-4"><PerfilEducacao dados={perfilEdu} nome={ente.nome} /></div>}{fndeEdu && <div className="mb-4"><FndeEducacaoCard dados={fndeEdu} nome={ente.nome} /></div>}<div className="mt-4"><BaseMetodologica area="educacao" /></div></> });
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Comparativo", content: <EducacaoSC data={educacao} /> });
   if (rgfResumo) tabs.push({ id: "folha", label: "Folha / Pessoal", content: <><FolhaSC rgf={rgfResumo} serie={serie} /><div className="mt-4"><CatalogoBoasPraticas area="fiscal" /></div></> });
   if (rpps) tabs.push({ id: "previdencia", label: "Previdência", content: <>

@@ -1656,6 +1656,23 @@ export async function getPadroesComprasSC(cod: string): Promise<PadroesComprasSC
 }
 
 // Receitas detalhadas por item nominal (ICMS, FPM, IPTU, ISS, IPVA, ITR, FUNDEB) — série anual
+// Tendência histórica da rede municipal (Censo escola×ano) — matrículas, docentes, perfil ao longo dos anos.
+export type CensoTendenciaSC = {
+  pontos: { ano: number; escolas: number; matriculas: number; docentes: number; alunoPorDoc: number | null; negrosPct: number; especialPct: number; integralPct: number }[];
+} | null;
+export async function getCensoTendenciaSC(cod: string): Promise<CensoTendenciaSC> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, count(*) escolas, coalesce(sum(matriculas),0) mat, coalesce(sum(docentes),0) doc,
+    coalesce(sum((perfil->>'preta')::int),0)+coalesce(sum((perfil->>'parda')::int),0) negros, coalesce(sum((perfil->>'especial')::int),0) esp, coalesce(sum((perfil->>'integral')::int),0) integ
+    FROM escolas_hist_sc WHERE cod_ibge=$1 AND dependencia=3 GROUP BY ano ORDER BY ano`, [cod]).catch(() => []);
+  if (rows.length < 2) return null; // série só faz sentido com ≥2 anos
+  const pontos = rows.map((r) => {
+    const mat = num(r.mat), doc = num(r.doc);
+    const pc = (v: number) => (mat > 0 ? Math.round((v / mat) * 1000) / 10 : 0);
+    return { ano: num(r.ano), escolas: num(r.escolas), matriculas: mat, docentes: doc, alunoPorDoc: doc > 0 ? Math.round((mat / doc) * 10) / 10 : null, negrosPct: pc(num(r.negros)), especialPct: pc(num(r.esp)), integralPct: pc(num(r.integ)) };
+  });
+  return { pontos };
+}
+
 // Estabelecimentos de saúde do município (CNES) — rede completa para regulação: cada unidade + composição da rede.
 export type EstabSaudeSC = {
   total: number; comGeo: number;
