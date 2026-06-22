@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PNIGP — Análise Competitiva de Mercado · jun/2026</title>
+<style>
+  :root { --teal:#0f766e; --teal2:#155e63; --ink:#1e293b; --mut:#64748b; --line:#e2e8f0; --bg:#f8fafc; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+  .wrap { max-width:920px; margin:0 auto; padding:32px 20px 80px; }
+  header { border-bottom:3px solid var(--teal); padding-bottom:16px; margin-bottom:8px; }
+  h1 { color:var(--teal); font-size:28px; margin:0 0 4px; }
+  .sub { color:var(--mut); font-size:13px; }
+  h2 { color:var(--teal2); font-size:20px; margin:34px 0 12px; padding-top:8px; }
+  .lead { background:#ecfeff; border:1px solid #a5f3fc; border-radius:14px; padding:16px 18px; margin:16px 0; }
+  .lbl { font-weight:700; color:#475569; margin:14px 0 6px; }
+  ul { margin:8px 0 8px 4px; padding-left:20px; } li { margin:5px 0; }
+  table { width:100%; border-collapse:collapse; margin:10px 0 18px; font-size:13px; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  th { background:var(--teal); color:#fff; text-align:left; padding:9px 10px; font-weight:600; }
+  td { padding:8px 10px; border-top:1px solid var(--line); vertical-align:top; }
+  tr:nth-child(even) td { background:#fbfdfd; }
+  .yes { color:#059669; font-weight:700; } .no { color:#dc2626; } .part { color:#d97706; }
+  .threat { border-left:4px solid; padding:10px 14px; margin:10px 0; border-radius:0 10px 10px 0; background:#fff; }
+  .t1 { border-color:#dc2626; } .t2 { border-color:#ea580c; } .t3 { border-color:#d97706; } .t4 { border-color:#ca8a04; } .t0 { border-color:#94a3b8; }
+  .threat b { display:block; margin-bottom:3px; }
+  .pill { display:inline-block; background:#f1f5f9; border-radius:999px; padding:2px 10px; font-size:12px; color:var(--mut); margin-right:6px; }
+  code { background:#f1f5f9; padding:1px 5px; border-radius:4px; font-size:13px; }
+  footer { margin-top:40px; padding-top:16px; border-top:1px solid var(--line); color:var(--mut); font-size:12px; }
+  .moat { background:#f0fdfa; border:1px solid #99f6e4; border-radius:12px; padding:14px 18px; margin:12px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Análise Competitiva de Mercado — PNIGP</h1>
+    <div class="sub">Plataforma Nacional de Inteligência de Gestão Pública · Instituto I10 · <b>Junho/2026</b> · Documento interno</div>
+  </header>
+
+  <div class="lead">
+    <p style="margin:0 0 8px"><b>O mercado se divide em 5 camadas que não conversam entre si.</b> Nenhum concorrente reúne, sobre <b>dados abertos</b> e <b>comparável entre municípios</b>: compras <b>item a item</b> + <b>captação</b> de recursos + saúde/educação <b>unidade a unidade</b> com geo e série + <b>estudos B2B</b>. Cada eixo tem ocupantes; a combinação integrada está vazia.</p>
+    <div class="lbl" style="margin-bottom:2px">Três conclusões:</div>
+    <ul style="margin:0">
+      <li>A captação <b>operacional + comparação entre municípios</b> está sendo disputada (<b>QIATech/+Convénios</b>) — chegar primeiro com a integração.</li>
+      <li>Há um <b>piso gratuito</b> robusto (Portal da Transparência 2026 + CNM Êxitos) — entregar acima dele.</li>
+      <li>Eixos mais vazios e defensáveis: <b>preço unitário comparável</b> e <b>estudos B2B de gasto público</b>.</li>
+    </ul>
+  </div>
+
+  <h2>1. Mapa do mercado</h2>
+  <table>
+    <tr><th>Camada</th><th>O que fazem</th><th>Players principais</th></tr>
+    <tr><td><b>A. Captação / emendas</b></td><td>Encontrar e operar recursos federais</td><td>QIATech/+Convénios, Gestor de Convénios, CNM Êxitos (grátis), Portal da Transparência (grátis), Squadra, Orzil</td></tr>
+    <tr><td><b>B. Benchmarking municipal</b></td><td>Comparar indicadores entre municípios</td><td>Meu Município, Cidade Única, Datapedia, FGV Municípios, inteli.gente, CLP Ranking, ICE</td></tr>
+    <tr><td><b>C. ERPs de gestão pública</b></td><td>Operar a prefeitura (contábil, folha, tributos, compras)</td><td>IPM, GOVBR, Betha, Fiorilli, Elotech</td></tr>
+    <tr><td><b>D. GovTech de IA / gabinete</b></td><td>Atendimento ao cidadão, CRM de mandato</td><td>GovTools, Conecta Gabinete</td></tr>
+    <tr><td><b>E. B2B sobre dado público</b></td><td>Estudos / inteligência de mercado</td><td>4MTI; geomarketing (Cortex, Geofusion, Neoway) usa consumo, não gasto público</td></tr>
+  </table>
+
+  <h2>2. Ameaças (ranqueadas)</h2>
+  <div class="threat t1"><b>🔴 1. QIATech / +Convénios — a mais perigosa</b>IA mapeia oportunidades, gera propostas, calcula potencial não captado e tem <b>Ranking de Eficiência inter-municipal</b>. Integra TransfereGov, SIMEC, FNS, Sismob, Sigcon. É quem mais se aproxima da nossa tese (captação <b>com comparação</b>). Porte/preço não divulgados.</div>
+  <div class="threat t2"><b>🟠 2. Gestor de Convénios — direto, mas frágil</b>Emenda por CNPJ + TransfereGov + CAUC + Plano de Trabalho (PDF) + alertas. Vulnerável: empresa opaca/minúscula (TO), sem preço público, sem profundidade fiscal, moat de dados raso.</div>
+  <div class="threat t3"><b>🟠 3. Gove (gove.digital) — o mais próximo em indicadores</b>≈50 indicadores comparáveis + Ranking CLP, mas atrelado ao ERP financeiro, sem item a item, sem B2B.</div>
+  <div class="threat t4"><b>🟡 4. Piso gratuito — ameaça estrutural</b>Portal da Transparência 2026 (emendas RP6–9, empenho/liq/pago diário, Pix) + CNM Êxitos (editais grátis). O pago precisa entregar acima disso.</div>
+  <div class="threat t0"><b>⚪ Não são ameaça real</b>Central das Emendas (transparência), Conjunta (educação OSC), Squadra/Orzil (consultoria/treino), GovTools/Conecta Gabinete (atendimento/CRM).</div>
+
+  <h2>3. Matriz de capacidades</h2>
+  <table>
+    <tr><th>Capacidade</th><th>Benchmarkers</th><th>Captação</th><th>ERPs</th><th>PNIGP</th></tr>
+    <tr><td>Compras item a item (preço unitário)</td><td class="no">Não</td><td class="no">Não</td><td class="part">Parcial</td><td class="yes">Sim</td></tr>
+    <tr><td>Escola/estabelecimento + geo</td><td class="no">Não</td><td class="no">Não</td><td class="part">Parcial</td><td class="yes">Sim</td></tr>
+    <tr><td>Captação de recursos federais</td><td class="no">Não</td><td class="yes">Sim</td><td class="no">Não</td><td class="yes">Sim</td></tr>
+    <tr><td>Matching captação ↔ gargalo</td><td class="no">Não</td><td class="no">Não</td><td class="no">Não</td><td class="yes">Sim</td></tr>
+    <tr><td>Série histórica granular</td><td class="part">Parcial</td><td class="no">Não</td><td class="no">Não</td><td class="yes">Sim</td></tr>
+    <tr><td>Comparação entre municípios</td><td class="yes">Sim</td><td class="part">Parcial</td><td class="no">Não</td><td class="yes">Sim</td></tr>
+    <tr><td>Estudos B2B de gasto público</td><td class="no">Não</td><td class="no">Não</td><td class="no">Não</td><td class="yes">Sim (tese)</td></tr>
+    <tr><td>Natureza do dado</td><td>Secundário, agregado, anual</td><td>Aberto, nível convênio</td><td>Bruto, em silo</td><td><b>Aberto, granular, atual</b></td></tr>
+  </table>
+
+  <h2>4. Inteligência de preços</h2>
+  <table>
+    <tr><th>Produto</th><th>Preço observado</th></tr>
+    <tr><td>Datapedia</td><td>Municipal <b>R$ 1.200/ano</b> · Estadual R$ 3.000 · Gabinete R$ 50.000/ano</td></tr>
+    <tr><td>Legislapp</td><td><b>R$ 49,90/mês</b> individual; grátis p/ ONGs</td></tr>
+    <tr><td>Gestor de Convénios, QIATech, Gove, Meu Município (Otimiza)</td><td>Sob demonstração (não divulgam)</td></tr>
+    <tr><td>Portal da Transparência, CNM Êxitos, inteli.gente, ICE, CLP</td><td>Gratuitos</td></tr>
+  </table>
+  <p>A opacidade de preço dos diretos é uma <b>oportunidade de confiança</b>: transparência comercial é diferencial onde o concorrente mais próximo é frágil.</p>
+
+  <h2>5. O espaço em aberto (nosso moat)</h2>
+  <div class="moat">
+    <p style="margin:0 0 8px">Nenhum player reúne, 100% sobre dado aberto e comparável entre municípios: <b>preço unitário item a item + captação + saúde/educação granular + geo + série + B2B</b>.</p>
+    <div class="lbl" style="margin:6px 0 2px">Dois eixos mais vazios e defensáveis:</div>
+    <ul style="margin:0">
+      <li><b>Preço unitário comparável entre municípios</b> — as ferramentas servem o comprador ou o fornecedor, nunca a comparação neutra que revela sobrepreço/economia.</li>
+      <li><b>Estudos B2B sobre gasto público</b> — o geomarketing usa consumo, não gasto público.</li>
+    </ul>
+    <div class="lbl" style="margin:10px 0 2px">Por que os ERPs (donos do dado bruto) não ocupam o espaço:</div>
+    <ul style="margin:0"><li>Arquitetura single-tenant exigiria reengenharia.</li><li>Dado é do ente, sob LGPD/sigilo.</li><li>Conflito de incentivo — clientes vizinhos competem; expor um ao outro é antiproduto.</li></ul>
+  </div>
+
+  <h2>6. Recomendações estratégicas</h2>
+  <ul>
+    <li><b>Chegar primeiro na integração</b> — QIATech faz só captação; nós integramos captação ao resto (compras, saúde, educação, gargalos).</li>
+    <li><b>Entregar acima do piso gratuito</b>: consolidação cross-fonte, alertas de prazo, matching gargalo→programa→emenda e <b>compliance da Resolução 370/2025</b> (risco de bloqueio de emendas em 2026).</li>
+    <li><b>Cravar os dois eixos vazios</b>: preço unitário comparável + estudos B2B.</li>
+    <li><b>Transparência comercial</b> como diferencial (vs. concorrentes sem preço).</li>
+    <li><b>Não temer os ERPs</b> no curto prazo, mas projetar a base sempre sobre dado aberto.</li>
+  </ul>
+
+  <h2>7. Incertezas a validar</h2>
+  <ul>
+    <li>Porte, preço e cobertura de QIATech/+Convénios e Gestor de Convénios.</li>
+    <li>Cadência real de atualização das bases dos concorrentes.</li>
+    <li>Status do Painel de Preços federal (indício de descontinuação jul/2025).</li>
+    <li>Publicação do ICE 2024.</li>
+    <li>Long-tail de govtechs regionais (rodada dirigida aos TCEs).</li>
+  </ul>
+
+  <footer>
+    <b>Fontes:</b> gestordeconvenios.com.br · qiatech.com.br · centraldasemendas.info · conjunta.org · portaldatransparencia.gov.br/emendas · plataformaexitos.com.br · meumunicipio.org.br · cidadeunica.com.br · datapedia.info · municipios.fgv.br · inteligente.mcti.gov.br · rankingdecompetitividade.org.br · ice.enap.gov.br · ipm.com.br · governancabrasil.com.br · betha.com.br · gove.digital · 4mti.com.br · conectagabinete.com.br<br><br>
+    Metodologia: pesquisa web com navegação ao vivo e verificação cruzada, jun/2026. Itens não confirmados na seção 7. Documento vivo.
+  </footer>
+</div>
+</body>
+</html>
