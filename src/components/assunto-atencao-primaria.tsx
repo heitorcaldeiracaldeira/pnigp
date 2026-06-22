@@ -173,19 +173,26 @@ export function AssuntoAtencaoPrimaria({ dados, nome, cod }: { dados: Dados; nom
               </div>
             )}
             <div className="rounded-xl border border-slate-200 p-3">
-              <div className="mb-2 text-xs font-semibold text-slate-700">📦 O que mudou na produção — nº de atendimentos/exames, com a variação a cada quadrimestre</div>
-              <div className="space-y-2.5">
+              <div className="mb-3 text-xs font-semibold text-slate-700">📦 Atendimentos e exames realizados — e quanto mudou a cada quadrimestre</div>
+              <div className="space-y-3.5">
                 {comMeta.map((i) => (
                   <div key={i.codigo}>
-                    <div className="text-xs font-medium text-slate-700">{i.saber.emoji} {i.saber.curto} <span className="text-[10px] text-slate-400">({UNIDADE[i.codigo] || "registros"})</span></div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-1 text-xs">
+                    <div className="mb-1 text-xs font-medium text-slate-700">{i.saber.emoji} {i.saber.curto} <span className="text-[10px] font-normal text-slate-400">· {UNIDADE[i.codigo] || "registros"}</span></div>
+                    <div className="flex items-stretch gap-1">
                       {i.serie.map((s, idx) => {
                         const d = idx > 0 ? s.numerador - i.serie[idx - 1].numerador : 0;
                         return (
                           <Fragment key={s.competencia}>
-                            {idx > 0 && <span className={`rounded px-1 text-[10px] font-semibold ${d >= 0 ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>{d >= 0 ? "▲ +" : "▼ "}{d.toLocaleString("pt-BR")}</span>}
-                            <span className="font-semibold tabular-nums text-slate-800">{s.numerador.toLocaleString("pt-BR")}</span>
-                            <span className="text-[10px] text-slate-400">{fmtComp(s.competencia)}</span>
+                            {idx > 0 && (
+                              <div className="flex w-14 shrink-0 flex-col items-center justify-center">
+                                <span className={`text-[11px] font-bold ${d >= 0 ? "text-emerald-600" : "text-rose-500"}`}>{d >= 0 ? "▲ +" : "▼ −"}{Math.abs(d).toLocaleString("pt-BR")}</span>
+                                <span className="text-slate-300">→</span>
+                              </div>
+                            )}
+                            <div className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-center">
+                              <div className="text-base font-bold tabular-nums text-slate-800">{s.numerador.toLocaleString("pt-BR")}</div>
+                              <div className="text-[10px] text-slate-500">{fmtComp(s.competencia)}</div>
+                            </div>
                           </Fragment>
                         );
                       })}
@@ -193,7 +200,7 @@ export function AssuntoAtencaoPrimaria({ dados, nome, cod }: { dados: Dados; nom
                   </div>
                 ))}
               </div>
-              <p className="mt-2 text-[10px] text-slate-400">Número absoluto registrado (numerador do indicador). A variação a cada quadrimestre mostra o que de fato mudou na ponta — ex.: mais exames/consultas realizados.</p>
+              <p className="mt-3 text-[10px] text-slate-400">Cada caixa = total realizado no quadrimestre. Entre elas, quanto <b className="text-emerald-600">aumentou (▲)</b> ou <b className="text-rose-500">diminuiu (▼)</b>. Fonte: e-SUS / SISAB.</p>
             </div>
             {eventos.length > 0 && (
               <div className="rounded-xl border border-teal-200 bg-teal-50/30 p-3">
