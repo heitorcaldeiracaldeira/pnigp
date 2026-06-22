@@ -1694,6 +1694,38 @@ export async function getEficienciaEducacaoSC(cod: string): Promise<EficienciaEd
   return { ano, matriculas, custoAluno, medianaCusto, ideb: idebMun, medianaIdeb, quadrante, potencialEconomia, nPares: reg.length };
 }
 
+// Índice de Eficiência (Saúde) — gasto em saúde por habitante × resultado da APS (média Previne) vs pares.
+export type EficienciaSaudeSC = {
+  ano: number; pop: number; gastoHab: number; medianaGasto: number; resultado: number | null; medianaResultado: number | null;
+  quadrante: "eficiente" | "alto_custo" | "investir" | "atencao"; potencialEconomia: number; nPares: number;
+} | null;
+export async function getEficienciaSaudeSC(cod: string): Promise<EficienciaSaudeSC> {
+  const ano = num((await query<Record<string, unknown>>(`SELECT max(ano) m FROM despesa_subfuncao_sc WHERE funcao='Saúde'`).catch(() => []))[0]?.m);
+  if (!ano) return null;
+  const desp = await query<Record<string, unknown>>(`SELECT cod_ibge, sum(empenhado) d FROM despesa_subfuncao_sc WHERE funcao='Saúde' AND ano=$1 GROUP BY cod_ibge`, [ano]).catch(() => []);
+  const pops = await query<Record<string, unknown>>(`SELECT cod_ibge, populacao FROM entes_sc WHERE tipo='M'`).catch(() => []);
+  const prev = await query<Record<string, unknown>>(`SELECT cod_ibge, avg(pct) p FROM previne_sc WHERE competencia=(SELECT max(competencia) FROM previne_sc) AND pct IS NOT NULL GROUP BY cod_ibge`).catch(() => []);
+  const mDesp = new Map(desp.map((r) => [String(r.cod_ibge), num(r.d)]));
+  const mPop = new Map(pops.map((r) => [String(r.cod_ibge), num(r.populacao)]));
+  const mPrev = new Map(prev.map((r) => [String(r.cod_ibge), num(r.p)]));
+  const pop = num(mPop.get(cod));
+  if (!pop || !mDesp.get(cod)) return null;
+  const faixa = _fk(pop);
+  const reg = [...mDesp.entries()].filter(([c]) => num(mPop.get(c)) > 0 && _fk(num(mPop.get(c))) === faixa)
+    .map(([c, d]) => ({ c, gasto: d / num(mPop.get(c)), res: mPrev.has(c) ? num(mPrev.get(c)) : null }));
+  const med = (arr: number[]) => arr.length ? [...arr].sort((a, b) => a - b)[Math.floor(arr.length / 2)] : 0;
+  const gastoHab = num(mDesp.get(cod)) / pop;
+  const resultado = mPrev.has(cod) ? num(mPrev.get(cod)) : null;
+  const medianaGasto = med(reg.map((r) => r.gasto));
+  const resArr = reg.filter((r) => r.res != null).map((r) => r.res as number);
+  const medianaResultado = resArr.length ? med(resArr) : null;
+  const caro = gastoHab > medianaGasto;
+  const resAlto = resultado != null && medianaResultado != null ? resultado >= medianaResultado : false;
+  const quadrante = caro && resAlto ? "alto_custo" : caro && !resAlto ? "atencao" : !caro && resAlto ? "eficiente" : "investir";
+  const potencialEconomia = caro && !resAlto ? (gastoHab - medianaGasto) * pop : 0;
+  return { ano, pop, gastoHab, medianaGasto, resultado, medianaResultado, quadrante, potencialEconomia, nPares: reg.length };
+}
+
 // Otimizador de Receitas Próprias — IPTU/ISS/ITBI per capita vs pares de mesmo porte → potencial de arrecadação (R$)
 export type OtimizadorReceitaSC = {
   ano: number; pop: number; nPares: number; potencialTotal: number;
