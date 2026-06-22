@@ -27,6 +27,7 @@ import { IdebPainel } from "@/components/ideb-painel";
 import { MatriculasCard } from "@/components/matriculas-card";
 import { FndeEducacaoCard } from "@/components/fnde-educacao-card";
 import { AnaliseEducacao } from "@/components/analise-educacao";
+import { AnaliseSaude } from "@/components/analise-saude";
 import { SerieExplicada } from "@/components/serie-explicada";
 import { PlacarEstrategico } from "@/components/placar-estrategico";
 import { CabecalhoArea } from "@/components/cabecalho-area";
@@ -686,6 +687,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     tabs.push({ id: "saude", label: "Saúde", content: (
       <>
         <CabecalhoArea titulo="Saúde" intro="Como a saúde do município está hoje, o que a lei exige, o que fazer e onde aprofundar — da visão geral ao indicador." conformidade={saudeConf} indicadores={saudeInd} insights={insights.filter((i) => /sa[úu]de/i.test(i.area))} links={saudeLinks} />
+        <div className="mb-4"><AnaliseSaude previne={previne} fns={fns} saude={saude} nome={ente.nome} /></div>
         <SaudeSC data={saude} previne={previne} fns={fns} />
         <div className="mt-4"><BaseMetodologica area="saude" /></div>
       </>
