@@ -26,6 +26,7 @@ import { BaseMetodologica } from "@/components/base-metodologica";
 import { IdebPainel } from "@/components/ideb-painel";
 import { MatriculasCard } from "@/components/matriculas-card";
 import { FndeEducacaoCard } from "@/components/fnde-educacao-card";
+import { AnaliseEducacao } from "@/components/analise-educacao";
 import { SerieExplicada } from "@/components/serie-explicada";
 import { PlacarEstrategico } from "@/components/placar-estrategico";
 import { CabecalhoArea } from "@/components/cabecalho-area";
@@ -705,7 +706,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       <AccountabilityAPS previne={previneFicha} apsValor={aps?.valorUlt ?? null} apsAno={repassesSaude?.anoUlt ?? null} saudePct={saude?.saudePct ?? null} cauc={cauc} nome={ente.nome} cod={codigo} />
     ) });
   }
-  if (educacao && educacaoSerie.length) tabs.push({ id: "educacao", label: "Educação (4 visões)", content: <><AssuntoEducacao serie={educacaoSerie} edu={educacao} fundebValor={receitasDetalhe?.itens.find((i) => i.item === "FUNDEB")?.valor ?? null} nome={ente.nome} />{censoMatricula && <div className="mt-4"><MatriculasCard dados={censoMatricula} nome={ente.nome} /></div>}{ideb && <div className="mt-4"><IdebPainel dados={ideb} nome={ente.nome} /></div>}{fndeEdu && <div className="mt-4"><FndeEducacaoCard dados={fndeEdu} nome={ente.nome} /></div>}<div className="mt-4"><BaseMetodologica area="educacao" /></div></> });
+  if (educacao && educacaoSerie.length) tabs.push({ id: "educacao", label: "Educação (4 visões)", content: <>{(ideb || fndeEdu) && <div className="mb-4"><AnaliseEducacao ideb={ideb} fnde={fndeEdu} censo={censoMatricula} nome={ente.nome} /></div>}<AssuntoEducacao serie={educacaoSerie} edu={educacao} fundebValor={receitasDetalhe?.itens.find((i) => i.item === "FUNDEB")?.valor ?? null} nome={ente.nome} />{censoMatricula && <div className="mt-4"><MatriculasCard dados={censoMatricula} nome={ente.nome} /></div>}{ideb && <div className="mt-4"><IdebPainel dados={ideb} nome={ente.nome} /></div>}{fndeEdu && <div className="mt-4"><FndeEducacaoCard dados={fndeEdu} nome={ente.nome} /></div>}<div className="mt-4"><BaseMetodologica area="educacao" /></div></> });
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Educação (comparativo)", content: <EducacaoSC data={educacao} /> });
   if (rgfResumo) tabs.push({ id: "folha", label: "Folha / Pessoal", content: <FolhaSC rgf={rgfResumo} serie={serie} /> });
   if (rpps) tabs.push({ id: "previdencia", label: "Previdência", content: <><PrevidenciaSC data={rpps} /><div className="mt-4"><BaseMetodologica area="previdencia" /></div></> });
