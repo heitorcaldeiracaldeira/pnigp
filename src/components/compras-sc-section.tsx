@@ -160,7 +160,8 @@ function TopContratos({ top, ano }: { top: Contrato[]; ano: number }) {
               <th className="p-2 font-medium">Objeto</th>
               <th className="hidden p-2 font-medium md:table-cell">Modalidade</th>
               <th className="p-2 text-right font-medium">Contratado</th>
-              <th className="hidden p-2 text-right font-medium sm:table-cell">Economia</th>
+              <th className="hidden p-2 text-right font-medium sm:table-cell">Economia (R$)</th>
+              <th className="hidden p-2 text-right font-medium sm:table-cell">Economia (%)</th>
             </tr>
           </thead>
           <tbody>
@@ -216,14 +217,15 @@ function ContratoRow({ c }: { c: Contrato }) {
         <td className="hidden p-2 text-slate-500 md:table-cell">{c.modalidade}</td>
         <td className="p-2 text-right font-semibold tabular-nums text-slate-800">{fmtBRLCompact(c.homologado)}</td>
         <td className="hidden p-2 text-right tabular-nums sm:table-cell">
-          {c.economia_pct != null && c.economia_pct > 0
-            ? <span className="text-emerald-600">{c.estimado > 0 && c.homologado > 0 && c.estimado > c.homologado ? `−${fmtBRLCompact(c.estimado - c.homologado)} · ` : ""}−{c.economia_pct.toFixed(0)}%</span>
-            : <span className="text-slate-400">—</span>}
+          {c.estimado > 0 && c.homologado > 0 && c.estimado > c.homologado ? <span className="text-emerald-600">{fmtBRLCompact(c.estimado - c.homologado)}</span> : <span className="text-slate-400">—</span>}
+        </td>
+        <td className="hidden p-2 text-right tabular-nums sm:table-cell">
+          {c.economia_pct != null && c.economia_pct > 0 ? <span className="text-emerald-600">{c.economia_pct.toFixed(0)}%</span> : <span className="text-slate-400">—</span>}
         </td>
       </tr>
       {open && (
         <tr className="border-b border-slate-100 bg-slate-50/60">
-          <td colSpan={4} className="p-3">
+          <td colSpan={5} className="p-3">
             <ItensDetalhe c={c} itens={itens} />
           </td>
         </tr>
