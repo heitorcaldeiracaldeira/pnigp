@@ -1416,21 +1416,27 @@ export async function getIdebSC(cod: string): Promise<IdebSC> {
   return etapas.length ? { etapas } : null;
 }
 
-// Economia entre estimado e homologado. Exclui outliers (homologado > estimado = erro de digitação unidade×total).
-// O % é robusto; o R$ absoluto é inflado por atas de registro de preço (quantidade máxima registrada ≠ comprada).
-export type EconomicidadeSC = { estimado: number; homologado: number; economia: number; economiaPct: number; nItens: number; nOutliers: number } | null;
+// Economicidade (preço unitário estimado → homologado). Métrica = MEDIANA por item (robusta a erros e a atas).
+// Separada POR MODALIDADE (via join a processos): competição (pregão/concorrência) gera economia; dispensa/inexig. ~0.
+// Exclui erros: homologado>estimado e economia>95% (estimado absurdo / homologado ≈ 0). Não somamos R$ absoluto
+// (a base inclui registro de preço — quantidade máxima registrada ≠ efetivamente comprada).
+export type EconomicidadeSC = { economiaMediana: number | null; nItens: number; nOutliers: number; porModalidade: { modalidade: string; mediana: number; n: number }[] } | null;
 export async function getEconomicidadeSC(cod: string): Promise<EconomicidadeSC> {
-  const r = (await query<Record<string, unknown>>(
-    `SELECT
-       COALESCE(SUM(unit_estimado*quantidade) FILTER (WHERE unit_homologado<=unit_estimado),0) est,
-       COALESCE(SUM(unit_homologado*quantidade) FILTER (WHERE unit_homologado<=unit_estimado),0) hom,
-       COUNT(*) FILTER (WHERE unit_homologado<=unit_estimado) n,
-       COUNT(*) FILTER (WHERE unit_homologado>unit_estimado) outliers
-     FROM itens_sc WHERE cod_ibge=$1 AND unit_homologado IS NOT NULL AND unit_estimado IS NOT NULL AND unit_estimado>0 AND quantidade>0`, [cod]).catch(() => []))[0];
-  if (!r || num(r.n) === 0) return null;
-  const estimado = num(r.est), homologado = num(r.hom);
-  const economia = estimado - homologado;
-  return { estimado, homologado, economia, economiaPct: estimado > 0 ? (economia / estimado) * 100 : 0, nItens: num(r.n), nOutliers: num(r.outliers) };
+  const COND = `i.unit_homologado IS NOT NULL AND i.unit_estimado IS NOT NULL AND i.unit_estimado>0 AND i.quantidade>0 AND i.unit_homologado<=i.unit_estimado AND (i.unit_estimado-i.unit_homologado)/i.unit_estimado <= 0.95`;
+  const g = (await query<Record<string, unknown>>(
+    `SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY (i.unit_estimado-i.unit_homologado)/i.unit_estimado*100) mediana, COUNT(*) n
+     FROM itens_sc i WHERE i.cod_ibge=$1 AND ${COND}`, [cod]).catch(() => []))[0];
+  if (!g || num(g.n) === 0) return null;
+  const out = (await query<Record<string, unknown>>(`SELECT COUNT(*) n FROM itens_sc i WHERE i.cod_ibge=$1 AND i.unit_homologado IS NOT NULL AND i.unit_estimado>0 AND (i.unit_homologado>i.unit_estimado OR (i.unit_estimado-i.unit_homologado)/NULLIF(i.unit_estimado,0)>0.95)`, [cod]).catch(() => [{ n: 0 }]))[0];
+  const mod = await query<Record<string, unknown>>(
+    `SELECT p.modalidade, percentile_cont(0.5) WITHIN GROUP (ORDER BY (i.unit_estimado-i.unit_homologado)/i.unit_estimado*100) mediana, COUNT(*) n
+     FROM itens_sc i JOIN processos_sc p ON p.cnpj_orgao=i.cnpj AND p.ano=i.ano AND p.sequencial=i.seq
+     WHERE i.cod_ibge=$1 AND ${COND} GROUP BY p.modalidade HAVING COUNT(*)>=20 ORDER BY COUNT(*) DESC`, [cod]).catch(() => []);
+  return {
+    economiaMediana: g.mediana != null ? num(g.mediana) : null,
+    nItens: num(g.n), nOutliers: num(out?.n),
+    porModalidade: mod.map((m) => ({ modalidade: String(m.modalidade), mediana: num(m.mediana), n: num(m.n) })),
+  };
 }
 
 // Itens vinculados aos maiores contratos (contrato → processo via cnpj/ano/seq → itens_sc)

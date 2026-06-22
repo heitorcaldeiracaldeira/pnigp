@@ -98,14 +98,28 @@ export function AssuntoPadroesCompras({ dados, contratos, pca, economia, nome }:
 
           {economia && (
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5">
-              <h3 className="text-sm font-semibold text-slate-800">💸 Economicidade (estimado → homologado)</h3>
-              <p className="mb-2 text-xs text-slate-500">Diferença entre o preço estimado e o homologado nos itens (a economia que a licitação gerou).</p>
+              <h3 className="text-sm font-semibold text-slate-800">💸 Economicidade — preço estimado → homologado</h3>
+              <p className="mb-2 text-xs text-slate-500">Quanto a disputa reduziu o preço unitário (estimado → homologado), por item. Medimos pela <b>mediana</b> (robusta a erros e a quantidades de registro de preço).</p>
               <div className="flex flex-wrap items-end gap-6">
-                <div><div className="text-3xl font-bold text-emerald-600">{economia.economiaPct.toFixed(1)}%</div><div className="text-[11px] text-slate-500">economia média sobre o estimado</div></div>
-                <div><div className="text-2xl font-bold tabular-nums text-emerald-600">{fmtBRL(economia.economia)}</div><div className="text-[11px] text-slate-500">economia nominal (estimado − homologado)</div></div>
-                <div><div className="text-base font-semibold tabular-nums text-slate-700">{fmtBRL(economia.estimado)} → {fmtBRL(economia.homologado)}</div><div className="text-[11px] text-slate-500">{economia.nItens.toLocaleString("pt-BR")} itens homologados</div></div>
+                <div><div className="text-3xl font-bold text-emerald-600">{economia.economiaMediana != null ? economia.economiaMediana.toFixed(1) : "—"}%</div><div className="text-[11px] text-slate-500">economia típica por item (mediana)</div></div>
+                <div><div className="text-base font-semibold tabular-nums text-slate-700">{economia.nItens.toLocaleString("pt-BR")}</div><div className="text-[11px] text-slate-500">itens com preço homologado</div></div>
               </div>
-              <p className="mt-2 text-[11px] text-slate-400">Metodologia: exclui {economia.nOutliers.toLocaleString("pt-BR")} itens com erro de digitação (homologado &gt; estimado). O <b>%</b> é robusto; os valores absolutos incluem atas de registro de preços (quantidade máxima registrada, nem sempre comprada).</p>
+              {economia.porModalidade.length > 0 && (
+                <div className="mt-3">
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Por modalidade — competição gera economia</div>
+                  <div className="space-y-1">
+                    {economia.porModalidade.map((m) => (
+                      <div key={m.modalidade} className="flex items-center gap-2 text-xs">
+                        <span className="w-44 shrink-0 truncate text-slate-600">{m.modalidade}</span>
+                        <div className="h-3 flex-1 overflow-hidden rounded bg-slate-100"><div className={`h-3 rounded ${m.mediana >= 5 ? "bg-emerald-500" : "bg-slate-300"}`} style={{ width: `${Math.min(100, m.mediana * 2)}%` }} /></div>
+                        <span className="w-24 shrink-0 text-right tabular-nums text-slate-700">{m.mediana.toFixed(1)}% · {m.n.toLocaleString("pt-BR")}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-[11px] text-slate-400">Modalidades competitivas (pregão, concorrência, concurso, diálogo competitivo) reduzem preço; <b>dispensa e inexigibilidade</b> (contratação direta) tendem a ~0%.</p>
+                </div>
+              )}
+              <p className="mt-2 text-[11px] text-slate-400">Metodologia: preço unitário por item; exclui {economia.nOutliers.toLocaleString("pt-BR")} itens com erro de digitação (homologado &gt; estimado, ou economia &gt; 95%). <b>Não somamos R$ total</b> — a base inclui registro de preço (quantidade máxima ≠ comprada). A economia em R$ <b>por contrato</b> (real) está na aba Contratos.</p>
             </div>
           )}
 
