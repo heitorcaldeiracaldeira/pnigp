@@ -129,32 +129,49 @@ export function ComprasSCSection({ codigo, tipo }: { codigo: string; tipo: "M" |
             </section>
           )}
 
-          {latest.top.length > 0 && (
-            <section className="rounded-2xl border border-slate-200 bg-white p-5">
-              <h3 className="mb-3 font-semibold text-slate-800">Maiores contratações · {ano}</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-left text-xs text-slate-500">
-                      <th className="p-2 font-medium">Objeto</th>
-                      <th className="hidden p-2 font-medium md:table-cell">Modalidade</th>
-                      <th className="p-2 text-right font-medium">Contratado</th>
-                      <th className="hidden p-2 text-right font-medium sm:table-cell">Economia</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {latest.top.slice(0, 10).map((c, i) => (
-                      <ContratoRow key={i} c={c} />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="mt-2 text-[11px] text-slate-400">Contratações publicadas no PNCP — clique numa linha para ver os <strong>itens do processo</strong>. Capitais podem ter cobertura parcial.</p>
-            </section>
-          )}
+          {latest.top.length > 0 && <TopContratos top={latest.top} ano={ano} />}
         </>
       )}
     </>
+  );
+}
+
+function TopContratos({ top, ano }: { top: Contrato[]; ano: number }) {
+  const [filtro, setFiltro] = useState("todas");
+  const modalidades = Array.from(new Set(top.map((c) => c.modalidade).filter(Boolean)));
+  const visiveis = filtro === "todas" ? top : top.filter((c) => c.modalidade === filtro);
+  const chip = (val: string, label: string) => (
+    <button key={val} onClick={() => setFiltro(val)} className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition ${filtro === val ? "bg-teal-700 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>{label}</button>
+  );
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <h3 className="mb-2 font-semibold text-slate-800">Maiores contratações · {ano}</h3>
+      {modalidades.length > 1 && (
+        <div className="mb-3 flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 flex items-center gap-1 text-[11px] text-slate-500"><ShoppingCart className="h-3.5 w-3.5" /> Modalidade:</span>
+          {chip("todas", "Todas")}
+          {modalidades.map((m) => chip(m, m))}
+        </div>
+      )}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-slate-100 text-left text-xs text-slate-500">
+              <th className="p-2 font-medium">Objeto</th>
+              <th className="hidden p-2 font-medium md:table-cell">Modalidade</th>
+              <th className="p-2 text-right font-medium">Contratado</th>
+              <th className="hidden p-2 text-right font-medium sm:table-cell">Economia</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visiveis.slice(0, 10).map((c, i) => (
+              <ContratoRow key={i} c={c} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-400">Contratações publicadas no PNCP — clique numa linha para ver os <strong>itens do processo</strong>. Capitais podem ter cobertura parcial.</p>
+    </section>
   );
 }
 

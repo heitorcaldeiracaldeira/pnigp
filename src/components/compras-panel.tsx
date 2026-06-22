@@ -4,7 +4,7 @@ import { Fragment, useState } from "react";
 import { ChevronDown, ChevronRight, ShieldAlert, ShoppingCart } from "lucide-react";
 import { ComprasRiscos } from "@/components/compras-riscos";
 import { analisarRiscosCompras, fornecedorConcentrado, riscoContratacao, type NivelContrato, type RiscoContrato } from "@/lib/compras-risco";
-import { empenhosDoContrato, fornecedoresDoProcesso, itensDoContrato } from "@/lib/contratacao-detalhe";
+import { fornecedoresDoProcesso, itensDoContrato } from "@/lib/contratacao-detalhe";
 import type { Compras, Contratacao } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtValor, fmtCNPJ } from "@/lib/ui";
 
@@ -214,10 +214,6 @@ export function ComprasPanel({
 function DetalheContrato({ contrato, risco }: { contrato: Contratacao; risco: RiscoContrato }) {
   const rm = RISCO_META[risco.nivel];
   const itens = itensDoContrato(contrato);
-  const empenhos = empenhosDoContrato(contrato);
-  const totalEmpenhado = empenhos.reduce((s, e) => s + e.empenhado, 0);
-  const totalPago = empenhos.reduce((s, e) => s + e.pago, 0);
-
   const fornecedores = fornecedoresDoProcesso(itens);
   const totEstim = itens.reduce((s, it) => s + it.valorUnitarioEstimado * it.quantidade, 0);
   const totReal = itens.reduce((s, it) => s + it.valorTotal, 0);
@@ -358,43 +354,10 @@ function DetalheContrato({ contrato, risco }: { contrato: Contratacao; risco: Ri
         </div>
       </div>
 
-      {/* Empenhos e pagamentos */}
-      <div className="max-w-2xl">
-        <h4 className="mb-2 text-sm font-semibold text-slate-700">Empenhos e pagamentos</h4>
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-slate-200 text-left text-slate-500">
-                <th className="p-2 font-medium">Nº do empenho</th>
-                <th className="p-2 font-medium">Data</th>
-                <th className="p-2 text-right font-medium">Empenhado</th>
-                <th className="p-2 text-right font-medium">Pago</th>
-                <th className="p-2 text-right font-medium">Saldo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {empenhos.map((e) => (
-                <tr key={e.numero} className="border-b border-slate-50 last:border-0">
-                  <td className="p-2 tabular-nums text-slate-700">{e.numero}</td>
-                  <td className="p-2 tabular-nums text-slate-500">{e.data}</td>
-                  <td className="p-2 text-right tabular-nums text-slate-600">{fmtBRL(e.empenhado)}</td>
-                  <td className="p-2 text-right tabular-nums text-emerald-700">{fmtBRL(e.pago)}</td>
-                  <td className="p-2 text-right tabular-nums text-slate-500">{fmtBRL(e.empenhado - e.pago)}</td>
-                </tr>
-              ))}
-              <tr className="border-t border-slate-200 bg-slate-50 font-semibold text-slate-700">
-                <td className="p-2" colSpan={2}>Total</td>
-                <td className="p-2 text-right tabular-nums">{fmtBRL(totalEmpenhado)}</td>
-                <td className="p-2 text-right tabular-nums text-emerald-700">{fmtBRL(totalPago)}</td>
-                <td className="p-2 text-right tabular-nums">{fmtBRL(totalEmpenhado - totalPago)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p className="mt-1.5 text-[11px] text-slate-500">
-          Fornecedor principal: <strong className="text-slate-600">{contrato.fornecedor}</strong> · Executado: {totalEmpenhado > 0 ? ((totalPago / totalEmpenhado) * 100).toFixed(0) : 0}% do empenhado.
-        </p>
-      </div>
+      {/* Empenhos/pagamentos NÃO são publicados no PNCP — por isso não exibimos (só mostramos dado de fonte oficial). */}
+      <p className="text-[11px] text-slate-400">
+        Empenhos e pagamentos <b>não são publicados no PNCP</b> — por isso não são exibidos aqui. A execução orçamentária (empenhado/pago) fica no sistema próprio de cada ente e é consolidada no SICONFI e nos portais de transparência/TCE.
+      </p>
     </div>
   );
 }

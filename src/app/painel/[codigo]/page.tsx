@@ -295,6 +295,14 @@ export default async function PainelPage({
 
   return (
     <div className="space-y-6">
+      {/* AVISO: esta visão usa dados ilustrativos (protótipo). Os dados reais estão em /real/[codigo] (SC). */}
+      <div className="flex items-start gap-3 rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <span className="text-lg leading-none">🧪</span>
+        <div>
+          <b>Demonstração — dados ilustrativos.</b> Esta página é um protótipo de layout; os números são <b>simulados</b> e não refletem a realidade do município.
+          Os painéis com <b>dados reais</b> cobrem os municípios de <b>Santa Catarina</b> (ex.: <a className="font-semibold underline" href="/real/4205407">Florianópolis</a>).
+        </div>
+      </div>
       {/* Cabeçalho do município */}
       <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
