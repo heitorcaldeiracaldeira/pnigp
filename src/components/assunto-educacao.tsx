@@ -21,7 +21,7 @@ const COMO_MELHORAR = [
   "Cumprir os 25% de MDE com qualidade do gasto (priorizar ensino, não meio).",
 ];
 
-export function AssuntoEducacao({ serie, edu, fundebValor, nome }: { serie: EducacaoSerieSC; edu: NonNullable<EducacaoSC>; fundebValor: number | null; nome: string }) {
+export function AssuntoEducacao({ serie, edu, fundebValor, matriculas, nome }: { serie: EducacaoSerieSC; edu: NonNullable<EducacaoSC>; fundebValor: number | null; matriculas?: number | null; nome: string }) {
   const [v, setV] = useState<Visao>("estrategico");
   const u = serie[serie.length - 1];
   const educPct = u?.educPct ?? edu.educPct ?? 0;
@@ -45,11 +45,11 @@ export function AssuntoEducacao({ serie, edu, fundebValor, nome }: { serie: Educ
             <div className="grid items-stretch gap-2 md:grid-cols-[1fr_auto_1fr_auto_1fr]">
               <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4"><div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800"><CircleDollarSign className="h-4 w-4" /> 💰 Dinheiro</div><div className="mt-1 text-2xl font-bold tabular-nums text-slate-900">{u ? fmtBRLCompact(u.educValor) : "—"}</div><div className="text-[11px] text-slate-500">MDE aplicado{fundebValor ? ` · FUNDEB ${fmtBRLCompact(fundebValor)}` : ""}</div></div>
               <div className="hidden items-center justify-center md:flex"><ArrowRight className="h-5 w-5 text-slate-300" /></div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500"><Users className="h-4 w-4" /> 🏭 Produção</div><div className="mt-1 text-lg font-bold text-slate-400">matrículas</div><div className="text-[11px] text-slate-400">Censo Escolar/INEP — a coletar</div></div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500"><Users className="h-4 w-4" /> 🏭 Produção</div>{matriculas ? <><div className="mt-1 text-2xl font-bold tabular-nums text-slate-900">{matriculas.toLocaleString("pt-BR")}</div><div className="text-[11px] text-slate-500">matrículas na rede municipal (Censo)</div></> : <><div className="mt-1 text-lg font-bold text-slate-400">matrículas</div><div className="text-[11px] text-slate-400">Censo Escolar/INEP — a coletar</div></>}</div>
               <div className="hidden items-center justify-center md:flex"><ArrowRight className="h-5 w-5 text-slate-300" /></div>
               <div className="rounded-xl border border-violet-200 bg-violet-50/50 p-4"><div className="flex items-center gap-1.5 text-xs font-semibold text-violet-800"><GraduationCap className="h-4 w-4" /> ❤️ Benefício</div><div className={`mt-1 text-2xl font-bold tabular-nums ${alfabOk ? "text-emerald-600" : "text-amber-600"}`}>{edu.alfab != null ? `${edu.alfab.toFixed(1)}%` : "—"}</div><div className="text-[11px] text-slate-500">alfabetização · pares: {edu.alfabPares.toFixed(1)}%</div></div>
             </div>
-            <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600"><b>Leitura:</b> {nome} aplica {educPct.toFixed(0)}% em educação ({nvMDE === "ok" ? "cumpre" : "abaixo de"} 25%) e tem {edu.alfab != null ? `${edu.alfab.toFixed(0)}% de alfabetização` : "alfabetização não disponível"}. O elo de produção (matrículas, IDEB) será completado com o Censo Escolar/INEP.</p>
+            <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600"><b>Leitura:</b> {nome} aplica {educPct.toFixed(0)}% em educação ({nvMDE === "ok" ? "cumpre" : "abaixo de"} 25%) e tem {edu.alfab != null ? `${edu.alfab.toFixed(0)}% de alfabetização` : "alfabetização não disponível"}.{matriculas ? ` Esse dinheiro atende ${matriculas.toLocaleString("pt-BR")} matrículas na rede municipal (Censo).` : " O elo de produção (matrículas, IDEB) será completado com o Censo Escolar/INEP."}</p>
           </div>
         )}
         {v === "tatico" && (
