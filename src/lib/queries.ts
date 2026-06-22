@@ -1406,7 +1406,7 @@ export type ContratosVencimentoSC = {
 export async function getContratosVencimentoSC(cod: string): Promise<ContratosVencimentoSC> {
   const rows = await query<Record<string, unknown>>(
     `SELECT objeto, fornecedor, valor_global, vig_inicio, vig_fim, (vig_fim::date - CURRENT_DATE) AS dias
-     FROM contratos_sc WHERE cod_ibge=$1 AND vig_fim IS NOT NULL AND vig_fim ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'`, [cod]).catch(() => []);
+     FROM contratos_sc WHERE cod_ibge=$1 AND vig_fim IS NOT NULL`, [cod]).catch(() => []);
   if (!rows.length) return null;
   const FAIXAS = [
     { id: "critico", label: "Crítico (< 30 dias)", min: 0, max: 30 },
