@@ -1,6 +1,7 @@
 import "server-only";
 import { query } from "./db";
 import { fetchComprasPNCP } from "./pncp";
+import { grupoFnde } from "./fnde-grupos";
 import { fetchTransferenciasPortal, temChavePortal, type TransferenciasSC } from "./transferegov";
 
 export const ANO_ATUAL = 2024;
@@ -1440,15 +1441,19 @@ export type FndeEducacaoSC = {
 export async function getFndeEducacaoSC(cod: string): Promise<FndeEducacaoSC> {
   const [tot, prog, serie] = await Promise.all([
     query<Record<string, unknown>>(`SELECT count(*) n, coalesce(sum(valor),0) total, max(ano) ult FROM fnde_simad_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
-    query<Record<string, unknown>>(`SELECT regexp_replace(programa,'\\s*[-–].*$','') p, coalesce(sum(valor),0) v FROM fnde_simad_sc WHERE cod_ibge=$1 GROUP BY 1 ORDER BY v DESC LIMIT 10`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT trim(programa) p, coalesce(sum(valor),0) v FROM fnde_simad_sc WHERE cod_ibge=$1 GROUP BY 1`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT ano, coalesce(sum(valor),0) v FROM fnde_simad_sc WHERE cod_ibge=$1 GROUP BY ano ORDER BY ano`, [cod]).catch(() => []),
   ]);
   if (!tot.length || num(tot[0]?.n) === 0) return null;
   const anoUlt = num(tot[0]?.ult);
   const totalUlt = num((serie.find((r) => num(r.ano) === anoUlt) || {}).v);
+  // consolida os programas (fragmentados) em grupos canônicos com rótulo leigo
+  const grupos = new Map<string, { rotulo: string; valor: number }>();
+  for (const r of prog) { const g = grupoFnde(String(r.p)); const cur = grupos.get(g.chave) || { rotulo: g.rotulo, valor: 0 }; cur.valor += num(r.v); grupos.set(g.chave, cur); }
+  const porPrograma = [...grupos.values()].map((g) => ({ programa: g.rotulo, valor: g.valor })).sort((a, b) => b.valor - a.valor);
   return {
     total: num(tot[0]?.total), nLib: num(tot[0]?.n), anoUlt, totalUlt,
-    porPrograma: prog.map((r) => ({ programa: String(r.p || "—"), valor: num(r.v) })),
+    porPrograma,
     serie: serie.map((r) => ({ ano: num(r.ano), valor: num(r.v) })),
   };
 }
