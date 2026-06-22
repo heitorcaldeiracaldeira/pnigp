@@ -240,6 +240,19 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
           label: "Contratos",
           content: (
             <>
+              {contratosVenc && contratosVenc.nCriticos > 0 && (
+                <div className="mb-4 rounded-2xl border border-rose-300 bg-rose-50 p-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">⚠️</span>
+                    <div className="flex-1">
+                      <div className="font-semibold text-rose-800">{contratosVenc.nCriticos} contrato(s) crítico(s) a vencer em menos de 30 dias</div>
+                      <div className="text-sm text-rose-700">
+                        {(() => { const cs = contratosVenc.aVencer.filter((x) => x.dias <= 30); if (!cs.length) return ""; const c = cs.reduce((a, b) => (b.valor > a.valor ? b : a)); return `Maior em risco: "${c.objeto.slice(0, 55)}" — ${fmtBRLCompact(c.valor)}, vence em ${c.dias} dia(s).`; })()} Planeje renovação ou nova licitação.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
                 <div className="mb-1 flex flex-wrap items-center gap-2">
                   <FileText className="h-4 w-4 text-teal-600" />
@@ -758,21 +771,6 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
             <strong className="text-slate-700">Fonte:</strong> {FONTE_SICONFI}. Números reais publicados.
           </p>
         </div>
-
-        {/* Alerta de contratos críticos a vencer */}
-        {contratosVenc && contratosVenc.nCriticos > 0 && (
-          <a href="#contratos" className="block rounded-2xl border border-rose-300 bg-rose-50 p-4 transition hover:bg-rose-100">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">⚠️</span>
-              <div className="flex-1">
-                <div className="font-semibold text-rose-800">{contratosVenc.nCriticos} contrato(s) crítico(s) a vencer em menos de 30 dias</div>
-                <div className="text-sm text-rose-700">
-                  {(() => { const c = contratosVenc.aVencer.find((x) => x.dias <= 30); return c ? `Mais próximo: "${c.objeto.slice(0, 60)}" vence em ${c.dias} dia(s).` : ""; })()} Planeje renovação ou nova licitação. <span className="font-semibold underline">Ver contratos →</span>
-                </div>
-              </div>
-            </div>
-          </a>
-        )}
 
         {/* Resumo executivo + Insights agora vivem no Placar (aba Visão do Prefeito), num fluxo único */}
 
