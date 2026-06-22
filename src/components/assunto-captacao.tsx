@@ -42,6 +42,30 @@ export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: 
         </div>
       </div>
 
+      {/* AS MODALIDADES DE RECURSO FEDERAL — visões separadas (favorece a leitura) */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-800">🧭 De onde vêm os recursos federais — as modalidades</h3>
+        <p className="mt-0.5 text-[12px] text-slate-500">Cada caminho tem uma lógica própria. Separar ajuda a saber onde agir: o que é automático, o que é emenda e o que é disputado por projeto.</p>
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3">
+            <div className="flex items-center justify-between"><span className="text-[13px] font-semibold text-emerald-800">1. Fundo a Fundo</span><span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white">ATIVO</span></div>
+            <p className="mt-1 text-[11px] text-slate-600">Repasses regulares/automáticos por programa (SUS, educação, cultura…). É o que {nome} <b>tem direito a receber</b>. {fmtBRLCompact(dados.totalCaptado)} captado.</p>
+          </div>
+          <div className="rounded-xl border border-slate-200 p-3">
+            <div className="flex items-center justify-between"><span className="text-[13px] font-semibold text-slate-700">2. Emendas Parlamentares</span><span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">EM COLETA</span></div>
+            <p className="mt-1 text-[11px] text-slate-600">Transferências especiais (a "emenda Pix") e com finalidade definida — o maior recurso discricionário. Exibição neutra: valores e execução.</p>
+          </div>
+          <div className="rounded-xl border border-slate-200 p-3">
+            <div className="flex items-center justify-between"><span className="text-[13px] font-semibold text-slate-700">3. Convênios e Contratos de Repasse</span><span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">EM COLETA</span></div>
+            <p className="mt-1 text-[11px] text-slate-600">Transferências voluntárias <b>disputadas por projeto</b> (editais/chamamentos). A oportunidade competitiva clássica — onde um bom projeto faz diferença.</p>
+          </div>
+          <div className="rounded-xl border border-slate-200 p-3">
+            <div className="flex items-center justify-between"><span className="text-[13px] font-semibold text-slate-700">4. TED</span><span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">EM COLETA</span></div>
+            <p className="mt-1 text-[11px] text-slate-600">Termo de Execução Descentralizada — entre órgãos federais (universidades, institutos). Relevância menor para o município direto.</p>
+          </div>
+        </div>
+      </div>
+
       {/* PODERÁ ACESSAR — janelas abertas hoje */}
       <section className="rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-emerald-800">✅ Pode captar agora — janela de proposta ABERTA</h3>
