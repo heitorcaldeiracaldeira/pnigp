@@ -20,6 +20,7 @@ import { AssuntoEducacao } from "@/components/assunto-educacao";
 import { AssuntoIEGM } from "@/components/assunto-iegm";
 import { AssuntoPadroesCompras } from "@/components/assunto-padroes-compras";
 import { ContratosGestao } from "@/components/contratos-gestao";
+import { AtasPainel } from "@/components/atas-painel";
 import { BaseMetodologica } from "@/components/base-metodologica";
 import { IdebPainel } from "@/components/ideb-painel";
 import { MatriculasCard } from "@/components/matriculas-card";
@@ -41,7 +42,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getContratosVencimentoSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop, fmtData } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -49,7 +50,7 @@ export const dynamic = "force-dynamic";
 
 export default async function RealEntePage({ params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params;
-  const [dados, entes, contratosResumo, pcaResumo, metasFiscais, rankingFiscal, pibPerCapita, indicadores, serieRenda, diagnostico, rgfResumo, saude, educacao, cruz, diagEstado, previne, fns, rpps, cauc, padroesCompras, contratosItens, economicidade, contratosVenc, ideb, censoMatricula] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo), getMetasFiscaisSC(codigo), getRankingFiscalSC(), getPibPerCapitaSC(codigo), getIndicadoresSetoriaisSC(codigo), getSeriesIndicadoresSC(codigo), getDiagnosticoGestorSC(codigo), getRgfResumoSC(codigo), getSaudeSC(codigo), getEducacaoSC(codigo), getCruzamentosSC(codigo), getDiagnosticoEstadoSC(codigo), getPrevineSC(codigo), getFnsSC(codigo), getRppsSC(codigo), getCaucSC(codigo), getPadroesComprasSC(codigo), getContratosComItensSC(codigo), getEconomicidadeSC(codigo), getContratosVencimentoSC(codigo), getIdebSC(codigo), getCensoMatriculaSC(codigo)]);
+  const [dados, entes, contratosResumo, pcaResumo, metasFiscais, rankingFiscal, pibPerCapita, indicadores, serieRenda, diagnostico, rgfResumo, saude, educacao, cruz, diagEstado, previne, fns, rpps, cauc, padroesCompras, contratosItens, economicidade, contratosVenc, atas, ideb, censoMatricula] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo), getMetasFiscaisSC(codigo), getRankingFiscalSC(), getPibPerCapitaSC(codigo), getIndicadoresSetoriaisSC(codigo), getSeriesIndicadoresSC(codigo), getDiagnosticoGestorSC(codigo), getRgfResumoSC(codigo), getSaudeSC(codigo), getEducacaoSC(codigo), getCruzamentosSC(codigo), getDiagnosticoEstadoSC(codigo), getPrevineSC(codigo), getFnsSC(codigo), getRppsSC(codigo), getCaucSC(codigo), getPadroesComprasSC(codigo), getContratosComItensSC(codigo), getEconomicidadeSC(codigo), getContratosVencimentoSC(codigo), getAtasSC(codigo), getIdebSC(codigo), getCensoMatriculaSC(codigo)]);
   const previneFicha = await getPrevineFichaSC(codigo);
   const fnsSerie = await getFnsSerieSC(codigo);
   const repassesSaude = await getRepassesSaudeFichaSC(codigo);
@@ -230,6 +231,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     },
     { id: "compras", label: "Compras", content: <ComprasSCSection codigo={ente.cod_ibge} tipo={ente.tipo} /> },
     ...(padroesCompras ? [{ id: "padroes-compras", label: "Planejamento de Compras", content: <AssuntoPadroesCompras dados={padroesCompras} contratos={contratosResumo} pca={pcaResumo} economia={economicidade} nome={ente.nome} /> }] : []),
+    ...(atas ? [{ id: "atas", label: "Atas (Registro de Preço)", content: <AtasPainel dados={atas} nome={ente.nome} /> }] : []),
     ...(contratosResumo
       ? [{
           id: "contratos",
@@ -695,7 +697,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const GRUPOS: [string, string[]][] = [
     ["Resumo", ["placar", "visao", "panorama", "diagnostico"]],
     ["Finanças", ["financas", "receitas", "despesas", "execucao", "folha", "previdencia", "metas", "simulador"]],
-    ["Compras", ["compras", "padroes-compras", "contratos", "planejamento", "compras-sc"]],
+    ["Compras", ["compras", "padroes-compras", "atas", "contratos", "planejamento", "compras-sc"]],
     ["Setores", ["saude", "previne-ficha", "accountability-aps", "mac", "repasses-saude", "fns-historico", "educacao", "educacao-cruz", "indicadores"]],
     ["Análise", ["cruzamentos", "iegm", "ranking", "transferencias", "cauc", "auditoria"]],
   ];
