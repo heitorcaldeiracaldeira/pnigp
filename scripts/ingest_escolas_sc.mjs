@@ -34,6 +34,7 @@ async function main() {
   await db.query(`CREATE TABLE IF NOT EXISTS escolas_sc (
     co_entidade TEXT PRIMARY KEY, cod_ibge TEXT, ano INTEGER, nome TEXT, dependencia SMALLINT, localizacao SMALLINT, matriculas INTEGER,
     tem_agua BOOLEAN, tem_energia BOOLEAN, tem_esgoto BOOLEAN, tem_internet BOOLEAN, tem_biblioteca BOOLEAN, tem_lab_info BOOLEAN, tem_quadra BOOLEAN, tem_refeitorio BOOLEAN, tem_acessibilidade BOOLEAN)`);
+  for (const col of ["latitude DOUBLE PRECISION", "longitude DOUBLE PRECISION", "bairro TEXT", "endereco TEXT", "docentes INTEGER", "profissionais INTEGER"]) await db.query(`ALTER TABLE escolas_sc ADD COLUMN IF NOT EXISTS ${col}`);
   const q = async (s, p) => { for (let t = 0; t < 8; t++) { try { return await db.query(s, p); } catch { await sleep(1200 * (t + 1)); } } throw new Error("db"); };
 
   console.log("Baixando microdados…");
@@ -53,11 +54,25 @@ async function main() {
       console.log(`  matrículas agregadas: ${nl} de ${matMap.size} escolas`);
     }
   } catch { /* 2024 traz matrícula no próprio arquivo de escola */ }
+  // docentes por escola (arquivo de docentes já vem agregado: QT_DOC_BAS por CO_ENTIDADE)
+  let docMap = null;
+  try {
+    const dcsv = unzipEntry(buf, "Tabela_Docente_" + ANO + ".csv");
+    const dh = dcsv.slice(0, dcsv.indexOf("\n")).split(";").map((h) => h.replace(/^"|"$/g, "").trim());
+    const ci = dh.indexOf("CO_ENTIDADE"), qi = dh.indexOf("QT_DOC_BAS");
+    if (ci >= 0 && qi >= 0) {
+      docMap = new Map(); const dl = dcsv.split(/\r?\n/);
+      for (let i = 1; i < dl.length; i++) { if (!dl[i]) continue; const cols = dl[i].split(";"); const co = cols[ci]?.replace(/"/g, ""); const v = parseInt(cols[qi], 10); if (co && !isNaN(v)) docMap.set(co, v); }
+      console.log(`  docentes por escola: ${docMap.size}`);
+    }
+  } catch { /* sem arquivo de docentes */ }
   const csv = unzipEntry(buf, "Tabela_Escola_" + ANO + ".csv");
   const linhas = csv.split(/\r?\n/);
   const head = linhas[0].split(";").map((h) => h.replace(/^"|"$/g, "").trim());
   const ix = (nome) => head.indexOf(nome);
-  const C = { uf: ix("CO_UF"), mun: ix("CO_MUNICIPIO"), no: ix("NO_ENTIDADE"), co: ix("CO_ENTIDADE"), dep: ix("TP_DEPENDENCIA"), loc: ix("TP_LOCALIZACAO"), sit: ix("TP_SITUACAO_FUNCIONAMENTO"), mat: ix("QT_MAT_BAS"), agua: ix("IN_AGUA_INEXISTENTE"), ener: ix("IN_ENERGIA_INEXISTENTE"), esg: ix("IN_ESGOTO_INEXISTENTE"), net: ix("IN_INTERNET"), bib: ix("IN_BIBLIOTECA"), lab: ix("IN_LABORATORIO_INFORMATICA"), quad: ix("IN_QUADRA_ESPORTES"), ref: ix("IN_REFEITORIO"), aces: ix("IN_ACESSIBILIDADE_INEXISTENTE") };
+  const C = { uf: ix("CO_UF"), mun: ix("CO_MUNICIPIO"), no: ix("NO_ENTIDADE"), co: ix("CO_ENTIDADE"), dep: ix("TP_DEPENDENCIA"), loc: ix("TP_LOCALIZACAO"), sit: ix("TP_SITUACAO_FUNCIONAMENTO"), mat: ix("QT_MAT_BAS"), agua: ix("IN_AGUA_INEXISTENTE"), ener: ix("IN_ENERGIA_INEXISTENTE"), esg: ix("IN_ESGOTO_INEXISTENTE"), net: ix("IN_INTERNET"), bib: ix("IN_BIBLIOTECA"), lab: ix("IN_LABORATORIO_INFORMATICA"), quad: ix("IN_QUADRA_ESPORTES"), ref: ix("IN_REFEITORIO"), aces: ix("IN_ACESSIBILIDADE_INEXISTENTE"), lat: ix("LATITUDE"), lon: ix("LONGITUDE"), bairro: ix("NO_BAIRRO"), end: ix("DS_ENDERECO") };
+  const flt = (v) => { const n = parseFloat(String(v || "").replace(",", ".")); return isNaN(n) ? null : n; };
+  const profCols = head.map((h, i) => (/^QT_PROF_/.test(h) ? i : -1)).filter((i) => i >= 0); // servidores de apoio
   let n = 0;
   for (let i = 1; i < linhas.length; i++) {
     if (!linhas[i]) continue;
@@ -65,11 +80,14 @@ async function main() {
     if (c[C.uf] !== "42") continue; // só SC
     if (c[C.sit] !== "1") continue; // só em atividade
     const cod = c[C.mun]; const matr = matMap ? (matMap.get(c[C.co]) || 0) : parseInt(c[C.mat], 10);
-    await q(`INSERT INTO escolas_sc (co_entidade,cod_ibge,ano,nome,dependencia,localizacao,matriculas,tem_agua,tem_energia,tem_esgoto,tem_internet,tem_biblioteca,tem_lab_info,tem_quadra,tem_refeitorio,tem_acessibilidade)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-             ON CONFLICT (co_entidade) DO UPDATE SET nome=EXCLUDED.nome, matriculas=EXCLUDED.matriculas, ano=EXCLUDED.ano, tem_internet=EXCLUDED.tem_internet, tem_biblioteca=EXCLUDED.tem_biblioteca, tem_quadra=EXCLUDED.tem_quadra, tem_acessibilidade=EXCLUDED.tem_acessibilidade, tem_esgoto=EXCLUDED.tem_esgoto`,
+    const prof = profCols.reduce((s, i) => s + (parseInt(c[i], 10) || 0), 0);
+    const doc = docMap ? (docMap.get(c[C.co]) ?? null) : null;
+    await q(`INSERT INTO escolas_sc (co_entidade,cod_ibge,ano,nome,dependencia,localizacao,matriculas,tem_agua,tem_energia,tem_esgoto,tem_internet,tem_biblioteca,tem_lab_info,tem_quadra,tem_refeitorio,tem_acessibilidade,latitude,longitude,bairro,endereco,docentes,profissionais)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+             ON CONFLICT (co_entidade) DO UPDATE SET nome=EXCLUDED.nome, matriculas=EXCLUDED.matriculas, ano=EXCLUDED.ano, tem_internet=EXCLUDED.tem_internet, tem_biblioteca=EXCLUDED.tem_biblioteca, tem_quadra=EXCLUDED.tem_quadra, tem_acessibilidade=EXCLUDED.tem_acessibilidade, tem_esgoto=EXCLUDED.tem_esgoto, latitude=EXCLUDED.latitude, longitude=EXCLUDED.longitude, bairro=EXCLUDED.bairro, endereco=EXCLUDED.endereco, docentes=EXCLUDED.docentes, profissionais=EXCLUDED.profissionais`,
       [c[C.co], cod, +ANO, c[C.no], parseInt(c[C.dep], 10) || null, parseInt(c[C.loc], 10) || null, isNaN(matr) ? null : matr,
-        !um(c[C.agua]), !um(c[C.ener]), !um(c[C.esg]), um(c[C.net]), um(c[C.bib]), um(c[C.lab]), um(c[C.quad]), um(c[C.ref]), !um(c[C.aces])]);
+        !um(c[C.agua]), !um(c[C.ener]), !um(c[C.esg]), um(c[C.net]), um(c[C.bib]), um(c[C.lab]), um(c[C.quad]), um(c[C.ref]), !um(c[C.aces]),
+        flt(c[C.lat]), flt(c[C.lon]), c[C.bairro] || null, c[C.end] || null, doc, prof]);
     n++;
     if (n % 500 === 0) console.log(`  ${n} escolas SC…`);
   }
