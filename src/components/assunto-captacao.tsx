@@ -50,25 +50,47 @@ export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: 
           <div className="mt-2 space-y-1.5">
             {dados.abertos.map((o) => {
               const k = o.dias != null ? critPrazo(o.dias) : null;
+              const campos = ([
+                ["Órgão concedente", o.orgao], ["Fundo gestor", o.fundo], ["Código do programa", o.codigo],
+                ["Modalidade", o.modalidade], ["Situação", o.situacao], ["Ano", o.ano ? String(o.ano) : ""],
+                ["Valor global do programa", o.valor > 0 ? fmtBRLCompact(o.valor) : ""],
+                ["Ação orçamentária", o.acaoOrcamentaria], ["Valor da ação", o.valorAcao > 0 ? fmtBRLCompact(o.valorAcao) : ""],
+                ["Natureza da despesa", o.naturezaDespesa], ["Parcelas previstas", o.parcelas > 0 ? String(o.parcelas) : ""],
+                ["Janela de proposta", `${dt(o.dtIni)} a ${dt(o.dtFim)}`],
+              ] as [string, string][]).filter(([, v]) => v && v !== "—" && v !== "— a —");
               return (
-              <div key={o.id} className="rounded-xl border border-slate-200 p-3.5">
-                <div className="flex flex-wrap items-start justify-between gap-2">
+              <details key={o.id} className="group rounded-xl border border-slate-200 transition open:border-teal-300 open:bg-teal-50/20 open:shadow-sm">
+                <summary className="flex cursor-pointer list-none items-center gap-3 p-3.5 [&::-webkit-details-marker]:hidden">
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold text-slate-900">{o.nome}</div>
-                    {o.objetivo && <p className="mt-0.5 line-clamp-2 text-[12px] text-slate-600">{o.objetivo}</p>}
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
+                      <span>🏛️ {o.orgao}</span>
+                      {o.valor > 0 && <span>💰 <b className="text-emerald-700">{fmtBRLCompact(o.valor)}</b></span>}
+                      <span className={o.dias != null && o.dias <= 15 ? "font-semibold text-rose-700" : ""}>⏰ até {dt(o.dtFim)}{o.dias != null && ` · ${o.dias}d`}</span>
+                    </div>
                   </div>
-                  {k && <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${k.cls}`} title={`Janela fecha em ${o.dias} dias`}>{k.nivel}</span>}
+                  {k && <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${k.cls}`}>{k.nivel}</span>}
+                  <span className="shrink-0 text-xs text-slate-400 transition group-open:rotate-180">▾</span>
+                </summary>
+                {/* FICHA da oportunidade — todos os dados p/ decisão */}
+                <div className="space-y-3 border-t border-slate-100 px-4 pb-4 pt-3">
+                  {o.objetivo && <div><div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Objetivo</div><p className="text-[13px] text-slate-700">{o.objetivo}</p></div>}
+                  {o.descricao && o.descricao !== o.objetivo && <div><div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Descrição</div><p className="text-[13px] text-slate-600">{o.descricao}</p></div>}
+                  <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+                    {campos.map(([rotulo, valor]) => (
+                      <div key={rotulo} className="flex justify-between gap-3 border-b border-slate-50 pb-1.5">
+                        <dt className="text-[12px] text-slate-500">{rotulo}</dt>
+                        <dd className="text-right text-[12px] font-medium text-slate-800">{valor}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <a href={docLink(o.id)} className="rounded-lg bg-teal-600 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-teal-700">📄 Gerar Plano de Trabalho (.docx)</a>
+                    <a href="https://discricionarias.transferegov.sistema.gov.br/" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-teal-600 px-3 py-1.5 text-[12px] font-semibold text-teal-700 hover:bg-teal-50">Abrir no Transferegov ↗</a>
+                  </div>
+                  <p className="text-[10px] text-slate-400">Fonte: Transferegov (api.transferegov.gestao.gov.br/fundoafundo) — dado oficial. Programa {o.codigo || o.id}.</p>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px]">
-                  <span className="text-slate-500">🏛️ <span className="text-slate-700">{o.orgao}</span></span>
-                  {o.valor > 0 && <span className="text-slate-500">💰 até <b className="text-emerald-700">{fmtBRLCompact(o.valor)}</b> disponíveis</span>}
-                  <span className={o.dias != null && o.dias <= 15 ? "font-semibold text-rose-700" : "text-slate-500"}>⏰ inscrições até <b>{dt(o.dtFim)}</b>{o.dias != null && ` — restam ${o.dias} dia${o.dias === 1 ? "" : "s"}`}</span>
-                </div>
-                <div className="mt-2.5 flex flex-wrap gap-2 border-t border-slate-100 pt-2.5">
-                  <a href={docLink(o.id)} className="rounded-lg bg-teal-600 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-teal-700">📄 Gerar Plano de Trabalho (.docx)</a>
-                  <a href="https://discricionarias.transferegov.sistema.gov.br/" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-teal-600 px-3 py-1.5 text-[12px] font-semibold text-teal-700 hover:bg-teal-50">Abrir no Transferegov ↗</a>
-                </div>
-              </div>
+              </details>
               );
             })}
           </div>

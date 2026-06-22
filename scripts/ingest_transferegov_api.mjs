@@ -34,6 +34,8 @@ async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2, keepAlive: true });
   db.on("error", () => {});
   await db.query(`CREATE TABLE IF NOT EXISTS programas_transferegov (id_programa TEXT PRIMARY KEY, modulo TEXT, nome TEXT, orgao TEXT, modalidade TEXT, situacao TEXT, valor_global NUMERIC, uf TEXT, ano INTEGER, dt_ini_vol DATE, dt_fim_vol DATE, objetivo TEXT)`);
+  for (const col of ["descricao TEXT", "codigo TEXT", "fundo TEXT", "natureza_despesa TEXT", "acao_orcamentaria TEXT", "valor_acao NUMERIC", "parcelas INTEGER", "dt_ini_esp DATE", "dt_fim_esp DATE", "dt_ini_emenda DATE", "dt_fim_emenda DATE"])
+    await db.query(`ALTER TABLE programas_transferegov ADD COLUMN IF NOT EXISTS ${col}`);
   await db.query(`CREATE TABLE IF NOT EXISTS captacao_transferegov_sc (id_plano TEXT PRIMARY KEY, cod_ibge TEXT, uf TEXT, id_programa TEXT, situacao TEXT, valor_total_repasse NUMERIC, valor_voluntario NUMERIC, valor_total NUMERIC, dt_inicio DATE, dt_fim DATE, orgao_repassador TEXT)`);
   const q = async (s, p) => { for (let t = 0; t < 8; t++) { try { return await db.query(s, p); } catch { await sleep(1200 * (t + 1)); } } throw new Error("db"); };
 
@@ -42,10 +44,10 @@ async function main() {
   let nprog = 0;
   for await (const arr of paginar("fundoafundo/programa")) {
     for (const p of arr) {
-      await q(`INSERT INTO programas_transferegov (id_programa,modulo,nome,orgao,modalidade,situacao,valor_global,uf,ano,dt_ini_vol,dt_fim_vol,objetivo)
-               VALUES ($1,'fundoafundo',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-               ON CONFLICT (id_programa) DO UPDATE SET nome=EXCLUDED.nome, orgao=EXCLUDED.orgao, modalidade=EXCLUDED.modalidade, situacao=EXCLUDED.situacao, valor_global=EXCLUDED.valor_global, dt_ini_vol=EXCLUDED.dt_ini_vol, dt_fim_vol=EXCLUDED.dt_fim_vol, objetivo=EXCLUDED.objetivo`,
-        [String(p.id_programa), p.nome_programa, p.nome_orgao_superior_programa, p.modalidade_programa, p.situacao_programa, num(p.valor_global_programa), p.uf_fundo_programa || null, parseInt(p.ano_programa, 10) || null, dt(p.data_inicio_recebimento_planos_acao_beneficiarios_voluntarios), dt(p.data_fim_recebimento_planos_acao_beneficiarios_voluntarios), p.objetivo_programa]);
+      await q(`INSERT INTO programas_transferegov (id_programa,modulo,nome,orgao,modalidade,situacao,valor_global,uf,ano,dt_ini_vol,dt_fim_vol,objetivo,descricao,codigo,fundo,natureza_despesa,acao_orcamentaria,valor_acao,parcelas,dt_ini_esp,dt_fim_esp,dt_ini_emenda,dt_fim_emenda)
+               VALUES ($1,'fundoafundo',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+               ON CONFLICT (id_programa) DO UPDATE SET nome=EXCLUDED.nome, orgao=EXCLUDED.orgao, modalidade=EXCLUDED.modalidade, situacao=EXCLUDED.situacao, valor_global=EXCLUDED.valor_global, dt_ini_vol=EXCLUDED.dt_ini_vol, dt_fim_vol=EXCLUDED.dt_fim_vol, objetivo=EXCLUDED.objetivo, descricao=EXCLUDED.descricao, codigo=EXCLUDED.codigo, fundo=EXCLUDED.fundo, natureza_despesa=EXCLUDED.natureza_despesa, acao_orcamentaria=EXCLUDED.acao_orcamentaria, valor_acao=EXCLUDED.valor_acao, parcelas=EXCLUDED.parcelas, dt_ini_esp=EXCLUDED.dt_ini_esp, dt_fim_esp=EXCLUDED.dt_fim_esp, dt_ini_emenda=EXCLUDED.dt_ini_emenda, dt_fim_emenda=EXCLUDED.dt_fim_emenda`,
+        [String(p.id_programa), p.nome_programa, p.nome_orgao_superior_programa, p.modalidade_programa, p.situacao_programa, num(p.valor_global_programa), p.uf_fundo_programa || null, parseInt(p.ano_programa, 10) || null, dt(p.data_inicio_recebimento_planos_acao_beneficiarios_voluntarios), dt(p.data_fim_recebimento_planos_acao_beneficiarios_voluntarios), p.objetivo_programa, p.descricao_programa, p.codigo_programa, p.nome_fundo_programa, p.grupo_natureza_despesa_programa, p.descricao_acao_orcamentaria_programa, num(p.valor_acao_orcamentaria_programa), parseInt(p.quantidade_parcelas_programa, 10) || null, dt(p.data_inicio_recebimento_planos_acao_beneficiarios_especificos), dt(p.data_fim_recebimento_planos_acao_beneficiarios_especificos), dt(p.data_inicio_recebimento_planos_acao_beneficiarios_emendas), dt(p.data_fim_recebimento_planos_acao_beneficiarios_emendas)]);
       nprog++;
     }
   }
