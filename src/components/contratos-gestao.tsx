@@ -8,7 +8,6 @@ function diasAte(s: string | null) {
   const fim = Date.UTC(+m[1], +m[2] - 1, +m[3]); const hoje = new Date(); const h = Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth(), hoje.getUTCDate());
   return Math.round((fim - h) / 86400000);
 }
-const CORF: Record<string, string> = { critico: "bg-rose-500", m1_2: "bg-orange-400", m2_3: "bg-amber-400", m3_6: "bg-yellow-400", m6_12: "bg-teal-400" };
 
 // Índice de criticidade do vencimento — combina URGÊNCIA do prazo (70%) e MAGNITUDE do valor (30%).
 // urgência = 1 − dias/365 (cresce ao encurtar o prazo); magnitude = valor/maiorValor (entre os a vencer).
@@ -24,30 +23,17 @@ function criticidade(dias: number, valor: number, valorMax: number) {
 }
 
 export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosVencimentoSC | null; itens?: ContratoComItens[] | null }) {
-  const maxF = vencimento ? Math.max(1, ...vencimento.faixas.map((f) => f.n)) : 1;
   return (
     <>
       {/* Vigências / contratos a vencer */}
       {vencimento && (
         <section className="rounded-2xl border border-slate-200 bg-white p-5">
           <h3 className="font-semibold text-slate-800">📅 Vigências — contratos a vencer</h3>
-          <p className="mb-3 text-xs text-slate-500">{vencimento.totalAtivos} contratos ativos{vencimento.vencidos > 0 ? ` · ${vencimento.vencidos} já vencidos` : ""}. Planeje a renovação/nova licitação com antecedência (gestão de contratos — Pércio/Camarão).</p>
-          <div className="grid gap-2 sm:grid-cols-5">
-            {vencimento.faixas.map((f) => (
-              <div key={f.id} className={`rounded-xl border p-3 ${f.id === "critico" && f.n > 0 ? "border-rose-300 bg-rose-50/60" : "border-slate-200"}`}>
-                <div className="flex items-end justify-between">
-                  <span className="text-2xl font-bold tabular-nums text-slate-800">{f.n}</span>
-                  <span className="text-[10px] text-slate-400">{fmtBRLCompact(f.valor)}</span>
-                </div>
-                <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-100"><div className={`h-1.5 rounded-full ${CORF[f.id]}`} style={{ width: `${(f.n / maxF) * 100}%` }} /></div>
-                <div className="mt-1 text-[11px] text-slate-600">{f.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {vencimento.aVencer.length > 0 && (() => {
-            const vmax = Math.max(1, ...vencimento.aVencer.map((c) => c.valor));
-            const lista = [...vencimento.aVencer].sort((a, b) => criticidade(b.dias, b.valor, vmax).score - criticidade(a.dias, a.valor, vmax).score);
+          <p className="mb-3 text-xs text-slate-500">Criticidade = 100 × (0,7·urgência do prazo + 0,3·magnitude do valor) — alto valor + prazo curto = mais crítico. Planeje renovação/nova licitação com antecedência (gestão de contratos — Pércio/Camarão).</p>
+          {(() => {
+            const aVencer = vencimento.aVencer;
+            const vmax = Math.max(1, ...aVencer.map((c) => c.valor));
+            const lista = [...aVencer].sort((a, b) => criticidade(b.dias, b.valor, vmax).score - criticidade(a.dias, a.valor, vmax).score);
             const NIVEIS = [
               { nivel: "Crítico", cls: "border-rose-200 bg-rose-50 text-rose-700" },
               { nivel: "Alto", cls: "border-orange-200 bg-orange-50 text-orange-700" },
@@ -57,11 +43,21 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
             const cont: Record<string, number> = { "Crítico": 0, "Alto": 0, "Médio": 0, "Baixo": 0 };
             const contV: Record<string, number> = { "Crítico": 0, "Alto": 0, "Médio": 0, "Baixo": 0 };
             lista.forEach((c) => { const nv = criticidade(c.dias, c.valor, vmax).nivel; cont[nv]++; contV[nv] += c.valor; });
-            return (
-            <div className="mt-4">
-              <h4 className="text-xs font-semibold text-slate-700">⏳ Contratos a vencer (próximos 12 meses) — por criticidade {vencimento.nCriticos > 0 && <span className="text-rose-700">· {vencimento.nCriticos} crítico(s) &lt; 30 dias</span>}</h4>
-              <p className="mb-2 text-[11px] text-slate-400">Criticidade = 100 × (0,7·urgência do prazo + 0,3·magnitude do valor) — alto valor + prazo curto = mais crítico.</p>
-              <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            const aVencer90 = lista.filter((c) => c.dias <= 90).length;
+            const kpis = [
+              { v: (vencimento.totalAtivos + vencimento.vencidos).toLocaleString("pt-BR"), l: "contratos (total)", cor: "" },
+              { v: vencimento.totalAtivos.toLocaleString("pt-BR"), l: "vigentes", cor: "text-emerald-600" },
+              { v: aVencer90.toLocaleString("pt-BR"), l: "a vencer (≤90 dias)", cor: aVencer90 > 0 ? "text-amber-600" : "" },
+              { v: vencimento.vencidos.toLocaleString("pt-BR"), l: "vencidos", cor: "" },
+            ];
+            return (<>
+              {/* KPIs (espelham as atas) */}
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {kpis.map((k) => <div key={k.l} className="rounded-xl border border-slate-200 p-3"><div className={`text-xl font-bold tabular-nums ${k.cor || "text-slate-800"}`}>{k.v}</div><div className="text-[11px] text-slate-500">{k.l}</div></div>)}
+              </div>
+              {/* contadores por nível de criticidade (mesma metodologia das atas) */}
+              <div className="mt-3 mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Por nível de criticidade {vencimento.nCriticos > 0 && <span className="text-rose-700">· {vencimento.nCriticos} crítico(s) &lt; 30 dias</span>}</div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {NIVEIS.map((n) => (
                   <div key={n.nivel} className={`rounded-xl border p-3 ${n.cls}`}>
                     <div className="text-2xl font-bold tabular-nums">{cont[n.nivel]}</div>
@@ -70,6 +66,8 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
                   </div>
                 ))}
               </div>
+              {lista.length > 0 && (<>
+              <h4 className="mt-4 text-xs font-semibold text-slate-700">Contratos a vencer (ordenados por criticidade)</h4>
               <div className="mt-1 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead><tr className="border-b border-slate-100 text-left text-xs text-slate-500"><th className="p-2 font-medium">Objeto</th><th className="hidden p-2 font-medium md:table-cell">Fornecedor</th><th className="p-2 font-medium">Fim</th><th className="p-2 text-right font-medium">Faltam</th><th className="p-2 font-medium">Criticidade</th><th className="p-2 text-right font-medium">Valor</th></tr></thead>
@@ -95,8 +93,19 @@ export function ContratosGestao({ vencimento, itens }: { vencimento?: ContratosV
                   </tbody>
                 </table>
               </div>
-            </div>
-            );
+              </>)}
+              <details className="mt-3">
+                <summary className="cursor-pointer text-[11px] font-medium text-slate-500">Detalhe por faixa de prazo (mês)</summary>
+                <div className="mt-2 grid gap-2 sm:grid-cols-5">
+                  {vencimento.faixas.map((f) => (
+                    <div key={f.id} className={`rounded-xl border p-3 ${f.id === "critico" && f.n > 0 ? "border-rose-300 bg-rose-50/60" : "border-slate-200"}`}>
+                      <div className="flex items-end justify-between"><span className="text-2xl font-bold tabular-nums text-slate-800">{f.n}</span><span className="text-[10px] text-slate-400">{fmtBRLCompact(f.valor)}</span></div>
+                      <div className="mt-1 text-[11px] text-slate-600">{f.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            </>);
           })()}
         </section>
       )}
