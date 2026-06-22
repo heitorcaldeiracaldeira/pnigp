@@ -7,6 +7,14 @@ function dt(s: string | null) {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : String(s);
 }
 
+// índice de criticidade da oportunidade por prazo até o fim da janela (urgência de agir)
+function critPrazo(dias: number) {
+  if (dias <= 15) return { nivel: "Crítico", cls: "bg-rose-100 text-rose-700 border-rose-200" };
+  if (dias <= 45) return { nivel: "Alto", cls: "bg-orange-100 text-orange-700 border-orange-200" };
+  if (dias <= 120) return { nivel: "Médio", cls: "bg-amber-100 text-amber-700 border-amber-200" };
+  return { nivel: "Baixo", cls: "bg-teal-100 text-teal-700 border-teal-200" };
+}
+
 // Radar de Captação (Transferegov, fonte original viva) — o ponto cego: quanto captou × vs pares × o que pode captar.
 export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: string; nome: string }) {
   if (!dados) return null;
@@ -21,7 +29,7 @@ export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: 
           <h2 className="text-base font-semibold text-slate-800">🎯 Radar de Captação de Recursos</h2>
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">Transferegov · fundo a fundo</span>
         </div>
-        <p className="text-sm text-slate-500">O ponto cego mais caro da gestão: <b>recurso da União que o servidor não sabe que existe</b>. Aqui {nome} vê <b>quanto já captou</b>, como está <b>frente aos pares</b> e o que <b>pode captar agora</b> — gerando o projeto em 1 clique.</p>
+        <p className="text-sm text-slate-600"><b>Recursos extraorçamentários transformam realidades.</b> Convênios e transferências da União permitem a {nome} construir creches, equipar postos de saúde, pavimentar ruas e ampliar serviços — <b>investindo na vida das pessoas sem onerar o caixa do município</b>. Este radar reúne o que {nome} pode acessar: <b>quanto já captou</b>, como está <b>frente aos pares</b> e quais oportunidades estão <b>abertas agora</b> — com o projeto pronto em 1 clique para agir a tempo.</p>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl bg-slate-50 px-3 py-2 text-[12px] text-slate-600">
           <span>🌐 <b>Universo monitorado:</b> {dados.universo.nProgramas} programas {dados.universo.nAbertos > 0 && <span className="text-emerald-700">({dados.universo.nAbertos} abertos)</span>} · {fmtBRLCompact(dados.universo.totalSC)} captados por {dados.universo.nMunicipios} municípios de SC</span>
           <span className="text-teal-700">🎯 <b>Recorte de {nome}:</b> seleção personalizada abaixo</span>
@@ -37,6 +45,7 @@ export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: 
       {/* PODERÁ ACESSAR — janelas abertas hoje */}
       <section className="rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-emerald-800">✅ Pode captar agora — janela de proposta ABERTA</h3>
+        <p className="text-[11px] text-slate-400">Índice de criticidade por urgência da janela: Crítico ≤15 dias · Alto ≤45 · Médio ≤120 · Baixo &gt;120. Quanto menos dias, mais urgente agir.</p>
         {dados.abertos.length > 0 ? (
           <div className="mt-2 space-y-1.5">
             {dados.abertos.map((o) => (
@@ -46,8 +55,9 @@ export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: 
                   <div className="text-[11px] text-slate-500">{o.orgao}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {o.dias != null && <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${o.dias <= 30 ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>até {dt(o.dtFim)} · {o.dias}d</span>}
+                  {o.dias != null && (() => { const k = critPrazo(o.dias); return <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${k.cls}`} title={`Janela fecha em ${o.dias} dias`}>{k.nivel} · {o.dias}d · até {dt(o.dtFim)}</span>; })()}
                   <a href={docLink(o.id)} className="rounded-lg bg-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-teal-700">Gerar Plano de Trabalho ↓</a>
+                  <a href="https://discricionarias.transferegov.sistema.gov.br/" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-teal-600 px-2.5 py-1 text-[11px] font-semibold text-teal-700 hover:bg-teal-50">Abrir no Transferegov ↗</a>
                 </div>
               </div>
             ))}
@@ -88,7 +98,7 @@ export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: 
 
       {/* BENCHMARK — o ponto cego */}
       <div className="rounded-2xl border border-teal-200 bg-teal-50/40 p-4 text-[13px] text-slate-700">
-        <b>Leitura do ponto cego:</b> {nome} captou <b>{fmtBRLCompact(dados.totalCaptado)}</b>; a média dos municípios de SC é <b>{fmtBRLCompact(dados.benchmark.media)}</b> e o maior captou <b>{fmtBRLCompact(dados.benchmark.max)}</b>.{" "}
+        <b>Potencial de captação:</b> {nome} captou <b>{fmtBRLCompact(dados.totalCaptado)}</b>; a média dos municípios de SC é <b>{fmtBRLCompact(dados.benchmark.media)}</b> e o maior captou <b>{fmtBRLCompact(dados.benchmark.max)}</b>.{" "}
         {vsMedia < 1 ? <span className="text-amber-700">Está <b>abaixo da média</b> — há espaço para captar mais.</span> : <span className="text-emerald-700">Está acima da média.</span>}
         {dados.benchmark.melhores.length > 0 && <span className="text-slate-500"> Quem mais capta em SC: {dados.benchmark.melhores.map((m) => m.nome).slice(0, 3).join(", ")}.</span>}
         <div className="mt-1 text-[11px] text-slate-400">Fonte: Transferegov (api.transferegov.gestao.gov.br, fundo a fundo) — dado oficial. Cobre Cultura/Segurança/Trabalho/etc.; saúde, educação e assistência (FNS/FNDE/FNAS) entram nas próximas integrações.</div>
