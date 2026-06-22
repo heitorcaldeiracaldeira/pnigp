@@ -265,6 +265,9 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
                 </div>
               </div>
 
+              {/* Vigências + criticidade no topo (contador) */}
+              <ContratosGestao vencimento={contratosVenc} itens={null} />
+
               {/* molde Niterói: cadeia de valor + accountability + como melhorar */}
               {(() => {
                 const top1 = contratosResumo.por_fornecedor[0];
@@ -302,7 +305,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
                 );
               })()}
 
-              <ContratosGestao vencimento={contratosVenc} itens={contratosItens} />
+              <ContratosGestao vencimento={null} itens={contratosItens} />
 
               {contratosResumo.por_fornecedor.length > 0 && (
                 <section className="rounded-2xl border border-slate-200 bg-white p-5">
