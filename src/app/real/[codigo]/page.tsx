@@ -252,7 +252,11 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
         </>
       ),
     },
-    { id: "compras", label: "Compras", content: <ComprasSCSection codigo={ente.cod_ibge} tipo={ente.tipo} /> },
+    { id: "compras", label: "Compras", content: <>
+      <CabecalhoArea titulo="Compras & Contratos" intro="Como o município compra e contrata: o que a Lei 14.133/2021 exige, onde mora o risco (compra sem licitação, sobrepreço) e onde economizar — do total contratado ao preço unitário, item a item." links={[{ label: "PNCP — Portal Nacional de Contratações Públicas", href: "https://pncp.gov.br" }, { label: "Lei 14.133/2021 — Nova Lei de Licitações", href: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" }, { label: "TCE-SC", href: "https://www.tcesc.tc.br" }]} />
+      <ComprasSCSection codigo={ente.cod_ibge} tipo={ente.tipo} />
+      <div className="mt-4"><BaseMetodologica area="compras" /></div>
+    </> },
     ...(padroesCompras ? [{ id: "padroes-compras", label: "Planejamento de Compras", content: <><AssuntoPadroesCompras dados={padroesCompras} contratos={contratosResumo} pca={pcaResumo} economia={economicidade} nome={ente.nome} /><div className="mt-4"><CatalogoBoasPraticas area="compras" /></div></> }] : []),
     ...(atas ? [{ id: "atas", label: "Atas (Registro de Preço)", content: <AtasPainel dados={atas} nome={ente.nome} /> }] : []),
     ...(contratosResumo
