@@ -216,7 +216,9 @@ function ContratoRow({ c }: { c: Contrato }) {
         <td className="hidden p-2 text-slate-500 md:table-cell">{c.modalidade}</td>
         <td className="p-2 text-right font-semibold tabular-nums text-slate-800">{fmtBRLCompact(c.homologado)}</td>
         <td className="hidden p-2 text-right tabular-nums sm:table-cell">
-          {c.economia_pct != null && c.economia_pct > 0 ? <span className="text-emerald-600">−{c.economia_pct.toFixed(0)}%</span> : <span className="text-slate-400">—</span>}
+          {c.economia_pct != null && c.economia_pct > 0
+            ? <span className="text-emerald-600">{c.estimado > 0 && c.homologado > 0 && c.estimado > c.homologado ? `−${fmtBRLCompact(c.estimado - c.homologado)} · ` : ""}−{c.economia_pct.toFixed(0)}%</span>
+            : <span className="text-slate-400">—</span>}
         </td>
       </tr>
       {open && (
@@ -289,7 +291,7 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
         <>
           <div className="mb-1 flex items-center justify-between"><div className="text-xs font-semibold text-slate-600">Itens do processo licitatório</div><span className="text-[11px] text-slate-500">{itens.length} itens</span></div>
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-        <table className="w-full min-w-[640px] text-xs">
+        <table className="w-full min-w-[720px] text-xs">
           <thead>
             <tr className="border-b border-slate-200 text-slate-500">
               <th rowSpan={2} className="p-2 text-left align-bottom font-medium">Item</th>
@@ -297,11 +299,13 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
               <th rowSpan={2} className="p-2 text-right align-bottom font-medium">Qtd.</th>
               <th colSpan={2} className="border-l border-slate-200 p-2 text-center font-medium">Valor unitário (R$)</th>
               <th rowSpan={2} className="border-l border-slate-200 p-2 text-right align-bottom font-medium">Valor total</th>
-              <th rowSpan={2} className="border-l border-slate-200 p-2 text-right align-bottom font-medium">Economia</th>
+              <th colSpan={2} className="border-l border-slate-200 p-2 text-center font-medium">Economia</th>
             </tr>
             <tr className="border-b border-slate-200 text-[11px] text-slate-500">
               <th className="border-l border-slate-200 p-2 text-right font-medium">Estimado</th>
               <th className="p-2 text-right font-medium">Homologado</th>
+              <th className="border-l border-slate-200 p-2 text-right font-medium">em R$</th>
+              <th className="p-2 text-right font-medium">em %</th>
             </tr>
           </thead>
           <tbody>
@@ -316,13 +320,15 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
                 <td className="border-l border-slate-100 p-2 text-right tabular-nums text-slate-500">{fmtBRL(it.unitEstimado)}</td>
                 <td className="p-2 text-right tabular-nums font-medium text-slate-800">{it.unitHomologado != null ? fmtBRL(it.unitHomologado) : "—"}</td>
                 <td className="border-l border-slate-100 p-2 text-right tabular-nums text-slate-700">{fmtBRL((it.unitHomologado ?? it.unitEstimado) * it.quantidade)}</td>
-                <td className="border-l border-slate-100 p-2 text-right tabular-nums">{it.economiaPct != null && it.economiaPct > 0 ? <span className="text-emerald-600">−{it.economiaPct.toFixed(0)}%</span> : <span className="text-slate-400">—</span>}</td>
+                <td className="border-l border-slate-100 p-2 text-right tabular-nums text-emerald-700">{it.unitHomologado != null && it.unitEstimado - it.unitHomologado > 0 ? fmtBRL((it.unitEstimado - it.unitHomologado) * it.quantidade) : <span className="text-slate-400">—</span>}</td>
+                <td className="p-2 text-right tabular-nums">{it.economiaPct != null && it.economiaPct > 0 ? <span className="text-emerald-600">−{it.economiaPct.toFixed(0)}%</span> : <span className="text-slate-400">—</span>}</td>
               </tr>
             ))}
             <tr className="border-t border-slate-200 bg-slate-50 font-semibold text-slate-700">
               <td className="p-2" colSpan={5}>Total do processo</td>
               <td className="border-l border-slate-200 p-2 text-right tabular-nums">{fmtBRLCompact(totReal)}</td>
-              <td className="border-l border-slate-200 p-2 text-right tabular-nums text-emerald-700">{totEcon > 0 ? `−${pctEcon.toFixed(1)}%` : "—"}</td>
+              <td className="border-l border-slate-200 p-2 text-right tabular-nums text-emerald-700">{totEcon > 0 ? fmtBRLCompact(totEcon) : "—"}</td>
+              <td className="p-2 text-right tabular-nums text-emerald-700">{totEcon > 0 ? `−${pctEcon.toFixed(1)}%` : "—"}</td>
             </tr>
           </tbody>
         </table>
