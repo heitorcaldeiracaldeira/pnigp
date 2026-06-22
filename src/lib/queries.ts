@@ -1431,6 +1431,28 @@ export async function getContratosVencimentoSC(cod: string): Promise<ContratosVe
   return { faixas, aVencer: aVencer.slice(0, 60), nCriticos, vencidos, totalAtivos };
 }
 
+// FNDE — recursos da educação que o município recebeu (SIMAD liberações: PNAE, PNATE, FUNDEB, salário-educação…)
+export type FndeEducacaoSC = {
+  total: number; nLib: number; anoUlt: number; totalUlt: number;
+  porPrograma: { programa: string; valor: number }[];
+  serie: { ano: number; valor: number }[];
+} | null;
+export async function getFndeEducacaoSC(cod: string): Promise<FndeEducacaoSC> {
+  const [tot, prog, serie] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT count(*) n, coalesce(sum(valor),0) total, max(ano) ult FROM fnde_simad_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT regexp_replace(programa,'\\s*[-–].*$','') p, coalesce(sum(valor),0) v FROM fnde_simad_sc WHERE cod_ibge=$1 GROUP BY 1 ORDER BY v DESC LIMIT 10`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT ano, coalesce(sum(valor),0) v FROM fnde_simad_sc WHERE cod_ibge=$1 GROUP BY ano ORDER BY ano`, [cod]).catch(() => []),
+  ]);
+  if (!tot.length || num(tot[0]?.n) === 0) return null;
+  const anoUlt = num(tot[0]?.ult);
+  const totalUlt = num((serie.find((r) => num(r.ano) === anoUlt) || {}).v);
+  return {
+    total: num(tot[0]?.total), nLib: num(tot[0]?.n), anoUlt, totalUlt,
+    porPrograma: prog.map((r) => ({ programa: String(r.p || "—"), valor: num(r.v) })),
+    serie: serie.map((r) => ({ ano: num(r.ano), valor: num(r.v) })),
+  };
+}
+
 // Captação de Recursos (Transferegov API viva) — o que o município JÁ captou (fundo a fundo), oportunidades
 // ABERTAS hoje, e benchmark vs pares (o ponto cego: quanto deixou na mesa). Cruzável c/ receitas SICONFI.
 export type CaptacaoSC = {
