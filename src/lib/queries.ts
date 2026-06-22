@@ -1656,6 +1656,31 @@ export async function getPadroesComprasSC(cod: string): Promise<PadroesComprasSC
 }
 
 // Receitas detalhadas por item nominal (ICMS, FPM, IPTU, ISS, IPVA, ITR, FUNDEB) — série anual
+// Perfil da rede municipal de educação (Censo) — quem é atendido: sexo, raça/cor, idade, inclusão, integral, turmas, transporte.
+export type PerfilEducacaoSC = {
+  matriculas: number; turmas: number; alunoPorTurma: number | null;
+  femPct: number; negrosPct: number; indigenaPct: number; especialPct: number; integralPct: number;
+  transpPublico: number; transpMun: number;
+  idade: { faixa: string; n: number }[];
+} | null;
+export async function getPerfilEducacaoSC(cod: string): Promise<PerfilEducacaoSC> {
+  const r = (await query<Record<string, unknown>>(`SELECT
+    coalesce(sum(matriculas),0) mat, coalesce(sum(n_turmas),0) tur, coalesce(sum(transp_publico),0) tp, coalesce(sum(transp_mun),0) tm,
+    coalesce(sum((perfil->>'fem')::int),0) fem, coalesce(sum((perfil->>'preta')::int),0) preta, coalesce(sum((perfil->>'parda')::int),0) parda,
+    coalesce(sum((perfil->>'indigena')::int),0) indig, coalesce(sum((perfil->>'especial')::int),0) esp, coalesce(sum((perfil->>'integral')::int),0) integ,
+    coalesce(sum((perfil->>'i0_3')::int),0) i0, coalesce(sum((perfil->>'i4_5')::int),0) i1, coalesce(sum((perfil->>'i6_10')::int),0) i2,
+    coalesce(sum((perfil->>'i11_14')::int),0) i3, coalesce(sum((perfil->>'i15_17')::int),0) i4, coalesce(sum((perfil->>'i18')::int),0) i5
+    FROM escolas_sc WHERE cod_ibge=$1 AND dependencia=3 AND perfil IS NOT NULL`, [cod]).catch(() => []))[0];
+  if (!r || num(r.mat) === 0) return null;
+  const mat = num(r.mat); const pc = (v: number) => Math.round((v / mat) * 1000) / 10;
+  return {
+    matriculas: mat, turmas: num(r.tur), alunoPorTurma: num(r.tur) > 0 ? Math.round((mat / num(r.tur)) * 10) / 10 : null,
+    femPct: pc(num(r.fem)), negrosPct: pc(num(r.preta) + num(r.parda)), indigenaPct: pc(num(r.indig)), especialPct: pc(num(r.esp)), integralPct: pc(num(r.integ)),
+    transpPublico: num(r.tp), transpMun: num(r.tm),
+    idade: [{ faixa: "0–3 (creche)", n: num(r.i0) }, { faixa: "4–5 (pré)", n: num(r.i1) }, { faixa: "6–10", n: num(r.i2) }, { faixa: "11–14", n: num(r.i3) }, { faixa: "15–17", n: num(r.i4) }, { faixa: "18+", n: num(r.i5) }].filter((x) => x.n > 0),
+  };
+}
+
 // Escolas do município (INEP Censo) — drill escola a escola: matrículas + infraestrutura + lacunas. Rede municipal.
 export type EscolasSC = {
   ano: number; total: number; matriculas: number; docentes: number; profissionais: number;
