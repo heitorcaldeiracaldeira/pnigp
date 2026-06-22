@@ -716,7 +716,19 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/40 p-4 text-sm text-slate-700">
       <div className="font-semibold text-slate-800">🔖 Certidão de Regularidade Previdenciária (CRP)</div>
       <p className="mt-1">A CRP atesta que o RPPS de {ente.nome} cumpre os critérios da Lei 9.717/1998 — é <b>exigida para receber transferências voluntárias da União e contratar operações de crédito</b>. É emitida semestralmente pelo Ministério da Previdência, com validade própria.</p>
-      <p className="mt-1 text-slate-500">Como é um documento <b>dinâmico e oficial</b> (com validade e critérios que mudam a cada emissão), a situação atual deve ser vista direto na fonte:</p>
+      {cauc && (() => {
+        const prevPend = cauc.grupos.filter((g) => /previd/i.test(g));
+        const ok = prevPend.length === 0;
+        return (
+          <div className={`mt-2 rounded-xl border p-2.5 text-[13px] ${ok ? "border-emerald-200 bg-emerald-50" : "border-rose-300 bg-rose-50"}`}>
+            {ok
+              ? <><b className="text-emerald-700">✓ Regularidade previdenciária OK no CAUC</b>{cauc.dataPesquisa ? ` (consulta ${cauc.dataPesquisa})` : ""} — sem pendência no grupo previdenciário, indicando CRP válida para transferências.</>
+              : <><b className="text-rose-700">⚠️ Pendência de regularidade previdenciária no CAUC</b> — a CRP pode estar irregular/suspensa. {(cauc.pendencias.filter((p) => /previd/i.test(p)).join("; ") || prevPend.join("; "))}</>}
+            <div className="mt-0.5 text-[11px] text-slate-400">Status derivado do CAUC (grupo "Regularidade previdenciária"), que lê o CADIN/CRP diariamente — mesma lógica do nosso indicador de Regularidade.</div>
+          </div>
+        );
+      })()}
+      <p className="mt-2 text-slate-500">Para o <b>documento e a validade exatos</b>, consulte a CRP atual direto na fonte oficial:</p>
       <a href="https://cadprev.previdencia.gov.br/Cadprev/pages/publico/crp/pesquisarEnteCrp.xhtml" target="_blank" rel="noopener noreferrer" className="mt-2 inline-block rounded-lg bg-teal-600 px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-teal-700">Consultar a CRP de {ente.nome} no CADPREV ↗</a>
       <p className="mt-2 text-[11px] text-slate-400">Fonte: CADPREV / Ministério da Previdência Social. (A consulta é pública; busque o ente pela UF/nome.)</p>
     </div>
