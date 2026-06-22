@@ -337,7 +337,7 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
       {fornecedores.length > 0 && (
         <div>
           <div className="mb-1 text-xs font-semibold text-slate-600">Fornecedores vencedores</div>
-          <p className="mb-2 text-[10px] text-slate-400">LC 123/2006 — tratamento diferenciado a ME/EPP nas licitações.</p>
+          {fornecedores.some((f) => f.lc) && <p className="mb-2 text-[10px] text-slate-400">LC 123/2006 — tratamento diferenciado a ME/EPP nas licitações.</p>}
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {fornecedores.slice(0, 6).map((f) => (
               <div key={f.cnpj || f.nome} className="rounded-lg border border-slate-200 bg-white p-3">
