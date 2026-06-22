@@ -128,7 +128,22 @@ export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: 
         </section>
       )}
 
-      {/* BENCHMARK — o ponto cego */}
+      {/* ANÁLISES — leitura e ação (molde Niterói) */}
+      {dados.analises && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-800">📊 Análises — leitura e ação</h3>
+          <ul className="mt-2 space-y-2 text-[13px] text-slate-700">
+            <li>📍 <b>Posição:</b> {nome} é o <b>{dados.analises.posicao}º</b> de {dados.analises.totalEntes} municípios de SC em captação fundo a fundo.</li>
+            {dados.analises.gapMedia > 0 && <li>💸 <b>Recurso na mesa:</b> captando ao menos a média de SC, seriam <b className="text-emerald-700">+{fmtBRLCompact(dados.analises.gapMedia)}</b>. O maior captador supera {nome} em {fmtBRLCompact(dados.analises.gapMax)}. <span className="text-slate-500">→ Priorize as oportunidades abertas acima.</span></li>}
+            {dados.analises.concentracaoTop && dados.analises.concentracaoTop.pct >= 50 && <li>⚠️ <b>Concentração de fonte:</b> {dados.analises.concentracaoTop.pct.toFixed(0)}% da captação vem de um único órgão ({dados.analises.concentracaoTop.orgao}). <span className="text-slate-500">→ Diversificar fontes reduz o risco de queda.</span></li>}
+            {dados.analises.tendencia && <li>{dados.analises.tendencia.delta >= 0 ? "📈" : "📉"} <b>Tendência:</b> a captação {dados.analises.tendencia.delta >= 0 ? "cresceu" : "caiu"} <b>{fmtBRLCompact(Math.abs(dados.analises.tendencia.delta))}</b> no último ano com registro ({dados.analises.tendencia.ultimoAno}).</li>}
+            {dados.analises.naoCaptados > 0 && <li>🎯 <b>Oportunidade imediata:</b> há <b>{dados.analises.naoCaptados}</b> programa(s) com janela aberta que {nome} ainda não captou. <span className="text-slate-500">→ Gere o Plano de Trabalho acima e submeta no Transferegov.</span></li>}
+          </ul>
+          <p className="mt-2 text-[10px] text-slate-400">Análises calculadas sobre a base oficial do governo federal (Transferegov fundo a fundo). Aprofundam-se ao integrar saúde (FNS), educação (FNDE) e assistência (FNAS).</p>
+        </section>
+      )}
+
+      {/* BENCHMARK — potencial comparativo */}
       <div className="rounded-2xl border border-teal-200 bg-teal-50/40 p-4 text-[13px] text-slate-700">
         <b>Potencial de captação:</b> {nome} captou <b>{fmtBRLCompact(dados.totalCaptado)}</b>; a média dos municípios de SC é <b>{fmtBRLCompact(dados.benchmark.media)}</b> e o maior captou <b>{fmtBRLCompact(dados.benchmark.max)}</b>.{" "}
         {vsMedia < 1 ? <span className="text-amber-700">Está <b>abaixo da média</b> — há espaço para captar mais.</span> : <span className="text-emerald-700">Está acima da média.</span>}

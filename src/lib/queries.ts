@@ -1441,9 +1441,10 @@ export type CaptacaoSC = {
   abertos: { id: string; nome: string; orgao: string; objetivo: string; descricao: string; valor: number; modalidade: string; fundo: string; naturezaDespesa: string; acaoOrcamentaria: string; valorAcao: number; parcelas: number; situacao: string; ano: number; codigo: string; dtIni: string | null; dtFim: string | null; dias: number | null }[];
   benchmark: { media: number; max: number; melhores: { nome: string; valor: number }[] };
   universo: { nProgramas: number; nAbertos: number; totalSC: number; nMunicipios: number };
+  analises: { posicao: number; totalEntes: number; gapMedia: number; gapMax: number; tendencia: { delta: number; ultimoAno: number } | null; naoCaptados: number; concentracaoTop: { orgao: string; pct: number } | null };
 } | null;
 export async function getCaptacaoTransferegovSC(cod: string): Promise<CaptacaoSC> {
-  const [tot, porOrgao, porAno, lista, abertos, bench, melhores, uni] = await Promise.all([
+  const [tot, porOrgao, porAno, lista, abertos, bench, melhores, uni, an] = await Promise.all([
     query<Record<string, unknown>>(`SELECT count(*) n, coalesce(sum(valor_total_repasse),0) total FROM captacao_transferegov_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT orgao_repassador o, count(*) n, coalesce(sum(valor_total_repasse),0) v FROM captacao_transferegov_sc WHERE cod_ibge=$1 GROUP BY 1 ORDER BY v DESC NULLS LAST LIMIT 8`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT extract(year from dt_inicio)::int ano, coalesce(sum(valor_total_repasse),0) v FROM captacao_transferegov_sc WHERE cod_ibge=$1 AND dt_inicio IS NOT NULL GROUP BY 1 ORDER BY 1`, [cod]).catch(() => []),
@@ -1452,17 +1453,27 @@ export async function getCaptacaoTransferegovSC(cod: string): Promise<CaptacaoSC
     query<Record<string, unknown>>(`SELECT coalesce(avg(t),0) media, coalesce(max(t),0) maxv FROM (SELECT cod_ibge, sum(valor_total_repasse) t FROM captacao_transferegov_sc GROUP BY cod_ibge) s`).catch(() => []),
     query<Record<string, unknown>>(`SELECT e.nome, sum(c.valor_total_repasse) v FROM captacao_transferegov_sc c JOIN entes_sc e ON e.cod_ibge=c.cod_ibge GROUP BY e.nome ORDER BY v DESC NULLS LAST LIMIT 5`).catch(() => []),
     query<Record<string, unknown>>(`SELECT (SELECT count(*) FROM programas_transferegov) np, (SELECT count(*) FROM programas_transferegov WHERE dt_fim_vol >= CURRENT_DATE) na, (SELECT coalesce(sum(valor_total_repasse),0) FROM captacao_transferegov_sc) tsc, (SELECT count(distinct cod_ibge) FROM captacao_transferegov_sc) nm`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT (SELECT count(*)+1 FROM (SELECT cod_ibge, sum(valor_total_repasse) t FROM captacao_transferegov_sc GROUP BY cod_ibge) s WHERE t > (SELECT coalesce(sum(valor_total_repasse),0) FROM captacao_transferegov_sc WHERE cod_ibge=$1)) pos, (SELECT count(*) FROM programas_transferegov p WHERE dt_fim_vol >= CURRENT_DATE AND NOT EXISTS (SELECT 1 FROM captacao_transferegov_sc c WHERE c.cod_ibge=$1 AND c.id_programa=p.id_programa)) naocap`, [cod]).catch(() => []),
   ]);
   const total = num(tot[0]?.total);
   if (!tot.length || (num(tot[0]?.n) === 0 && !abertos.length)) return null;
+  const anos = porAno.map((r) => ({ ano: num(r.ano), valor: num(r.v) }));
+  const media = num(bench[0]?.media), maxv = num(bench[0]?.maxv);
+  const tendencia = anos.length >= 2 ? { delta: anos[anos.length - 1].valor - anos[anos.length - 2].valor, ultimoAno: anos[anos.length - 1].ano } : null;
+  const concentracaoTop = porOrgao.length && total > 0 ? { orgao: String(porOrgao[0].o || "—"), pct: (num(porOrgao[0].v) / total) * 100 } : null;
   return {
     totalCaptado: total, nPlanos: num(tot[0]?.n),
     porOrgao: porOrgao.map((r) => ({ orgao: String(r.o || "—"), valor: num(r.v), n: num(r.n) })),
-    porAno: porAno.map((r) => ({ ano: num(r.ano), valor: num(r.v) })),
+    porAno: anos,
     lista: lista.map((r) => ({ nome: String(r.nome || r.o || "Programa"), orgao: String(r.o || ""), valor: num(r.v), situacao: String(r.s || "") })),
     abertos: abertos.map((r) => ({ id: String(r.id), nome: String(r.nome || ""), orgao: String(r.orgao || ""), objetivo: String(r.objetivo || ""), descricao: String(r.descricao || ""), valor: num(r.valor), modalidade: String(r.modalidade || ""), fundo: String(r.fundo || ""), naturezaDespesa: String(r.natureza_despesa || ""), acaoOrcamentaria: String(r.acao_orcamentaria || ""), valorAcao: num(r.valor_acao), parcelas: num(r.parcelas), situacao: String(r.situacao || ""), ano: num(r.ano), codigo: String(r.codigo || ""), dtIni: (r.dt_ini_vol as string) || null, dtFim: (r.dt_fim_vol as string) || null, dias: r.dias != null ? num(r.dias) : null })),
     benchmark: { media: num(bench[0]?.media), max: num(bench[0]?.maxv), melhores: melhores.map((r) => ({ nome: String(r.nome), valor: num(r.v) })) },
     universo: { nProgramas: num(uni[0]?.np), nAbertos: num(uni[0]?.na), totalSC: num(uni[0]?.tsc), nMunicipios: num(uni[0]?.nm) },
+    analises: {
+      posicao: num(an[0]?.pos), totalEntes: num(uni[0]?.nm),
+      gapMedia: Math.max(0, media - total), gapMax: Math.max(0, maxv - total),
+      tendencia, naoCaptados: num(an[0]?.naocap), concentracaoTop,
+    },
   };
 }
 
