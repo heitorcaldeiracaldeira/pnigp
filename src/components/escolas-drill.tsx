@@ -14,7 +14,6 @@ type Escola = NonNullable<EscolasSC>["lista"][number];
 function EscolaItem({ e, media }: { e: Escola; media: number | null }) {
   const [open, setOpen] = useState(false);
   const sobrec = media != null && e.alunoPorDoc != null && e.alunoPorDoc > media * 1.3;
-  const maxE = Math.max(1, ...e.etapas.map((x) => x.n));
   const mapa = e.lat != null && e.lon != null ? `https://www.google.com/maps?q=${e.lat},${e.lon}` : null;
   return (
     <div className="border-b border-slate-50 last:border-0">
@@ -44,17 +43,24 @@ function EscolaItem({ e, media }: { e: Escola; media: number | null }) {
             <div className="rounded-lg border border-slate-200 bg-white p-2 text-center"><div className="text-base font-bold tabular-nums text-slate-800">{e.alunoPorDoc ?? "—"}</div><div className="text-[10px] text-slate-500">alunos/professor</div></div>
           </div>
 
-          {e.etapas.length > 0 && (
+          {e.series && e.series.length > 0 ? (
             <div>
-              <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Alunos por etapa de ensino</div>
-              <div className="space-y-1">
-                {e.etapas.map((et) => (
-                  <div key={et.etapa} className="flex items-center gap-2 text-xs">
-                    <span className="w-48 shrink-0 text-slate-600">{et.etapa}</span>
-                    <div className="h-3 flex-1 overflow-hidden rounded bg-slate-200"><div className="h-3 rounded bg-teal-500" style={{ width: `${(et.n / maxE) * 100}%` }} /></div>
-                    <span className="w-12 shrink-0 text-right tabular-nums text-slate-700">{et.n.toLocaleString("pt-BR")}</span>
-                  </div>
-                ))}
+              <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Série a série</div>
+              <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                <table className="w-full text-xs">
+                  <thead><tr className="border-b border-slate-200 text-left text-slate-500"><th className="p-2 font-medium">Série / etapa</th><th className="p-2 text-right font-medium">Alunos</th><th className="p-2 text-right font-medium">Turmas</th><th className="p-2 text-right font-medium">Alunos/turma</th></tr></thead>
+                  <tbody>
+                    {e.series.map((s) => (
+                      <tr key={s.serie} className="border-b border-slate-50 last:border-0">
+                        <td className="p-2 text-slate-700">{s.serie}</td>
+                        <td className="p-2 text-right tabular-nums text-slate-700">{s.mat.toLocaleString("pt-BR")}</td>
+                        <td className="p-2 text-right tabular-nums text-slate-600">{s.tur || "—"}</td>
+                        <td className={`p-2 text-right tabular-nums font-medium ${s.alunoPorTurma != null && s.alunoPorTurma > 30 ? "text-amber-600" : "text-slate-700"}`}>{s.alunoPorTurma ?? "—"}</td>
+                      </tr>
+                    ))}
+                    <tr className="border-t border-slate-200 bg-slate-50 font-semibold text-slate-700"><td className="p-2">Total</td><td className="p-2 text-right tabular-nums">{e.matriculas.toLocaleString("pt-BR")}</td><td className="p-2 text-right tabular-nums">{e.turmas || "—"}</td><td className="p-2 text-right tabular-nums">{e.alunoPorTurma ?? "—"}</td></tr>
+                  </tbody>
+                </table>
               </div>
               {e.especial > 0 && (
                 <p className="mt-1.5 rounded-lg border border-sky-100 bg-sky-50/60 px-2 py-1.5 text-[11px] text-slate-600">
@@ -63,7 +69,7 @@ function EscolaItem({ e, media }: { e: Escola; media: number | null }) {
                 </p>
               )}
             </div>
-          )}
+          ) : null}
 
           <div>
             <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Infraestrutura</div>
