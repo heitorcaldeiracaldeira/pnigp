@@ -76,6 +76,12 @@ const FONTES = [
     devido: async () => (await maxAno("iegm_sc")) < ANO_FECHADO-1 },
   { id: "cauc", label: "Regularidade fiscal CAUC/CADIN (Tesouro)", api: "tesouro", script: "scripts/ingest_cauc_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 7 }, // atualizado diariamente — recoleta semanal
+  { id: "ideb", label: "IDEB — indicadores educacionais (INEP)", api: "inep", script: "scripts/ingest_ideb_sc.mjs", env: {},
+    devido: async (st) => diasDesde(st?.ultima_exec) > 300 }, // bienal
+  { id: "censo", label: "Censo Escolar — matrículas (INEP Sinopse)", api: "inep", script: "scripts/ingest_censo_sc.mjs", env: {},
+    devido: async (st) => diasDesde(st?.ultima_exec) > 300 }, // anual
+  { id: "programas_transferegov", label: "Radar de Captação — programas + planos (Transferegov fundo a fundo, API viva)", api: "transferegov", script: "scripts/ingest_transferegov_api.mjs", env: { UF: "SC" },
+    devido: async (st) => diasDesde(st?.ultima_exec) > 7 }, // janelas de proposta mudam — recoleta semanal
 ];
 
 async function ensure() {

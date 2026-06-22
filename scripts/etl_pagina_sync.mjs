@@ -14,6 +14,7 @@ const M = {
   sih: ["saude_producao_sc", "ano"], sia: ["saude_producao_sc", "ano"], previne: ["previne_sc", null], indigena: ["entes_sc", null],
   fns: ["fns_repasse_sc", "ano"], cnpj_loc: ["cnpj_loc", null], empenhos: ["empenhos_check", null], atas: ["atas_sc", "ano_ata"],
   nf: ["nf_sc", "ano"], cauc: ["cauc_sc", null], ideb: ["ideb_sc", "ano"], censo: ["censo_matricula_sc", "ano"],
+  programas_transferegov: ["programas_transferegov", "ano"], captacao_transferegov: ["captacao_transferegov_sc", null],
 };
 
 async function main() {
