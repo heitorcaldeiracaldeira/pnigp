@@ -34,6 +34,7 @@ import { EficienciaSaude } from "@/components/eficiencia-saude";
 import { CatalogoBoasPraticas } from "@/components/catalogo-boas-praticas";
 import { EscolasDrill } from "@/components/escolas-drill";
 import { EstabSaudeDrill } from "@/components/estab-saude-drill";
+import { PerfilSaude } from "@/components/perfil-saude";
 import { PerfilEducacao } from "@/components/perfil-educacao";
 import { SerieExplicada } from "@/components/serie-explicada";
 import { PlacarEstrategico } from "@/components/placar-estrategico";
@@ -53,7 +54,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPerfilSaudeSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop, fmtData } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -77,6 +78,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const eficSaude = await getEficienciaSaudeSC(codigo);
   const escolas = await getEscolasSC(codigo);
   const estabSaude = await getEstabSaudeSC(codigo);
+  const perfilSaude = await getPerfilSaudeSC(codigo);
   const perfilEdu = await getPerfilEducacaoSC(codigo);
   const seriesInd = serieRenda as Record<string, { ano: number; valor: number }[]>;
   if (!dados || dados.serie.length === 0) notFound();
@@ -713,6 +715,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       <h3 className="text-base font-bold text-slate-900">🏥 Equipamentos Públicos — Saúde</h3>
       <p className="text-sm text-slate-500">A rede de saúde de {ente.nome}, estabelecimento a estabelecimento (UBS, hospitais, UPA, CAPS) — composição, capacidade instalada e localização. Base para a regulação, referência e contrarreferência.</p>
     </div>
+    {perfilSaude && <div className="mt-4"><PerfilSaude dados={perfilSaude} nome={ente.nome} /></div>}
     <div className="mt-4"><EstabSaudeDrill dados={estabSaude} nome={ente.nome} /></div>
   </> });
   if (previneFicha) tabs.push({ id: "previne-ficha", label: "Atenção Primária", content: <AssuntoAtencaoPrimaria dados={previneFicha} nome={ente.nome} cod={codigo} /> });

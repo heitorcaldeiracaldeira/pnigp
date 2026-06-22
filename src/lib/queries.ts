@@ -1679,6 +1679,36 @@ export async function getEstabSaudeSC(cod: string): Promise<EstabSaudeSC> {
   };
 }
 
+// Perfil da rede de saúde (CNES) — estrutura por nível de atenção, público×privado e cobertura per capita.
+export type PerfilSaudeSC = {
+  total: number; populacao: number; sus: number;
+  natureza: { publico: number; privado: number; filantropico: number };
+  niveis: { nivel: string; n: number; pub: number }[];
+  apsTotal: number; coberturaAPS: number | null; // unidades de atenção primária por 10 mil habitantes
+} | null;
+const NIVEL_SAUDE: { nivel: string; tipos: number[] }[] = [
+  { nivel: "Atenção Primária (UBS/postos)", tipos: [1, 2, 45] },
+  { nivel: "Urgência e Emergência (UPA/PS)", tipos: [15, 20, 21, 73] },
+  { nivel: "Hospitalar", tipos: [5, 7, 62] },
+  { nivel: "Psicossocial (CAPS)", tipos: [70] },
+  { nivel: "Especializada e Diagnóstico", tipos: [4, 36, 39, 67, 69, 77, 61] },
+];
+export async function getPerfilSaudeSC(cod: string): Promise<PerfilSaudeSC> {
+  const rows = await query<Record<string, unknown>>(`SELECT tipo_codigo, natureza_grupo, sus_ambulatorial FROM estabelecimentos_saude_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const pop = num((await query<Record<string, unknown>>(`SELECT populacao FROM entes_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0]?.populacao);
+  const niveis = NIVEL_SAUDE.map((nv) => {
+    const sel = rows.filter((r) => nv.tipos.includes(num(r.tipo_codigo)));
+    return { nivel: nv.nivel, n: sel.length, pub: sel.filter((r) => r.natureza_grupo === "Público").length };
+  }).filter((x) => x.n > 0);
+  const aps = rows.filter((r) => [1, 2, 45].includes(num(r.tipo_codigo))).length;
+  return {
+    total: rows.length, populacao: pop, sus: rows.filter((r) => r.sus_ambulatorial === true).length,
+    natureza: { publico: rows.filter((r) => r.natureza_grupo === "Público").length, privado: rows.filter((r) => r.natureza_grupo === "Privado").length, filantropico: rows.filter((r) => r.natureza_grupo === "Filantrópico").length },
+    niveis, apsTotal: aps, coberturaAPS: pop > 0 ? Math.round((aps / (pop / 10000)) * 10) / 10 : null,
+  };
+}
+
 // Perfil da rede municipal de educação (Censo) — quem é atendido: sexo, raça/cor, idade, inclusão, integral, turmas, transporte.
 export type PerfilEducacaoSC = {
   matriculas: number; turmas: number; alunoPorTurma: number | null;
