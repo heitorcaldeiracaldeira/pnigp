@@ -1431,6 +1431,66 @@ export async function getContratosVencimentoSC(cod: string): Promise<ContratosVe
   return { faixas, aVencer: aVencer.slice(0, 60), nCriticos, vencidos, totalAtivos };
 }
 
+// Captação de Recursos (Transferegov API viva) — o que o município JÁ captou (fundo a fundo), oportunidades
+// ABERTAS hoje, e benchmark vs pares (o ponto cego: quanto deixou na mesa). Cruzável c/ receitas SICONFI.
+export type CaptacaoSC = {
+  totalCaptado: number; nPlanos: number;
+  porOrgao: { orgao: string; valor: number; n: number }[];
+  porAno: { ano: number; valor: number }[];
+  lista: { nome: string; orgao: string; valor: number; situacao: string }[];
+  abertos: { id: string; nome: string; orgao: string; dtFim: string | null; dias: number | null }[];
+  benchmark: { media: number; max: number; melhores: { nome: string; valor: number }[] };
+  universo: { nProgramas: number; nAbertos: number; totalSC: number; nMunicipios: number };
+} | null;
+export async function getCaptacaoTransferegovSC(cod: string): Promise<CaptacaoSC> {
+  const [tot, porOrgao, porAno, lista, abertos, bench, melhores, uni] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT count(*) n, coalesce(sum(valor_total_repasse),0) total FROM captacao_transferegov_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT orgao_repassador o, count(*) n, coalesce(sum(valor_total_repasse),0) v FROM captacao_transferegov_sc WHERE cod_ibge=$1 GROUP BY 1 ORDER BY v DESC NULLS LAST LIMIT 8`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT extract(year from dt_inicio)::int ano, coalesce(sum(valor_total_repasse),0) v FROM captacao_transferegov_sc WHERE cod_ibge=$1 AND dt_inicio IS NOT NULL GROUP BY 1 ORDER BY 1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT c.valor_total_repasse v, c.situacao s, c.orgao_repassador o, p.nome FROM captacao_transferegov_sc c LEFT JOIN programas_transferegov p ON p.id_programa=c.id_programa WHERE c.cod_ibge=$1 ORDER BY v DESC NULLS LAST LIMIT 15`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT id_programa id, nome, orgao, dt_fim_vol, (dt_fim_vol - CURRENT_DATE) dias FROM programas_transferegov WHERE dt_fim_vol >= CURRENT_DATE ORDER BY dt_fim_vol LIMIT 20`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT coalesce(avg(t),0) media, coalesce(max(t),0) maxv FROM (SELECT cod_ibge, sum(valor_total_repasse) t FROM captacao_transferegov_sc GROUP BY cod_ibge) s`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT e.nome, sum(c.valor_total_repasse) v FROM captacao_transferegov_sc c JOIN entes_sc e ON e.cod_ibge=c.cod_ibge GROUP BY e.nome ORDER BY v DESC NULLS LAST LIMIT 5`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT (SELECT count(*) FROM programas_transferegov) np, (SELECT count(*) FROM programas_transferegov WHERE dt_fim_vol >= CURRENT_DATE) na, (SELECT coalesce(sum(valor_total_repasse),0) FROM captacao_transferegov_sc) tsc, (SELECT count(distinct cod_ibge) FROM captacao_transferegov_sc) nm`).catch(() => []),
+  ]);
+  const total = num(tot[0]?.total);
+  if (!tot.length || (num(tot[0]?.n) === 0 && !abertos.length)) return null;
+  return {
+    totalCaptado: total, nPlanos: num(tot[0]?.n),
+    porOrgao: porOrgao.map((r) => ({ orgao: String(r.o || "—"), valor: num(r.v), n: num(r.n) })),
+    porAno: porAno.map((r) => ({ ano: num(r.ano), valor: num(r.v) })),
+    lista: lista.map((r) => ({ nome: String(r.nome || r.o || "Programa"), orgao: String(r.o || ""), valor: num(r.v), situacao: String(r.s || "") })),
+    abertos: abertos.map((r) => ({ id: String(r.id), nome: String(r.nome || ""), orgao: String(r.orgao || ""), dtFim: (r.dt_fim_vol as string) || null, dias: r.dias != null ? num(r.dias) : null })),
+    benchmark: { media: num(bench[0]?.media), max: num(bench[0]?.maxv), melhores: melhores.map((r) => ({ nome: String(r.nome), valor: num(r.v) })) },
+    universo: { nProgramas: num(uni[0]?.np), nAbertos: num(uni[0]?.na), totalSC: num(uni[0]?.tsc), nMunicipios: num(uni[0]?.nm) },
+  };
+}
+
+// Oportunidades de Captação — catálogo de programas relevantes a municípios: ABERTOS (poderá acessar) e
+// ENCERRADOS recentes (poderia ter acessado). Base do Radar (consciência da oportunidade).
+export type OportunidadesSC = {
+  totalAbertos: number; totalEncerrados: number;
+  abertos: { id: string; nome: string; orgao: string; modalidade: string; dtFim: string | null; dias: number | null }[];
+  encerrados: { id: string; nome: string; orgao: string; dtFim: string | null }[];
+  porOrgao: { orgao: string; n: number }[];
+} | null;
+export async function getOportunidadesCaptacaoSC(): Promise<OportunidadesSC> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT id_programa, nome_programa, orgao, modalidade, dt_fim_prop, (dt_fim_prop - CURRENT_DATE) AS dias
+     FROM programas_catalogo WHERE dt_fim_prop IS NOT NULL`).catch(() => []);
+  if (!rows.length) return null;
+  const abertosR = rows.filter((r) => num(r.dias) >= 0).sort((a, b) => num(a.dias) - num(b.dias));
+  const encR = rows.filter((r) => num(r.dias) < 0 && num(r.dias) >= -1095).sort((a, b) => num(b.dias) - num(a.dias)); // até 3 anos
+  const orgMap = new Map<string, number>();
+  for (const r of abertosR) { const o = String(r.orgao || "—"); orgMap.set(o, (orgMap.get(o) || 0) + 1); }
+  return {
+    totalAbertos: abertosR.length, totalEncerrados: encR.length,
+    abertos: abertosR.slice(0, 40).map((r) => ({ id: String(r.id_programa), nome: String(r.nome_programa || ""), orgao: String(r.orgao || ""), modalidade: String(r.modalidade || ""), dtFim: (r.dt_fim_prop as string) || null, dias: num(r.dias) })),
+    encerrados: encR.slice(0, 40).map((r) => ({ id: String(r.id_programa), nome: String(r.nome_programa || ""), orgao: String(r.orgao || ""), dtFim: (r.dt_fim_prop as string) || null })),
+    porOrgao: [...orgMap.entries()].map(([orgao, n]) => ({ orgao, n })).sort((a, b) => b.n - a.n).slice(0, 8),
+  };
+}
+
 // Radar de Captação — programas que o município PODE captar (elegibilidade SICONV) + janela de proposta
 export type RadarCaptacaoSC = {
   total: number; abertos: number;

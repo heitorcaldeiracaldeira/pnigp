@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ClipboardList, Database, FileText, Landmark, Target, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { Logo } from "@/components/brand";
+import { AssuntoCaptacao } from "@/components/assunto-captacao";
 import { Donut } from "@/components/charts/donut";
 import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
 import { AreaEmpilhada } from "@/components/charts/area-empilhada";
@@ -42,7 +43,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop, fmtData } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -59,6 +60,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const despSubfuncao = await getDespesaSubfuncaoSC(codigo);
   const educacaoSerie = await getEducacaoSerieSC(codigo);
   const iegmDados = await getIegmSC(codigo);
+  const captacao = await getCaptacaoTransferegovSC(codigo);
   const seriesInd = serieRenda as Record<string, { ano: number; valor: number }[]>;
   if (!dados || dados.serie.length === 0) notFound();
   const minhaPos = rankingFiscal.find((r) => r.cod_ibge === codigo) ?? null;
@@ -696,10 +698,12 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (cruz) tabs.push({ id: "cruzamentos", label: "Cruzamentos", content: <CruzamentosSC data={cruz} /> });
   if (comprasDestinos) tabs.push({ id: "compras-sc", label: codigo === "42" ? "Para onde vai (SC)" : "Para onde vai", content: <ComprasDestinosSCView data={comprasDestinos} escopo={codigo === "42" ? "dos municípios de SC" : `de ${ente.nome}`} /> });
 
+  if (captacao) tabs.push({ id: "captacao", label: "Captação", content: <AssuntoCaptacao dados={captacao} cod={codigo} nome={ente.nome} /> });
+
   // navegação temática (5 clusters): Resumo · Finanças · Compras · Setores · Análise
   const GRUPOS: [string, string[]][] = [
     ["Resumo", ["placar", "visao", "panorama", "diagnostico"]],
-    ["Finanças", ["financas", "receitas", "despesas", "execucao", "folha", "previdencia", "metas", "simulador"]],
+    ["Finanças", ["financas", "receitas", "captacao", "despesas", "execucao", "folha", "previdencia", "metas", "simulador"]],
     ["Compras", ["compras", "padroes-compras", "atas", "contratos", "planejamento", "compras-sc"]],
     ["Setores", ["saude", "previne-ficha", "accountability-aps", "mac", "repasses-saude", "fns-historico", "educacao", "educacao-cruz", "indicadores"]],
     ["Análise", ["cruzamentos", "iegm", "ranking", "transferencias", "cauc", "auditoria"]],

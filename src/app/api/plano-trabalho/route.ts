@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const e = (await query<Record<string, unknown>>(`SELECT nome, populacao, tipo FROM entes_sc WHERE cod_ibge=$1`, [ente]).catch(() => []))[0];
   if (!e) return new Response("ente não encontrado", { status: 404 });
   const prog = idPrograma
-    ? (await query<Record<string, unknown>>(`SELECT nome_programa, orgao, modalidade, dt_fim_prop FROM radar_captacao_sc WHERE cod_ibge=$1 AND id_programa=$2`, [ente, idPrograma]).catch(() => []))[0]
+    ? (await query<Record<string, unknown>>(`SELECT nome AS nome_programa, orgao, modalidade, dt_fim_vol AS dt_fim_prop FROM programas_transferegov WHERE id_programa=$1`, [idPrograma]).catch(() => []))[0]
     : null;
 
   const nome = String(e.nome || "Município");

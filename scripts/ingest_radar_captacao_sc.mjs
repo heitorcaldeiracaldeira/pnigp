@@ -33,6 +33,8 @@ async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2, keepAlive: true });
   db.on("error", () => {});
   await db.query(`CREATE TABLE IF NOT EXISTS radar_captacao_sc (cod_ibge TEXT, id_programa TEXT, nome_programa TEXT, orgao TEXT, modalidade TEXT, dt_ini_prop DATE, dt_fim_prop DATE, situacao TEXT, PRIMARY KEY (cod_ibge, id_programa))`);
+  // catálogo de programas (todos os relevantes a municípios/SC) — base do "poderá acessar" (abertos) e "poderia ter acessado" (encerrados)
+  await db.query(`CREATE TABLE IF NOT EXISTS programas_catalogo (id_programa TEXT PRIMARY KEY, nome_programa TEXT, orgao TEXT, modalidade TEXT, natureza TEXT, uf TEXT, ano INTEGER, dt_ini_prop DATE, dt_fim_prop DATE, situacao TEXT)`);
   const q = async (s, p) => { for (let t = 0; t < 8; t++) { try { return await db.query(s, p); } catch { await sleep(1000 * (t + 1)); } } throw new Error("db"); };
 
   // mapa nome do município -> cod_ibge (SC)
@@ -65,22 +67,32 @@ async function main() {
   console.log("Baixando programa (detalhe + janela)…");
   const pg2 = parseCsv(await baixar("siconv_programa"));
   const gi = (c) => pg2.idx(c);
-  const cId = gi("ID_PROGRAMA"), cNome = gi("NOME_PROGRAMA"), cOrg = gi("DESC_ORGAO_SUP_PROGRAMA"), cMod = gi("MODALIDADE_PROGRAMA"), cSit = gi("SIT_PROGRAMA"), cIni = gi("DT_PROG_INI_RECEB_PROP"), cFim = gi("DT_PROG_FIM_RECEB_PROP");
+  const cId = gi("ID_PROGRAMA"), cNome = gi("NOME_PROGRAMA"), cOrg = gi("DESC_ORGAO_SUP_PROGRAMA"), cMod = gi("MODALIDADE_PROGRAMA"), cSit = gi("SIT_PROGRAMA"), cIni = gi("DT_PROG_INI_RECEB_PROP"), cFim = gi("DT_PROG_FIM_RECEB_PROP"), cNat = gi("NATUREZA_JURIDICA_PROGRAMA"), cUf = gi("UF_PROGRAMA"), cAno = gi("ANO_DISPONIBILIZACAO");
   const dataBR = (s) => { const m = String(s || "").match(/^(\d{2})\/(\d{2})\/(\d{4})/); return m ? `${m[3]}-${m[2]}-${m[1]}` : null; };
-  let grav = 0;
+  let grav = 0, cat = 0;
   for (let i = 1; i < pg2.linhas.length; i++) {
-    const c = pg2.linhas[i].split(";"); const id = c[cId]; if (!progNeeded.has(id)) continue;
-    const cods = elig.get(id); if (!cods) continue;
+    const c = pg2.linhas[i].split(";"); const id = c[cId]; if (!id) continue;
     const nome = c[cNome], org = c[cOrg], mod = c[cMod], sit = c[cSit], ini = dataBR(c[cIni]), fim = dataBR(c[cFim]);
-    for (const cod of cods) {
+    const nat = c[cNat] || "", uf = (c[cUf] || "").trim(), ano = parseInt(c[cAno], 10) || null;
+    // CATÁLOGO: programas relevantes a municípios de SC (UF = SC ou nacional/branco) e natureza que inclui municípios/administração
+    const relevanteMunicipio = /munic|administra|estado|distrito|consorci/i.test(nat) || nat === "";
+    if (relevanteMunicipio && (uf === UF || uf === "" || uf === "NA")) {
+      await q(`INSERT INTO programas_catalogo (id_programa,nome_programa,orgao,modalidade,natureza,uf,ano,dt_ini_prop,dt_fim_prop,situacao)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (id_programa) DO UPDATE SET nome_programa=EXCLUDED.nome_programa, orgao=EXCLUDED.orgao, modalidade=EXCLUDED.modalidade, natureza=EXCLUDED.natureza, uf=EXCLUDED.uf, ano=EXCLUDED.ano, dt_ini_prop=EXCLUDED.dt_ini_prop, dt_fim_prop=EXCLUDED.dt_fim_prop, situacao=EXCLUDED.situacao`,
+        [id, nome, org, mod, nat, uf, ano, ini, fim, sit]);
+      cat++;
+    }
+    // ELEGIBILIDADE explícita (proponente restrito)
+    const cods = progNeeded.has(id) ? elig.get(id) : null;
+    if (cods) for (const cod of cods) {
       await q(`INSERT INTO radar_captacao_sc (cod_ibge,id_programa,nome_programa,orgao,modalidade,dt_ini_prop,dt_fim_prop,situacao)
                VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (cod_ibge,id_programa) DO UPDATE SET nome_programa=EXCLUDED.nome_programa, orgao=EXCLUDED.orgao, modalidade=EXCLUDED.modalidade, dt_ini_prop=EXCLUDED.dt_ini_prop, dt_fim_prop=EXCLUDED.dt_fim_prop, situacao=EXCLUDED.situacao`,
         [cod, id, nome, org, mod, ini, fim, sit]);
       grav++;
     }
   }
-  const r = await db.query(`SELECT count(distinct cod_ibge) e, count(*) n, count(*) FILTER (WHERE dt_fim_prop >= CURRENT_DATE) abertos FROM radar_captacao_sc`);
-  console.log(`Radar concluído: ${grav} nesta rodada · ${JSON.stringify(r.rows[0])}`);
+  const r = await db.query(`SELECT count(*) n, count(*) FILTER (WHERE dt_fim_prop >= CURRENT_DATE) abertos, count(*) FILTER (WHERE dt_fim_prop < CURRENT_DATE) encerrados FROM programas_catalogo`);
+  console.log(`Catálogo: ${cat} programas · ${JSON.stringify(r.rows[0])} · elegibilidade restrita: ${grav}`);
   await db.end();
 }
 main().catch((e) => { console.error("ERRO:", e); process.exit(1); });
