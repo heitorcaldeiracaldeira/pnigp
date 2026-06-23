@@ -1494,6 +1494,13 @@ export async function getPerfilNecessidadeSC(cod: string): Promise<PerfilNecessi
     educacao: eMin != null && eMed > 0 ? { deficit: eMin < eMed, motivo: `IDEB dos anos iniciais ${eMin.toFixed(1)} (mediana de SC: ${eMed.toFixed(1)})` } : null,
   };
 }
+// Registro curado de programas federais (saúde/educação) que o município pode pleitear — com proveniência (link oficial).
+// FNS/FNDE não têm feed de "janela aberta"; aberturas saem por portaria. Alimenta o casamento oportunidade×carência.
+export type ProgramaFederal = { id: string; area: string; nome: string; objeto: string; orgao: string; fonte: string; link: string; elegibilidade: string; janela: string };
+export async function getProgramasFederaisSC(): Promise<ProgramaFederal[]> {
+  const rows = await query<Record<string, unknown>>(`SELECT id, area, nome, objeto, orgao, fonte, link, elegibilidade, janela FROM programas_federais_sc ORDER BY area, nome`).catch(() => []);
+  return rows.map((r) => ({ id: String(r.id), area: String(r.area || ""), nome: String(r.nome || ""), objeto: String(r.objeto || ""), orgao: String(r.orgao || ""), fonte: String(r.fonte || ""), link: String(r.link || ""), elegibilidade: String(r.elegibilidade || ""), janela: String(r.janela || "") }));
+}
 // classifica a oportunidade por ÁREA/objeto (base do casamento com a necessidade do município)
 function areaOportunidade(nome: string, orgao: string, fundo: string): string {
   const s = `${nome} ${orgao} ${fundo}`.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "");

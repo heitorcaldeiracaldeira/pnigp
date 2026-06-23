@@ -1,4 +1,4 @@
-import type { CaptacaoSC, PerfilNecessidade } from "@/lib/queries";
+import type { CaptacaoSC, PerfilNecessidade, ProgramaFederal } from "@/lib/queries";
 import { fmtBRLCompact } from "@/lib/ui";
 
 function dt(s: string | null) {
@@ -31,7 +31,7 @@ function tipoJanelaMeta(t: string, elegivel: boolean, temLista: boolean) {
 }
 
 // Radar de Captação (Transferegov, fonte original viva) — o ponto cego: quanto captou × vs pares × o que pode captar.
-export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade }: { dados: CaptacaoSC; cod: string; nome: string; margem?: { investimento: number; medianaSC: number }; necessidade?: PerfilNecessidade }) {
+export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, programasFederais }: { dados: CaptacaoSC; cod: string; nome: string; margem?: { investimento: number; medianaSC: number }; necessidade?: PerfilNecessidade; programasFederais?: ProgramaFederal[] }) {
   if (!dados) return null;
   const docLink = (id: string) => `/api/plano-trabalho?ente=${cod}&programa=${id}`;
   const vsMedia = dados.benchmark.media > 0 ? dados.totalCaptado / dados.benchmark.media : 0;
@@ -190,6 +190,42 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade }: { dad
           <p className="mt-2 rounded-lg bg-slate-50 p-3 text-xs text-slate-500">Sem janela aberta neste momento nos programas monitorados. O monitoramento é contínuo — quando abrir um programa, ele aparece aqui (e poderá disparar alerta).</p>
         )}
       </section>
+
+      {/* PROGRAMAS FEDERAIS MONITORADOS (saúde/educação) — casados com as carências; procura evidenciada (fonte oficial em cada item) */}
+      {programasFederais && programasFederais.length > 0 && (() => {
+        const ord = [...programasFederais].sort((a, b) => (Number(combina(b.area)) - Number(combina(a.area))));
+        const nMatch = ord.filter((p) => combina(p.area)).length;
+        return (
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-1 flex flex-wrap items-center gap-2">
+              <h3 className="text-sm font-semibold text-slate-800">🔎 Programas federais monitorados — saúde e educação</h3>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{programasFederais.length} fontes oficiais</span>
+            </div>
+            <p className="text-[12px] text-slate-500">FNS e FNDE não publicam janela aberta por API — as aberturas saem por portaria/seleção. Monitoramos os programas oficiais e <b>casamos com as carências de {nome}</b>. {nMatch > 0 ? <span className="font-semibold text-emerald-700">{nMatch} combina(m) com o que falta aqui.</span> : "Cada item traz a fonte oficial e como pleitear."}</p>
+            <div className="mt-3 space-y-2">
+              {ord.map((p) => { const match = combina(p.area); const n = necDe(p.area); return (
+                <div key={p.id} className={`rounded-xl border p-3 ${match ? "border-emerald-400 bg-emerald-50/40 ring-1 ring-emerald-200" : "border-slate-200"}`}>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-600">{areaMeta(p.area).ic} {areaMeta(p.area).lbl}</span>
+                    {match && <span className="rounded px-1.5 py-0.5 text-[10px] font-bold bg-emerald-600 text-white">🎯 combina com sua carência de {areaMeta(p.area).lbl.toLowerCase()}</span>}
+                    <span className="text-[10px] text-slate-400">{p.fonte}</span>
+                  </div>
+                  <div className="mt-1 text-sm font-semibold text-slate-900">{p.nome}</div>
+                  <div className="text-[12px] text-slate-600">{p.objeto}</div>
+                  {match && n && <div className="mt-0.5 text-[12px] text-emerald-800">→ {nome} tem carência aqui: {n.motivo}. Vale pleitear.</div>}
+                  <div className="mt-1 grid gap-0.5 text-[11px] text-slate-500 sm:grid-cols-2">
+                    <span>🏛️ {p.orgao}</span>
+                    <span>⏰ {p.janela}</span>
+                    <span className="sm:col-span-2">✓ Elegibilidade: {p.elegibilidade}</span>
+                  </div>
+                  <a href={p.link} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-[11px] font-semibold text-teal-700 hover:underline">Fonte oficial ↗</a>
+                </div>
+              ); })}
+            </div>
+            <p className="mt-2 text-[10px] text-slate-400">Registro curado com proveniência (fonte oficial em cada programa), atualizado conforme as portarias. Integração automática entra quando FNS/FNDE publicarem feed de janela.</p>
+          </section>
+        );
+      })()}
 
       {/* JÁ CAPTOU — por órgão + por ano */}
       {dados.porOrgao.length > 0 && (
