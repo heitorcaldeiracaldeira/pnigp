@@ -1769,6 +1769,35 @@ export async function getFornecedoresSC(cod: string): Promise<FornecedoresSC> {
   };
 }
 
+// Curva ABC (concentração do gasto) + dispersão de preço entre municípios (onde o "preço único" mais falha = oportunidade).
+export type ComprasExtra = {
+  abc: { totalItens: number; totalValor: number; a: { n: number; pct: number }; b: { n: number; pct: number }; c: { n: number; pct: number } } | null;
+  dispersao: { item: string; unidade: string; p25: number; mediana: number; p75: number; ratio: number; nMuns: number }[];
+} | null;
+export async function getComprasExtraSC(cod: string): Promise<ComprasExtra> {
+  const [itens, disp] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT ${_NORM_ITEM} k, sum(quantidade*unit_homologado) valor
+      FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND quantidade*unit_homologado<=200000000 AND descricao IS NOT NULL AND NOT ${_ATA}
+      GROUP BY 1 ORDER BY valor DESC NULLS LAST`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`WITH mi AS (SELECT ${_NORM_ITEM} k, unidade FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND NOT ${_ATA} GROUP BY 1,2)
+      SELECT mi.k item, mi.unidade, r.p25, r.mediana, r.p75, r.n_muns, round((r.p75/NULLIF(r.p25,0))::numeric,1) ratio
+      FROM mi JOIN precos_referencia_sc r ON r.k=mi.k AND r.unidade=mi.unidade WHERE r.p25>0 AND r.p75/r.p25 >= 1.5
+      ORDER BY r.p75/NULLIF(r.p25,0) DESC NULLS LAST LIMIT 15`, [cod]).catch(() => []),
+  ]);
+  let abc = null;
+  if (itens.length) {
+    const total = itens.reduce((s, r) => s + num(r.valor), 0);
+    let cum = 0, a = 0, b = 0, c = 0;
+    for (const r of itens) { cum += num(r.valor); const p = cum / total; if (p <= 0.8) a++; else if (p <= 0.95) b++; else c++; }
+    const n = itens.length;
+    abc = { totalItens: n, totalValor: total, a: { n: a, pct: Math.round((a / n) * 100) }, b: { n: b, pct: Math.round((b / n) * 100) }, c: { n: c, pct: Math.round((c / n) * 100) } };
+  }
+  return {
+    abc,
+    dispersao: disp.map((r) => ({ item: String(r.item || ""), unidade: String(r.unidade || ""), p25: num(r.p25), mediana: num(r.mediana), p75: num(r.p75), ratio: num(r.ratio), nMuns: num(r.n_muns) })),
+  };
+}
+
 // Pesquisa de PREÇO DE REFERÊNCIA (Lei 14.133) — gestor digita o item → preço justo (mediana SC + faixa) p/ o edital.
 export type PesquisaPreco = { item: string; unidade: string; mediana: number; p25: number; p75: number; nMuns: number; nCompras: number; min: number; max: number }[];
 export async function getPesquisaPrecoSC(termo: string): Promise<PesquisaPreco> {

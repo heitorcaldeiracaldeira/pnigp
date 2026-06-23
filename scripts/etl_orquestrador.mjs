@@ -90,6 +90,10 @@ const FONTES = [
     devido: async (st) => diasDesde(st?.ultima_exec) > 45 }, // CNES atualiza mensalmente
   { id: "precos_referencia", label: "Preço de referência por item (mediana SC) + classificação ata/efetivada — base da análise de preços", api: "pncp", script: "scripts/ingest_precos_referencia_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 30 }, // recalcula quando itens_sc atualiza
+  { id: "sazonalidade_preco", label: "Sazonalidade de preço por categoria (melhor mês de compra, SC)", api: "pncp", script: "scripts/ingest_sazonalidade_preco_sc.mjs", env: {},
+    devido: async (st) => diasDesde(st?.ultima_exec) > 30 },
+  { id: "emendas", label: "Emendas parlamentares por município (SICONV/Transferegov, repositório detru)", api: "transferegov", script: "scripts/ingest_emendas_siconv_sc.mjs", env: {},
+    devido: async (st) => diasDesde(st?.ultima_exec) > 30 },
 ];
 
 async function ensure() {
