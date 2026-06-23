@@ -1679,7 +1679,7 @@ export async function getAnaliseComprasItensSC(cod: string): Promise<AnaliseComp
     // 30 mais comprados (efetivadas) + variação de preço vs mediana SC
     query<Record<string, unknown>>(`WITH mi AS (
         SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado) valor, sum(quantidade) qtd, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) preco_mun
-        FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND descricao IS NOT NULL AND NOT ${_ATA}
+        FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND quantidade*unit_homologado<=200000000 AND descricao IS NOT NULL AND NOT ${_ATA}
         GROUP BY 1,2 ORDER BY valor DESC NULLS LAST LIMIT 30)
       SELECT mi.k, mi.unidade, mi.valor, mi.qtd, mi.preco_mun, r.mediana, r.n_muns,
         round((((mi.preco_mun-r.mediana)/NULLIF(r.mediana,0))*100)::numeric) variacao
@@ -1687,7 +1687,7 @@ export async function getAnaliseComprasItensSC(cod: string): Promise<AnaliseComp
     // sobrepreço — efetivadas acima do p75 dos pares
     query<Record<string, unknown>>(`WITH mi AS (
         SELECT ${_NORM_ITEM} k, unidade, sum(quantidade) qtd, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) preco_mun
-        FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND descricao IS NOT NULL AND NOT ${_ATA} GROUP BY 1,2)
+        FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND quantidade*unit_homologado<=200000000 AND descricao IS NOT NULL AND NOT ${_ATA} GROUP BY 1,2)
       SELECT mi.k item, mi.unidade, mi.qtd, mi.preco_mun, r.mediana, r.n_muns,
         round((((mi.preco_mun-r.mediana)/NULLIF(r.mediana,0))*100)::numeric) acima_pct, ((mi.preco_mun-r.mediana)*mi.qtd) economia
       FROM mi JOIN precos_referencia_sc r ON r.k=mi.k AND r.unidade=mi.unidade
@@ -1695,10 +1695,10 @@ export async function getAnaliseComprasItensSC(cod: string): Promise<AnaliseComp
       ORDER BY economia DESC NULLS LAST LIMIT 25`, [cod]).catch(() => []),
     // atas — registro de preço (grupo "não certa")
     query<Record<string, unknown>>(`SELECT count(distinct (${_NORM_ITEM}||'|'||unidade)) n_itens, sum(quantidade*unit_homologado) valor
-      FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND descricao IS NOT NULL AND ${_ATA}`, [cod]).catch(() => []),
+      FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND quantidade*unit_homologado<=200000000 AND descricao IS NOT NULL AND ${_ATA}`, [cod]).catch(() => []),
     // comparação ENTRE os dois grupos: mesmo item com preço em ATA e em EFETIVADA
-    query<Record<string, unknown>>(`WITH ata AS (SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) p_ata, sum(quantidade*unit_homologado) v FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND ${_ATA} GROUP BY 1,2),
-        ef AS (SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) p_ef FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND NOT ${_ATA} GROUP BY 1,2)
+    query<Record<string, unknown>>(`WITH ata AS (SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) p_ata, sum(quantidade*unit_homologado) v FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND quantidade*unit_homologado<=200000000 AND ${_ATA} GROUP BY 1,2),
+        ef AS (SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) p_ef FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND quantidade*unit_homologado<=200000000 AND NOT ${_ATA} GROUP BY 1,2)
       SELECT a.k item, a.unidade, a.p_ata, e.p_ef, round((((e.p_ef-a.p_ata)/NULLIF(a.p_ata,0))*100)::numeric) diff
       FROM ata a JOIN ef e ON e.k=a.k AND e.unidade=a.unidade WHERE a.p_ata>0 AND e.p_ef>0 ORDER BY a.v DESC NULLS LAST LIMIT 12`, [cod]).catch(() => []),
     // sazonalidade — contratações efetivadas por mês (assinatura)
