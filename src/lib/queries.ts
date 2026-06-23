@@ -1881,16 +1881,23 @@ export async function getSazonalidadePrecoSC(): Promise<SazonalidadePreco> {
 export type EmendasSC = {
   total: number; n: number; impositivas: number; valorImpositivo: number;
   porParlamentar: { parlamentar: string; valor: number; n: number }[];
+  // execução orçamentária federal (Portal da Transparência) — null enquanto o coletor de execução não rodar
+  execucao: { empenhado: number; pago: number; restoPagar: number; ano: number | null; n: number } | null;
 } | null;
 export async function getEmendasSC(cod: string): Promise<EmendasSC> {
-  const [tot, parl] = await Promise.all([
-    query<Record<string, unknown>>(`SELECT count(*) n, coalesce(sum(valor_emenda),0) total, count(*) FILTER(WHERE impositivo) impos, coalesce(sum(valor_emenda) FILTER(WHERE impositivo),0) vimp FROM emendas_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
-    query<Record<string, unknown>>(`SELECT parlamentar, coalesce(sum(valor_emenda),0) valor, count(*) n FROM emendas_sc WHERE cod_ibge=$1 AND parlamentar<>'' GROUP BY 1 ORDER BY valor DESC NULLS LAST LIMIT 8`, [cod]).catch(() => []),
+  // INDICAÇÃO (SICONV): quem destinou e quanto · EXECUÇÃO (Portal): empenhado×pago → "recurso na mesa". Tabelas separadas.
+  const [tot, parl, exec] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT count(*) n, coalesce(sum(valor_emenda),0) total, count(*) FILTER(WHERE impositivo) impos, coalesce(sum(valor_emenda) FILTER(WHERE impositivo),0) vimp FROM emendas_indicacao_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT parlamentar, coalesce(sum(valor_emenda),0) valor, count(*) n FROM emendas_indicacao_sc WHERE cod_ibge=$1 AND parlamentar<>'' GROUP BY 1 ORDER BY valor DESC NULLS LAST LIMIT 8`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT coalesce(sum(empenhado),0) emp, coalesce(sum(pago),0) pago, coalesce(sum(greatest(empenhado-pago,0)),0) resto, max(ano) ano, count(*) n FROM emendas_execucao_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
   ]);
   if (!tot.length || num(tot[0]?.n) === 0) return null;
+  const e0 = exec[0];
+  const temExec = e0 && num(e0.n) > 0;
   return {
     total: num(tot[0].total), n: num(tot[0].n), impositivas: num(tot[0].impos), valorImpositivo: num(tot[0].vimp),
     porParlamentar: parl.map((r) => ({ parlamentar: String(r.parlamentar || ""), valor: num(r.valor), n: num(r.n) })),
+    execucao: temExec ? { empenhado: num(e0.emp), pago: num(e0.pago), restoPagar: num(e0.resto), ano: e0.ano != null ? num(e0.ano) : null, n: num(e0.n) } : null,
   };
 }
 

@@ -108,8 +108,11 @@ const FONTES = [
     devido: async (st) => diasDesde(st?.ultima_exec) > 30 }, // recalcula quando itens_sc atualiza
   { id: "sazonalidade_preco", label: "Sazonalidade de preço por categoria (melhor mês de compra, SC)", api: "pncp", script: "scripts/ingest_sazonalidade_preco_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 30 },
-  { id: "emendas", label: "Emendas parlamentares por município (SICONV/Transferegov, repositório detru)", api: "transferegov", script: "scripts/ingest_emendas_siconv_sc.mjs", env: {},
+  { id: "emendas", label: "Emendas — INDICAÇÃO (SICONV/Transferegov, repositório detru: parlamentar, impositivo, valor destinado)", api: "transferegov", script: "scripts/ingest_emendas_siconv_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 30 },
+  { id: "emendas_exec", label: "Emendas — EXECUÇÃO orçamentária federal (Portal da Transparência: empenhado×pago → recurso na mesa)", api: "transferegov", script: "scripts/ingest_emendas_sc.mjs", env: { ANO_INI: "2020", ANO_FIM: "2026" },
+    // emendas_check pula anos já coletados; p/ atualizar a execução do ano corrente, limpar a linha do ano em emendas_check
+    devido: async (st) => diasDesde(st?.ultima_exec) > 15 },
   { id: "convenios", label: "Convênios e contratos de repasse por município (SICONV/Transferegov, repositório detru — proposta+convenio)", api: "transferegov", script: "scripts/ingest_convenios_siconv_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 30 }, // requer CSVs detru extraídos em tmp (proposta 714MB)
 ];
@@ -125,7 +128,7 @@ const estado = async (id) => (await db.query(`SELECT * FROM etl_catalogo WHERE i
 
 // ===== SUPERVISÃO (lógica do PNCP aplicada a TODA fonte) =====
 // Tabela cujo count(*) cresce durante a coleta = sinal de progresso de cada fonte.
-const TAB = { financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", receitas_det: "receitas_detalhe_sc", desp_subfuncao: "despesa_subfuncao_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc_feitos", processos: "processos_sc", itens: "itens_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", cnes: "cnes_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc", catalogo_govbr: "catalogo_govbr_sc", classificacao_itens: "itens_classificacao_sc" };
+const TAB = { financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", receitas_det: "receitas_detalhe_sc", desp_subfuncao: "despesa_subfuncao_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc_feitos", processos: "processos_sc", itens: "itens_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", cnes: "cnes_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc", catalogo_govbr: "catalogo_govbr_sc", classificacao_itens: "itens_classificacao_sc", emendas: "emendas_indicacao_sc", emendas_exec: "emendas_execucao_sc" };
 const conta = async (id) => { try { return Number((await db.query(`SELECT count(*) n FROM ${TAB[id] || "financas_sc"}`)).rows[0].n) || 0; } catch { return 0; } };
 const STALL_MS = 20 * 60 * 1000;   // 20 min sem progresso => mata e religa (folga p/ não matar ente pesado)
 const CHECK_MS = 60 * 1000;
@@ -176,7 +179,7 @@ async function main() {
     const solicitado = st?.solicitado === true;
     const ma = f.id === "cnes"
       ? (Number((await db.query(`SELECT max(extract(year from atualizado))::int y FROM cnes_sc`).catch(() => ({ rows: [{}] }))).rows[0]?.y) || 0) // CNES é snapshot por competência (sem coluna ano)
-      : await maxAno({ financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", receitas_det: "receitas_detalhe_sc", desp_subfuncao: "despesa_subfuncao_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc", catalogo_govbr: "catalogo_govbr_sc", classificacao_itens: "itens_classificacao_sc" }[f.id] || "financas_sc", f.id === "contratos" ? "ano_compra" : "ano");
+      : await maxAno({ financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", receitas_det: "receitas_detalhe_sc", desp_subfuncao: "despesa_subfuncao_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc", catalogo_govbr: "catalogo_govbr_sc", classificacao_itens: "itens_classificacao_sc", emendas_exec: "emendas_execucao_sc" }[f.id] || "financas_sc", f.id === "contratos" ? "ano_compra" : "ano");
     await db.query(`UPDATE etl_catalogo SET max_ano=$1, devido=$2, atualizado_em=now() WHERE id=$3`, [ma, devido, f.id]);
     const roda = SOLIC ? solicitado : (devido || solicitado);
     plano.push({ f, roda });

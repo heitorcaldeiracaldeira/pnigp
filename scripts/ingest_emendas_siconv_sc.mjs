@@ -1,6 +1,7 @@
-// ETL — Emendas parlamentares por município SC (SICONV/Transferegov, repositório público detru). Emenda → convênio:
-// parlamentar, impositivo, valor + execução (empenhado/desembolsado). Join: emenda.BENEFICIARIO(CNPJ)→proponente SC;
-// emenda.ID_PROPOSTA→convenio. Idempotente. node scripts/ingest_emendas_siconv_sc.mjs
+// ETL — Emendas parlamentares por município SC: INDICAÇÃO (SICONV/Transferegov, repositório público detru). Quem
+// destinou e quanto: parlamentar, impositivo, valor (+ execução do convênio quando há). Join: emenda.BENEFICIARIO(CNPJ)
+// →proponente SC; emenda.ID_PROPOSTA→convenio. Tabela emendas_indicacao_sc (a execução orçamentária federal vem do
+// coletor Portal em emendas_execucao_sc — tabelas SEPARADAS, sem clobber). Idempotente. node scripts/ingest_emendas_siconv_sc.mjs
 import fs from "fs"; import path from "path"; import zlib from "zlib"; import { fileURLToPath } from "url"; import pg from "pg";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
@@ -27,8 +28,8 @@ const ix = (head, ...names) => { for (const n of names) { const i = head.indexOf
 async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2, keepAlive: true });
   db.on("error", () => {});
-  await db.query(`DROP TABLE IF EXISTS emendas_sc`); // schema antigo (coletor Portal) → recria no novo formato SICONV
-  await db.query(`CREATE TABLE IF NOT EXISTS emendas_sc (
+  // Tabela própria de INDICAÇÃO — sem DROP (não destrói a execução do coletor Portal). UPSERT idempotente.
+  await db.query(`CREATE TABLE IF NOT EXISTS emendas_indicacao_sc (
     id_proposta TEXT, nr_emenda TEXT, cod_ibge TEXT, municipio TEXT, parlamentar TEXT, tipo_parlamentar TEXT, impositivo BOOLEAN,
     programa TEXT, situacao TEXT, ano INTEGER, valor_emenda NUMERIC, vl_global NUMERIC, vl_repasse NUMERIC, empenhado NUMERIC, desembolsado NUMERIC,
     PRIMARY KEY (id_proposta, nr_emenda))`);
@@ -60,14 +61,14 @@ async function main() {
     if (!em.linhas[i]) continue; const c = em.linhas[i].split(";");
     const benef = dig(c[eBen]); const sc = cnpjSC.get(benef); if (!sc) continue; // só beneficiário em SC
     const idp = dig(c[eProp]); const conv = convByProp.get(idp) || {};
-    await q(`INSERT INTO emendas_sc (id_proposta,nr_emenda,cod_ibge,municipio,parlamentar,tipo_parlamentar,impositivo,programa,situacao,ano,valor_emenda,vl_global,vl_repasse,empenhado,desembolsado)
+    await q(`INSERT INTO emendas_indicacao_sc (id_proposta,nr_emenda,cod_ibge,municipio,parlamentar,tipo_parlamentar,impositivo,programa,situacao,ano,valor_emenda,vl_global,vl_repasse,empenhado,desembolsado)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
              ON CONFLICT (id_proposta,nr_emenda) DO UPDATE SET empenhado=EXCLUDED.empenhado, desembolsado=EXCLUDED.desembolsado, situacao=EXCLUDED.situacao`,
       [idp, (c[eNr] || "").replace(/"/g, "").trim() || "—", sc.cod, sc.municipio, (c[ePar] || "").replace(/"/g, "").trim(), (c[eTipo] || "").replace(/"/g, "").trim(), /SIM/i.test(c[eImp] || ""), (c[eProg] || "").replace(/"/g, "").trim() || null, conv.sit || null, conv.ano || null, vlr(c[eVal]), conv.glob || 0, conv.rep || 0, conv.emp || 0, conv.des || 0]);
     n++;
   }
-  const r = await db.query(`SELECT count(*) n, count(distinct cod_ibge) entes, round(sum(valor_emenda)/1e6) emenda_mi, round(sum(desembolsado)/1e6) pago_mi FROM emendas_sc`);
-  console.log(`Emendas SICONV SC concluído: ${n} gravadas · ${JSON.stringify(r.rows[0])}`);
+  const r = await db.query(`SELECT count(*) n, count(distinct cod_ibge) entes, round(sum(valor_emenda)/1e6) emenda_mi, round(sum(desembolsado)/1e6) pago_mi FROM emendas_indicacao_sc`);
+  console.log(`Emendas SICONV (indicação) SC concluído: ${n} gravadas · ${JSON.stringify(r.rows[0])}`);
   await db.end();
 }
 main().catch((e) => { console.error("ERRO:", e); process.exit(1); });

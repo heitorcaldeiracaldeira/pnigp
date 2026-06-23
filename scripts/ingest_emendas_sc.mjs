@@ -1,5 +1,7 @@
-// ETL — Emendas parlamentares por município de SC (Portal da Transparência, API de Dados). Autoritativo: empenhado×
-// liquidado×pago por emenda, autor, função. Filtra localidadeDoGasto "… - SC". Idempotente. node scripts/ingest_emendas_sc.mjs
+// ETL — Emendas parlamentares por município de SC: EXECUÇÃO orçamentária federal (Portal da Transparência, API de
+// Dados). Autoritativo: empenhado×liquidado×pago×resto por emenda, autor, função. Filtra localidadeDoGasto "… - SC".
+// Tabela emendas_execucao_sc (a indicação — parlamentar/impositivo/valor — vem do coletor SICONV em emendas_indicacao_sc;
+// tabelas SEPARADAS, sem clobber). Idempotente. node scripts/ingest_emendas_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const env = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8");
@@ -25,7 +27,7 @@ async function api(ano, pagina) {
 async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2, keepAlive: true });
   db.on("error", () => {});
-  await db.query(`CREATE TABLE IF NOT EXISTS emendas_sc (
+  await db.query(`CREATE TABLE IF NOT EXISTS emendas_execucao_sc (
     codigo_emenda TEXT, ano INTEGER, cod_ibge TEXT, localidade TEXT, tipo TEXT, autor TEXT, funcao TEXT, subfuncao TEXT,
     empenhado NUMERIC, liquidado NUMERIC, pago NUMERIC, resto_inscrito NUMERIC, resto_pago NUMERIC,
     PRIMARY KEY (codigo_emenda, ano))`);
@@ -50,7 +52,7 @@ async function main() {
         if (!/-\s*SC\s*$/i.test(loc)) continue; // só localidade em SC
         const cidade = norm(loc.replace(/-\s*SC\s*$/i, ""));
         const cod = mapMun.get(cidade) || null;
-        await q(`INSERT INTO emendas_sc (codigo_emenda,ano,cod_ibge,localidade,tipo,autor,funcao,subfuncao,empenhado,liquidado,pago,resto_inscrito,resto_pago)
+        await q(`INSERT INTO emendas_execucao_sc (codigo_emenda,ano,cod_ibge,localidade,tipo,autor,funcao,subfuncao,empenhado,liquidado,pago,resto_inscrito,resto_pago)
                  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
                  ON CONFLICT (codigo_emenda,ano) DO UPDATE SET empenhado=EXCLUDED.empenhado, liquidado=EXCLUDED.liquidado, pago=EXCLUDED.pago, cod_ibge=EXCLUDED.cod_ibge`,
           [String(e.codigoEmenda), ano, cod, loc, e.tipoEmenda || null, e.nomeAutor || e.autor || null, e.funcao || null, e.subfuncao || null,
@@ -64,8 +66,8 @@ async function main() {
     await q(`INSERT INTO emendas_check (ano,n) VALUES ($1,$2) ON CONFLICT (ano) DO UPDATE SET n=EXCLUDED.n`, [ano, gravAno]);
     console.log(`${ano}: ✓ ${gravAno} emendas SC (de ${vistas} nacionais vistas)`);
   }
-  const r = await db.query(`SELECT count(*) n, count(distinct cod_ibge) entes, round(sum(pago)/1e6) pago_mi, round(sum(empenhado)/1e6) emp_mi FROM emendas_sc`);
-  console.log(`Emendas SC concluído: ${JSON.stringify(r.rows[0])}`);
+  const r = await db.query(`SELECT count(*) n, count(distinct cod_ibge) entes, round(sum(pago)/1e6) pago_mi, round(sum(empenhado)/1e6) emp_mi FROM emendas_execucao_sc`);
+  console.log(`Emendas (execução) SC concluído: ${JSON.stringify(r.rows[0])}`);
   await db.end();
 }
 main().catch((e) => { console.error("ERRO:", e); process.exit(1); });
