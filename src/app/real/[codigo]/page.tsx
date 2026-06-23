@@ -278,7 +278,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
           Desativados: ResumoCompras (economia), PesquisaPreco, AnaliseComprasItens (sobrepreço/mais comprados), ComprasExtraCard (dispersão), SazonalidadePreco.
           Mantidos (dado do próprio município, sem comparação): ComprasSCSection, ComprasCategorias, FornecedoresCard. */}
       <ComprasSCSection codigo={ente.cod_ibge} tipo={ente.tipo} />
-      {comprasCategorias && <div className="mt-4"><ComprasCategorias dados={comprasCategorias} nome={ente.nome} /></div>}{fornec && <div className="mt-4"><FornecedoresCard dados={fornec} nome={ente.nome} /></div>}
+      {fornec && <div className="mt-4"><FornecedoresCard dados={fornec} nome={ente.nome} /></div>}
       <div className="mt-4"><BaseMetodologica area="compras" /></div>
     </> },
     ...(padroesCompras ? [{ id: "padroes-compras", label: "Planejamento de Compras", content: <><AssuntoPadroesCompras dados={padroesCompras} contratos={contratosResumo} pca={pcaResumo} economia={economicidade} nome={ente.nome} /><div className="mt-4"><CatalogoBoasPraticas area="compras" /></div></> }] : []),
