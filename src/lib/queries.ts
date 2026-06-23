@@ -1664,7 +1664,7 @@ export async function getPadroesComprasSC(cod: string): Promise<PadroesComprasSC
 // Análise de compras por ITEM (descritivo, sem CATMAT) — mais comprados + variação de preço vs pares de SC (sobrepreço/economia).
 const _NORM_ITEM = `trim(regexp_replace(upper(regexp_replace(translate(descricao,'ÁÀÃÂÉÊÍÓÔÕÚÜÇáàãâéêíóôõúüç','AAAAEEIOOOUUCAAAAEEIOOOUUC'),'[^A-Za-z0-9 ]',' ','g')),'\\s+',' ','g'))`;
 export type AnaliseComprasItens = {
-  maisComprados: { item: string; unidade: string; valor: number; qtd: number }[];
+  maisComprados: { item: string; unidade: string; valor: number; qtd: number; precoMun: number; mediana: number | null; nMuns: number | null; variacaoPct: number | null }[];
   sobrepreco: { item: string; unidade: string; qtd: number; precoMun: number; mediana: number; nMuns: number; acimaPct: number; economia: number }[];
   economiaTotal: number;
   atas: { nItens: number; valorRegistrado: number } | null;
@@ -1676,10 +1676,14 @@ export type AnaliseComprasItens = {
 const _ATA = `EXISTS (SELECT 1 FROM processos_ata_sc a WHERE a.cnpj=i.cnpj AND a.ano=i.ano AND a.seq=i.seq)`;
 export async function getAnaliseComprasItensSC(cod: string): Promise<AnaliseComprasItens> {
   const [mais, sobre, atas, comp, saz, tempo] = await Promise.all([
-    // mais comprados — só compras EFETIVADAS (exclui ata)
-    query<Record<string, unknown>>(`SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado) valor, sum(quantidade) qtd
-      FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND descricao IS NOT NULL AND NOT ${_ATA}
-      GROUP BY 1,2 ORDER BY valor DESC NULLS LAST LIMIT 15`, [cod]).catch(() => []),
+    // 30 mais comprados (efetivadas) + variação de preço vs mediana SC
+    query<Record<string, unknown>>(`WITH mi AS (
+        SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado) valor, sum(quantidade) qtd, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) preco_mun
+        FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND descricao IS NOT NULL AND NOT ${_ATA}
+        GROUP BY 1,2 ORDER BY valor DESC NULLS LAST LIMIT 30)
+      SELECT mi.k, mi.unidade, mi.valor, mi.qtd, mi.preco_mun, r.mediana, r.n_muns,
+        round((((mi.preco_mun-r.mediana)/NULLIF(r.mediana,0))*100)::numeric) variacao
+      FROM mi LEFT JOIN precos_referencia_sc r ON r.k=mi.k AND r.unidade=mi.unidade ORDER BY mi.valor DESC`, [cod]).catch(() => []),
     // sobrepreço — efetivadas acima do p75 dos pares
     query<Record<string, unknown>>(`WITH mi AS (
         SELECT ${_NORM_ITEM} k, unidade, sum(quantidade) qtd, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) preco_mun
@@ -1710,7 +1714,7 @@ export async function getAnaliseComprasItensSC(cod: string): Promise<AnaliseComp
   const sobrepreco = sobre.map((r) => ({ item: String(r.item || ""), unidade: String(r.unidade || ""), qtd: num(r.qtd), precoMun: num(r.preco_mun), mediana: num(r.mediana), nMuns: num(r.n_muns), acimaPct: num(r.acima_pct), economia: num(r.economia) }));
   const a0 = atas[0];
   return {
-    maisComprados: mais.map((r) => ({ item: String(r.k || ""), unidade: String(r.unidade || ""), valor: num(r.valor), qtd: num(r.qtd) })),
+    maisComprados: mais.map((r) => ({ item: String(r.k || ""), unidade: String(r.unidade || ""), valor: num(r.valor), qtd: num(r.qtd), precoMun: num(r.preco_mun), mediana: r.mediana != null ? num(r.mediana) : null, nMuns: r.n_muns != null ? num(r.n_muns) : null, variacaoPct: r.variacao != null ? num(r.variacao) : null })),
     sobrepreco, economiaTotal: sobrepreco.reduce((s, x) => s + x.economia, 0),
     atas: a0 && num(a0.n_itens) > 0 ? { nItens: num(a0.n_itens), valorRegistrado: num(a0.valor) } : null,
     comparacao: comp.map((r) => ({ item: String(r.item || ""), unidade: String(r.unidade || ""), precoAta: num(r.p_ata), precoEf: num(r.p_ef), diffPct: num(r.diff) })),
@@ -1734,6 +1738,36 @@ export async function getCensoTendenciaSC(cod: string): Promise<CensoTendenciaSC
     return { ano: num(r.ano), escolas: num(r.escolas), matriculas: mat, docentes: doc, alunoPorDoc: doc > 0 ? Math.round((mat / doc) * 10) / 10 : null, negrosPct: pc(num(r.negros)), especialPct: pc(num(r.esp)), integralPct: pc(num(r.integ)) };
   });
   return { pontos };
+}
+
+// Sazonalidade de PREÇO por categoria (SC) — melhor mês de compra por grupo (índice relativo; 100 = preço típico).
+export type SazonalidadePreco = { categoria: string; meses: { mes: number; indice: number; n: number }[]; melhorMes: number; melhorIndice: number }[];
+export async function getSazonalidadePrecoSC(): Promise<SazonalidadePreco> {
+  const rows = await query<Record<string, unknown>>(`SELECT categoria, mes, indice, n FROM sazonalidade_preco_sc WHERE n >= 10 ORDER BY categoria, mes`).catch(() => []);
+  if (!rows.length) return [];
+  const byCat = new Map<string, { mes: number; indice: number; n: number }[]>();
+  for (const r of rows) { const c = String(r.categoria); if (!byCat.has(c)) byCat.set(c, []); byCat.get(c)!.push({ mes: num(r.mes), indice: num(r.indice), n: num(r.n) }); }
+  return [...byCat.entries()].map(([categoria, meses]) => {
+    const best = [...meses].sort((a, b) => a.indice - b.indice)[0];
+    return { categoria, meses, melhorMes: best.mes, melhorIndice: best.indice };
+  }).sort((a, b) => a.melhorIndice - b.melhorIndice);
+}
+
+// Emendas parlamentares por município (SICONV/Transferegov — convênios). Valor, impositivas, por parlamentar.
+export type EmendasSC = {
+  total: number; n: number; impositivas: number; valorImpositivo: number;
+  porParlamentar: { parlamentar: string; valor: number; n: number }[];
+} | null;
+export async function getEmendasSC(cod: string): Promise<EmendasSC> {
+  const [tot, parl] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT count(*) n, coalesce(sum(valor_emenda),0) total, count(*) FILTER(WHERE impositivo) impos, coalesce(sum(valor_emenda) FILTER(WHERE impositivo),0) vimp FROM emendas_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT parlamentar, coalesce(sum(valor_emenda),0) valor, count(*) n FROM emendas_sc WHERE cod_ibge=$1 AND parlamentar<>'' GROUP BY 1 ORDER BY valor DESC NULLS LAST LIMIT 8`, [cod]).catch(() => []),
+  ]);
+  if (!tot.length || num(tot[0]?.n) === 0) return null;
+  return {
+    total: num(tot[0].total), n: num(tot[0].n), impositivas: num(tot[0].impos), valorImpositivo: num(tot[0].vimp),
+    porParlamentar: parl.map((r) => ({ parlamentar: String(r.parlamentar || ""), valor: num(r.valor), n: num(r.n) })),
+  };
 }
 
 // Estabelecimentos de saúde do município (CNES) — rede completa para regulação: cada unidade + composição da rede.

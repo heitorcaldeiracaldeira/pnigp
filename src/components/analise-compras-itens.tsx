@@ -44,19 +44,32 @@ export function AnaliseComprasItens({ dados, nome }: { dados: AnaliseComprasIten
         </>
       )}
 
-      {/* Mais comprados */}
+      {/* 30 mais comprados + variação de preço */}
       {dados.maisComprados.length > 0 && (
         <div className="mt-4">
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">O que {nome} mais compra (por valor)</div>
-          <div className="space-y-1">
-            {(() => { const mx = Math.max(1, ...dados.maisComprados.map((m) => m.valor)); return dados.maisComprados.map((m, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs">
-                <span className="w-56 shrink-0 truncate text-slate-600" title={m.item}>{m.item.slice(0, 44).toLowerCase()}</span>
-                <div className="h-3 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-3 rounded bg-teal-500" style={{ width: `${(m.valor / mx) * 100}%` }} /></div>
-                <span className="w-16 shrink-0 text-right tabular-nums text-slate-700">{fmtBRLCompact(m.valor)}</span>
-              </div>
-            )); })()}
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Os {dados.maisComprados.length} itens mais comprados (por valor) e a variação de preço vs SC</div>
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
+            <table className="w-full min-w-[680px] text-xs">
+              <thead><tr className="border-b border-slate-200 text-left text-slate-500">
+                <th className="p-2 font-medium">#</th><th className="p-2 font-medium">Item (unidade)</th><th className="p-2 text-right font-medium">Qtd</th>
+                <th className="p-2 text-right font-medium">Valor</th><th className="p-2 text-right font-medium">Preço pago</th>
+                <th className="p-2 text-right font-medium">Mediana SC</th><th className="p-2 text-right font-medium">Variação</th></tr></thead>
+              <tbody>
+                {dados.maisComprados.map((m, i) => (
+                  <tr key={i} className="border-b border-slate-50 last:border-0 align-top">
+                    <td className="p-2 tabular-nums text-slate-400">{i + 1}</td>
+                    <td className="p-2 text-slate-700">{m.item.slice(0, 46).toLowerCase()} <span className="text-slate-400">({m.unidade})</span></td>
+                    <td className="p-2 text-right tabular-nums text-slate-500">{m.qtd.toLocaleString("pt-BR")}</td>
+                    <td className="p-2 text-right tabular-nums font-medium text-slate-800">{fmtBRLCompact(m.valor)}</td>
+                    <td className="p-2 text-right tabular-nums text-slate-700">{fmtBRL(m.precoMun)}</td>
+                    <td className="p-2 text-right tabular-nums text-slate-500">{m.mediana != null ? <>{fmtBRL(m.mediana)} <span className="text-[10px] text-slate-400">({m.nMuns})</span></> : "—"}</td>
+                    <td className="p-2 text-right tabular-nums font-semibold">{m.variacaoPct == null ? <span className="text-slate-300">—</span> : m.variacaoPct > 0 ? <span className="text-rose-600">+{m.variacaoPct}%</span> : <span className="text-emerald-600">{m.variacaoPct}%</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+          <p className="mt-1 text-[11px] text-slate-400">Variação = preço médio do município vs mediana de SC (do mesmo item+unidade, ≥5 municípios). <span className="text-rose-600">+</span> acima · <span className="text-emerald-600">−</span> abaixo · "—" sem item comparável em SC.</p>
         </div>
       )}
 
@@ -109,22 +122,30 @@ export function AnaliseComprasItens({ dados, nome }: { dados: AnaliseComprasIten
         </div>
       )}
 
-      {/* Sazonalidade */}
-      {dados.sazonalidade.length > 0 && (
-        <div className="mt-4">
-          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">📅 Sazonalidade — contratos por mês (assinatura)</div>
-          {(() => { const mx = Math.max(1, ...dados.sazonalidade.map((s) => s.n)); const MES = ["", "jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]; return (
+      {/* Sazonalidade — quando ocorrem os picos */}
+      {dados.sazonalidade.length > 0 && (() => {
+        const MES = ["", "jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+        const MESL = ["", "janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+        const mx = Math.max(1, ...dados.sazonalidade.map((s) => s.n));
+        const picoN = [...dados.sazonalidade].sort((a, b) => b.n - a.n)[0];
+        const picoV = [...dados.sazonalidade].sort((a, b) => b.valor - a.valor)[0];
+        return (
+          <div className="mt-4">
+            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">📅 Sazonalidade — quando o município mais contrata</div>
             <div className="flex items-end gap-1" style={{ height: 70 }}>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((mes) => { const s = dados.sazonalidade.find((x) => x.mes === mes); const n = s ? s.n : 0; return (
-                <div key={mes} className="flex flex-1 flex-col items-center justify-end" title={`${MES[mes]}: ${n} contratos`}>
-                  <div className={`w-full rounded-t ${mes === 12 ? "bg-amber-400" : "bg-teal-400"}`} style={{ height: `${Math.max(2, (n / mx) * 56)}px` }} />
-                  <span className="mt-0.5 text-[9px] text-slate-400">{MES[mes]}</span>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((mes) => { const s = dados.sazonalidade.find((x) => x.mes === mes); const n = s ? s.n : 0; const top = picoN && mes === picoN.mes; return (
+                <div key={mes} className="flex flex-1 flex-col items-center justify-end" title={`${MESL[mes]}: ${n} contratos · ${fmtBRLCompact(s ? s.valor : 0)}`}>
+                  <div className={`w-full rounded-t ${top ? "bg-teal-600" : "bg-teal-300"}`} style={{ height: `${Math.max(2, (n / mx) * 56)}px` }} />
+                  <span className={`mt-0.5 text-[9px] ${top ? "font-bold text-teal-700" : "text-slate-400"}`}>{MES[mes]}</span>
                 </div>
               ); })}
             </div>
-          ); })()}
-        </div>
-      )}
+            {picoN && picoV && (
+              <p className="mt-1.5 text-[11px] text-slate-500">📈 <b>Pico de contratos</b> em <b>{MESL[picoN.mes]}</b> ({picoN.n}); <b>maior valor</b> contratado em <b>{MESL[picoV.mes]}</b> ({fmtBRLCompact(picoV.valor)}). {picoV.mes >= 11 || picoN.mes >= 11 ? "Concentração no fim do ano sugere corrida do empenho — planejar Ata de Registro de Preço antecipa e dilui." : "Bom para planejar o calendário de licitações e atas."}</p>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="mt-3 rounded-lg bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500">
         <b className="text-slate-600">📋 Metodologia deste estudo.</b> Fonte: <b>PNCP</b> (itens, processos e contratos) — dados oficiais. Como o PNCP <b>não traz CATMAT</b>, os itens são agrupados pela <b>descrição normalizada</b> (sem acento/maiúsculas/pontuação) <b>+ a mesma unidade</b>, comparando apenas itens equivalentes presentes em <b>≥5 municípios de SC</b>.
