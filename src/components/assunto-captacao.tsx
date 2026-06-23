@@ -14,16 +14,58 @@ function critPrazo(dias: number) {
   if (dias <= 120) return { nivel: "Médio", cls: "bg-amber-100 text-amber-700 border-amber-200" };
   return { nivel: "Baixo", cls: "bg-teal-100 text-teal-700 border-teal-200" };
 }
+// rótulo + ícone por ÁREA (base do casamento com a necessidade do município)
+const AREA: Record<string, { lbl: string; ic: string }> = {
+  saude: { lbl: "Saúde", ic: "🏥" }, educacao: { lbl: "Educação", ic: "🎓" }, infraestrutura: { lbl: "Infraestrutura", ic: "🏗️" },
+  seguranca: { lbl: "Segurança", ic: "🛡️" }, assistencia: { lbl: "Assistência", ic: "🤝" }, cultura: { lbl: "Cultura/Esporte", ic: "🎭" },
+  trabalho: { lbl: "Trabalho/Renda", ic: "💼" }, agricultura: { lbl: "Agricultura", ic: "🌾" }, outros: { lbl: "Outros", ic: "📌" },
+};
+const areaMeta = (a: string) => AREA[a] || AREA.outros;
+// tipo de janela = a QUEM a União abre (muda a ação do gestor)
+function tipoJanelaMeta(t: string, elegivel: boolean, temLista: boolean) {
+  if (t === "especifica") return elegivel
+    ? { lbl: "Específica · você é elegível", cls: "bg-emerald-100 text-emerald-700" }
+    : { lbl: temLista ? "Específica · grupo definido" : "Específica · verificar elegibilidade", cls: "bg-slate-100 text-slate-500" };
+  if (t === "emenda") return { lbl: "Via emenda", cls: "bg-amber-100 text-amber-700" };
+  return { lbl: "Aberta a todos os municípios", cls: "bg-sky-100 text-sky-700" };
+}
 
 // Radar de Captação (Transferegov, fonte original viva) — o ponto cego: quanto captou × vs pares × o que pode captar.
-export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: string; nome: string }) {
+export function AssuntoCaptacao({ dados, cod, nome, margem }: { dados: CaptacaoSC; cod: string; nome: string; margem?: { investimento: number; medianaSC: number } }) {
   if (!dados) return null;
   const docLink = (id: string) => `/api/plano-trabalho?ente=${cod}&programa=${id}`;
   const vsMedia = dados.benchmark.media > 0 ? dados.totalCaptado / dados.benchmark.media : 0;
   const maxOrg = Math.max(1, ...dados.porOrgao.map((o) => o.valor));
   const maxAno = Math.max(1, ...dados.porAno.map((a) => a.valor));
+  // oportunidades que ESTE município pode efetivamente pleitear (voluntária = todos · específica = só se elegível)
+  const pleiteaveis = dados.abertos.filter((o) => o.tipoJanela === "voluntaria" || o.elegivel);
+  const criticas = pleiteaveis.filter((o) => o.dias != null && o.dias <= 15);
+  const altas = pleiteaveis.filter((o) => o.dias != null && o.dias > 15 && o.dias <= 45);
+  const urgente = [...pleiteaveis].filter((o) => o.dias != null).sort((a, b) => (a.dias! - b.dias!))[0] || null;
+  const margemApertada = margem != null && margem.medianaSC > 0 && margem.investimento < margem.medianaSC;
+  const temAlerta = pleiteaveis.length > 0 && (criticas.length > 0 || altas.length > 0 || margemApertada);
   return (
     <div className="space-y-4">
+      {/* ALERTA PROATIVO (mesma regra dos contratos a vencer): oportunidade aberta fechando logo */}
+      {temAlerta && (
+        <div className={`rounded-2xl border p-4 ${criticas.length > 0 ? "border-rose-300 bg-rose-50" : "border-teal-300 bg-teal-50"}`}>
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">{criticas.length > 0 ? "⚠️" : "🎯"}</span>
+            <div className="flex-1">
+              <div className={`font-semibold ${criticas.length > 0 ? "text-rose-800" : "text-teal-800"}`}>
+                Olha esta oportunidade, {nome}! {pleiteaveis.length} aberta(s) que você pode pleitear
+                {criticas.length > 0 && <> — <b>{criticas.length} fechando em ≤15 dias</b></>}
+                {criticas.length === 0 && altas.length > 0 && <> — <b>{altas.length} fechando em ≤45 dias</b></>}.
+              </div>
+              <div className="mt-0.5 text-sm text-slate-700">
+                {urgente && <>Mais urgente: <b>{urgente.nome}</b> {areaMeta(urgente.area).ic} {urgente.valor > 0 && <>· {fmtBRLCompact(urgente.valor)} </>}· fecha em <b>{urgente.dias} dia(s)</b>. </>}
+                {margemApertada && <span className="text-amber-800">Com margem própria apertada (esforço de investimento de {margem!.investimento.toFixed(0)}%, abaixo da mediana de SC), recurso federal é o caminho para investir sem onerar o caixa. </span>}
+                Gere o Plano de Trabalho e submeta a tempo — abaixo.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="mb-1 flex flex-wrap items-center gap-2">
           <h2 className="text-base font-semibold text-slate-800">🎯 Radar de Captação de Recursos</h2>
@@ -87,6 +129,10 @@ export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: 
                 <summary className="flex cursor-pointer list-none items-center gap-3 p-3.5 [&::-webkit-details-marker]:hidden">
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold text-slate-900">{o.nome}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-600">{areaMeta(o.area).ic} {areaMeta(o.area).lbl}</span>
+                      {(() => { const tj = tipoJanelaMeta(o.tipoJanela, o.elegivel, o.temLista); return <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${tj.cls}`}>{tj.lbl}</span>; })()}
+                    </div>
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
                       <span>🏛️ {o.orgao}</span>
                       {o.valor > 0 && <span>💰 <b className="text-emerald-700">{fmtBRLCompact(o.valor)}</b></span>}

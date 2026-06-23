@@ -102,6 +102,9 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (!dados || dados.serie.length === 0) notFound();
   const minhaPos = rankingFiscal.find((r) => r.cod_ibge === codigo) ?? null;
   const totalRank = rankingFiscal.length;
+  // mediana do esforço de investimento de SC — base p/ dimensionar a oportunidade pela margem fiscal do município
+  const investOrd = rankingFiscal.map((r) => r.investimento).filter((v) => v != null).sort((a, b) => a - b);
+  const medianaInvestSC = investOrd.length ? investOrd[Math.floor(investOrd.length / 2)] : 0;
 
   const { ente, serie, funcoesLatest, receitasLatest } = dados;
   const a = serie[serie.length - 1];
@@ -789,7 +792,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (cruz) tabs.push({ id: "cruzamentos", label: "Cruzamentos", content: <CruzamentosSC data={cruz} /> });
   if (comprasDestinos) tabs.push({ id: "compras-sc", label: codigo === "42" ? "Para onde vai (SC)" : "Para onde vai", content: <ComprasDestinosSCView data={comprasDestinos} escopo={codigo === "42" ? "dos municípios de SC" : `de ${ente.nome}`} /> });
 
-  if (captacao || emendas || convenios) tabs.push({ id: "captacao", label: "Captação", content: <>{captacao && <AssuntoCaptacao dados={captacao} cod={codigo} nome={ente.nome} />}{emendas && <div className="mt-4"><EmendasCard dados={emendas} nome={ente.nome} /></div>}{convenios && <div className="mt-4"><ConveniosCard dados={convenios} nome={ente.nome} /></div>}</> });
+  if (captacao || emendas || convenios) tabs.push({ id: "captacao", label: "Captação", content: <>{captacao && <AssuntoCaptacao dados={captacao} cod={codigo} nome={ente.nome} margem={minhaPos ? { investimento: minhaPos.investimento, medianaSC: medianaInvestSC } : undefined} />}{emendas && <div className="mt-4"><EmendasCard dados={emendas} nome={ente.nome} /></div>}{convenios && <div className="mt-4"><ConveniosCard dados={convenios} nome={ente.nome} /></div>}</> });
 
   if (escolas) tabs.push({ id: "equipamentos", label: "Equipamentos Públicos", content: <>
     <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-teal-50 to-white p-5">

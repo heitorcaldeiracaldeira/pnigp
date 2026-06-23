@@ -1465,22 +1465,45 @@ export type CaptacaoSC = {
   porOrgao: { orgao: string; valor: number; n: number }[];
   porAno: { ano: number; valor: number }[];
   lista: { nome: string; orgao: string; valor: number; situacao: string }[];
-  abertos: { id: string; nome: string; orgao: string; objetivo: string; descricao: string; valor: number; modalidade: string; fundo: string; naturezaDespesa: string; acaoOrcamentaria: string; valorAcao: number; parcelas: number; situacao: string; ano: number; codigo: string; dtIni: string | null; dtFim: string | null; dias: number | null }[];
+  abertos: { id: string; nome: string; orgao: string; objetivo: string; descricao: string; valor: number; modalidade: string; fundo: string; naturezaDespesa: string; acaoOrcamentaria: string; valorAcao: number; parcelas: number; situacao: string; ano: number; codigo: string; dtIni: string | null; dtFim: string | null; dias: number | null; tipoJanela: string; area: string; elegivel: boolean; temLista: boolean }[];
   benchmark: { media: number; max: number; melhores: { nome: string; valor: number }[] };
   universo: { nProgramas: number; nAbertos: number; totalSC: number; nMunicipios: number };
   analises: { posicao: number; totalEntes: number; gapMedia: number; gapMax: number; tendencia: { delta: number; ultimoAno: number } | null; naoCaptados: number; concentracaoTop: { orgao: string; pct: number } | null };
 } | null;
+// classifica a oportunidade por ÁREA/objeto (base do casamento com a necessidade do município)
+function areaOportunidade(nome: string, orgao: string, fundo: string): string {
+  const s = `${nome} ${orgao} ${fundo}`.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (/SAUDE|\bUBS\b|HOSPITAL|\bSUS\b|SAMU|FARMAC|VIGILANCIA SANIT|ATENCAO (BASICA|PRIMARIA)|UPA/.test(s)) return "saude";
+  if (/EDUCA|ESCOLA|CRECHE|ENSINO|\bFNDE\b|MERENDA|PROFESSOR/.test(s)) return "educacao";
+  if (/PAVIMENTA|ESTRADA|\bOBRA|INFRAESTRUTURA|SANEAMENTO|HABITA|CIDADES|MOBILIDADE|DRENAGEM|PONTE/.test(s)) return "infraestrutura";
+  if (/SEGURANC|PENITENC|\bDEPEN\b|GUARDA MUNICIPAL|BOMBEIRO|VIOLENC|CRIMINAL/.test(s)) return "seguranca";
+  if (/ASSISTENCIA SOCIAL|\bCRAS\b|\bCREAS\b|\bSUAS\b|ACOLHIMENTO|VULNERAB/.test(s)) return "assistencia";
+  if (/CULTURA|ESPORTE|TURISMO|LAZER|\bLIC\b/.test(s)) return "cultura";
+  if (/TRABALHO|EMPREGO|QUALIFICA|RENDA|PROFISSIONAL/.test(s)) return "trabalho";
+  if (/AGRICUL|RURAL|\bPESCA\b|ABASTECIMENTO|PRODUTOR/.test(s)) return "agricultura";
+  return "outros";
+}
 export async function getCaptacaoTransferegovSC(cod: string): Promise<CaptacaoSC> {
   const [tot, porOrgao, porAno, lista, abertos, bench, melhores, uni, an] = await Promise.all([
     query<Record<string, unknown>>(`SELECT count(*) n, coalesce(sum(valor_total_repasse),0) total FROM captacao_transferegov_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT orgao_repassador o, count(*) n, coalesce(sum(valor_total_repasse),0) v FROM captacao_transferegov_sc WHERE cod_ibge=$1 GROUP BY 1 ORDER BY v DESC NULLS LAST LIMIT 8`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT extract(year from dt_inicio)::int ano, coalesce(sum(valor_total_repasse),0) v FROM captacao_transferegov_sc WHERE cod_ibge=$1 AND dt_inicio IS NOT NULL GROUP BY 1 ORDER BY 1`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT c.valor_total_repasse v, c.situacao s, c.orgao_repassador o, p.nome FROM captacao_transferegov_sc c LEFT JOIN programas_transferegov p ON p.id_programa=c.id_programa WHERE c.cod_ibge=$1 ORDER BY v DESC NULLS LAST LIMIT 15`, [cod]).catch(() => []),
-    query<Record<string, unknown>>(`SELECT id_programa id, nome, orgao, objetivo, descricao, modalidade, coalesce(valor_global,0) valor, fundo, natureza_despesa, acao_orcamentaria, coalesce(valor_acao,0) valor_acao, coalesce(parcelas,0) parcelas, situacao, ano, codigo, to_char(dt_ini_vol,'YYYY-MM-DD') dt_ini_vol, to_char(dt_fim_vol,'YYYY-MM-DD') dt_fim_vol, (dt_fim_vol - CURRENT_DATE) dias FROM programas_transferegov WHERE dt_fim_vol >= CURRENT_DATE ORDER BY dt_fim_vol LIMIT 30`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT x.*,
+        to_char(x.di,'YYYY-MM-DD') dt_ini_vol, to_char(x.df,'YYYY-MM-DD') dt_fim_vol, (x.df - CURRENT_DATE) dias,
+        EXISTS (SELECT 1 FROM programa_beneficiario_sc b WHERE b.id_programa = x.id AND b.cod_ibge = $1) elegivel,
+        EXISTS (SELECT 1 FROM programa_beneficiario_sc b WHERE b.id_programa = x.id) tem_lista
+      FROM (
+        SELECT id_programa id, nome, orgao, objetivo, descricao, modalidade, coalesce(valor_global,0) valor, fundo, natureza_despesa, acao_orcamentaria, coalesce(valor_acao,0) valor_acao, coalesce(parcelas,0) parcelas, situacao, ano, codigo, 'voluntaria' tipo_janela, dt_ini_vol di, dt_fim_vol df FROM programas_transferegov WHERE dt_fim_vol >= CURRENT_DATE
+        UNION ALL
+        SELECT id_programa, nome, orgao, objetivo, descricao, modalidade, coalesce(valor_global,0), fundo, natureza_despesa, acao_orcamentaria, coalesce(valor_acao,0), coalesce(parcelas,0), situacao, ano, codigo, 'especifica', dt_ini_esp, dt_fim_esp FROM programas_transferegov WHERE dt_fim_esp >= CURRENT_DATE
+        UNION ALL
+        SELECT id_programa, nome, orgao, objetivo, descricao, modalidade, coalesce(valor_global,0), fundo, natureza_despesa, acao_orcamentaria, coalesce(valor_acao,0), coalesce(parcelas,0), situacao, ano, codigo, 'emenda', dt_ini_emenda, dt_fim_emenda FROM programas_transferegov WHERE dt_fim_emenda >= CURRENT_DATE
+      ) x ORDER BY (x.df - CURRENT_DATE) ASC LIMIT 50`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT coalesce(avg(t),0) media, coalesce(max(t),0) maxv FROM (SELECT cod_ibge, sum(valor_total_repasse) t FROM captacao_transferegov_sc GROUP BY cod_ibge) s`).catch(() => []),
     query<Record<string, unknown>>(`SELECT e.nome, sum(c.valor_total_repasse) v FROM captacao_transferegov_sc c JOIN entes_sc e ON e.cod_ibge=c.cod_ibge GROUP BY e.nome ORDER BY v DESC NULLS LAST LIMIT 5`).catch(() => []),
-    query<Record<string, unknown>>(`SELECT (SELECT count(*) FROM programas_transferegov) np, (SELECT count(*) FROM programas_transferegov WHERE dt_fim_vol >= CURRENT_DATE) na, (SELECT coalesce(sum(valor_total_repasse),0) FROM captacao_transferegov_sc) tsc, (SELECT count(distinct cod_ibge) FROM captacao_transferegov_sc) nm`).catch(() => []),
-    query<Record<string, unknown>>(`SELECT (SELECT count(*)+1 FROM (SELECT cod_ibge, sum(valor_total_repasse) t FROM captacao_transferegov_sc GROUP BY cod_ibge) s WHERE t > (SELECT coalesce(sum(valor_total_repasse),0) FROM captacao_transferegov_sc WHERE cod_ibge=$1)) pos, (SELECT count(*) FROM programas_transferegov p WHERE dt_fim_vol >= CURRENT_DATE AND NOT EXISTS (SELECT 1 FROM captacao_transferegov_sc c WHERE c.cod_ibge=$1 AND c.id_programa=p.id_programa)) naocap`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT (SELECT count(*) FROM programas_transferegov) np, (SELECT count(*) FROM programas_transferegov WHERE dt_fim_vol >= CURRENT_DATE OR dt_fim_esp >= CURRENT_DATE OR dt_fim_emenda >= CURRENT_DATE) na, (SELECT coalesce(sum(valor_total_repasse),0) FROM captacao_transferegov_sc) tsc, (SELECT count(distinct cod_ibge) FROM captacao_transferegov_sc) nm`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT (SELECT count(*)+1 FROM (SELECT cod_ibge, sum(valor_total_repasse) t FROM captacao_transferegov_sc GROUP BY cod_ibge) s WHERE t > (SELECT coalesce(sum(valor_total_repasse),0) FROM captacao_transferegov_sc WHERE cod_ibge=$1)) pos, (SELECT count(*) FROM programas_transferegov p WHERE (dt_fim_vol >= CURRENT_DATE OR dt_fim_esp >= CURRENT_DATE OR dt_fim_emenda >= CURRENT_DATE) AND NOT EXISTS (SELECT 1 FROM captacao_transferegov_sc c WHERE c.cod_ibge=$1 AND c.id_programa=p.id_programa)) naocap`, [cod]).catch(() => []),
   ]);
   const total = num(tot[0]?.total);
   if (!tot.length || (num(tot[0]?.n) === 0 && !abertos.length)) return null;
@@ -1493,7 +1516,7 @@ export async function getCaptacaoTransferegovSC(cod: string): Promise<CaptacaoSC
     porOrgao: porOrgao.map((r) => ({ orgao: String(r.o || "—"), valor: num(r.v), n: num(r.n) })),
     porAno: anos,
     lista: lista.map((r) => ({ nome: String(r.nome || r.o || "Programa"), orgao: String(r.o || ""), valor: num(r.v), situacao: String(r.s || "") })),
-    abertos: abertos.map((r) => ({ id: String(r.id), nome: String(r.nome || ""), orgao: String(r.orgao || ""), objetivo: String(r.objetivo || ""), descricao: String(r.descricao || ""), valor: num(r.valor), modalidade: String(r.modalidade || ""), fundo: String(r.fundo || ""), naturezaDespesa: String(r.natureza_despesa || ""), acaoOrcamentaria: String(r.acao_orcamentaria || ""), valorAcao: num(r.valor_acao), parcelas: num(r.parcelas), situacao: String(r.situacao || ""), ano: num(r.ano), codigo: String(r.codigo || ""), dtIni: (r.dt_ini_vol as string) || null, dtFim: (r.dt_fim_vol as string) || null, dias: r.dias != null ? num(r.dias) : null })),
+    abertos: abertos.map((r) => ({ id: String(r.id), nome: String(r.nome || ""), orgao: String(r.orgao || ""), objetivo: String(r.objetivo || ""), descricao: String(r.descricao || ""), valor: num(r.valor), modalidade: String(r.modalidade || ""), fundo: String(r.fundo || ""), naturezaDespesa: String(r.natureza_despesa || ""), acaoOrcamentaria: String(r.acao_orcamentaria || ""), valorAcao: num(r.valor_acao), parcelas: num(r.parcelas), situacao: String(r.situacao || ""), ano: num(r.ano), codigo: String(r.codigo || ""), dtIni: (r.dt_ini_vol as string) || null, dtFim: (r.dt_fim_vol as string) || null, dias: r.dias != null ? num(r.dias) : null, tipoJanela: String(r.tipo_janela || "voluntaria"), area: areaOportunidade(String(r.nome || ""), String(r.orgao || ""), String(r.fundo || "")), elegivel: r.elegivel === true, temLista: r.tem_lista === true })),
     benchmark: { media: num(bench[0]?.media), max: num(bench[0]?.maxv), melhores: melhores.map((r) => ({ nome: String(r.nome), valor: num(r.v) })) },
     universo: { nProgramas: num(uni[0]?.np), nAbertos: num(uni[0]?.na), totalSC: num(uni[0]?.tsc), nMunicipios: num(uni[0]?.nm) },
     analises: {
