@@ -1669,11 +1669,13 @@ export type AnaliseComprasItens = {
   economiaTotal: number;
   atas: { nItens: number; valorRegistrado: number } | null;
   comparacao: { item: string; unidade: string; precoAta: number; precoEf: number; diffPct: number }[];
+  sazonalidade: { mes: number; n: number; valor: number }[];
+  tempo: { diasMedio: number; n: number; porModalidade: { modalidade: string; dias: number; n: number }[] } | null;
 } | null;
 // EXISTS de processo que gerou ata (registro de preço) — compra NÃO certa
 const _ATA = `EXISTS (SELECT 1 FROM processos_ata_sc a WHERE a.cnpj=i.cnpj AND a.ano=i.ano AND a.seq=i.seq)`;
 export async function getAnaliseComprasItensSC(cod: string): Promise<AnaliseComprasItens> {
-  const [mais, sobre, atas, comp] = await Promise.all([
+  const [mais, sobre, atas, comp, saz, tempo] = await Promise.all([
     // mais comprados — só compras EFETIVADAS (exclui ata)
     query<Record<string, unknown>>(`SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado) valor, sum(quantidade) qtd
       FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND descricao IS NOT NULL AND NOT ${_ATA}
@@ -1695,6 +1697,14 @@ export async function getAnaliseComprasItensSC(cod: string): Promise<AnaliseComp
         ef AS (SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) p_ef FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND NOT ${_ATA} GROUP BY 1,2)
       SELECT a.k item, a.unidade, a.p_ata, e.p_ef, round((((e.p_ef-a.p_ata)/NULLIF(a.p_ata,0))*100)::numeric) diff
       FROM ata a JOIN ef e ON e.k=a.k AND e.unidade=a.unidade WHERE a.p_ata>0 AND e.p_ef>0 ORDER BY a.v DESC NULLS LAST LIMIT 12`, [cod]).catch(() => []),
+    // sazonalidade — contratações efetivadas por mês (assinatura)
+    query<Record<string, unknown>>(`SELECT extract(month from assinatura)::int mes, count(*) n, coalesce(sum(valor_global),0) valor
+      FROM contratos_sc WHERE cod_ibge=$1 AND assinatura IS NOT NULL GROUP BY 1 ORDER BY 1`, [cod]).catch(() => []),
+    // tempo do processo: publicação (processos_sc.data_pub) → contrato (contratos_sc.assinatura), por modalidade
+    query<Record<string, unknown>>(`SELECT p.modalidade, round(avg(c.assinatura - p.data_pub)) dias, count(*) n
+      FROM contratos_sc c JOIN processos_sc p ON p.numero_controle=c.numero_controle_compra
+      WHERE c.cod_ibge=$1 AND c.assinatura IS NOT NULL AND p.data_pub IS NOT NULL AND c.assinatura >= p.data_pub AND (c.assinatura - p.data_pub) < 730
+      GROUP BY 1 ORDER BY n DESC`, [cod]).catch(() => []),
   ]);
   if (!mais.length && !sobre.length && !comp.length) return null;
   const sobrepreco = sobre.map((r) => ({ item: String(r.item || ""), unidade: String(r.unidade || ""), qtd: num(r.qtd), precoMun: num(r.preco_mun), mediana: num(r.mediana), nMuns: num(r.n_muns), acimaPct: num(r.acima_pct), economia: num(r.economia) }));
@@ -1704,6 +1714,8 @@ export async function getAnaliseComprasItensSC(cod: string): Promise<AnaliseComp
     sobrepreco, economiaTotal: sobrepreco.reduce((s, x) => s + x.economia, 0),
     atas: a0 && num(a0.n_itens) > 0 ? { nItens: num(a0.n_itens), valorRegistrado: num(a0.valor) } : null,
     comparacao: comp.map((r) => ({ item: String(r.item || ""), unidade: String(r.unidade || ""), precoAta: num(r.p_ata), precoEf: num(r.p_ef), diffPct: num(r.diff) })),
+    sazonalidade: saz.map((r) => ({ mes: num(r.mes), n: num(r.n), valor: num(r.valor) })),
+    tempo: tempo.length ? { diasMedio: Math.round(tempo.reduce((s, r) => s + num(r.dias) * num(r.n), 0) / Math.max(1, tempo.reduce((s, r) => s + num(r.n), 0))), n: tempo.reduce((s, r) => s + num(r.n), 0), porModalidade: tempo.map((r) => ({ modalidade: String(r.modalidade || ""), dias: num(r.dias), n: num(r.n) })) } : null,
   };
 }
 

@@ -90,7 +90,49 @@ export function AnaliseComprasItens({ dados, nome }: { dados: AnaliseComprasIten
         </div>
       )}
 
-      <p className="mt-2 text-[11px] text-slate-400">Metodologia: itens agrupados pela <b>descrição normalizada + unidade</b> (PNCP não traz CATMAT). Compara só itens equivalentes presentes em ≥5 municípios de SC. "Acima" = preço médio do município vs mediana dos pares; economia possível = (preço − mediana) × quantidade. É estimativa indicativa — confirmar especificação do item antes de concluir sobrepreço.</p>
+      {/* Tempo do processo (publicação → contrato) */}
+      {dados.tempo && (
+        <div className="mt-4">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">⏱️ Tempo do processo (publicação → assinatura do contrato)</div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="rounded-xl border border-slate-200 p-3 text-center"><div className="text-2xl font-bold tabular-nums text-slate-800">{dados.tempo.diasMedio}</div><div className="text-[11px] text-slate-600">dias em média ({dados.tempo.n} contratos)</div></div>
+            <div className="flex-1 space-y-1">
+              {dados.tempo.porModalidade.slice(0, 6).map((m) => (
+                <div key={m.modalidade} className="flex items-center gap-2 text-xs">
+                  <span className="w-40 shrink-0 truncate text-slate-600">{m.modalidade}</span>
+                  <div className="h-2.5 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-2.5 rounded bg-indigo-400" style={{ width: `${Math.min(100, (m.dias / 365) * 100)}%` }} /></div>
+                  <span className="w-20 shrink-0 text-right tabular-nums text-slate-700">{m.dias} dias <span className="text-slate-400">({m.n})</span></span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sazonalidade */}
+      {dados.sazonalidade.length > 0 && (
+        <div className="mt-4">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">📅 Sazonalidade — contratos por mês (assinatura)</div>
+          {(() => { const mx = Math.max(1, ...dados.sazonalidade.map((s) => s.n)); const MES = ["", "jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"]; return (
+            <div className="flex items-end gap-1" style={{ height: 70 }}>
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((mes) => { const s = dados.sazonalidade.find((x) => x.mes === mes); const n = s ? s.n : 0; return (
+                <div key={mes} className="flex flex-1 flex-col items-center justify-end" title={`${MES[mes]}: ${n} contratos`}>
+                  <div className={`w-full rounded-t ${mes === 12 ? "bg-amber-400" : "bg-teal-400"}`} style={{ height: `${Math.max(2, (n / mx) * 56)}px` }} />
+                  <span className="mt-0.5 text-[9px] text-slate-400">{MES[mes]}</span>
+                </div>
+              ); })}
+            </div>
+          ); })()}
+        </div>
+      )}
+
+      <div className="mt-3 rounded-lg bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500">
+        <b className="text-slate-600">📋 Metodologia deste estudo.</b> Fonte: <b>PNCP</b> (itens, processos e contratos) — dados oficiais. Como o PNCP <b>não traz CATMAT</b>, os itens são agrupados pela <b>descrição normalizada</b> (sem acento/maiúsculas/pontuação) <b>+ a mesma unidade</b>, comparando apenas itens equivalentes presentes em <b>≥5 municípios de SC</b>.
+        <br />• <b>Dois grupos:</b> compras <b>efetivadas</b> (contrato — gasto certo) e <b>registro de preço/atas</b> (teto registrado — compra eventual; classificadas pelo nº de controle do processo). O <b>sobrepreço/economia</b> usa só as efetivadas.
+        <br />• <b>Sobrepreço:</b> preço médio do município &gt; <b>3º quartil (P75)</b> dos pares; economia possível = (preço − mediana) × quantidade. É <b>estimativa indicativa</b> — confirmar a especificação do item antes de concluir sobrepreço.
+        <br />• <b>Comparação ata × efetivado:</b> mesmo item com preço registrado e contratado — efetivado abaixo do teto = boa compra.
+        <br />• <b>Tempo do processo:</b> dias entre <b>publicação</b> (PNCP) e <b>assinatura do contrato</b> (descartados &gt; 730 dias como outliers). <b>Sazonalidade:</b> contratos por mês da assinatura.
+      </div>
     </section>
   );
 }
