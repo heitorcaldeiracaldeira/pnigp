@@ -198,10 +198,10 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
         return (
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-1 flex flex-wrap items-center gap-2">
-              <h3 className="text-sm font-semibold text-slate-800">🔎 Programas federais monitorados — saúde e educação</h3>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{programasFederais.length} fontes oficiais</span>
+              <h3 className="text-sm font-semibold text-slate-800">🔎 Programas federais monitorados — saúde, educação, infraestrutura, cultura, esporte, segurança e assistência</h3>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{programasFederais.length} programas · fontes oficiais</span>
             </div>
-            <p className="text-[12px] text-slate-500">FNS e FNDE não publicam janela aberta por API — as aberturas saem por portaria/seleção. Monitoramos os programas oficiais e <b>casamos com as carências de {nome}</b>. {nMatch > 0 ? <span className="font-semibold text-emerald-700">{nMatch} combina(m) com o que falta aqui.</span> : "Cada item traz a fonte oficial e como pleitear."}</p>
+            <p className="text-[12px] text-slate-500">Os programas federais não publicam janela aberta por API — as aberturas saem por portaria/seleção. Monitoramos {programasFederais.length} programas oficiais e <b>casamos com as carências de {nome}</b>. {nMatch > 0 ? <span className="font-semibold text-emerald-700">{nMatch} combina(m) hoje com o que falta aqui (saúde/educação).</span> : "Cada item traz a fonte oficial e como pleitear."} <span className="text-slate-400">O casamento automático cobre saúde e educação; demais áreas listadas para o gestor avaliar.</span></p>
             <div className="mt-3 space-y-2">
               {ord.map((p) => { const match = combina(p.area); const n = necDe(p.area); return (
                 <div key={p.id} className={`rounded-xl border p-3 ${match ? "border-emerald-400 bg-emerald-50/40 ring-1 ring-emerald-200" : "border-slate-200"}`}>
