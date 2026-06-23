@@ -15,6 +15,7 @@ import { SazonalidadePreco } from "@/components/sazonalidade-preco";
 import { PesquisaPreco } from "@/components/pesquisa-preco";
 import { FornecedoresCard } from "@/components/fornecedores-card";
 import { ComprasExtraCard } from "@/components/compras-extra";
+import { ResumoCompras } from "@/components/resumo-compras";
 import { DiagnosticoGestor } from "@/components/diagnostico-gestor";
 import { AuditoriaSC } from "@/components/auditoria-sc";
 import { SimuladorFiscal } from "@/components/simulador-fiscal";
@@ -267,6 +268,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     },
     { id: "compras", label: "Compras", content: <>
       <CabecalhoArea titulo="Compras & Contratos" intro="Como o município compra e contrata: o que a Lei 14.133/2021 exige, onde mora o risco (compra sem licitação, sobrepreço) e onde economizar — do total contratado ao preço unitário, item a item." links={[{ label: "PNCP — Portal Nacional de Contratações Públicas", href: "https://pncp.gov.br" }, { label: "Lei 14.133/2021 — Nova Lei de Licitações", href: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" }, { label: "TCE-SC", href: "https://www.tcesc.tc.br" }]} />
+      {(analiseItens || fornec) && <div className="mt-4"><ResumoCompras analise={analiseItens} fornec={fornec} /></div>}
       <div className="mt-4"><PesquisaPreco /></div>
       <ComprasSCSection codigo={ente.cod_ibge} tipo={ente.tipo} />
       {analiseItens && <div className="mt-4"><AnaliseComprasItens dados={analiseItens} nome={ente.nome} /></div>}{fornec && <div className="mt-4"><FornecedoresCard dados={fornec} nome={ente.nome} /></div>}{comprasExtra && <div className="mt-4"><ComprasExtraCard dados={comprasExtra} nome={ente.nome} /></div>}{sazPreco.length>0 && <div className="mt-4"><SazonalidadePreco dados={sazPreco} /></div>}
