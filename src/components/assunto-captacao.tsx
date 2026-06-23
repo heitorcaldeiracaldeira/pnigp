@@ -173,27 +173,37 @@ export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: 
           <h3 className="text-sm font-semibold text-slate-800">📁 Banco de Modelos de Captação</h3>
           <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-semibold text-teal-700">Word editável (.docx)</span>
         </div>
-        <p className="text-[13px] text-slate-500">Documentos prontos para a captação, <b>pré-preenchidos com os dados de {nome}</b>. Baixe, complete os campos e submeta. Cada modelo segue a base legal aplicável.</p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <p className="text-[13px] text-slate-500">Documentos prontos para a captação, <b>pré-preenchidos com os dados de {nome}</b>. Cada modelo traz a <b>análise técnica de quando usar</b> e a <b>fonte</b>. Baixe, complete e submeta.</p>
+
+        {(() => {
+          const rec: string[] = [];
+          if (dados.analises?.naoCaptados && dados.analises.naoCaptados > 0) rec.push(`há ${dados.analises.naoCaptados} oportunidade(s) aberta(s) não captada(s) → comece pela Proposta + Plano de Trabalho`);
+          if (vsMedia < 1) rec.push("captação abaixo da média de SC → use o Ofício ao Parlamentar para buscar emenda (execução impositiva)");
+          if (!rec.length) return null;
+          return <div className="mt-3 rounded-xl border border-teal-200 bg-teal-50/60 p-3 text-[12px] text-slate-700">💡 <b>Recomendado agora para {nome}:</b> {rec.join("; ")}.</div>;
+        })()}
+
+        <div className="mt-3 grid gap-2 lg:grid-cols-2">
           {[
-            { t: "plano-trabalho", n: "Plano de Trabalho", d: "Convênio / transferência (Port. 424/2016)" },
-            { t: "proposta", n: "Proposta de Trabalho", d: "Cadastro de proposta no Transferegov" },
-            { t: "oficio-emenda", n: "Ofício ao Parlamentar", d: "Solicitação de emenda parlamentar" },
-            { t: "oficio-concedente", n: "Ofício de Encaminhamento", d: "Envio da proposta ao concedente" },
-            { t: "termo-referencia", n: "Termo de Referência", d: "Projeto básico (Lei 14.133/2021)" },
-            { t: "declaracoes", n: "Declarações", d: "Contrapartida e não-impedimento" },
+            { t: "plano-trabalho", n: "Plano de Trabalho", d: "Convênio / transferência voluntária", por: "Peça obrigatória para formalizar convênio/transferência voluntária — sem ele a proposta não é aceita. Define objeto, metas, cronograma e plano de aplicação.", fonte: "Lei 8.666/93, art. 116 · Portaria Interministerial 424/2016, art. 21 · Transferegov" },
+            { t: "proposta", n: "Proposta de Trabalho", d: "1º passo no Transferegov", por: "A celebração começa pelo cadastro da proposta no Transferegov; é o documento que apresenta a demanda ao concedente antes do plano detalhado.", fonte: "Portaria Interm. 424/2016 · Plataforma +Brasil/Transferegov.br" },
+            { t: "oficio-emenda", n: "Ofício ao Parlamentar", d: "Captar emenda parlamentar", por: "A indicação de emenda parte de solicitação formal ao parlamentar. Emendas individuais são de execução obrigatória (impositivas), o que aumenta a chance de recebimento.", fonte: "CF art. 166, §§9º-11 · EC 100/2019 (orçamento impositivo)" },
+            { t: "oficio-concedente", n: "Ofício de Encaminhamento", d: "Enviar a proposta ao concedente", por: "Formaliza o protocolo da proposta junto ao órgão concedente e declara a regularidade do ente para celebrar o instrumento.", fonte: "Portaria Interm. 424/2016 · órgão concedente" },
+            { t: "termo-referencia", n: "Termo de Referência", d: "Fase de contratação (após o recurso)", por: "Depois de captado o recurso, a compra/obra exige Termo de Referência ou Projeto Básico. Use a Pesquisa de Preço do PNIGP para o valor de referência.", fonte: "Lei 14.133/2021, art. 6º, XXIII e art. 18" },
+            { t: "declaracoes", n: "Declarações", d: "Habilitação do ente", por: "Transferências voluntárias exigem comprovação de regularidade e de contrapartida. As declarações instruem a habilitação e evitam pendências no SICONV/Transferegov.", fonte: "LC 101/2000 (LRF), art. 25 · Portaria Interm. 424/2016" },
           ].map((m) => (
-            <a key={m.t} href={`/api/modelo?ente=${cod}&tipo=${m.t}`} className="flex items-start gap-3 rounded-xl border border-slate-200 p-3 transition hover:border-teal-400 hover:bg-teal-50/40">
-              <span className="text-lg">📄</span>
-              <span className="flex-1">
-                <span className="block text-[13px] font-semibold text-slate-800">{m.n}</span>
-                <span className="block text-[11px] text-slate-500">{m.d}</span>
-              </span>
-              <span className="shrink-0 self-center rounded-lg bg-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white">.docx ↓</span>
-            </a>
+            <div key={m.t} className="flex flex-col rounded-xl border border-slate-200 p-3">
+              <div className="flex items-start gap-2">
+                <span className="text-lg">📄</span>
+                <span className="flex-1"><span className="block text-[13px] font-semibold text-slate-800">{m.n}</span><span className="block text-[11px] text-slate-500">{m.d}</span></span>
+                <a href={`/api/modelo?ente=${cod}&tipo=${m.t}`} className="shrink-0 self-start rounded-lg bg-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-teal-700">.docx ↓</a>
+              </div>
+              <p className="mt-1.5 text-[11px] text-slate-600"><b className="text-slate-700">Por quê:</b> {m.por}</p>
+              <p className="mt-1 text-[10px] text-slate-400"><b>Fonte:</b> {m.fonte}</p>
+            </div>
           ))}
         </div>
-        <p className="mt-2 text-[10px] text-slate-400">Modelos pré-preenchidos pelo PNIGP (Instituto I10) com dados oficiais. Os campos com "(preencher)" exigem complemento do gestor. Revise antes de protocolar. Para vincular a um programa específico, use o botão "Gerar Plano de Trabalho" na oportunidade desejada.</p>
+        <p className="mt-2 text-[10px] text-slate-400">Modelos pré-preenchidos pelo PNIGP (Instituto I10) com dados oficiais. Campos "(preencher)" exigem complemento do gestor. Base legal citada por documento; revise antes de protocolar. Para vincular a um programa específico, use "Gerar Plano de Trabalho" na oportunidade desejada.</p>
       </section>
 
       {/* BENCHMARK — potencial comparativo */}
