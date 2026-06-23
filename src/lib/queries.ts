@@ -1475,9 +1475,10 @@ export type CaptacaoSC = {
 export type PerfilNecessidade = {
   saude: { deficit: boolean; motivo: string } | null;
   educacao: { deficit: boolean; motivo: string } | null;
+  assistencia: { deficit: boolean; motivo: string } | null;
 };
 export async function getPerfilNecessidadeSC(cod: string): Promise<PerfilNecessidade> {
-  const [ub, id] = await Promise.all([
+  const [ub, id, ass] = await Promise.all([
     query<Record<string, unknown>>(`WITH u AS (
         SELECT e.cod_ibge, (count(s.codigo_cnes)::numeric / NULLIF(e.populacao,0)) * 10000 dens
         FROM entes_sc e LEFT JOIN estabelecimentos_saude_sc s ON s.cod_ibge=e.cod_ibge AND s.tipo_codigo IN (1,2)
@@ -1486,12 +1487,22 @@ export async function getPerfilNecessidadeSC(cod: string): Promise<PerfilNecessi
     query<Record<string, unknown>>(`WITH ult AS (SELECT cod_ibge, max(ano) ano FROM ideb_sc WHERE etapa='AI' AND rede='Municipal' AND ideb>0 GROUP BY 1),
         v AS (SELECT i.cod_ibge, i.ideb FROM ideb_sc i JOIN ult ON ult.cod_ibge=i.cod_ibge AND ult.ano=i.ano WHERE i.etapa='AI' AND i.rede='Municipal' AND i.ideb>0)
       SELECT (SELECT ideb FROM v WHERE cod_ibge=$1) minha, percentile_cont(0.5) WITHIN GROUP (ORDER BY ideb) mediana FROM v`, [cod]).catch(() => []),
+    // assistência: habitantes por CRAS vs referência MDS (1 CRAS por 20 mil hab)
+    query<Record<string, unknown>>(`SELECT cras, populacao, hab_por_cras FROM suas_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
   ]);
   const sMin = ub[0]?.minha != null ? num(ub[0].minha) : null, sMed = num(ub[0]?.mediana);
   const eMin = id[0]?.minha != null ? num(id[0].minha) : null, eMed = num(id[0]?.mediana);
+  const a0 = ass[0]; const cras = a0 ? num(a0.cras) : null, hpc = a0?.hab_por_cras != null ? num(a0.hab_por_cras) : null, pop = a0 ? num(a0.populacao) : 0;
+  const REF_CRAS = 20000; // NOB-SUAS: 1 CRAS por ~20 mil hab
+  let assistencia: { deficit: boolean; motivo: string } | null = null;
+  if (a0 != null) {
+    if (cras === 0 && pop > 0) assistencia = { deficit: true, motivo: `nenhum CRAS para ${pop.toLocaleString("pt-BR")} habitantes (referência MDS: 1 por 20 mil)` };
+    else if (hpc != null && hpc > 0) assistencia = { deficit: hpc > REF_CRAS, motivo: `1 CRAS para ${Math.round(hpc).toLocaleString("pt-BR")} habitantes (${cras} CRAS; referência MDS: 1 por 20 mil)` };
+  }
   return {
     saude: sMin != null && sMed > 0 ? { deficit: sMin < sMed, motivo: `${sMin.toFixed(1)} UBS/posto por 10 mil hab. (mediana de SC: ${sMed.toFixed(1)})` } : null,
     educacao: eMin != null && eMed > 0 ? { deficit: eMin < eMed, motivo: `IDEB dos anos iniciais ${eMin.toFixed(1)} (mediana de SC: ${eMed.toFixed(1)})` } : null,
+    assistencia,
   };
 }
 // Registro curado de programas federais (saúde/educação) que o município pode pleitear — com proveniência (link oficial).

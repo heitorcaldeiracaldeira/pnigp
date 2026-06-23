@@ -38,10 +38,11 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
   const maxOrg = Math.max(1, ...dados.porOrgao.map((o) => o.valor));
   const maxAno = Math.max(1, ...dados.porAno.map((a) => a.valor));
   // déficit do município por área (casamento oportunidade × necessidade)
-  const necDe = (area: string) => (area === "saude" ? necessidade?.saude : area === "educacao" ? necessidade?.educacao : null);
+  const necDe = (area: string) => (area === "saude" ? necessidade?.saude : area === "educacao" ? necessidade?.educacao : area === "assistencia" ? necessidade?.assistencia : null);
   const combina = (area: string) => { const n = necDe(area); return n != null && n.deficit; };
   const carencias = [necessidade?.saude?.deficit ? { ic: "🏥", lbl: "Saúde", motivo: necessidade!.saude!.motivo } : null,
-                     necessidade?.educacao?.deficit ? { ic: "🎓", lbl: "Educação", motivo: necessidade!.educacao!.motivo } : null].filter(Boolean) as { ic: string; lbl: string; motivo: string }[];
+                     necessidade?.educacao?.deficit ? { ic: "🎓", lbl: "Educação", motivo: necessidade!.educacao!.motivo } : null,
+                     necessidade?.assistencia?.deficit ? { ic: "🤝", lbl: "Assistência social", motivo: necessidade!.assistencia!.motivo } : null].filter(Boolean) as { ic: string; lbl: string; motivo: string }[];
   // oportunidades que ESTE município pode efetivamente pleitear (voluntária = todos · específica = só se elegível)
   const pleiteaveis = dados.abertos.filter((o) => o.tipoJanela === "voluntaria" || o.elegivel);
   const criticas = pleiteaveis.filter((o) => o.dias != null && o.dias <= 15);
@@ -201,7 +202,7 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
               <h3 className="text-sm font-semibold text-slate-800">🔎 Programas federais monitorados — saúde, educação, infraestrutura, cultura, esporte, segurança e assistência</h3>
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{programasFederais.length} programas · fontes oficiais</span>
             </div>
-            <p className="text-[12px] text-slate-500">Os programas federais não publicam janela aberta por API — as aberturas saem por portaria/seleção. Monitoramos {programasFederais.length} programas oficiais e <b>casamos com as carências de {nome}</b>. {nMatch > 0 ? <span className="font-semibold text-emerald-700">{nMatch} combina(m) hoje com o que falta aqui (saúde/educação).</span> : "Cada item traz a fonte oficial e como pleitear."} <span className="text-slate-400">O casamento automático cobre saúde e educação; demais áreas listadas para o gestor avaliar.</span></p>
+            <p className="text-[12px] text-slate-500">Os programas federais não publicam janela aberta por API — as aberturas saem por portaria/seleção. Monitoramos {programasFederais.length} programas oficiais e <b>casamos com as carências de {nome}</b>. {nMatch > 0 ? <span className="font-semibold text-emerald-700">{nMatch} combina(m) hoje com o que falta aqui.</span> : "Cada item traz a fonte oficial e como pleitear."} <span className="text-slate-400">O casamento automático cobre saúde, educação e assistência social (com déficit medido); demais áreas listadas para o gestor avaliar.</span></p>
             <div className="mt-3 space-y-2">
               {ord.map((p) => { const match = combina(p.area); const n = necDe(p.area); return (
                 <div key={p.id} className={`rounded-xl border p-3 ${match ? "border-emerald-400 bg-emerald-50/40 ring-1 ring-emerald-200" : "border-slate-200"}`}>
