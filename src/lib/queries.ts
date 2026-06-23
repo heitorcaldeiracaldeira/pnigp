@@ -1740,6 +1740,35 @@ export async function getCensoTendenciaSC(cod: string): Promise<CensoTendenciaSC
   return { pontos };
 }
 
+// Fornecedores do município (PNCP) — concentração, ME/EPP (fomento local), de fora do município/SC (vazamento), recorrentes.
+export type FornecedoresSC = {
+  total: number; nForn: number; concentracaoTop5: number; meEppPct: number; localPct: number; foraScPct: number;
+  top: { nome: string; valor: number; processos: number; porte: string; origem: "local" | "sc" | "fora" | "?" }[];
+} | null;
+export async function getFornecedoresSC(cod: string): Promise<FornecedoresSC> {
+  const enteNome = String((await query<Record<string, unknown>>(`SELECT nome FROM entes_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0]?.nome || "");
+  const norm = (s: string) => s.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Z0-9]+/g, " ").trim();
+  const enteN = norm(enteNome);
+  const rows = await query<Record<string, unknown>>(`SELECT i.cnpj_fornecedor cnpj, max(i.fornecedor) nome, max(i.porte_fornecedor) porte,
+      sum(i.quantidade*i.unit_homologado) valor, count(distinct concat(i.cnpj,'-',i.ano,'-',i.seq)) proc, max(l.uf) uf, max(l.municipio) mun
+    FROM itens_sc i LEFT JOIN cnpj_loc l ON l.cnpj=i.cnpj_fornecedor
+    WHERE i.cod_ibge=$1 AND i.unit_homologado>0 AND i.quantidade>0 AND i.quantidade*i.unit_homologado<=200000000 AND i.cnpj_fornecedor IS NOT NULL AND i.cnpj_fornecedor<>''
+    GROUP BY 1`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const total = rows.reduce((s, r) => s + num(r.valor), 0);
+  const origem = (r: Record<string, unknown>): "local" | "sc" | "fora" | "?" => { const uf = String(r.uf || ""); if (!uf) return "?"; if (uf !== "SC") return "fora"; return enteN && norm(String(r.mun || "")) === enteN ? "local" : "sc"; };
+  const sorted = [...rows].sort((a, b) => num(b.valor) - num(a.valor));
+  const top5 = sorted.slice(0, 5).reduce((s, r) => s + num(r.valor), 0);
+  const meEpp = rows.filter((r) => /micro|pequen|epp|^me$/i.test(String(r.porte || ""))).reduce((s, r) => s + num(r.valor), 0);
+  const local = rows.filter((r) => origem(r) === "local").reduce((s, r) => s + num(r.valor), 0);
+  const fora = rows.filter((r) => origem(r) === "fora").reduce((s, r) => s + num(r.valor), 0);
+  const pct = (v: number) => (total > 0 ? Math.round((v / total) * 100) : 0);
+  return {
+    total, nForn: rows.length, concentracaoTop5: pct(top5), meEppPct: pct(meEpp), localPct: pct(local), foraScPct: pct(fora),
+    top: sorted.slice(0, 12).map((r) => ({ nome: String(r.nome || ""), valor: num(r.valor), processos: num(r.proc), porte: String(r.porte || ""), origem: origem(r) })),
+  };
+}
+
 // Pesquisa de PREÇO DE REFERÊNCIA (Lei 14.133) — gestor digita o item → preço justo (mediana SC + faixa) p/ o edital.
 export type PesquisaPreco = { item: string; unidade: string; mediana: number; p25: number; p75: number; nMuns: number; nCompras: number; min: number; max: number }[];
 export async function getPesquisaPrecoSC(termo: string): Promise<PesquisaPreco> {
