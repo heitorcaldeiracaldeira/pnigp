@@ -274,10 +274,11 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     },
     { id: "compras", label: "Compras", content: <>
       <CabecalhoArea titulo="Compras & Contratos" intro="Como o município compra e contrata: o que a Lei 14.133/2021 exige, onde mora o risco (compra sem licitação, sobrepreço) e onde economizar — do total contratado ao preço unitário, item a item." links={[{ label: "PNCP — Portal Nacional de Contratações Públicas", href: "https://pncp.gov.br" }, { label: "Lei 14.133/2021 — Nova Lei de Licitações", href: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" }, { label: "TCE-SC", href: "https://www.tcesc.tc.br" }]} />
-      {(analiseItens || fornec) && <div className="mt-4"><ResumoCompras analise={analiseItens} fornec={fornec} /></div>}
-      <div className="mt-4"><PesquisaPreco /></div>
+      {/* ESTUDOS COMPARATIVOS DE COMPRAS — FORA DO AR (distorção: comparação por valor TOTAL; refazer por VALOR UNITÁRIO item a item).
+          Desativados: ResumoCompras (economia), PesquisaPreco, AnaliseComprasItens (sobrepreço/mais comprados), ComprasExtraCard (dispersão), SazonalidadePreco.
+          Mantidos (dado do próprio município, sem comparação): ComprasSCSection, ComprasCategorias, FornecedoresCard. */}
       <ComprasSCSection codigo={ente.cod_ibge} tipo={ente.tipo} />
-      {analiseItens && <div className="mt-4"><AnaliseComprasItens dados={analiseItens} nome={ente.nome} /></div>}{comprasCategorias && <div className="mt-4"><ComprasCategorias dados={comprasCategorias} nome={ente.nome} /></div>}{fornec && <div className="mt-4"><FornecedoresCard dados={fornec} nome={ente.nome} /></div>}{comprasExtra && <div className="mt-4"><ComprasExtraCard dados={comprasExtra} nome={ente.nome} /></div>}{sazPreco.length>0 && <div className="mt-4"><SazonalidadePreco dados={sazPreco} /></div>}
+      {comprasCategorias && <div className="mt-4"><ComprasCategorias dados={comprasCategorias} nome={ente.nome} /></div>}{fornec && <div className="mt-4"><FornecedoresCard dados={fornec} nome={ente.nome} /></div>}
       <div className="mt-4"><BaseMetodologica area="compras" /></div>
     </> },
     ...(padroesCompras ? [{ id: "padroes-compras", label: "Planejamento de Compras", content: <><AssuntoPadroesCompras dados={padroesCompras} contratos={contratosResumo} pca={pcaResumo} economia={economicidade} nome={ente.nome} /><div className="mt-4"><CatalogoBoasPraticas area="compras" /></div></> }] : []),
