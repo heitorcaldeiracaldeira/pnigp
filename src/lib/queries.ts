@@ -1723,6 +1723,43 @@ export async function getAnaliseComprasItensSC(cod: string): Promise<AnaliseComp
   };
 }
 
+// Gasto efetivado por categoria oficial CATMAT/CATSER (classe), cruzando itens_sc × itens_classificacao_sc.
+// Read-only sobre as compras. Mostra para onde vai o dinheiro por categoria do catálogo federal (eixo nacional).
+export type ComprasCategorias = {
+  totalEfetivado: number;            // gasto efetivado total (efetivadas, com cap de outlier)
+  classificado: number;              // parcela com categoria CATMAT/CATSER
+  pctClassificado: number;           // % do valor classificado
+  nClasses: number;                  // nº de categorias distintas
+  categorias: { classe: string; tipo: string; valor: number; pct: number; conf: string; nDescr: number }[];
+} | null;
+export async function getComprasCategoriasSC(cod: string): Promise<ComprasCategorias> {
+  const ITCTE = `it AS (
+    SELECT ${_NORM_ITEM} k, i.tipo, sum(quantidade*unit_homologado) valor
+    FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND quantidade*unit_homologado<=200000000 AND descricao IS NOT NULL AND NOT ${_ATA}
+    GROUP BY 1,2)`;
+  const [tot, cats] = await Promise.all([
+    query<Record<string, unknown>>(`WITH ${ITCTE}
+      SELECT round(sum(it.valor)) total,
+             round(sum(it.valor) FILTER (WHERE c.cat_cod IS NOT NULL)) classificado,
+             count(distinct c.cat_classe) FILTER (WHERE c.cat_cod IS NOT NULL) n_classes
+      FROM it LEFT JOIN itens_classificacao_sc c ON c.descr_norm=it.k AND c.tipo=it.tipo`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`WITH ${ITCTE}
+      SELECT c.cat_classe classe, it.tipo, round(sum(it.valor)) valor, count(*) n_descr,
+             mode() WITHIN GROUP (ORDER BY c.confianca) conf
+      FROM it JOIN itens_classificacao_sc c ON c.descr_norm=it.k AND c.tipo=it.tipo
+      WHERE c.cat_cod IS NOT NULL AND c.cat_classe IS NOT NULL
+      GROUP BY 1,2 ORDER BY valor DESC NULLS LAST LIMIT 15`, [cod]).catch(() => []),
+  ]);
+  const t0 = tot[0];
+  if (!t0 || num(t0.total) === 0 || !cats.length) return null;
+  const total = num(t0.total), classificado = num(t0.classificado);
+  return {
+    totalEfetivado: total, classificado, pctClassificado: total > 0 ? Math.round((classificado / total) * 100) : 0,
+    nClasses: num(t0.n_classes),
+    categorias: cats.map((r) => ({ classe: String(r.classe || ""), tipo: String(r.tipo || ""), valor: num(r.valor), pct: classificado > 0 ? Math.round((num(r.valor) / classificado) * 100) : 0, conf: String(r.conf || "sem"), nDescr: num(r.n_descr) })),
+  };
+}
+
 // Tendência histórica da rede municipal (Censo escola×ano) — matrículas, docentes, perfil ao longo dos anos.
 export type CensoTendenciaSC = {
   pontos: { ano: number; escolas: number; matriculas: number; docentes: number; alunoPorDoc: number | null; negrosPct: number; especialPct: number; integralPct: number }[];

@@ -11,6 +11,7 @@ import { AreaEmpilhada } from "@/components/charts/area-empilhada";
 import { OrcadoExecutado } from "@/components/charts/orcado-executado";
 import { ComprasSCSection } from "@/components/compras-sc-section";
 import { AnaliseComprasItens } from "@/components/analise-compras-itens";
+import { ComprasCategorias } from "@/components/compras-categorias";
 import { SazonalidadePreco } from "@/components/sazonalidade-preco";
 import { PesquisaPreco } from "@/components/pesquisa-preco";
 import { FornecedoresCard } from "@/components/fornecedores-card";
@@ -63,7 +64,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getAnaliseComprasItensSC, getSazonalidadePrecoSC, getFornecedoresSC, getComprasExtraSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getEmendasSC, getConveniosSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPerfilSaudeSC, getCensoTendenciaSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getAnaliseComprasItensSC, getSazonalidadePrecoSC, getFornecedoresSC, getComprasExtraSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getEmendasSC, getConveniosSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPerfilSaudeSC, getCensoTendenciaSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC, getComprasCategoriasSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop, fmtData } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -89,6 +90,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const eficSaude = await getEficienciaSaudeSC(codigo);
   const escolas = await getEscolasSC(codigo);
   const analiseItens = await getAnaliseComprasItensSC(codigo);
+  const comprasCategorias = await getComprasCategoriasSC(codigo);
   const sazPreco = await getSazonalidadePrecoSC();
   const fornec = await getFornecedoresSC(codigo);
   const comprasExtra = await getComprasExtraSC(codigo);
@@ -271,7 +273,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       {(analiseItens || fornec) && <div className="mt-4"><ResumoCompras analise={analiseItens} fornec={fornec} /></div>}
       <div className="mt-4"><PesquisaPreco /></div>
       <ComprasSCSection codigo={ente.cod_ibge} tipo={ente.tipo} />
-      {analiseItens && <div className="mt-4"><AnaliseComprasItens dados={analiseItens} nome={ente.nome} /></div>}{fornec && <div className="mt-4"><FornecedoresCard dados={fornec} nome={ente.nome} /></div>}{comprasExtra && <div className="mt-4"><ComprasExtraCard dados={comprasExtra} nome={ente.nome} /></div>}{sazPreco.length>0 && <div className="mt-4"><SazonalidadePreco dados={sazPreco} /></div>}
+      {analiseItens && <div className="mt-4"><AnaliseComprasItens dados={analiseItens} nome={ente.nome} /></div>}{comprasCategorias && <div className="mt-4"><ComprasCategorias dados={comprasCategorias} nome={ente.nome} /></div>}{fornec && <div className="mt-4"><FornecedoresCard dados={fornec} nome={ente.nome} /></div>}{comprasExtra && <div className="mt-4"><ComprasExtraCard dados={comprasExtra} nome={ente.nome} /></div>}{sazPreco.length>0 && <div className="mt-4"><SazonalidadePreco dados={sazPreco} /></div>}
       <div className="mt-4"><BaseMetodologica area="compras" /></div>
     </> },
     ...(padroesCompras ? [{ id: "padroes-compras", label: "Planejamento de Compras", content: <><AssuntoPadroesCompras dados={padroesCompras} contratos={contratosResumo} pca={pcaResumo} economia={economicidade} nome={ente.nome} /><div className="mt-4"><CatalogoBoasPraticas area="compras" /></div></> }] : []),

@@ -48,8 +48,24 @@ const FONTES = [
     devido: async (st) => diasDesde(st?.ultima_exec) > 20 },
   { id: "itens", label: "Itens de TODOS os processos (preço unitário)", api: "pncp", script: "scripts/ingest_itens_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 20 },
+  { id: "catalogo_govbr", label: "Catálogo oficial CATMAT/CATSER (Compras.gov.br) — espinha de classificação", api: "compras", script: "scripts/ingest_catalogo_govbr_sc.mjs", env: {},
+    devido: async (st) => diasDesde(st?.ultima_exec) > 30 }, // catálogo muda raramente
+  { id: "classificacao_itens", label: "Classificação dos itens → CATMAT/CATSER (dicionário, matcher v2)", api: "pncp", script: "scripts/ingest_classificacao_itens_sc.mjs", env: {},
+    // DEPENDÊNCIA: re-classifica sempre que 'itens' ou 'catalogo_govbr' rodarem depois dela (ou a cada 30d)
+    devido: async (st) => {
+      const last = st?.ultima_exec ? new Date(st.ultima_exec).getTime() : 0;
+      const dep = (await db.query(`SELECT ultima_exec FROM etl_catalogo WHERE id IN ('itens','catalogo_govbr')`).catch(() => ({ rows: [] }))).rows;
+      const algumMaisNovo = dep.some((d) => d.ultima_exec && new Date(d.ultima_exec).getTime() > last);
+      return algumMaisNovo || diasDesde(st?.ultima_exec) > 30;
+    } },
   { id: "indicadores", label: "Indicadores (IBGE/CGU)", api: "ibge", script: "scripts/ingest_indicadores_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 60 },
+  { id: "geo_entes", label: "Georreferência dos entes (centroide/área/região — IBGE malhas; base p/ frete e variação de preço)", api: "ibge", script: "scripts/ingest_geo_entes_sc.mjs", env: {},
+    // dispara quando há ente sem coordenada (estado novo ingerido) ou anualmente (limites mudam raríssimo)
+    devido: async (st) => {
+      const faltam = Number((await db.query(`SELECT count(*) n FROM entes_sc WHERE latitude IS NULL`).catch(() => ({ rows: [{ n: 0 }] }))).rows[0].n);
+      return faltam > 0 || diasDesde(st?.ultima_exec) > 300;
+    } },
   { id: "transferencias", label: "Transferências (CGU)", api: "cgu", script: "scripts/ingest_transferencias_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 30 },
   { id: "cnes", label: "CNES — rede de saúde (Min. Saúde)", api: "cnes", script: "scripts/ingest_cnes_sc.mjs", env: {},
@@ -109,7 +125,7 @@ const estado = async (id) => (await db.query(`SELECT * FROM etl_catalogo WHERE i
 
 // ===== SUPERVISÃO (lógica do PNCP aplicada a TODA fonte) =====
 // Tabela cujo count(*) cresce durante a coleta = sinal de progresso de cada fonte.
-const TAB = { financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", receitas_det: "receitas_detalhe_sc", desp_subfuncao: "despesa_subfuncao_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc_feitos", processos: "processos_sc", itens: "itens_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", cnes: "cnes_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc" };
+const TAB = { financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", receitas_det: "receitas_detalhe_sc", desp_subfuncao: "despesa_subfuncao_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc_feitos", processos: "processos_sc", itens: "itens_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", cnes: "cnes_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc", catalogo_govbr: "catalogo_govbr_sc", classificacao_itens: "itens_classificacao_sc" };
 const conta = async (id) => { try { return Number((await db.query(`SELECT count(*) n FROM ${TAB[id] || "financas_sc"}`)).rows[0].n) || 0; } catch { return 0; } };
 const STALL_MS = 20 * 60 * 1000;   // 20 min sem progresso => mata e religa (folga p/ não matar ente pesado)
 const CHECK_MS = 60 * 1000;
@@ -160,7 +176,7 @@ async function main() {
     const solicitado = st?.solicitado === true;
     const ma = f.id === "cnes"
       ? (Number((await db.query(`SELECT max(extract(year from atualizado))::int y FROM cnes_sc`).catch(() => ({ rows: [{}] }))).rows[0]?.y) || 0) // CNES é snapshot por competência (sem coluna ano)
-      : await maxAno({ financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", receitas_det: "receitas_detalhe_sc", desp_subfuncao: "despesa_subfuncao_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc" }[f.id] || "financas_sc", f.id === "contratos" ? "ano_compra" : "ano");
+      : await maxAno({ financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", receitas_det: "receitas_detalhe_sc", desp_subfuncao: "despesa_subfuncao_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc", catalogo_govbr: "catalogo_govbr_sc", classificacao_itens: "itens_classificacao_sc" }[f.id] || "financas_sc", f.id === "contratos" ? "ano_compra" : "ano");
     await db.query(`UPDATE etl_catalogo SET max_ano=$1, devido=$2, atualizado_em=now() WHERE id=$3`, [ma, devido, f.id]);
     const roda = SOLIC ? solicitado : (devido || solicitado);
     plano.push({ f, roda });
