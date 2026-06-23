@@ -185,12 +185,12 @@ export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: 
 
         <div className="mt-3 grid gap-2 lg:grid-cols-2">
           {[
-            { t: "plano-trabalho", n: "Plano de Trabalho", d: "Convênio / transferência voluntária", por: "Peça obrigatória para formalizar convênio/transferência voluntária — sem ele a proposta não é aceita. Define objeto, metas, cronograma e plano de aplicação.", fonte: "Lei 8.666/93, art. 116 · Portaria Interministerial 424/2016, art. 21 · Transferegov" },
-            { t: "proposta", n: "Proposta de Trabalho", d: "1º passo no Transferegov", por: "A celebração começa pelo cadastro da proposta no Transferegov; é o documento que apresenta a demanda ao concedente antes do plano detalhado.", fonte: "Portaria Interm. 424/2016 · Plataforma +Brasil/Transferegov.br" },
+            { t: "plano-trabalho", n: "Plano de Trabalho", d: "Convênio / transferência voluntária", por: "Peça obrigatória para formalizar convênio/transferência voluntária — sem ele a proposta não é aceita. Define objeto, metas, cronograma e plano de aplicação.", fonte: "Decreto 11.531/2023 · Portaria Conjunta MGI/MF/CGU 28/2024 (alt. 15/2025) · LRF art. 25" },
+            { t: "proposta", n: "Proposta de Trabalho", d: "1º passo no Transferegov", por: "A celebração começa pelo encaminhamento da proposta/plano de trabalho no Transferegov.br, após a divulgação do programa pelo concedente.", fonte: "Decreto 11.531/2023, art. 19 · Transferegov.br" },
             { t: "oficio-emenda", n: "Ofício ao Parlamentar", d: "Captar emenda parlamentar", por: "A indicação de emenda parte de solicitação formal ao parlamentar. Emendas individuais são de execução obrigatória (impositivas), o que aumenta a chance de recebimento.", fonte: "CF art. 166, §§9º-11 · EC 100/2019 (orçamento impositivo)" },
-            { t: "oficio-concedente", n: "Ofício de Encaminhamento", d: "Enviar a proposta ao concedente", por: "Formaliza o protocolo da proposta junto ao órgão concedente e declara a regularidade do ente para celebrar o instrumento.", fonte: "Portaria Interm. 424/2016 · órgão concedente" },
+            { t: "oficio-concedente", n: "Ofício de Encaminhamento", d: "Enviar a proposta ao concedente", por: "Formaliza o protocolo da proposta junto ao órgão concedente e declara a regularidade do ente para celebrar o instrumento.", fonte: "Decreto 11.531/2023 · órgão concedente" },
             { t: "termo-referencia", n: "Termo de Referência", d: "Fase de contratação (após o recurso)", por: "Depois de captado o recurso, a compra/obra exige Termo de Referência ou Projeto Básico. Use a Pesquisa de Preço do PNIGP para o valor de referência.", fonte: "Lei 14.133/2021, art. 6º, XXIII e art. 18" },
-            { t: "declaracoes", n: "Declarações", d: "Habilitação do ente", por: "Transferências voluntárias exigem comprovação de regularidade e de contrapartida. As declarações instruem a habilitação e evitam pendências no SICONV/Transferegov.", fonte: "LC 101/2000 (LRF), art. 25 · Portaria Interm. 424/2016" },
+            { t: "declaracoes", n: "Declarações", d: "Habilitação do ente", por: "Transferências voluntárias exigem comprovação de regularidade e de contrapartida. As declarações instruem a habilitação e evitam pendências no Transferegov.", fonte: "LC 101/2000 (LRF), art. 25 · Decreto 11.531/2023" },
           ].map((m) => (
             <div key={m.t} className="flex flex-col rounded-xl border border-slate-200 p-3">
               <div className="flex items-start gap-2">
@@ -202,6 +202,25 @@ export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: 
               <p className="mt-1 text-[10px] text-slate-400"><b>Fonte:</b> {m.fonte}</p>
             </div>
           ))}
+        </div>
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">📚 Fontes oficiais de modelos — recomendadas pelos órgãos concedentes</div>
+          <p className="mt-0.5 text-[11px] text-slate-500">Modelos/minutas <b>aprovados pelos próprios concedentes</b>. Os nossos servem de rascunho pré-preenchido; para a versão jurídica oficial do instrumento, use as fontes abaixo.</p>
+          <ul className="mt-2 space-y-1.5 text-[12px]">
+            {[
+              { n: "AGU/CGU — Câmara Nacional de Convênios", d: "Minutas-padrão de convênio, contrato de repasse e acordo de cooperação (aprovadas pela AGU).", u: "https://www.gov.br/agu/pt-br/composicao/cgu/cgu/modelos/conveniosecongeneres" },
+              { n: "AGU — Modelos da Lei 14.133/2021", d: "Termos de referência, editais e contratos em .docx (contratações).", u: "https://www.gov.br/agu/pt-br/composicao/cgu/cgu/modelos/licitacoesecontratos" },
+              { n: "Transferegov.br — Manuais e Modelos", d: "Manuais oficiais de transferências + modelos padronizados (incl. TED).", u: "https://www.gov.br/transferegov/pt-br/manuais" },
+              { n: "FNDE — PAR / PDDE (educação)", d: "Manuais e modelos dos programas do Fundo Nacional de Desenvolvimento da Educação.", u: "https://www.gov.br/fnde/pt-br/acesso-a-informacao/acoes-e-programas/programas/par" },
+              { n: "FNS — Contrato de Repasse (saúde)", d: "Manual e modelos do Fundo Nacional de Saúde (Sismob e afins).", u: "https://portalfns.saude.gov.br/" },
+              { n: "Caixa — Poder Público", d: "Operadora dos contratos de repasse da União: projetos-padrão, planilhas e modelos por programa.", u: "https://www.caixa.gov.br/poder-publico/" },
+            ].map((f) => (
+              <li key={f.u}>
+                <a href={f.u} target="_blank" rel="noopener noreferrer" className="font-semibold text-teal-700 hover:underline">{f.n} ↗</a>
+                <span className="text-slate-500"> — {f.d}</span>
+              </li>
+            ))}
+          </ul>
         </div>
         <p className="mt-2 text-[10px] text-slate-400">Modelos pré-preenchidos pelo PNIGP (Instituto I10) com dados oficiais. Campos "(preencher)" exigem complemento do gestor. Base legal citada por documento; revise antes de protocolar. Para vincular a um programa específico, use "Gerar Plano de Trabalho" na oportunidade desejada.</p>
       </section>

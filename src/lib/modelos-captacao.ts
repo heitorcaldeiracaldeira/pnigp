@@ -38,7 +38,7 @@ export function gerarBlocos(tipo: ModeloTipo, e: DadosEnte, prog: DadosPrograma,
 
   if (tipo === "plano-trabalho") return [
     ...cabecalho(e), { tipo: "h1", texto: "PLANO DE TRABALHO" },
-    P(`Proposta de convênio / transferência voluntária — ${programa}. Base legal: art. 116 da Lei 8.666/93 e Portaria Interministerial nº 424/2016 (ou norma do concedente).`),
+    P(`Proposta de convênio / transferência voluntária — ${programa}. Base legal: Decreto nº 11.531/2023 (convênios e contratos de repasse da União) e Portaria Conjunta MGI/MF/CGU nº 28/2024 (alt. nº 15/2025 — regime simplificado), c/c art. 25 da LC nº 101/2000 (LRF). Obs.: a Lei nº 8.666/93 foi revogada em 30/12/2023.`),
     H2("1. Dados do Proponente"),
     L("Ente proponente:"), P(`${nome} — ${e.tipo === "E" ? "Governo do Estado" : "Prefeitura Municipal"} / SC`),
     L("CNPJ:"), P(`${linha}  (preencher)`), L("População (IBGE):"), P(pop),
