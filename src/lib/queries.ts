@@ -1740,6 +1740,17 @@ export async function getCensoTendenciaSC(cod: string): Promise<CensoTendenciaSC
   return { pontos };
 }
 
+// Pesquisa de PREÇO DE REFERÊNCIA (Lei 14.133) — gestor digita o item → preço justo (mediana SC + faixa) p/ o edital.
+export type PesquisaPreco = { item: string; unidade: string; mediana: number; p25: number; p75: number; nMuns: number; nCompras: number; min: number; max: number }[];
+export async function getPesquisaPrecoSC(termo: string): Promise<PesquisaPreco> {
+  const t = String(termo || "").toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  const termos = t.split(" ").filter((w) => w.length >= 3).slice(0, 5);
+  if (!termos.length) return [];
+  const conds = termos.map((_, i) => `k ILIKE '%'||$${i + 1}||'%'`).join(" AND ");
+  const rows = await query<Record<string, unknown>>(`SELECT k, unidade, mediana, p25, p75, n_muns, n_compras, preco_min, preco_max FROM precos_referencia_sc WHERE ${conds} ORDER BY n_compras DESC NULLS LAST LIMIT 40`, termos).catch(() => []);
+  return rows.map((r) => ({ item: String(r.k || ""), unidade: String(r.unidade || ""), mediana: num(r.mediana), p25: num(r.p25), p75: num(r.p75), nMuns: num(r.n_muns), nCompras: num(r.n_compras), min: num(r.preco_min), max: num(r.preco_max) }));
+}
+
 // Sazonalidade de PREÇO por categoria (SC) — melhor mês de compra por grupo (índice relativo; 100 = preço típico).
 export type SazonalidadePreco = { categoria: string; meses: { mes: number; indice: number; n: number }[]; melhorMes: number; melhorIndice: number }[];
 export async function getSazonalidadePrecoSC(): Promise<SazonalidadePreco> {
