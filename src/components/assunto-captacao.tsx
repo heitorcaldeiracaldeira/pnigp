@@ -1,4 +1,4 @@
-import type { CaptacaoSC } from "@/lib/queries";
+import type { CaptacaoSC, PerfilNecessidade } from "@/lib/queries";
 import { fmtBRLCompact } from "@/lib/ui";
 
 function dt(s: string | null) {
@@ -31,19 +31,29 @@ function tipoJanelaMeta(t: string, elegivel: boolean, temLista: boolean) {
 }
 
 // Radar de Captação (Transferegov, fonte original viva) — o ponto cego: quanto captou × vs pares × o que pode captar.
-export function AssuntoCaptacao({ dados, cod, nome, margem }: { dados: CaptacaoSC; cod: string; nome: string; margem?: { investimento: number; medianaSC: number } }) {
+export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade }: { dados: CaptacaoSC; cod: string; nome: string; margem?: { investimento: number; medianaSC: number }; necessidade?: PerfilNecessidade }) {
   if (!dados) return null;
   const docLink = (id: string) => `/api/plano-trabalho?ente=${cod}&programa=${id}`;
   const vsMedia = dados.benchmark.media > 0 ? dados.totalCaptado / dados.benchmark.media : 0;
   const maxOrg = Math.max(1, ...dados.porOrgao.map((o) => o.valor));
   const maxAno = Math.max(1, ...dados.porAno.map((a) => a.valor));
+  // déficit do município por área (casamento oportunidade × necessidade)
+  const necDe = (area: string) => (area === "saude" ? necessidade?.saude : area === "educacao" ? necessidade?.educacao : null);
+  const combina = (area: string) => { const n = necDe(area); return n != null && n.deficit; };
+  const carencias = [necessidade?.saude?.deficit ? { ic: "🏥", lbl: "Saúde", motivo: necessidade!.saude!.motivo } : null,
+                     necessidade?.educacao?.deficit ? { ic: "🎓", lbl: "Educação", motivo: necessidade!.educacao!.motivo } : null].filter(Boolean) as { ic: string; lbl: string; motivo: string }[];
   // oportunidades que ESTE município pode efetivamente pleitear (voluntária = todos · específica = só se elegível)
   const pleiteaveis = dados.abertos.filter((o) => o.tipoJanela === "voluntaria" || o.elegivel);
   const criticas = pleiteaveis.filter((o) => o.dias != null && o.dias <= 15);
   const altas = pleiteaveis.filter((o) => o.dias != null && o.dias > 15 && o.dias <= 45);
   const urgente = [...pleiteaveis].filter((o) => o.dias != null).sort((a, b) => (a.dias! - b.dias!))[0] || null;
+  // CASAMENTO: oportunidade pleiteável cuja área é uma carência do município
+  const casadas = pleiteaveis.filter((o) => combina(o.area));
+  const casadaUrgente = [...casadas].sort((a, b) => (a.dias ?? 999) - (b.dias ?? 999))[0] || null;
   const margemApertada = margem != null && margem.medianaSC > 0 && margem.investimento < margem.medianaSC;
-  const temAlerta = pleiteaveis.length > 0 && (criticas.length > 0 || altas.length > 0 || margemApertada);
+  const temAlerta = pleiteaveis.length > 0 && (casadas.length > 0 || criticas.length > 0 || altas.length > 0 || margemApertada);
+  // ordena a lista exibida: casadas primeiro, depois por prazo
+  const abertosOrd = [...dados.abertos].sort((a, b) => (Number(combina(b.area)) - Number(combina(a.area))) || ((a.dias ?? 999) - (b.dias ?? 999)));
   return (
     <div className="space-y-4">
       {/* ALERTA PROATIVO (mesma regra dos contratos a vencer): oportunidade aberta fechando logo */}
@@ -54,11 +64,13 @@ export function AssuntoCaptacao({ dados, cod, nome, margem }: { dados: CaptacaoS
             <div className="flex-1">
               <div className={`font-semibold ${criticas.length > 0 ? "text-rose-800" : "text-teal-800"}`}>
                 Olha esta oportunidade, {nome}! {pleiteaveis.length} aberta(s) que você pode pleitear
-                {criticas.length > 0 && <> — <b>{criticas.length} fechando em ≤15 dias</b></>}
-                {criticas.length === 0 && altas.length > 0 && <> — <b>{altas.length} fechando em ≤45 dias</b></>}.
+                {casadas.length > 0 && <> — <b>{casadas.length} no que você mais precisa</b></>}
+                {casadas.length === 0 && criticas.length > 0 && <> — <b>{criticas.length} fechando em ≤15 dias</b></>}
+                {casadas.length === 0 && criticas.length === 0 && altas.length > 0 && <> — <b>{altas.length} fechando em ≤45 dias</b></>}.
               </div>
               <div className="mt-0.5 text-sm text-slate-700">
-                {urgente && <>Mais urgente: <b>{urgente.nome}</b> {areaMeta(urgente.area).ic} {urgente.valor > 0 && <>· {fmtBRLCompact(urgente.valor)} </>}· fecha em <b>{urgente.dias} dia(s)</b>. </>}
+                {casadaUrgente && (() => { const n = necDe(casadaUrgente.area); return <span className="text-emerald-800">🎯 <b>Combina com uma carência de {nome}:</b> há verba de {areaMeta(casadaUrgente.area).lbl.toLowerCase()} aberta (<b>{casadaUrgente.nome}</b>{casadaUrgente.valor > 0 && <>, {fmtBRLCompact(casadaUrgente.valor)}</>}{casadaUrgente.dias != null && <>, fecha em {casadaUrgente.dias} dia(s)</>}) e seus dados mostram {n?.motivo}. </span>; })()}
+                {!casadaUrgente && urgente && <>Mais urgente: <b>{urgente.nome}</b> {areaMeta(urgente.area).ic} {urgente.valor > 0 && <>· {fmtBRLCompact(urgente.valor)} </>}· fecha em <b>{urgente.dias} dia(s)</b>. </>}
                 {margemApertada && <span className="text-amber-800">Com margem própria apertada (esforço de investimento de {margem!.investimento.toFixed(0)}%, abaixo da mediana de SC), recurso federal é o caminho para investir sem onerar o caixa. </span>}
                 Gere o Plano de Trabalho e submeta a tempo — abaixo.
               </div>
@@ -76,6 +88,13 @@ export function AssuntoCaptacao({ dados, cod, nome, margem }: { dados: CaptacaoS
           <span>🌐 <b>Universo monitorado:</b> {dados.universo.nProgramas} programas {dados.universo.nAbertos > 0 && <span className="text-emerald-700">({dados.universo.nAbertos} abertos)</span>} · {fmtBRLCompact(dados.universo.totalSC)} captados por {dados.universo.nMunicipios} municípios de SC</span>
           <span className="text-teal-700">🎯 <b>Recorte de {nome}:</b> seleção personalizada abaixo</span>
         </div>
+        {carencias.length > 0 && (
+          <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-2 text-[12px] text-slate-700">
+            <b className="text-amber-800">Carências prioritárias de {nome} (vs. mediana de SC):</b>{" "}
+            {carencias.map((c, i) => <span key={c.lbl}>{i > 0 ? " · " : ""}{c.ic} <b>{c.lbl}</b> — {c.motivo}</span>)}.
+            <span className="text-slate-500"> Quando abrir verba federal nessas áreas, ela sobe priorizada aqui.</span>
+          </div>
+        )}
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3"><div className="text-xl font-bold tabular-nums text-emerald-700">{fmtBRLCompact(dados.totalCaptado)}</div><div className="text-[11px] text-slate-600">já captado (fundo a fundo)</div></div>
           <div className="rounded-xl border border-slate-200 p-3"><div className="text-xl font-bold tabular-nums text-slate-800">{dados.nPlanos}</div><div className="text-[11px] text-slate-600">planos de ação</div></div>
@@ -114,7 +133,9 @@ export function AssuntoCaptacao({ dados, cod, nome, margem }: { dados: CaptacaoS
         <p className="text-[11px] text-slate-400">Índice de criticidade por urgência da janela: Crítico ≤15 dias · Alto ≤45 · Médio ≤120 · Baixo &gt;120. Quanto menos dias, mais urgente agir.</p>
         {dados.abertos.length > 0 ? (
           <div className="mt-2 space-y-1.5">
-            {dados.abertos.map((o) => {
+            {abertosOrd.map((o) => {
+              const pleiteavel = o.tipoJanela === "voluntaria" || o.elegivel;
+              const match = pleiteavel && combina(o.area);
               const k = o.dias != null ? critPrazo(o.dias) : null;
               const campos = ([
                 ["Órgão concedente", o.orgao], ["Fundo gestor", o.fundo], ["Código do programa", o.codigo],
@@ -125,11 +146,12 @@ export function AssuntoCaptacao({ dados, cod, nome, margem }: { dados: CaptacaoS
                 ["Janela de proposta", `${dt(o.dtIni)} a ${dt(o.dtFim)}`],
               ] as [string, string][]).filter(([, v]) => v && v !== "—" && v !== "— a —");
               return (
-              <details key={o.id} className="group rounded-xl border border-slate-200 transition open:border-teal-300 open:bg-teal-50/20 open:shadow-sm">
+              <details key={o.id} className={`group rounded-xl border transition open:bg-teal-50/20 open:shadow-sm ${match ? "border-emerald-400 bg-emerald-50/40 ring-1 ring-emerald-200" : "border-slate-200 open:border-teal-300"}`}>
                 <summary className="flex cursor-pointer list-none items-center gap-3 p-3.5 [&::-webkit-details-marker]:hidden">
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-semibold text-slate-900">{o.nome}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      {match && <span className="rounded px-1.5 py-0.5 text-[10px] font-bold bg-emerald-600 text-white">🎯 combina com sua carência de {areaMeta(o.area).lbl.toLowerCase()}</span>}
                       <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-600">{areaMeta(o.area).ic} {areaMeta(o.area).lbl}</span>
                       {(() => { const tj = tipoJanelaMeta(o.tipoJanela, o.elegivel, o.temLista); return <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${tj.cls}`}>{tj.lbl}</span>; })()}
                     </div>

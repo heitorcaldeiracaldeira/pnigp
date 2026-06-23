@@ -64,7 +64,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getAnaliseComprasItensSC, getSazonalidadePrecoSC, getFornecedoresSC, getComprasExtraSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getEmendasSC, getConveniosSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPerfilSaudeSC, getCensoTendenciaSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC, getComprasCategoriasSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getAnaliseComprasItensSC, getSazonalidadePrecoSC, getFornecedoresSC, getComprasExtraSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getEmendasSC, getConveniosSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPerfilSaudeSC, getCensoTendenciaSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC, getComprasCategoriasSC, getPerfilNecessidadeSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop, fmtData } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -91,6 +91,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const escolas = await getEscolasSC(codigo);
   const analiseItens = await getAnaliseComprasItensSC(codigo);
   const comprasCategorias = await getComprasCategoriasSC(codigo);
+  const necessidade = await getPerfilNecessidadeSC(codigo);
   const sazPreco = await getSazonalidadePrecoSC();
   const fornec = await getFornecedoresSC(codigo);
   const comprasExtra = await getComprasExtraSC(codigo);
@@ -792,7 +793,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (cruz) tabs.push({ id: "cruzamentos", label: "Cruzamentos", content: <CruzamentosSC data={cruz} /> });
   if (comprasDestinos) tabs.push({ id: "compras-sc", label: codigo === "42" ? "Para onde vai (SC)" : "Para onde vai", content: <ComprasDestinosSCView data={comprasDestinos} escopo={codigo === "42" ? "dos municípios de SC" : `de ${ente.nome}`} /> });
 
-  if (captacao || emendas || convenios) tabs.push({ id: "captacao", label: "Captação", content: <>{captacao && <AssuntoCaptacao dados={captacao} cod={codigo} nome={ente.nome} margem={minhaPos ? { investimento: minhaPos.investimento, medianaSC: medianaInvestSC } : undefined} />}{emendas && <div className="mt-4"><EmendasCard dados={emendas} nome={ente.nome} /></div>}{convenios && <div className="mt-4"><ConveniosCard dados={convenios} nome={ente.nome} /></div>}</> });
+  if (captacao || emendas || convenios) tabs.push({ id: "captacao", label: "Captação", content: <>{captacao && <AssuntoCaptacao dados={captacao} cod={codigo} nome={ente.nome} margem={minhaPos ? { investimento: minhaPos.investimento, medianaSC: medianaInvestSC } : undefined} necessidade={necessidade} />}{emendas && <div className="mt-4"><EmendasCard dados={emendas} nome={ente.nome} /></div>}{convenios && <div className="mt-4"><ConveniosCard dados={convenios} nome={ente.nome} /></div>}</> });
 
   if (escolas) tabs.push({ id: "equipamentos", label: "Equipamentos Públicos", content: <>
     <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-teal-50 to-white p-5">
