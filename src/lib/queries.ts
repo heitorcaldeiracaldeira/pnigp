@@ -1664,31 +1664,46 @@ export async function getPadroesComprasSC(cod: string): Promise<PadroesComprasSC
 // Análise de compras por ITEM (descritivo, sem CATMAT) — mais comprados + variação de preço vs pares de SC (sobrepreço/economia).
 const _NORM_ITEM = `trim(regexp_replace(upper(regexp_replace(translate(descricao,'ÁÀÃÂÉÊÍÓÔÕÚÜÇáàãâéêíóôõúüç','AAAAEEIOOOUUCAAAAEEIOOOUUC'),'[^A-Za-z0-9 ]',' ','g')),'\\s+',' ','g'))`;
 export type AnaliseComprasItens = {
-  maisComprados: { item: string; unidade: string; valor: number; qtd: number; n: number }[];
+  maisComprados: { item: string; unidade: string; valor: number; qtd: number }[];
   sobrepreco: { item: string; unidade: string; qtd: number; precoMun: number; mediana: number; nMuns: number; acimaPct: number; economia: number }[];
   economiaTotal: number;
+  atas: { nItens: number; valorRegistrado: number } | null;
+  comparacao: { item: string; unidade: string; precoAta: number; precoEf: number; diffPct: number }[];
 } | null;
+// EXISTS de processo que gerou ata (registro de preço) — compra NÃO certa
+const _ATA = `EXISTS (SELECT 1 FROM processos_ata_sc a WHERE a.cnpj=i.cnpj AND a.ano=i.ano AND a.seq=i.seq)`;
 export async function getAnaliseComprasItensSC(cod: string): Promise<AnaliseComprasItens> {
-  const [mais, sobre] = await Promise.all([
-    query<Record<string, unknown>>(`SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado) valor, sum(quantidade) qtd, count(*) n
-      FROM itens_sc WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND descricao IS NOT NULL
+  const [mais, sobre, atas, comp] = await Promise.all([
+    // mais comprados — só compras EFETIVADAS (exclui ata)
+    query<Record<string, unknown>>(`SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado) valor, sum(quantidade) qtd
+      FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND descricao IS NOT NULL AND NOT ${_ATA}
       GROUP BY 1,2 ORDER BY valor DESC NULLS LAST LIMIT 15`, [cod]).catch(() => []),
+    // sobrepreço — efetivadas acima do p75 dos pares
     query<Record<string, unknown>>(`WITH mi AS (
         SELECT ${_NORM_ITEM} k, unidade, sum(quantidade) qtd, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) preco_mun
-        FROM itens_sc WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND descricao IS NOT NULL GROUP BY 1,2)
+        FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND descricao IS NOT NULL AND NOT ${_ATA} GROUP BY 1,2)
       SELECT mi.k item, mi.unidade, mi.qtd, mi.preco_mun, r.mediana, r.n_muns,
-        round((((mi.preco_mun-r.mediana)/NULLIF(r.mediana,0))*100)::numeric) acima_pct,
-        ((mi.preco_mun-r.mediana)*mi.qtd) economia
+        round((((mi.preco_mun-r.mediana)/NULLIF(r.mediana,0))*100)::numeric) acima_pct, ((mi.preco_mun-r.mediana)*mi.qtd) economia
       FROM mi JOIN precos_referencia_sc r ON r.k=mi.k AND r.unidade=mi.unidade
       WHERE mi.preco_mun > r.p75 AND (mi.preco_mun-r.mediana)*mi.qtd > 1000
       ORDER BY economia DESC NULLS LAST LIMIT 25`, [cod]).catch(() => []),
+    // atas — registro de preço (grupo "não certa")
+    query<Record<string, unknown>>(`SELECT count(distinct (${_NORM_ITEM}||'|'||unidade)) n_itens, sum(quantidade*unit_homologado) valor
+      FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND descricao IS NOT NULL AND ${_ATA}`, [cod]).catch(() => []),
+    // comparação ENTRE os dois grupos: mesmo item com preço em ATA e em EFETIVADA
+    query<Record<string, unknown>>(`WITH ata AS (SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) p_ata, sum(quantidade*unit_homologado) v FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND ${_ATA} GROUP BY 1,2),
+        ef AS (SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) p_ef FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND NOT ${_ATA} GROUP BY 1,2)
+      SELECT a.k item, a.unidade, a.p_ata, e.p_ef, round((((e.p_ef-a.p_ata)/NULLIF(a.p_ata,0))*100)::numeric) diff
+      FROM ata a JOIN ef e ON e.k=a.k AND e.unidade=a.unidade WHERE a.p_ata>0 AND e.p_ef>0 ORDER BY a.v DESC NULLS LAST LIMIT 12`, [cod]).catch(() => []),
   ]);
-  if (!mais.length && !sobre.length) return null;
+  if (!mais.length && !sobre.length && !comp.length) return null;
   const sobrepreco = sobre.map((r) => ({ item: String(r.item || ""), unidade: String(r.unidade || ""), qtd: num(r.qtd), precoMun: num(r.preco_mun), mediana: num(r.mediana), nMuns: num(r.n_muns), acimaPct: num(r.acima_pct), economia: num(r.economia) }));
+  const a0 = atas[0];
   return {
-    maisComprados: mais.map((r) => ({ item: String(r.k || ""), unidade: String(r.unidade || ""), valor: num(r.valor), qtd: num(r.qtd), n: num(r.n) })),
-    sobrepreco,
-    economiaTotal: sobrepreco.reduce((s, x) => s + x.economia, 0),
+    maisComprados: mais.map((r) => ({ item: String(r.k || ""), unidade: String(r.unidade || ""), valor: num(r.valor), qtd: num(r.qtd) })),
+    sobrepreco, economiaTotal: sobrepreco.reduce((s, x) => s + x.economia, 0),
+    atas: a0 && num(a0.n_itens) > 0 ? { nItens: num(a0.n_itens), valorRegistrado: num(a0.valor) } : null,
+    comparacao: comp.map((r) => ({ item: String(r.item || ""), unidade: String(r.unidade || ""), precoAta: num(r.p_ata), precoEf: num(r.p_ef), diffPct: num(r.diff) })),
   };
 }
 

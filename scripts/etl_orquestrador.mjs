@@ -88,6 +88,8 @@ const FONTES = [
     devido: async (st) => diasDesde(st?.ultima_exec) > 300 }, // anual
   { id: "cnes_estab", label: "Estabelecimentos de saúde por município (CNES — rede p/ regulação, API DEMAS)", api: "datasus", script: "scripts/ingest_cnes_estab_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 45 }, // CNES atualiza mensalmente
+  { id: "precos_referencia", label: "Preço de referência por item (mediana SC) + classificação ata/efetivada — base da análise de preços", api: "pncp", script: "scripts/ingest_precos_referencia_sc.mjs", env: {},
+    devido: async (st) => diasDesde(st?.ultima_exec) > 30 }, // recalcula quando itens_sc atualiza
 ];
 
 async function ensure() {

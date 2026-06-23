@@ -8,13 +8,26 @@ const NORM = `trim(regexp_replace(upper(regexp_replace(translate(descricao,'ÁÀ
 
 async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 1, keepAlive: true, statement_timeout: 600000 });
-  console.log("calculando referência de preços (mediana/p25/p75 por item canônico)…");
+  // classificação: processos que geraram ATA (registro de preço) — compra NÃO certa. numero_controle = CNPJ-1-SEQ/ANO
+  console.log("classificando processos de ATA (registro de preço)…");
+  await db.query(`DROP TABLE IF EXISTS processos_ata_sc`);
+  await db.query(`CREATE TABLE processos_ata_sc AS
+    SELECT DISTINCT split_part(numero_controle_compra,'-',1) AS cnpj,
+      (split_part(split_part(numero_controle_compra,'-',3),'/',1))::int AS seq,
+      (split_part(numero_controle_compra,'/',2))::int AS ano
+    FROM atas_sc WHERE numero_controle_compra ~ '^[0-9]+-[0-9]+-[0-9]+/[0-9]{4}$'`);
+  await db.query(`CREATE INDEX IF NOT EXISTS ix_proc_ata ON processos_ata_sc (cnpj, ano, seq)`);
+  const na = await db.query(`SELECT count(*) n FROM processos_ata_sc`);
+  console.log(`processos de ata: ${na.rows[0].n}`);
+
+  console.log("calculando referência de preços (mediana/p25/p75 por item canônico) — só COMPRAS EFETIVADAS (exclui atas)…");
   await db.query(`DROP TABLE IF EXISTS precos_referencia_sc`);
   await db.query(`CREATE TABLE precos_referencia_sc AS
     WITH n AS (
-      SELECT ${NORM} AS k, unidade, cod_ibge, unit_homologado
-      FROM itens_sc
-      WHERE unit_homologado > 0 AND unit_homologado < 100000000 AND descricao IS NOT NULL AND length(${NORM}) >= 4
+      SELECT ${NORM} AS k, i.unidade, i.cod_ibge, i.unit_homologado
+      FROM itens_sc i
+      WHERE i.unit_homologado > 0 AND i.unit_homologado < 100000000 AND i.descricao IS NOT NULL AND length(${NORM}) >= 4
+        AND NOT EXISTS (SELECT 1 FROM processos_ata_sc a WHERE a.cnpj=i.cnpj AND a.ano=i.ano AND a.seq=i.seq)
     )
     SELECT k, unidade,
       count(distinct cod_ibge) AS n_muns, count(*) AS n_compras,
