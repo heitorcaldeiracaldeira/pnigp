@@ -1661,6 +1661,37 @@ export async function getPadroesComprasSC(cod: string): Promise<PadroesComprasSC
 }
 
 // Receitas detalhadas por item nominal (ICMS, FPM, IPTU, ISS, IPVA, ITR, FUNDEB) — série anual
+// Análise de compras por ITEM (descritivo, sem CATMAT) — mais comprados + variação de preço vs pares de SC (sobrepreço/economia).
+const _NORM_ITEM = `trim(regexp_replace(upper(regexp_replace(translate(descricao,'ÁÀÃÂÉÊÍÓÔÕÚÜÇáàãâéêíóôõúüç','AAAAEEIOOOUUCAAAAEEIOOOUUC'),'[^A-Za-z0-9 ]',' ','g')),'\\s+',' ','g'))`;
+export type AnaliseComprasItens = {
+  maisComprados: { item: string; unidade: string; valor: number; qtd: number; n: number }[];
+  sobrepreco: { item: string; unidade: string; qtd: number; precoMun: number; mediana: number; nMuns: number; acimaPct: number; economia: number }[];
+  economiaTotal: number;
+} | null;
+export async function getAnaliseComprasItensSC(cod: string): Promise<AnaliseComprasItens> {
+  const [mais, sobre] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado) valor, sum(quantidade) qtd, count(*) n
+      FROM itens_sc WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND descricao IS NOT NULL
+      GROUP BY 1,2 ORDER BY valor DESC NULLS LAST LIMIT 15`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`WITH mi AS (
+        SELECT ${_NORM_ITEM} k, unidade, sum(quantidade) qtd, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) preco_mun
+        FROM itens_sc WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND descricao IS NOT NULL GROUP BY 1,2)
+      SELECT mi.k item, mi.unidade, mi.qtd, mi.preco_mun, r.mediana, r.n_muns,
+        round((((mi.preco_mun-r.mediana)/NULLIF(r.mediana,0))*100)::numeric) acima_pct,
+        ((mi.preco_mun-r.mediana)*mi.qtd) economia
+      FROM mi JOIN precos_referencia_sc r ON r.k=mi.k AND r.unidade=mi.unidade
+      WHERE mi.preco_mun > r.p75 AND (mi.preco_mun-r.mediana)*mi.qtd > 1000
+      ORDER BY economia DESC NULLS LAST LIMIT 25`, [cod]).catch(() => []),
+  ]);
+  if (!mais.length && !sobre.length) return null;
+  const sobrepreco = sobre.map((r) => ({ item: String(r.item || ""), unidade: String(r.unidade || ""), qtd: num(r.qtd), precoMun: num(r.preco_mun), mediana: num(r.mediana), nMuns: num(r.n_muns), acimaPct: num(r.acima_pct), economia: num(r.economia) }));
+  return {
+    maisComprados: mais.map((r) => ({ item: String(r.k || ""), unidade: String(r.unidade || ""), valor: num(r.valor), qtd: num(r.qtd), n: num(r.n) })),
+    sobrepreco,
+    economiaTotal: sobrepreco.reduce((s, x) => s + x.economia, 0),
+  };
+}
+
 // Tendência histórica da rede municipal (Censo escola×ano) — matrículas, docentes, perfil ao longo dos anos.
 export type CensoTendenciaSC = {
   pontos: { ano: number; escolas: number; matriculas: number; docentes: number; alunoPorDoc: number | null; negrosPct: number; especialPct: number; integralPct: number }[];
