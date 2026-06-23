@@ -52,8 +52,8 @@ export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: 
             <p className="mt-1 text-[11px] text-slate-600">Repasses regulares/automáticos por programa (SUS, educação, cultura…). É o que {nome} <b>tem direito a receber</b>. {fmtBRLCompact(dados.totalCaptado)} captado.</p>
           </div>
           <div className="rounded-xl border border-slate-200 p-3">
-            <div className="flex items-center justify-between"><span className="text-[13px] font-semibold text-slate-700">2. Emendas Parlamentares</span><span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">EM COLETA</span></div>
-            <p className="mt-1 text-[11px] text-slate-600">Transferências especiais (a "emenda Pix") e com finalidade definida — o maior recurso discricionário. Exibição neutra: valores e execução.</p>
+            <div className="flex items-center justify-between"><span className="text-[13px] font-semibold text-emerald-800">2. Emendas Parlamentares</span><span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white">ATIVO</span></div>
+            <p className="mt-1 text-[11px] text-slate-600">Emendas via convênio (SICONV) — valor, autor e impositivas (ver card abaixo). Falta só a emenda Pix/transferência especial (servidor do Transferegov instável).</p>
           </div>
           <div className="rounded-xl border border-slate-200 p-3">
             <div className="flex items-center justify-between"><span className="text-[13px] font-semibold text-slate-700">3. Convênios e Contratos de Repasse</span><span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">EM COLETA</span></div>
