@@ -94,6 +94,8 @@ const FONTES = [
     devido: async (st) => diasDesde(st?.ultima_exec) > 30 },
   { id: "emendas", label: "Emendas parlamentares por município (SICONV/Transferegov, repositório detru)", api: "transferegov", script: "scripts/ingest_emendas_siconv_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 30 },
+  { id: "convenios", label: "Convênios e contratos de repasse por município (SICONV/Transferegov, repositório detru — proposta+convenio)", api: "transferegov", script: "scripts/ingest_convenios_siconv_sc.mjs", env: {},
+    devido: async (st) => diasDesde(st?.ultima_exec) > 30 }, // requer CSVs detru extraídos em tmp (proposta 714MB)
 ];
 
 async function ensure() {

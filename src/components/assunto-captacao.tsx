@@ -56,8 +56,8 @@ export function AssuntoCaptacao({ dados, cod, nome }: { dados: CaptacaoSC; cod: 
             <p className="mt-1 text-[11px] text-slate-600">Emendas via convênio (SICONV) — valor, autor e impositivas (ver card abaixo). Falta só a emenda Pix/transferência especial (servidor do Transferegov instável).</p>
           </div>
           <div className="rounded-xl border border-slate-200 p-3">
-            <div className="flex items-center justify-between"><span className="text-[13px] font-semibold text-slate-700">3. Convênios e Contratos de Repasse</span><span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">EM COLETA</span></div>
-            <p className="mt-1 text-[11px] text-slate-600">Transferências voluntárias <b>disputadas por projeto</b> (editais/chamamentos). A oportunidade competitiva clássica — onde um bom projeto faz diferença.</p>
+            <div className="flex items-center justify-between"><span className="text-[13px] font-semibold text-emerald-800">3. Convênios e Contratos de Repasse</span><span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-bold text-white">ATIVO</span></div>
+            <p className="mt-1 text-[11px] text-slate-600">Transferências voluntárias <b>disputadas por projeto</b> — captado e executado por município (SICONV, ver card abaixo). Onde um bom projeto faz diferença.</p>
           </div>
           <div className="rounded-xl border border-slate-200 p-3">
             <div className="flex items-center justify-between"><span className="text-[13px] font-semibold text-slate-700">4. TED</span><span className="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-600">EM COLETA</span></div>

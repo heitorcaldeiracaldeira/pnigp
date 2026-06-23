@@ -9,7 +9,7 @@ const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 const vlr = (s) => { s = String(s || "").trim(); if (!s) return 0; if (/,\d{1,2}$/.test(s)) return parseFloat(s.replace(/\./g, "").replace(",", ".")) || 0; return parseFloat(s.replace(/,/g, "")) || 0; };
 const ix = (head, ...n) => { for (const x of n) { const i = head.indexOf(x); if (i >= 0) return i; } return -1; };
 
-async function header(file) { const rl = readline.createInterface({ input: fs.createReadStream(file, "latin1") }); for await (const l of rl) { rl.close(); return l.replace(/^﻿/, "").split(";").map((h) => h.replace(/^"|"$/g, "").trim()); } return []; }
+async function header(file) { const rl = readline.createInterface({ input: fs.createReadStream(file, "utf8") }); for await (const l of rl) { rl.close(); return l.replace(/^﻿/, "").split(";").map((h) => h.replace(/^[^A-Za-z0-9]+/, "").replace(/"/g, "").trim()); } return []; }
 
 async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2, keepAlive: true });
@@ -27,7 +27,7 @@ async function main() {
   // 1) proposta SC → ID_PROPOSTA → {cod_ibge, municipio}
   const ph = await header(fProp); const pId = ix(ph, "ID_PROPOSTA"), pUf = ix(ph, "UF_PROPONENTE"), pMun = ix(ph, "MUNIC_PROPONENTE"), pIbge = ix(ph, "COD_MUNIC_IBGE");
   const propSC = new Map(); let pl = 0;
-  { const rl = readline.createInterface({ input: fs.createReadStream(fProp, "latin1") }); let first = true;
+  { const rl = readline.createInterface({ input: fs.createReadStream(fProp, "utf8") }); let first = true;
     for await (const line of rl) { if (first) { first = false; continue; } if (!line) continue; const c = line.split(";"); if ((c[pUf] || "").replace(/"/g, "").trim() !== "SC") continue;
       const cod = ibge.get(String(c[pIbge] || "").replace(/\D/g, "").slice(0, 6)) || null;
       propSC.set((c[pId] || "").replace(/"/g, "").trim(), { cod, mun: (c[pMun] || "").replace(/"/g, "").trim() }); pl++; } }
@@ -35,7 +35,7 @@ async function main() {
 
   // 2) convenio → filtra ID_PROPOSTA SC → grava
   const ch = await header(fConv); const cId = ix(ch, "ID_PROPOSTA"), cNr = ix(ch, "NR_CONVENIO"), cAno = ix(ch, "ANO"), cSit = ix(ch, "SIT_CONVENIO"), cG = ix(ch, "VL_GLOBAL_CONV"), cR = ix(ch, "VL_REPASSE_CONV"), cE = ix(ch, "VL_EMPENHADO_CONV"), cD = ix(ch, "VL_DESEMBOLSADO_CONV");
-  let n = 0; { const rl = readline.createInterface({ input: fs.createReadStream(fConv, "latin1") }); let first = true;
+  let n = 0; { const rl = readline.createInterface({ input: fs.createReadStream(fConv, "utf8") }); let first = true;
     for await (const line of rl) { if (first) { first = false; continue; } if (!line) continue; const c = line.split(";"); const idp = (c[cId] || "").replace(/"/g, "").trim(); const p = propSC.get(idp); if (!p) continue;
       await q(`INSERT INTO convenios_sc (nr_convenio,id_proposta,cod_ibge,municipio,ano,situacao,vl_global,vl_repasse,vl_empenhado,vl_desembolsado)
                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (nr_convenio) DO UPDATE SET vl_empenhado=EXCLUDED.vl_empenhado, vl_desembolsado=EXCLUDED.vl_desembolsado, situacao=EXCLUDED.situacao`,

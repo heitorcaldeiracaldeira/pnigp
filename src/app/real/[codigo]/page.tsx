@@ -4,6 +4,7 @@ import { ArrowLeft, ClipboardList, Database, FileText, Landmark, Target, Trendin
 import { Logo } from "@/components/brand";
 import { AssuntoCaptacao } from "@/components/assunto-captacao";
 import { EmendasCard } from "@/components/emendas-card";
+import { ConveniosCard } from "@/components/convenios-card";
 import { Donut } from "@/components/charts/donut";
 import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
 import { AreaEmpilhada } from "@/components/charts/area-empilhada";
@@ -61,7 +62,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getAnaliseComprasItensSC, getSazonalidadePrecoSC, getFornecedoresSC, getComprasExtraSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getEmendasSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPerfilSaudeSC, getCensoTendenciaSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getAnaliseComprasItensSC, getSazonalidadePrecoSC, getFornecedoresSC, getComprasExtraSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getEmendasSC, getConveniosSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPerfilSaudeSC, getCensoTendenciaSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact, fmtPop, fmtData } from "@/lib/ui";
 
 export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
@@ -80,6 +81,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const iegmDados = await getIegmSC(codigo);
   const captacao = await getCaptacaoTransferegovSC(codigo);
   const emendas = await getEmendasSC(codigo);
+  const convenios = await getConveniosSC(codigo);
   const fndeEdu = await getFndeEducacaoSC(codigo);
   const otimReceita = await getOtimizadorReceitaSC(codigo);
   const eficEdu = await getEficienciaEducacaoSC(codigo);
@@ -783,7 +785,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   if (cruz) tabs.push({ id: "cruzamentos", label: "Cruzamentos", content: <CruzamentosSC data={cruz} /> });
   if (comprasDestinos) tabs.push({ id: "compras-sc", label: codigo === "42" ? "Para onde vai (SC)" : "Para onde vai", content: <ComprasDestinosSCView data={comprasDestinos} escopo={codigo === "42" ? "dos municípios de SC" : `de ${ente.nome}`} /> });
 
-  if (captacao || emendas) tabs.push({ id: "captacao", label: "Captação", content: <>{captacao && <AssuntoCaptacao dados={captacao} cod={codigo} nome={ente.nome} />}{emendas && <div className="mt-4"><EmendasCard dados={emendas} nome={ente.nome} /></div>}</> });
+  if (captacao || emendas || convenios) tabs.push({ id: "captacao", label: "Captação", content: <>{captacao && <AssuntoCaptacao dados={captacao} cod={codigo} nome={ente.nome} />}{emendas && <div className="mt-4"><EmendasCard dados={emendas} nome={ente.nome} /></div>}{convenios && <div className="mt-4"><ConveniosCard dados={convenios} nome={ente.nome} /></div>}</> });
 
   if (escolas) tabs.push({ id: "equipamentos", label: "Equipamentos Públicos", content: <>
     <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-teal-50 to-white p-5">

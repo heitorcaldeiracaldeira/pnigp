@@ -1740,6 +1740,24 @@ export async function getCensoTendenciaSC(cod: string): Promise<CensoTendenciaSC
   return { pontos };
 }
 
+// Convênios / contratos de repasse do município (SICONV/Transferegov) — captado, executado, por situação. Tom neutro.
+export type ConveniosSC = {
+  n: number; repasse: number; desembolsado: number; execPct: number;
+  porSituacao: { situacao: string; n: number; valor: number }[];
+} | null;
+export async function getConveniosSC(cod: string): Promise<ConveniosSC> {
+  const [tot, sit] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT count(*) n, coalesce(sum(vl_repasse),0) repasse, coalesce(sum(vl_desembolsado),0) desemb FROM convenios_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT coalesce(NULLIF(situacao,''),'(sem situação)') situacao, count(*) n, coalesce(sum(vl_repasse),0) valor FROM convenios_sc WHERE cod_ibge=$1 GROUP BY 1 ORDER BY valor DESC NULLS LAST LIMIT 8`, [cod]).catch(() => []),
+  ]);
+  if (!tot.length || num(tot[0]?.n) === 0) return null;
+  const repasse = num(tot[0].repasse), desemb = num(tot[0].desemb);
+  return {
+    n: num(tot[0].n), repasse, desembolsado: desemb, execPct: repasse > 0 ? Math.round((desemb / repasse) * 100) : 0,
+    porSituacao: sit.map((r) => ({ situacao: String(r.situacao || ""), n: num(r.n), valor: num(r.valor) })),
+  };
+}
+
 // Fornecedores do município (PNCP) — concentração, ME/EPP (fomento local), de fora do município/SC (vazamento), recorrentes.
 export type FornecedoresSC = {
   total: number; nForn: number; concentracaoTop5: number; meEppPct: number; localPct: number; foraScPct: number;
