@@ -132,7 +132,7 @@ export function Relatorio(props: RelatorioProps) {
           <div className="flex items-center gap-3">
             <Logo className="h-11 w-11" />
             <div>
-              <div className="font-display text-lg font-bold tracking-tight text-slate-900">PNIGP</div>
+              <div className="font-display text-lg font-bold tracking-tight text-slate-900">i10 Gov 360</div>
               <div className="text-xs text-slate-500">Plataforma Nacional de Inteligência da Gestão Pública</div>
               <div className="text-xs text-slate-500">Instituto I10</div>
             </div>
@@ -157,7 +157,7 @@ export function Relatorio(props: RelatorioProps) {
 
         {/* Índices */}
         <section className="mt-6 break-avoid">
-          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-teal-700">Índices PNIGP</h2>
+          <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-teal-700">Índices i10 Gov 360</h2>
           <div className="grid grid-cols-3 gap-3">
             {indicesArr.map((m) => {
               const c = classifyIndex(m.valor);
@@ -462,7 +462,7 @@ export function Relatorio(props: RelatorioProps) {
 
         {/* Rodapé */}
         <footer className="mt-8 border-t border-slate-200 pt-3 text-[11px] leading-relaxed text-slate-500">
-          Documento gerado automaticamente pela PNIGP — Plataforma Nacional de Inteligência da Gestão Pública (Instituto I10).
+          Documento gerado automaticamente pelo i10 Gov 360 (Instituto I10).
           Análise inspirada em metodologias de controle externo; não substitui auditoria oficial. Dados simulados para demonstração.
         </footer>
       </article>

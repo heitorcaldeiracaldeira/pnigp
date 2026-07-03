@@ -349,7 +349,7 @@ export function ExecutiveDashboard(props: ExecProps) {
       )}
 
       <p className="text-center text-xs text-slate-500">
-        PNIGP · Painel Executivo · dados simulados para demonstração
+        i10 Gov 360 · Painel Executivo · dados simulados para demonstração
       </p>
     </div>
   );

@@ -14,7 +14,7 @@ export default function GovernadorLayout({
           <Link href="/" className="flex items-center gap-2.5">
             <Logo />
             <div className="leading-tight">
-              <div className="font-display text-base font-bold tracking-tight text-slate-900">PNIGP</div>
+              <div className="font-display text-base font-bold tracking-tight text-slate-900">i10 Gov 360</div>
               <div className="hidden text-xs text-slate-500 sm:block">Painel do Governador · Instituto I10</div>
             </div>
           </Link>

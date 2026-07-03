@@ -1,0 +1,16 @@
+(node:20612) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+PRONAF/SICOR — cdEstado 25, anos 2023,2024,2025
+    ! CusteioMunicipioProduto 2023 skip=0 falhou após retries
+    ! InvestMunicipioProduto 2023 skip=0 falhou após retries
+  2023: custeio 0 linhas · invest 0 linhas (0 nomes casados) → 0 municípios
+    ! CusteioMunicipioProduto 2024 skip=0 falhou após retries
+    ! InvestMunicipioProduto 2024 skip=0 falhou após retries
+  2024: custeio 0 linhas · invest 0 linhas (0 nomes casados) → 0 municípios

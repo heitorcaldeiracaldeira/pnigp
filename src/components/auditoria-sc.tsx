@@ -1,3 +1,5 @@
+"use client";
+
 import { AlertTriangle, BadgeCheck, ClipboardList, Database, Gavel, ShieldAlert } from "lucide-react";
 import type { DiagGestor } from "@/lib/queries";
 

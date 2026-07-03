@@ -43,6 +43,10 @@ export default async function GovernadorPage({
   params: Promise<{ uf: string }>;
 }) {
   const { uf } = await params;
+  // BLOQUEADO: visão do Estado/Governador desabilitada até haver comparação Estado×Estado (mais UFs).
+  // Ver memória feedback-estado-municipio-separados. Reabrir trocando o flag p/ false.
+  const bloqueado: boolean = true;
+  if (bloqueado) notFound();
   const estado = await getEstado(uf);
   if (!estado) notFound();
 
@@ -137,9 +141,9 @@ export default async function GovernadorPage({
       content: (
         <>
           <InsightsPanel insights={insights} />
-          <section aria-label="Índices PNIGP">
+          <section aria-label="Índices i10 Gov 360">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
-              Índices PNIGP · 2024
+              Índices i10 Gov 360 · 2024
             </h2>
             <div className="grid gap-4 md:grid-cols-3">
               <ScoreCard sigla="IGP 360" nome="Índice Integrado de Gestão Pública" valor={atual.igp360} anterior={anterior?.igp360 ?? null} posicao={minhaPos?.posicao} total={total} descricao="Nota geral da gestão (0 a 100). Combina a capacidade do Estado (ICEB) e o valor entregue ao cidadão (INVP)." />
@@ -361,7 +365,7 @@ export default async function GovernadorPage({
       <PanelTabs tabs={tabs} />
 
       <footer className="py-6 text-center text-xs text-slate-500">
-        PNIGP · Plataforma Nacional de Inteligência da Gestão Pública — Instituto I10 ·
+        i10 Gov 360 — Instituto I10 ·
         Dados simulados para demonstração
       </footer>
     </div>

@@ -19,7 +19,7 @@ function Pilulas({ v, setV }: { v: Visao; setV: (x: Visao) => void }) {
     <div className="flex flex-wrap gap-1.5 border-b border-slate-100 px-5 py-3">
       {PIL.map((p) => { const Icon = p.icon; return (
         <button key={p.id} onClick={() => setV(p.id)} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${v === p.id ? "bg-slate-800 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"}`}>
-          <Icon className="h-4 w-4" /> {p.label}
+          <Icon aria-hidden className="h-4 w-4" /> {p.label}
         </button>
       ); })}
     </div>
@@ -28,7 +28,7 @@ function Pilulas({ v, setV }: { v: Visao; setV: (x: Visao) => void }) {
 function Plano({ titulo, porque, passos }: { titulo: string; porque: string; passos: string[] }) {
   return (
     <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
-      <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-800"><BookOpen className="h-4 w-4" /> {titulo}</p>
+      <p className="flex items-center gap-1.5 text-sm font-semibold text-emerald-800"><BookOpen aria-hidden className="h-4 w-4" /> {titulo}</p>
       <p className="mt-1 text-xs text-slate-600">{porque}</p>
       <ol className="mt-2 space-y-1.5">{passos.map((p, i) => <li key={i} className="flex gap-2 text-sm text-slate-700"><span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-[11px] font-bold text-white">{i + 1}</span>{p}</li>)}</ol>
     </div>
@@ -120,7 +120,7 @@ export function AssuntoDespesas({ serie, funcoes, subfuncoes, pessoalPct, nome }
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-xl border border-slate-200 p-3"><div className="text-xs text-slate-500">Despesa total ({u.ano})</div><div className="text-xl font-bold tabular-nums text-slate-900">{fmtBRLCompact(u.despesa)}</div></div>
               <div className="rounded-xl border border-slate-200 p-3"><div className="text-xs text-slate-500">Resultado (receita − despesa)</div><div className={`text-xl font-bold tabular-nums ${resultado >= 0 ? "text-emerald-600" : "text-rose-600"}`}>{fmtBRLCompact(resultado)}</div></div>
-              <div className="rounded-xl border border-slate-200 p-3"><div className="text-xs text-slate-500">Gasto com pessoal (LRF)</div><div className={`text-xl font-bold tabular-nums ${corP}`}>{pess.toFixed(1)}%</div><div className="text-[10px] text-slate-400">prudencial 51,3% · limite 54%</div></div>
+              <div className="rounded-xl border border-slate-200 p-3"><div className="text-xs text-slate-500">Gasto com pessoal (LRF)</div><div className={`text-xl font-bold tabular-nums ${corP}`}>{pess.toFixed(1)}%</div><div className="text-[10px] text-slate-500">prudencial 51,3% · limite 54%</div></div>
             </div>
             <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600"><b>Leitura:</b> {resultado >= 0 ? "as contas fecharam no azul" : "a despesa superou a receita no ano"}; o gasto com pessoal está {nvPess === "ok" ? "dentro do prudencial" : nvPess === "warn" ? "na faixa de alerta (prudencial)" : "acima do limite legal"}. Pessoal alto reduz o espaço para investir.</p>
           </div>

@@ -4,10 +4,11 @@ import { Fragment, useEffect, useState } from "react";
 import { Building2, ChevronDown, ChevronRight, Database, Loader2, ShoppingCart, TriangleAlert } from "lucide-react";
 import { Donut } from "@/components/charts/donut";
 import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
+import { BaixarCsv } from "@/components/baixar-csv";
 import { fmtBRL, fmtBRLCompact, fmtCNPJ, fmtData } from "@/lib/ui";
 
 type Contrato = { objeto: string; modalidade: string; orgao: string; estimado: number; homologado: number; economia_pct: number | null; data: string; cnpj?: string; ano?: number; seq?: number };
-type Item = { numero: number; descricao: string; unidade: string; quantidade: number; unitEstimado: number; totalEstimado: number; unitHomologado: number | null; fornecedor: string | null; cnpjFornecedor: string | null; porteFornecedor: string | null; beneficioLC: string | null; economiaPct: number | null };
+type Item = { numero: number; descricao: string; unidade: string; quantidade: number; unitEstimado: number; totalEstimado: number; unitHomologado: number | null; fornecedor: string | null; cnpjFornecedor: string | null; porteFornecedor: string | null; beneficioLC: string | null; economiaPct: number | null; uf?: string | null; municipio?: string | null };
 type Compras = {
   n_contratos: number; valor_estimado: number; valor_homologado: number; economia_pct: number; dispensa_pct: number;
   por_modalidade: { modalidade: string; n: number; valor: number }[];
@@ -71,6 +72,7 @@ export function ComprasSCSection({ codigo, tipo }: { codigo: string; tipo: "M" |
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">
               <Database className="h-3 w-3" /> PNCP
             </span>
+            <div className="ml-auto"><BaixarCsv nome={`compras-evolucao-${codigo}`} label="Evolução (CSV)" colunas={[{ chave: "ano", rotulo: "Ano" }, { chave: "n_contratos", rotulo: "Nº contratações" }, { chave: "valor_homologado", rotulo: "Valor contratado" }, { chave: "economia_pct", rotulo: "Variação estim.x homol. (%)" }, { chave: "dispensa_pct", rotulo: "Sem licitação (%)" }]} linhas={serie as unknown as Record<string, unknown>[]} /></div>
           </div>
           <p className="mb-2 text-xs text-slate-500">Valor contratado por exercício{serie.some((s) => s.ano >= 2026) ? " · 2026 é parcial (ano corrente)" : ""}</p>
           <LinhasFinanceiras
@@ -145,7 +147,7 @@ function TopContratos({ top, ano }: { top: Contrato[]; ano: number }) {
   );
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5">
-      <h3 className="mb-2 font-semibold text-slate-800">Maiores contratações · {ano}</h3>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold text-slate-800">Maiores contratações · {ano}</h3><BaixarCsv nome={`maiores-contratacoes-${ano}`} label="Baixar contratações (CSV)" colunas={[{ chave: "objeto", rotulo: "Objeto" }, { chave: "modalidade", rotulo: "Modalidade" }, { chave: "orgao", rotulo: "Orgao" }, { chave: "data", rotulo: "Data" }, { chave: "estimado", rotulo: "Valor estimado" }, { chave: "homologado", rotulo: "Valor contratado" }, { chave: "economia_pct", rotulo: "Variacao (%)" }, { chave: "cnpj", rotulo: "CNPJ fornecedor" }]} linhas={top as unknown as Record<string, unknown>[]} /></div>
       {modalidades.length > 1 && (
         <div className="mb-3 flex flex-wrap items-center gap-1.5">
           <span className="mr-1 flex items-center gap-1 text-[11px] text-slate-500"><ShoppingCart className="h-3.5 w-3.5" /> Modalidade:</span>
@@ -250,15 +252,17 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
     return () => { v = false; };
   }, [c.cnpj, c.ano, c.seq]);
   // fornecedores consolidados a partir dos itens (nome, CNPJ, porte, LC123, valor)
-  const fornMap: Record<string, { nome: string; cnpj: string; porte: string; itens: number; valor: number; lc: string | null }> = {};
+  const fornMap: Record<string, { nome: string; cnpj: string; porte: string; itens: number; valor: number; lc: string | null; uf: string | null; municipio: string | null }> = {};
   for (const it of itens || []) {
     if (!it.fornecedor) continue;
     const k = it.cnpjFornecedor || it.fornecedor;
-    (fornMap[k] ??= { nome: it.fornecedor, cnpj: it.cnpjFornecedor || "", porte: it.porteFornecedor || "", itens: 0, valor: 0, lc: null });
+    (fornMap[k] ??= { nome: it.fornecedor, cnpj: it.cnpjFornecedor || "", porte: it.porteFornecedor || "", itens: 0, valor: 0, lc: null, uf: it.uf ?? null, municipio: it.municipio ?? null });
     fornMap[k].itens++;
     fornMap[k].valor += (it.unitHomologado ?? 0) * it.quantidade;
     if (it.beneficioLC) fornMap[k].lc = it.beneficioLC;
     if (!fornMap[k].porte && it.porteFornecedor) fornMap[k].porte = it.porteFornecedor;
+    if (!fornMap[k].uf && it.uf) fornMap[k].uf = it.uf;
+    if (!fornMap[k].municipio && it.municipio) fornMap[k].municipio = it.municipio;
   }
   const fornecedores = Object.values(fornMap).sort((a, b) => b.valor - a.valor);
   const porteSigla = (p: string) => /micro\s*empresa|^me\b/i.test(p) ? "ME" : /pequeno|epp/i.test(p) ? "EPP" : /m[eé]dia/i.test(p) ? "Média" : /grande|demais/i.test(p) ? "Grande" : (p || "—");
@@ -355,6 +359,7 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
                 </div>
                 <dl className="mt-1.5 space-y-0.5 text-[11px] text-slate-500">
                   {f.cnpj && <div className="flex justify-between gap-2"><dt>CNPJ</dt><dd className="tabular-nums text-slate-700">{fmtCNPJ(f.cnpj)}</dd></div>}
+                  {(f.municipio || f.uf) && <div className="flex justify-between gap-2"><dt>Localidade</dt><dd className="text-right text-slate-700">{[f.municipio, f.uf].filter(Boolean).join(" · ")}</dd></div>}
                   <div className="flex justify-between gap-2"><dt>Itens vencidos</dt><dd className="text-slate-700">{f.itens}</dd></div>
                   <div className="flex justify-between gap-2 border-t border-slate-100 pt-1"><dt>Contratado</dt><dd className="font-semibold text-slate-800">{fmtBRLCompact(f.valor)}</dd></div>
                   {f.lc && <div className="rounded bg-emerald-50 px-1.5 py-1 text-[10px] leading-snug text-emerald-700">LC 123: {f.lc}</div>}

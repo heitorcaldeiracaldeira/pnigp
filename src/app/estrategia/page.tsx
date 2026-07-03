@@ -1,6 +1,6 @@
 // Dossiê estratégico — página discreta para compartilhar com a equipe (fora do menu, sem indexação).
 export const metadata = {
-  title: "PNIGP — Dossiê Estratégico",
+  title: "i10 Gov 360 — Dossiê Estratégico",
   robots: { index: false, follow: false },
 };
 export const dynamic = "force-static";
@@ -167,13 +167,13 @@ export default function EstrategiaPage() {
     <div className="min-h-screen bg-slate-50 py-10">
       <div className="mx-auto max-w-4xl px-5">
         <header className="border-b-[3px] border-teal-600 pb-4">
-          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">PNIGP — Dossiê Estratégico</h1>
+          <h1 className="font-display text-3xl font-bold tracking-tight text-slate-900">i10 Gov 360 — Dossiê Estratégico</h1>
           <p className="mt-1 text-sm text-slate-500">Análise de produto, dados e mercado · jun/2026 · <span className="rounded-full bg-teal-600 px-2.5 py-0.5 text-xs font-semibold text-white">Confidencial — Instituto I10</span></p>
         </header>
 
         <div className="mt-4 rounded-2xl border border-cyan-200 bg-gradient-to-br from-cyan-50 to-white p-5">
           <h3 className="font-semibold text-teal-800">0. A tese central</h3>
-          <p className="mt-1 text-[15px] text-slate-700">O ativo do PNIGP <b>não é a tela</b> — é a <b>base integrada e cruzada</b> (finanças + compras + saúde + educação + controle externo) <b>+ o motor analítico</b> (cadeia de valor 💰→🏭→❤️, accountability, eficiência por porte). O <b>mesmo dado</b> serve dois mercados: <b>governo</b> (gerir) e <b>privado</b> (vender ao governo, investir, emprestar). O <b>B2B tende a ser a maior receita</b> — milhares de empresas pagantes vs. nº limitado de governos.</p>
+          <p className="mt-1 text-[15px] text-slate-700">O ativo do i10 Gov 360 <b>não é a tela</b> — é a <b>base integrada e cruzada</b> (finanças + compras + saúde + educação + controle externo) <b>+ o motor analítico</b> (cadeia de valor 💰→🏭→❤️, accountability, eficiência por porte). O <b>mesmo dado</b> serve dois mercados: <b>governo</b> (gerir) e <b>privado</b> (vender ao governo, investir, emprestar). O <b>B2B tende a ser a maior receita</b> — milhares de empresas pagantes vs. nº limitado de governos.</p>
         </div>
 
         <H2>1. Melhorias da plataforma (curto prazo)</H2>
@@ -244,7 +244,7 @@ export default function EstrategiaPage() {
           <p className="mt-3 text-[15px] text-slate-700"><b>Por que vencemos:</b> os concorrentes vendem "lista de editais"; nós vendemos <b>decisão</b> — "concorra NESTE, a ESTE preço, porque o comprador paga e o histórico do item é X". <b>É o mesmo motor do B2G, monetizado 2×</b>, e escala nacional (o PNCP é nacional).</p>
         </div>
 
-        <p className="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-400">PNIGP · Instituto I10 · documento vivo · dados de mercado de fontes públicas 2025 (PNCP, Min. da Gestão, IPEA).</p>
+        <p className="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-400">i10 Gov 360 · Instituto I10 · documento vivo · dados de mercado de fontes públicas 2025 (PNCP, Min. da Gestão, IPEA).</p>
       </div>
     </div>
   );

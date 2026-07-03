@@ -11,7 +11,7 @@ export default function CidadaoLayout({ children }: { children: React.ReactNode 
             <Logo />
             <div className="leading-tight">
               <div className="font-display text-base font-bold tracking-tight text-slate-900">Portal do Cidadão</div>
-              <div className="text-[11px] text-slate-500">PNIGP · Instituto I10</div>
+              <div className="text-[11px] text-slate-500">i10 Gov 360 · Instituto I10</div>
             </div>
           </Link>
           <Link

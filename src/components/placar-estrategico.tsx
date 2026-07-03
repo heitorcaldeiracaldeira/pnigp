@@ -1,10 +1,13 @@
-import { AlertTriangle, CheckCircle2, ClipboardList, Gauge, Scale, Sparkles, TrendingUp } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardList, Gauge, Scale, ShieldAlert, ShieldCheck, Sparkles, TrendingUp } from "lucide-react";
 import type { Insight } from "@/lib/insights-sc";
+import { NotaTecnicaIndice } from "@/components/nota-tecnica-indice";
+
+export type CrpStatus = { vencido: boolean; dias: number | null; validade: string | null; motivos: string[] } | null;
 
 // liga a ação (Estratégico) ao lugar onde ela se executa (Tático/Operacional) — coordenação visível
 const AREA_TAB: Record<string, string> = {
   "Saúde": "saude", "Saúde indígena": "saude", "Educação": "educacao-cruz",
-  "Fiscal": "financas", "Compras": "compras",
+  "Fiscal": "financas", "Compras": "compras", "Previdência": "previdencia",
 };
 
 const SEV = {
@@ -32,12 +35,13 @@ const PARECER = {
 } as const;
 
 export function PlacarEstrategico({
-  nome, posicao, total, scoreFiscal, tom, saudePct, educPct, pessoalPct, insights, ano, iegm,
+  nome, posicao, total, scoreFiscal, tom, saudePct, educPct, pessoalPct, insights, ano, iegm, crp,
 }: {
   nome: string; posicao: number | null; total: number | null; scoreFiscal: number | null;
   tom: "ok" | "ressalva" | "critico" | null;
   saudePct: number | null; educPct: number | null; pessoalPct: number | null; insights: Insight[]; ano: number;
   iegm?: { faixa: string; pct: number } | null;
+  crp?: CrpStatus;
 }) {
   const iegmCor = iegm ? (iegm.faixa === "A" || iegm.faixa === "B+" ? "bg-emerald-100 text-emerald-700" : iegm.faixa === "B" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700") : "";
   const conformidades: Conf[] = [
@@ -65,6 +69,32 @@ export function PlacarEstrategico({
         <p className="mt-1 text-sm text-slate-600">Em uma olhada: como o município está, o que a lei exige, onde há oportunidade e <b>o que fazer</b>. Os detalhes ficam nos níveis Tático e Operacional.</p>
       </div>
 
+      {/* STATUS DA CRP — regularidade previdenciária (válida c/ prazo, ou bloqueada e por quê) */}
+      {crp && (() => {
+        const aVencer = !crp.vencido && crp.dias != null && crp.dias <= 90;
+        const cls = crp.vencido ? "border-rose-300 bg-rose-50" : aVencer ? "border-amber-300 bg-amber-50" : "border-emerald-200 bg-emerald-50";
+        return (
+          <div className={`rounded-2xl border p-4 ${cls}`}>
+            <div className="flex items-start gap-2.5">
+              {crp.vencido ? <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" /> : <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />}
+              <div className="min-w-0">
+                <div className={`text-sm font-bold ${crp.vencido ? "text-rose-800" : aVencer ? "text-amber-800" : "text-emerald-800"}`}>
+                  {crp.vencido
+                    ? "CRP bloqueada — regularidade previdenciária suspensa"
+                    : `CRP válida${crp.dias != null ? ` — vence em ${crp.dias} dia(s)` : ""}${crp.validade ? ` (validade ${crp.validade})` : ""}`}
+                </div>
+                <p className={`mt-0.5 text-[13px] ${crp.vencido ? "text-rose-700" : "text-slate-600"}`}>
+                  {crp.vencido
+                    ? <>Sem CRP válida, transferências voluntárias da União, emendas e convênios ficam bloqueados.{crp.motivos.length > 0 && <> <b>Motivos:</b> {crp.motivos.join("; ")}.</>}</>
+                    : <>{aVencer ? "Renove no CADPREV antes do vencimento para não bloquear repasses federais." : "Certificado de Regularidade Previdenciária em dia."}{crp.motivos.length > 0 && <> <b>Observações:</b> {crp.motivos.join("; ")}.</>}</>}
+                  <a href="#previdencia" className="ml-1 font-semibold text-teal-700 hover:underline">ver previdência →</a>
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* 4 blocos */}
       <div className="grid gap-4 md:grid-cols-2">
         {/* Índice de gestão */}
@@ -77,7 +107,7 @@ export function PlacarEstrategico({
                 <span className="pb-1 text-sm text-slate-500">/ 100</span>
                 {posicao && total && <span className="mb-1 ml-auto rounded-full bg-blue-100 px-2.5 py-0.5 text-sm font-semibold text-blue-700">{posicao}º de {total} em SC</span>}
               </div>
-              <p className="mt-1 text-[11px] text-slate-500">Índice fiscal do PNIGP · exercício {ano}</p>
+              <p className="mt-1 text-[11px] text-slate-500">Índice fiscal do i10 Gov 360 · exercício {ano} · <a href="#metodologia-indice" className="font-medium text-indigo-600 hover:underline">como é calculado ↓</a></p>
             </>
           ) : <p className="mt-2 text-sm text-slate-500">Sem índice calculado.</p>}
         </div>
@@ -157,6 +187,9 @@ export function PlacarEstrategico({
         ) : <p className="mt-3 rounded-xl bg-white p-4 text-sm text-emerald-700">Sem ações pendentes — indicadores dentro do esperado. Mantenha o monitoramento.</p>}
         <p className="mt-3 text-[11px] text-slate-500">Sugestões geradas do diagnóstico com dados oficiais. Tom orientativo, baseado na metodologia de cada indicador — sem juízo sobre a gestão.</p>
       </div>
+
+      {/* Nota Técnica pública do índice (metodologia auditável) */}
+      <div id="metodologia-indice"><NotaTecnicaIndice /></div>
     </div>
   );
 }

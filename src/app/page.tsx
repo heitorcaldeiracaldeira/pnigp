@@ -1,15 +1,14 @@
 import { BarChart3, Brain, Target } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { LoginCard } from "@/components/login-card";
-import { getEstados, getMunicipios } from "@/lib/queries";
+import { getEntesSC } from "@/lib/queries";
 
 export default async function Home() {
-  const [municipios, estados] = await Promise.all([getMunicipios(), getEstados()]);
-  const destaqueMunicipio =
-    municipios.find((m) => m.nome === "Niterói")?.codigo_ibge ??
-    municipios[0]?.codigo_ibge ??
-    "";
-  const destaqueEstado = estados.find((e) => e.uf === "SP")?.uf ?? estados[0]?.uf ?? "";
+  const entes = await getEntesSC();
+  // municípios REAIS de SC (entes_sc) → vão para /real/{cod} (dados oficiais), não o demo /painel
+  // Visão do Estado (Governador) bloqueada até haver comparação Estado×Estado — não carregamos `estados` aqui.
+  const municipios = entes.filter((e) => e.tipo === "M").map((e) => ({ codigo_ibge: e.cod_ibge, nome: e.nome, uf: "SC" }));
+  const destaqueMunicipio = municipios.find((m) => m.nome === "Florianópolis")?.codigo_ibge ?? municipios[0]?.codigo_ibge ?? "";
 
   return (
     <main className="grid min-h-screen lg:grid-cols-2">
@@ -20,9 +19,9 @@ export default async function Home() {
           Instituto I10
         </div>
         <h1 className="font-display text-3xl font-bold leading-tight tracking-tight lg:text-4xl">
-          PNIGP
+          i10 Gov 360
           <span className="mt-1 block font-sans text-xl font-medium text-teal-100 lg:text-2xl">
-            Plataforma Nacional de Inteligência da Gestão Pública
+            Inteligência da gestão pública municipal
           </span>
         </h1>
         <p className="mt-5 max-w-md text-teal-50/90">
@@ -32,9 +31,9 @@ export default async function Home() {
 
         <div className="mt-10 space-y-4">
           {[
-            { icon: BarChart3, t: "Painéis do Prefeito e do Governador", d: "Indicadores de saúde, educação, segurança, fiscal, social e economia." },
-            { icon: Brain, t: "Índices PNIGP", d: "ICEB, INVP e IGP 360 — capacidade estatal e valor público." },
-            { icon: Target, t: "Metas e benchmarking", d: "Acompanhe metas e compare municípios e estados." },
+            { icon: BarChart3, t: "Painel do Prefeito", d: "Indicadores de saúde, educação, segurança, fiscal, social e economia." },
+            { icon: Brain, t: "Índices i10 Gov 360", d: "ICEB, INVP e IGP 360 — capacidade estatal e valor público." },
+            { icon: Target, t: "Metas e benchmarking", d: "Acompanhe metas e compare municípios." },
           ].map(({ icon: Icon, t, d }) => (
             <div key={t} className="flex gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/10">
@@ -53,9 +52,7 @@ export default async function Home() {
       <section className="flex flex-col items-center justify-center gap-4 p-8">
         <LoginCard
           municipios={municipios}
-          estados={estados}
           destaqueMunicipio={destaqueMunicipio}
-          destaqueEstado={destaqueEstado}
         />
         <a
           href="/cidadao"

@@ -12,8 +12,28 @@ const norm = (s) => String(s || "").trim().toLowerCase().normalize("NFD").replac
 // 28 funções orçamentárias oficiais (Portaria MOG 42/1999)
 const FUNCOES = ["Legislativa", "Judiciária", "Essencial à Justiça", "Administração", "Defesa Nacional", "Segurança Pública", "Relações Exteriores", "Assistência Social", "Previdência Social", "Saúde", "Trabalho", "Educação", "Cultura", "Direitos da Cidadania", "Urbanismo", "Habitação", "Saneamento", "Gestão Ambiental", "Ciência e Tecnologia", "Agricultura", "Organização Agrária", "Indústria", "Comércio e Serviços", "Comunicações", "Energia", "Transporte", "Desporto e Lazer", "Encargos Especiais"];
 const FSET = new Set(FUNCOES.map(norm));
-const COL_EMP = "DESPESAS EMPENHADAS ATÉ O BIMESTRE (b)";
-const ehAgreg = (c) => /despesas|subtotal|^total|reserva|exceto|intra|\(i+\)/i.test(c || "");
+const COL_EMP = "DESPESAS EMPENHADAS ATÉ O BIMESTRE (b)"; // executado
+const COL_DOT = "DOTAÇÃO ATUALIZADA (a)"; // orçado
+const ehAgreg = (c) => /despesas|subtotal|^total|reserva de conting|exceto|intra|\(i+\)/i.test(c || ""); // "reserva de conting" específico — antes /reserva/ derrubava "pReSERVAção e conservação ambiental" (perdia Gestão Ambiental)
+// percorre a hierarquia (função → subfunção) para UMA coluna, somando só despesa normal (exceto intra)
+function walk(items, coluna) {
+  const rows = items.filter((x) => x.coluna === coluna);
+  let funcAtual = null, intraMode = false;
+  const acc = new Map();
+  for (const x of rows) {
+    const conta = String(x.conta || "").trim();
+    if (/intra/i.test(conta) && !/exceto/i.test(conta)) { intraMode = true; funcAtual = null; continue; }
+    if (intraMode) continue;
+    if (ehAgreg(conta)) { funcAtual = null; continue; }
+    if (FSET.has(norm(conta))) { funcAtual = conta; continue; }
+    if (!funcAtual) continue;
+    const val = Number(x.valor) || 0;
+    if (val === 0) continue;
+    const sub = conta.replace(/^FU\d+\s*-\s*/i, "");
+    acc.set(`${funcAtual}|${sub}`, (acc.get(`${funcAtual}|${sub}`) || 0) + val);
+  }
+  return acc;
+}
 
 async function fetchAnexo(ano, id, esfera) {
   for (let t = 0; t < 4; t++) {
@@ -30,38 +50,26 @@ async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2, keepAlive: true, query_timeout: 60000, statement_timeout: 60000 });
   db.on("error", () => {});
   await db.query(`CREATE TABLE IF NOT EXISTS despesa_subfuncao_sc (cod_ibge TEXT, ano INTEGER, funcao TEXT, subfuncao TEXT, empenhado NUMERIC, PRIMARY KEY (cod_ibge, ano, funcao, subfuncao))`);
+  await db.query(`ALTER TABLE despesa_subfuncao_sc ADD COLUMN IF NOT EXISTS dotacao NUMERIC`); // orçado (dotação atualizada)
   await db.query(`CREATE TABLE IF NOT EXISTS despesa_sub_check (cod_ibge TEXT, ano INTEGER, PRIMARY KEY (cod_ibge, ano))`);
   const q = async (s, p) => { for (let t = 0; t < 8; t++) { try { return await db.query(s, p); } catch { await sleep(1200 * (t + 1)); } } throw new Error("db"); };
   const entes = (await db.query(`SELECT cod_ibge, tipo FROM entes_sc ORDER BY tipo='E' DESC, cod_ibge`)).rows;
-  const feitos = new Set((await db.query(`SELECT cod_ibge||'-'||ano k FROM despesa_sub_check`)).rows.map((r) => r.k));
+  // REINGEST=1 ignora o check (re-busca tudo, p/ preencher a dotação nos anos já coletados só com empenhado)
+  const feitos = process.env.REINGEST ? new Set() : new Set((await db.query(`SELECT cod_ibge||'-'||ano k FROM despesa_sub_check`)).rows.map((r) => r.k));
   let grav = 0, proc = 0;
   for (const ano of ANOS) {
     for (const e of entes) {
       if (feitos.has(`${e.cod_ibge}-${ano}`)) continue;
       const items = await fetchAnexo(ano, e.cod_ibge, e.tipo === "E" ? "E" : "M");
       if (items == null) continue;
-      const emp = items.filter((x) => x.coluna === COL_EMP); // ordem preserva hierarquia
-      let funcAtual = null;
-      let intraMode = false; // ao entrar no bloco INTRA-ORÇAMENTÁRIAS, ignora o resto (padrão financas = só normal)
-      const acc = new Map(); // "funcao|subfuncao" -> soma (somente despesa normal, exceto intra)
-      for (const x of emp) {
-        const conta = String(x.conta || "").trim();
-        // cabeçalho do bloco intra ("(INTRA-ORÇAMENTÁRIAS)" mas NÃO "EXCETO INTRA") → daqui pra frente é intra
-        if (/intra/i.test(conta) && !/exceto/i.test(conta)) { intraMode = true; funcAtual = null; continue; }
-        if (intraMode) continue;
-        if (ehAgreg(conta)) { funcAtual = null; continue; }
-        if (FSET.has(norm(conta))) { funcAtual = conta; continue; } // linha de função (total) — pula
-        if (!funcAtual) continue;
-        const val = Number(x.valor) || 0;
-        if (val === 0) continue;
-        const sub = conta.replace(/^FU\d+\s*-\s*/i, ""); // limpa prefixo "FUxx - "
-        const k = `${funcAtual}|${sub}`;
-        acc.set(k, (acc.get(k) || 0) + val);
-      }
-      for (const [k, val] of acc) {
+      const empMap = walk(items, COL_EMP); // executado
+      const dotMap = walk(items, COL_DOT); // orçado
+      const keys = new Set([...empMap.keys(), ...dotMap.keys()]);
+      for (const k of keys) {
         const [funcao, sub] = k.split("|");
-        await q(`INSERT INTO despesa_subfuncao_sc (cod_ibge,ano,funcao,subfuncao,empenhado) VALUES ($1,$2,$3,$4,$5)
-                 ON CONFLICT (cod_ibge,ano,funcao,subfuncao) DO UPDATE SET empenhado=EXCLUDED.empenhado`, [e.cod_ibge, ano, funcao, sub, Math.round(val * 100) / 100]);
+        const emp = Math.round((empMap.get(k) || 0) * 100) / 100, dot = Math.round((dotMap.get(k) || 0) * 100) / 100;
+        await q(`INSERT INTO despesa_subfuncao_sc (cod_ibge,ano,funcao,subfuncao,empenhado,dotacao) VALUES ($1,$2,$3,$4,$5,$6)
+                 ON CONFLICT (cod_ibge,ano,funcao,subfuncao) DO UPDATE SET empenhado=EXCLUDED.empenhado, dotacao=EXCLUDED.dotacao`, [e.cod_ibge, ano, funcao, sub, emp, dot]);
         grav++;
       }
       await q(`INSERT INTO despesa_sub_check (cod_ibge,ano) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [e.cod_ibge, ano]);

@@ -1,0 +1,16 @@
+(node:19320) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+CAR/SICAR WFS — 295 municípios (sicar:sicar_imoveis_sc)
+  50/295… (64.784 imóveis)
+  100/295… (141.477 imóveis)
+  150/295… (222.550 imóveis)
+  200/295… (290.160 imóveis)
+  250/295… (358.149 imóveis)
+Concluído: 295 municípios · 427.013 imóveis rurais no CAR (424.356 ativos)

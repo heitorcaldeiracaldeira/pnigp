@@ -34,6 +34,7 @@ async function main() {
   let proc = 0, grav = 0;
   for (const e of entes) {
     if (feitos.has(e.cod_ibge)) continue;
+    try {
     let pag = 1, total = 0;
     while (pag <= 50) {
       const arr = await fetchPag(e.cod_ibge, pag);
@@ -54,6 +55,7 @@ async function main() {
     await q(`INSERT INTO convenios_check (cod_ibge) VALUES ($1) ON CONFLICT DO NOTHING`, [e.cod_ibge]);
     proc++;
     if (proc % 30 === 0) console.log(`  ${proc}/${entes.length} municípios · ${grav} convênios municipais`);
+    } catch (err) { console.log(`  ! ${e.cod_ibge} falhou (${err.message}) — segue; será refeito no próximo ciclo`); }
   }
   const r = await db.query(`SELECT count(distinct cod_ibge) e, count(*) n, round(sum(valor)/1e6) mi FROM convenios_captados_sc`);
   console.log(`Convênios concluído: ${grav} nesta rodada · ${JSON.stringify(r.rows[0])}`);

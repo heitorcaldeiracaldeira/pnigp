@@ -1,0 +1,486 @@
+ 
+===== INICIO 30/06/2026 15:39:28,42 ===== 
+(node:8868) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[ORQ 18:39:41] MODO=plan | ano fechado=2025 | corrente=2026
+[ORQ 18:39:42]   ok       financas       max_ano=2025
+[ORQ 18:39:43]   ok       metas          max_ano=2025
+[ORQ 18:39:43]   ok       desp_subfuncao max_ano=2025
+[ORQ 18:39:44]   ok       receitas_det   max_ano=2025
+[ORQ 18:39:45]   ok       rreo_const     max_ano=2025
+[ORQ 18:39:46]   ok       rgf            max_ano=2025
+[ORQ 18:39:47]   ok       rpps           max_ano=2025
+[ORQ 18:39:48]   ok       rpps_atuarial  max_ano=0
+[ORQ 18:39:50]   ok       rpps_crp       max_ano=0
+[ORQ 18:39:51]   ok       cadprev_full   max_ano=0
+[ORQ 18:39:53]   ok       crp_alertas    max_ano=0
+[ORQ 18:39:53]   ok       siops          max_ano=2025
+[ORQ 18:39:54]   ok       compras        max_ano=2026
+[ORQ 18:39:55]   ok       contratos      max_ano=2026
+[ORQ 18:39:57]   ok       pca            max_ano=0
+[ORQ 18:39:57]   ok       processos      max_ano=2025
+[ORQ 18:39:58]   ok       itens          max_ano=2025
+[ORQ 18:39:59]   ok       catalogo_govbr max_ano=0
+[ORQ 18:40:01]   ok       classificacao_itens max_ano=0
+[ORQ 18:40:01]   ok       indicadores    max_ano=2024
+[ORQ 18:40:02]   ok       geo_entes      max_ano=2025
+[ORQ 18:40:04]   ok       transferencias max_ano=0
+[ORQ 18:40:04]   ok       cnes           max_ano=2026
+[ORQ 18:40:05]   ok       sih            max_ano=2025
+[ORQ 18:40:05]   ok       sia            max_ano=2025
+[ORQ 18:40:07]   ok       previne        max_ano=0
+[ORQ 18:40:08]   ok       indigena       max_ano=0
+[ORQ 18:40:09]   ok       fns            max_ano=2026
+[ORQ 18:40:10]   ok       cnpj_loc       max_ano=0
+[ORQ 18:40:12]   ok       empenhos       max_ano=0
+[ORQ 18:40:13]   ok       atas           max_ano=0
+[ORQ 18:40:15]   ok       nf             max_ano=0
+[ORQ 18:40:15]   ok       iegm           max_ano=2025
+[ORQ 18:40:17]   ok       cauc           max_ano=0
+[ORQ 18:40:17]   ok       ideb           max_ano=2025
+[ORQ 18:40:18]   ok       censo          max_ano=2025
+[ORQ 18:40:18]   ok       programas_transferegov max_ano=2025
+[ORQ 18:40:19]   RODA     programas_agil max_ano=2025
+[ORQ 18:40:19]   ok       fnde_simad     max_ano=2025
+[ORQ 18:40:20]   ok       escolas        max_ano=2025
+[ORQ 18:40:20]   ok       cnes_estab     max_ano=2025
+[ORQ 18:40:21]   ok       precos_referencia max_ano=2025
+[ORQ 18:40:22]   ok       sazonalidade_preco max_ano=2025
+[ORQ 18:40:22]   ok       emendas        max_ano=2025
+[ORQ 18:40:23]   ok       emendas_exec   max_ano=2026
+[ORQ 18:40:23]   ok       programa_beneficiario max_ano=2025
+[ORQ 18:40:24]   ok       programas_federais max_ano=2025
+[ORQ 18:40:24]   ok       suas           max_ano=2025
+[ORQ 18:40:25]   ok       assistencia_social max_ano=2025
+[ORQ 18:40:27]   ok       equipamentos_suas max_ano=0
+[ORQ 18:40:28]   ok       equipamentos_endereco max_ano=0
+[ORQ 18:40:30]   ok       equipamentos_geo max_ano=0
+[ORQ 18:40:32]   RODA     equipamentos_cep max_ano=0
+[ORQ 18:40:33]   ok       equipamentos_justica max_ano=0
+[ORQ 18:40:34]   ok       precatorios    max_ano=2025
+[ORQ 18:40:35]   ok       saneamento     max_ano=2025
+[ORQ 18:40:35]   ok       snis           max_ano=2025
+[ORQ 18:40:36]   ok       transferencias_stn max_ano=2025
+[ORQ 18:40:37]   ok       sancoes        max_ano=2025
+[ORQ 18:40:38]   ok       munic          max_ano=2025
+[ORQ 18:40:39]   ok       acompanhamento max_ano=2025
+[ORQ 18:40:39]   ok       acompanhamento_funcao max_ano=2025
+[ORQ 18:40:40]   ok       msc_despesa    max_ano=2025
+[ORQ 18:40:41]   ok       precos_compras max_ano=2025
+[ORQ 18:40:41]   ok       variacao_interna max_ano=2025
+[ORQ 18:40:42]   ok       red_flags      max_ano=2025
+[ORQ 18:40:43]   ok       mcmv           max_ano=2025
+[ORQ 18:40:43]   RODA     cmed           max_ano=2025
+[ORQ 18:40:44]   RODA     sobrepreco_med max_ano=2025
+[ORQ 18:40:45]   ok       convenios      max_ano=2025
+[ORQ 18:40:45] → 4 fonte(s) a coletar: programas_agil, equipamentos_cep, cmed, sobrepreco_med
+[ORQ 18:40:45] MODO=plan — nada executado. Use MODO=run (ou =solicitados) para coletar.
+===== FIM 30/06/2026 15:40:45,18 ===== 
+ 
+===== INICIO 30/06/2026 15:43:40,55 (MODO=run) ===== 
+(node:12072) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[ORQ 18:43:54] MODO=run | ano fechado=2025 | corrente=2026
+[ORQ 18:43:54]   ok       financas       max_ano=2025
+[ORQ 18:43:55]   ok       metas          max_ano=2025
+[ORQ 18:43:56]   ok       desp_subfuncao max_ano=2025
+[ORQ 18:43:56]   ok       receitas_det   max_ano=2025
+[ORQ 18:43:57]   ok       rreo_const     max_ano=2025
+[ORQ 18:43:58]   ok       rgf            max_ano=2025
+[ORQ 18:43:58]   ok       rpps           max_ano=2025
+[ORQ 18:44:00]   ok       rpps_atuarial  max_ano=0
+[ORQ 18:44:01]   ok       rpps_crp       max_ano=0
+[ORQ 18:44:03]   ok       cadprev_full   max_ano=0
+[ORQ 18:44:04]   ok       crp_alertas    max_ano=0
+[ORQ 18:44:05]   ok       siops          max_ano=2025
+[ORQ 18:44:06]   ok       compras        max_ano=2026
+[ORQ 18:44:06]   ok       contratos      max_ano=2026
+[ORQ 18:44:08]   ok       pca            max_ano=0
+[ORQ 18:44:08]   ok       processos      max_ano=2025
+[ORQ 18:44:09]   ok       itens          max_ano=2025
+[ORQ 18:44:10]   ok       catalogo_govbr max_ano=0
+[ORQ 18:44:12]   ok       classificacao_itens max_ano=0
+[ORQ 18:44:12]   ok       indicadores    max_ano=2024
+[ORQ 18:44:13]   ok       geo_entes      max_ano=2025
+[ORQ 18:44:14]   ok       transferencias max_ano=0
+[ORQ 18:44:15]   ok       cnes           max_ano=2026
+[ORQ 18:44:15]   ok       sih            max_ano=2025
+[ORQ 18:44:16]   ok       sia            max_ano=2025
+[ORQ 18:44:17]   ok       previne        max_ano=0
+[ORQ 18:44:19]   ok       indigena       max_ano=0
+[ORQ 18:44:19]   ok       fns            max_ano=2026
+[ORQ 18:44:21]   ok       cnpj_loc       max_ano=0
+[ORQ 18:44:23]   ok       empenhos       max_ano=0
+[ORQ 18:44:25]   ok       atas           max_ano=0
+[ORQ 18:44:26]   ok       nf             max_ano=0
+[ORQ 18:44:27]   ok       iegm           max_ano=2025
+[ORQ 18:44:28]   ok       cauc           max_ano=0
+[ORQ 18:44:29]   ok       ideb           max_ano=2025
+[ORQ 18:44:29]   ok       censo          max_ano=2025
+[ORQ 18:44:30]   ok       programas_transferegov max_ano=2025
+[ORQ 18:44:31]   RODA     programas_agil max_ano=2025
+[ORQ 18:44:31]   ok       fnde_simad     max_ano=2025
+[ORQ 18:44:32]   ok       escolas        max_ano=2025
+[ORQ 18:44:32]   ok       cnes_estab     max_ano=2025
+[ORQ 18:44:33]   ok       precos_referencia max_ano=2025
+[ORQ 18:44:33]   ok       sazonalidade_preco max_ano=2025
+[ORQ 18:44:34]   ok       emendas        max_ano=2025
+[ORQ 18:44:34]   ok       emendas_exec   max_ano=2026
+[ORQ 18:44:35]   ok       programa_beneficiario max_ano=2025
+[ORQ 18:44:35]   ok       programas_federais max_ano=2025
+[ORQ 18:44:36]   ok       suas           max_ano=2025
+[ORQ 18:44:36]   ok       assistencia_social max_ano=2025
+[ORQ 18:44:38]   ok       equipamentos_suas max_ano=0
+[ORQ 18:44:39]   ok       equipamentos_endereco max_ano=0
+[ORQ 18:44:41]   ok       equipamentos_geo max_ano=0
+[ORQ 18:44:43]   RODA     equipamentos_cep max_ano=0
+[ORQ 18:44:44]   ok       equipamentos_justica max_ano=0
+[ORQ 18:44:45]   ok       precatorios    max_ano=2025
+[ORQ 18:44:46]   ok       saneamento     max_ano=2025
+[ORQ 18:44:46]   ok       snis           max_ano=2025
+[ORQ 18:44:47]   ok       transferencias_stn max_ano=2025
+[ORQ 18:44:48]   ok       sancoes        max_ano=2025
+[ORQ 18:44:49]   ok       munic          max_ano=2025
+[ORQ 18:44:49]   ok       acompanhamento max_ano=2025
+[ORQ 18:44:50]   ok       acompanhamento_funcao max_ano=2025
+[ORQ 18:44:50]   ok       msc_despesa    max_ano=2025
+[ORQ 18:44:51]   ok       precos_compras max_ano=2025
+[ORQ 18:44:52]   ok       variacao_interna max_ano=2025
+[ORQ 18:44:52]   ok       red_flags      max_ano=2025
+[ORQ 18:44:53]   ok       mcmv           max_ano=2025
+[ORQ 18:44:54]   RODA     cmed           max_ano=2025
+[ORQ 18:44:55]   RODA     sobrepreco_med max_ano=2025
+[ORQ 18:44:55]   ok       convenios      max_ano=2025
+[ORQ 18:44:55] → 4 fonte(s) a coletar: programas_agil, equipamentos_cep, cmed, sobrepreco_med
+[ORQ 18:44:55] ▶ programas_agil (tentativa 1/5)
+[ORQ 18:44:55] ▶ equipamentos_cep (tentativa 1/5)
+[ORQ 18:44:55] ▶ cmed (tentativa 1/5)
+[ORQ 18:44:55] ▶ sobrepreco_med (tentativa 1/5)
+[ORQ 18:44:59] ✔ equipamentos_cep: ok
+[ORQ 18:45:30] ✔ programas_agil: ok
+[ORQ 18:46:07] ✔ cmed: ok
+[ORQ 18:48:03] ✔ sobrepreco_med: ok
+[ORQ 18:48:03] validando integridade…
+[ORQ 18:48:08] regenerando documentação…
+[ORQ 18:49:06] ciclo concluído.
+===== FIM 30/06/2026 15:49:06,24 ===== 
+ 
+===== INICIO 01/07/2026  2:00:01,63 (MODO=run) ===== 
+(node:16244) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[ORQ 05:00:15] MODO=run | ano fechado=2025 | corrente=2026
+[ORQ 05:00:16]   ok       financas       max_ano=2025
+[ORQ 05:00:16]   ok       metas          max_ano=2025
+[ORQ 05:00:17]   ok       desp_subfuncao max_ano=2025
+[ORQ 05:00:18]   ok       receitas_det   max_ano=2025
+[ORQ 05:00:18]   ok       rreo_const     max_ano=2025
+[ORQ 05:00:19]   ok       rgf            max_ano=2025
+[ORQ 05:00:20]   ok       rpps           max_ano=2025
+[ORQ 05:00:21]   ok       rpps_atuarial  max_ano=0
+[ORQ 05:00:22]   ok       rpps_crp       max_ano=0
+[ORQ 05:00:24]   ok       cadprev_full   max_ano=0
+[ORQ 05:00:25]   ok       crp_alertas    max_ano=0
+[ORQ 05:00:26]   ok       siops          max_ano=2025
+[ORQ 05:00:27]   ok       compras        max_ano=2026
+[ORQ 05:00:27]   ok       contratos      max_ano=2026
+[ORQ 05:00:28]   ok       pca            max_ano=0
+[ORQ 05:00:29]   ok       processos      max_ano=2025
+[ORQ 05:00:29]   ok       itens          max_ano=2025
+[ORQ 05:00:31]   ok       catalogo_govbr max_ano=0
+[ORQ 05:00:32]   ok       classificacao_itens max_ano=0
+[ORQ 05:00:33]   ok       indicadores    max_ano=2024
+[ORQ 05:00:34]   ok       geo_entes      max_ano=2025
+[ORQ 05:00:35]   ok       transferencias max_ano=0
+[ORQ 05:00:36]   ok       cnes           max_ano=2026
+[ORQ 05:00:36]   ok       sih            max_ano=2025
+[ORQ 05:00:37]   ok       sia            max_ano=2025
+[ORQ 05:00:38]   ok       previne        max_ano=0
+[ORQ 05:00:40]   ok       indigena       max_ano=0
+[ORQ 05:00:40]   ok       fns            max_ano=2026
+[ORQ 05:00:42]   ok       cnpj_loc       max_ano=0
+[ORQ 05:00:43]   ok       empenhos       max_ano=0
+[ORQ 05:00:44]   ok       atas           max_ano=0
+[ORQ 05:00:46]   ok       nf             max_ano=0
+[ORQ 05:00:47]   ok       iegm           max_ano=2025
+[ORQ 05:00:48]   ok       cauc           max_ano=0
+[ORQ 05:00:48]   ok       ideb           max_ano=2025
+[ORQ 05:00:49]   ok       censo          max_ano=2025
+[ORQ 05:00:49]   ok       programas_transferegov max_ano=2025
+[ORQ 05:00:50]   ok       programas_agil max_ano=2025
+[ORQ 05:00:51]   ok       fnde_simad     max_ano=2025
+[ORQ 05:00:51]   ok       escolas        max_ano=2025
+[ORQ 05:00:52]   ok       cnes_estab     max_ano=2025
+[ORQ 05:00:52]   ok       precos_referencia max_ano=2025
+[ORQ 05:00:53]   ok       sazonalidade_preco max_ano=2025
+[ORQ 05:00:53]   ok       emendas        max_ano=2025
+[ORQ 05:00:54]   ok       emendas_exec   max_ano=2026
+[ORQ 05:00:55]   ok       programa_beneficiario max_ano=2025
+[ORQ 05:00:55]   ok       programas_federais max_ano=2025
+[ORQ 05:00:56]   ok       suas           max_ano=2025
+[ORQ 05:00:56]   ok       assistencia_social max_ano=2025
+[ORQ 05:00:58]   ok       equipamentos_suas max_ano=0
+[ORQ 05:00:59]   ok       equipamentos_endereco max_ano=0
+[ORQ 05:01:01]   ok       equipamentos_geo max_ano=0
+[ORQ 05:01:03]   RODA     equipamentos_cep max_ano=0
+[ORQ 05:01:04]   ok       equipamentos_justica max_ano=0
+[ORQ 05:01:05]   ok       precatorios    max_ano=2025
+[ORQ 05:01:05]   ok       saneamento     max_ano=2025
+[ORQ 05:01:06]   RODA     agropecuaria   max_ano=2025
+[ORQ 05:01:07]   RODA     caf            max_ano=2025
+[ORQ 05:01:07]   RODA     car            max_ano=2025
+[ORQ 05:01:08]   RODA     pronaf         max_ano=2025
+[ORQ 05:01:09]   ok       snis           max_ano=2025
+[ORQ 05:01:09]   ok       transferencias_stn max_ano=2025
+[ORQ 05:01:10]   ok       sancoes        max_ano=2025
+[ORQ 05:01:11]   ok       munic          max_ano=2025
+[ORQ 05:01:11]   ok       acompanhamento max_ano=2025
+[ORQ 05:01:12]   ok       acompanhamento_funcao max_ano=2025
+[ORQ 05:01:12]   ok       msc_despesa    max_ano=2025
+[ORQ 05:01:13]   ok       precos_compras max_ano=2025
+[ORQ 05:01:14]   ok       variacao_interna max_ano=2025
+[ORQ 05:01:14]   ok       red_flags      max_ano=2025
+[ORQ 05:01:15]   ok       mcmv           max_ano=2025
+[ORQ 05:01:16]   ok       cmed           max_ano=2025
+[ORQ 05:01:16]   ok       sobrepreco_med max_ano=2025
+[ORQ 05:01:17]   ok       convenios      max_ano=2025
+[ORQ 05:01:17] → 5 fonte(s) a coletar: equipamentos_cep, agropecuaria, caf, car, pronaf
+[ORQ 05:01:17] ▶ equipamentos_cep (tentativa 1/5)
+[ORQ 05:01:17] ▶ agropecuaria (tentativa 1/5)
+[ORQ 05:01:17] ▶ caf (tentativa 1/5)
+[ORQ 05:01:17] ▶ car (tentativa 1/5)
+[ORQ 05:01:17] ▶ pronaf (tentativa 1/5)
+[ORQ 05:01:20] ✔ equipamentos_cep: ok
+[ORQ 05:02:13] ✔ caf: ok
+[ORQ 05:02:18] ✔ agropecuaria: ok
+[ORQ 05:03:18] ✔ car: ok
+[ORQ 05:19:42] ✔ pronaf: ok
+[ORQ 05:19:42] validando integridade…
+[ORQ 05:19:47] validando separação Estado×município…
+[ORQ 05:19:51] regenerando documentação…
+[ORQ 05:20:48] ciclo concluído.
+===== FIM 01/07/2026  2:20:48,81 ===== 
+ 
+===== INICIO 02/07/2026  2:00:01,69 (MODO=run) ===== 
+(node:21228) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[ORQ 05:00:16] MODO=run | ano fechado=2025 | corrente=2026
+[ORQ 05:00:16]   ok       financas       max_ano=2025
+[ORQ 05:00:17]   ok       metas          max_ano=2025
+[ORQ 05:00:18]   ok       desp_subfuncao max_ano=2025
+[ORQ 05:00:19]   ok       receitas_det   max_ano=2025
+[ORQ 05:00:19]   ok       rreo_const     max_ano=2025
+[ORQ 05:00:20]   ok       rgf            max_ano=2025
+[ORQ 05:00:21]   ok       rpps           max_ano=2025
+[ORQ 05:00:22]   ok       rpps_atuarial  max_ano=0
+[ORQ 05:00:24]   ok       rpps_crp       max_ano=0
+[ORQ 05:00:25]   ok       cadprev_full   max_ano=0
+[ORQ 05:00:27]   ok       crp_alertas    max_ano=0
+[ORQ 05:00:28]   ok       siops          max_ano=2025
+[ORQ 05:00:28]   ok       compras        max_ano=2026
+[ORQ 05:00:29]   ok       contratos      max_ano=2026
+[ORQ 05:00:30]   ok       pca            max_ano=0
+[ORQ 05:00:31]   ok       processos      max_ano=2025
+[ORQ 05:00:32]   ok       itens          max_ano=2025
+[ORQ 05:00:33]   ok       catalogo_govbr max_ano=0
+[ORQ 05:00:35]   ok       classificacao_itens max_ano=0
+[ORQ 05:00:35]   ok       indicadores    max_ano=2024
+[ORQ 05:00:36]   ok       geo_entes      max_ano=2025
+[ORQ 05:00:38]   ok       transferencias max_ano=0
+[ORQ 05:00:38]   ok       cnes           max_ano=2026
+[ORQ 05:00:39]   ok       sih            max_ano=2025
+[ORQ 05:00:39]   ok       sia            max_ano=2025
+[ORQ 05:00:41]   ok       previne        max_ano=0
+[ORQ 05:00:42]   ok       indigena       max_ano=0
+[ORQ 05:00:43]   ok       fns            max_ano=2026
+[ORQ 05:00:45]   ok       cnpj_loc       max_ano=0
+[ORQ 05:00:46]   ok       empenhos       max_ano=0
+[ORQ 05:00:48]   ok       atas           max_ano=0
+[ORQ 05:00:49]   ok       nf             max_ano=0
+[ORQ 05:00:50]   ok       iegm           max_ano=2025
+[ORQ 05:00:51]   ok       cauc           max_ano=0
+[ORQ 05:00:52]   ok       ideb           max_ano=2025
+[ORQ 05:00:52]   ok       censo          max_ano=2025
+[ORQ 05:00:53]   ok       programas_transferegov max_ano=2025
+[ORQ 05:00:54]   ok       programas_agil max_ano=2025
+[ORQ 05:00:54]   ok       fnde_simad     max_ano=2025
+[ORQ 05:00:55]   ok       escolas        max_ano=2025
+[ORQ 05:00:55]   ok       cnes_estab     max_ano=2025
+[ORQ 05:00:56]   ok       precos_referencia max_ano=2025
+[ORQ 05:00:56]   ok       sazonalidade_preco max_ano=2025
+[ORQ 05:00:57]   ok       emendas        max_ano=2025
+[ORQ 05:00:57]   ok       emendas_exec   max_ano=2026
+[ORQ 05:00:58]   ok       programa_beneficiario max_ano=2025
+[ORQ 05:00:58]   ok       programas_federais max_ano=2025
+[ORQ 05:00:59]   ok       suas           max_ano=2025
+[ORQ 05:00:59]   ok       assistencia_social max_ano=2025
+[ORQ 05:01:01]   ok       equipamentos_suas max_ano=0
+[ORQ 05:01:03]   ok       equipamentos_endereco max_ano=0
+[ORQ 05:01:04]   ok       equipamentos_geo max_ano=0
+[ORQ 05:01:06]   RODA     equipamentos_cep max_ano=0
+[ORQ 05:01:08]   ok       equipamentos_justica max_ano=0
+[ORQ 05:01:09]   ok       precatorios    max_ano=2025
+[ORQ 05:01:09]   ok       saneamento     max_ano=2025
+[ORQ 05:01:10]   ok       agropecuaria   max_ano=2025
+[ORQ 05:01:11]   ok       caf            max_ano=2025
+[ORQ 05:01:11]   ok       car            max_ano=2025
+[ORQ 05:01:12]   RODA     pronaf         max_ano=2025
+[ORQ 05:01:13]   RODA     bancada        max_ano=2025
+[ORQ 05:01:14]   ok       snis           max_ano=2025
+[ORQ 05:01:14]   ok       transferencias_stn max_ano=2025
+[ORQ 05:01:15]   ok       sancoes        max_ano=2025
+[ORQ 05:01:16]   ok       munic          max_ano=2025
+[ORQ 05:01:16]   ok       acompanhamento max_ano=2025
+[ORQ 05:01:17]   ok       acompanhamento_funcao max_ano=2025
+[ORQ 05:01:18]   ok       msc_despesa    max_ano=2025
+[ORQ 05:01:18]   ok       precos_compras max_ano=2025
+[ORQ 05:01:19]   ok       variacao_interna max_ano=2025
+[ORQ 05:01:20]   ok       red_flags      max_ano=2025
+[ORQ 05:01:21]   ok       mcmv           max_ano=2025
+[ORQ 05:01:21]   ok       cmed           max_ano=2025
+[ORQ 05:01:22]   ok       sobrepreco_med max_ano=2025
+[ORQ 05:01:22]   ok       convenios      max_ano=2025
+[ORQ 05:01:22] → 3 fonte(s) a coletar: equipamentos_cep, pronaf, bancada
+[ORQ 05:01:22] ▶ equipamentos_cep (tentativa 1/5)
+[ORQ 05:01:22] ▶ pronaf (tentativa 1/5)
+[ORQ 05:01:22] ▶ bancada (tentativa 1/5)
+[ORQ 05:01:25] ✔ equipamentos_cep: ok
+[ORQ 05:01:46] ✔ bancada: ok
+[ORQ 05:19:53] ✔ pronaf: ok
+[ORQ 05:19:53] validando integridade…
+[ORQ 05:19:58] validando separação Estado×município…
+[ORQ 05:20:03] regenerando documentação…
+[ORQ 05:21:07] ciclo concluído.
+===== FIM 02/07/2026  2:21:07,27 ===== 
+ 
+===== INICIO 02/07/2026 22:30:00,48 (MODO=run) ===== 
+(node:22076) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[ORQ 01:30:15] MODO=run | ano fechado=2025 | corrente=2026
+[ORQ 01:30:15]   ok       financas       max_ano=2025
+[ORQ 01:30:16]   ok       metas          max_ano=2025
+[ORQ 01:30:17]   ok       desp_subfuncao max_ano=2025
+[ORQ 01:30:17]   ok       receitas_det   max_ano=2025
+[ORQ 01:30:18]   ok       rreo_const     max_ano=2025
+[ORQ 01:30:19]   ok       rgf            max_ano=2025
+[ORQ 01:30:19]   ok       rpps           max_ano=2025
+[ORQ 01:30:21]   ok       rpps_atuarial  max_ano=0
+[ORQ 01:30:22]   RODA     pdde           max_ano=2024
+[ORQ 01:30:23]   ok       rpps_crp       max_ano=0
+[ORQ 01:30:25]   ok       cadprev_full   max_ano=0
+[ORQ 01:30:26]   ok       crp_alertas    max_ano=0
+[ORQ 01:30:27]   ok       siops          max_ano=2025
+[ORQ 01:30:27]   ok       compras        max_ano=2026
+[ORQ 01:30:28]   ok       contratos      max_ano=2026
+[ORQ 01:30:30]   ok       pca            max_ano=0
+[ORQ 01:30:30]   ok       processos      max_ano=2025
+[ORQ 01:30:31]   ok       itens          max_ano=2025
+[ORQ 01:30:32]   ok       catalogo_govbr max_ano=0
+[ORQ 01:30:34]   ok       classificacao_itens max_ano=0
+[ORQ 01:30:34]   ok       indicadores    max_ano=2024
+[ORQ 01:30:35]   ok       geo_entes      max_ano=2025
+[ORQ 01:30:37]   ok       transferencias max_ano=0
+[ORQ 01:30:37]   ok       cnes           max_ano=2026
+[ORQ 01:30:38]   ok       sih            max_ano=2025
+[ORQ 01:30:38]   ok       sia            max_ano=2025
+[ORQ 01:30:40]   ok       previne        max_ano=0
+[ORQ 01:30:41]   ok       indigena       max_ano=0
+[ORQ 01:30:42]   ok       fns            max_ano=2026
+[ORQ 01:30:43]   ok       cnpj_loc       max_ano=0
+[ORQ 01:30:45]   ok       empenhos       max_ano=0
+[ORQ 01:30:46]   ok       atas           max_ano=0
+[ORQ 01:30:48]   ok       nf             max_ano=0
+[ORQ 01:30:49]   ok       iegm           max_ano=2025
+[ORQ 01:30:50]   ok       cauc           max_ano=0
+[ORQ 01:30:51]   ok       ideb           max_ano=2025
+[ORQ 01:30:51]   ok       censo          max_ano=2025
+[ORQ 01:30:52]   ok       programas_transferegov max_ano=2025
+[ORQ 01:30:53]   ok       programas_agil max_ano=2025
+[ORQ 01:30:53]   ok       fnde_simad     max_ano=2025
+[ORQ 01:30:54]   ok       escolas        max_ano=2025
+[ORQ 01:30:54]   ok       cnes_estab     max_ano=2025
+[ORQ 01:30:55]   ok       precos_referencia max_ano=2025
+[ORQ 01:30:55]   ok       sazonalidade_preco max_ano=2025
+[ORQ 01:30:56]   ok       emendas        max_ano=2025
+[ORQ 01:30:56]   ok       emendas_exec   max_ano=2026
+[ORQ 01:30:57]   ok       siop_acoes     max_ano=2025
+[ORQ 01:30:57]   ok       programa_beneficiario max_ano=2025
+[ORQ 01:30:58]   ok       programas_federais max_ano=2025
+[ORQ 01:30:58]   ok       suas           max_ano=2025
+[ORQ 01:30:59]   ok       assistencia_social max_ano=2025
+[ORQ 01:31:01]   ok       equipamentos_suas max_ano=0
+[ORQ 01:31:02]   ok       equipamentos_endereco max_ano=0
+[ORQ 01:31:04]   ok       equipamentos_geo max_ano=0
+[ORQ 01:31:06]   RODA     equipamentos_cep max_ano=0
+[ORQ 01:31:08]   ok       equipamentos_justica max_ano=0
+[ORQ 01:31:08]   ok       precatorios    max_ano=2025
+[ORQ 01:31:09]   ok       saneamento     max_ano=2025
+[ORQ 01:31:10]   ok       agropecuaria   max_ano=2025
+[ORQ 01:31:10]   ok       caf            max_ano=2025
+[ORQ 01:31:11]   ok       car            max_ano=2025
+[ORQ 01:31:12]   RODA     pronaf         max_ano=2025
+[ORQ 01:31:13]   ok       bancada        max_ano=2025
+[ORQ 01:31:13]   ok       snis           max_ano=2025
+[ORQ 01:31:14]   ok       transferencias_stn max_ano=2025
+[ORQ 01:31:15]   ok       sancoes        max_ano=2025
+[ORQ 01:31:15]   ok       munic          max_ano=2025
+[ORQ 01:31:16]   ok       acompanhamento max_ano=2025
+[ORQ 01:31:17]   ok       acompanhamento_funcao max_ano=2025
+[ORQ 01:31:17]   ok       msc_despesa    max_ano=2025
+[ORQ 01:31:18]   ok       precos_compras max_ano=2025
+[ORQ 01:31:19]   ok       variacao_interna max_ano=2025
+[ORQ 01:31:19]   ok       red_flags      max_ano=2025
+[ORQ 01:31:20]   ok       mcmv           max_ano=2025
+[ORQ 01:31:21]   ok       cmed           max_ano=2025
+[ORQ 01:31:22]   ok       sobrepreco_med max_ano=2025
+[ORQ 01:31:22]   ok       convenios      max_ano=2025
+[ORQ 01:31:22] → 3 fonte(s) a coletar: pdde, equipamentos_cep, pronaf
+[ORQ 01:31:22] ▶ pdde (tentativa 1/5)
+[ORQ 01:31:22] ▶ equipamentos_cep (tentativa 1/5)
+[ORQ 01:31:22] ▶ pronaf (tentativa 1/5)
+[ORQ 01:31:25] ✔ equipamentos_cep: ok
+[ORQ 01:35:23] ✔ pdde: ok
+[ORQ 01:49:46] ✔ pronaf: ok
+[ORQ 01:49:46] validando integridade…
+[ORQ 01:49:52] validando separação Estado×município…
+[ORQ 01:49:56] varredura de frescor (série histórica + última competência)…
+[ORQ 01:50:09] motor de notificações (delta — avisa o que mudou)…
+[ORQ 01:50:12] carteiro de notificações (envia se houver SMTP; simula caso contrário)…
+[ORQ 01:50:14] carteiro WhatsApp (envia se houver Cloud API; simula caso contrário)…
+[ORQ 01:50:16] regenerando documentação…
+[ORQ 01:51:26] ciclo concluído.
+===== FIM 02/07/2026 22:51:26,28 ===== 

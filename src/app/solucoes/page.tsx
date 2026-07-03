@@ -1,5 +1,5 @@
-// Apresentação executiva — "As melhores soluções do PNIGP". Para apresentação interna (discreta, noindex).
-export const metadata = { title: "PNIGP — Soluções", robots: { index: false, follow: false } };
+// Apresentação executiva — "As melhores soluções do i10 Gov 360". Para apresentação interna (discreta, noindex).
+export const metadata = { title: "i10 Gov 360 — Soluções", robots: { index: false, follow: false } };
 export const dynamic = "force-static";
 
 function Sec({ n, titulo, children }: { n: string; titulo: string; children: React.ReactNode }) {
@@ -25,13 +25,13 @@ export default function SolucoesPage() {
     <div className="min-h-screen bg-slate-50 py-10">
       <div className="mx-auto max-w-4xl px-5">
         <header className="rounded-2xl bg-gradient-to-br from-teal-600 to-teal-800 p-7 text-white">
-          <div className="text-xs font-semibold uppercase tracking-wider text-teal-200">Instituto I10 · Plataforma PNIGP</div>
+          <div className="text-xs font-semibold uppercase tracking-wider text-teal-200">Instituto I10 · i10 Gov 360</div>
           <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">As melhores soluções em inteligência de gestão pública</h1>
           <p className="mt-2 text-sm text-teal-50">Uma plataforma que transforma o dado público disperso em <b>decisão de gestão</b> — integrada, pedagógica, metodologicamente rigorosa e neutra. Santa Catarina (295 municípios + Estado), pronta para escalar a qualquer UF.</p>
         </header>
 
         <Sec n="01" titulo="O problema que resolvemos">
-          <p className="text-[15px] text-slate-700">O gestor público tem dados espalhados em dezenas de sistemas (SICONFI, PNCP, INEP, FNS, TCE…), em linguagem técnica, sem conexão entre si. Resultado: decide no escuro, descumpre limites sem perceber e deixa recursos na mesa. <b>O PNIGP reúne, cruza e explica</b> — do estratégico ao operacional.</p>
+          <p className="text-[15px] text-slate-700">O gestor público tem dados espalhados em dezenas de sistemas (SICONFI, PNCP, INEP, FNS, TCE…), em linguagem técnica, sem conexão entre si. Resultado: decide no escuro, descumpre limites sem perceber e deixa recursos na mesa. <b>O i10 Gov 360 reúne, cruza e explica</b> — do estratégico ao operacional.</p>
         </Sec>
 
         <Sec n="02" titulo="As soluções — e o que as torna as melhores">
@@ -100,7 +100,7 @@ export default function SolucoesPage() {
           <p className="mt-3 rounded-xl border border-teal-200 bg-teal-50/50 p-3 text-[13px] text-slate-700"><b>A tese:</b> nosso diferencial não é ter o dado — é <b>enxergar a conexão que o dado integrado permite</b> e entregar a <b>decisão</b> que ninguém mais entrega. Inovar = atender o que o cliente precisa e hoje não tem.</p>
         </Sec>
 
-        <p className="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-400">PNIGP · Instituto I10 · documento de apresentação. Fontes oficiais e dados abertos. Exibição neutra, sem viés político-partidário.</p>
+        <p className="mt-10 border-t border-slate-200 pt-4 text-xs text-slate-400">i10 Gov 360 · Instituto I10 · documento de apresentação. Fontes oficiais e dados abertos. Exibição neutra, sem viés político-partidário.</p>
       </div>
     </div>
   );

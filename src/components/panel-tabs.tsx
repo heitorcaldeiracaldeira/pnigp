@@ -49,6 +49,7 @@ export function PanelTabs({
           {grupos.map((g) => (
             <button
               key={g}
+              role="tab"
               onClick={() => abrirGrupo(g)}
               aria-selected={g === grupo}
               className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 ${

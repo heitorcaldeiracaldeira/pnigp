@@ -1,3 +1,5 @@
+"use client";
+
 import type { PerfilSaudeSC } from "@/lib/queries";
 
 // Perfil da rede de saúde — estrutura por nível de atenção, público×privado e cobertura per capita. Tom neutro/didático.

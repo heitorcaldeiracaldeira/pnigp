@@ -3,6 +3,7 @@
 import { Fragment, useState } from "react";
 import { ChevronDown, ChevronRight, ShieldAlert, ShoppingCart } from "lucide-react";
 import { ComprasRiscos } from "@/components/compras-riscos";
+import { GlossarioStrip } from "@/components/termo";
 import { analisarRiscosCompras, fornecedorConcentrado, riscoContratacao, type NivelContrato, type RiscoContrato } from "@/lib/compras-risco";
 import { fornecedoresDoProcesso, itensDoContrato } from "@/lib/contratacao-detalhe";
 import type { Compras, Contratacao } from "@/lib/queries";
@@ -84,7 +85,7 @@ export function ComprasPanel({
       {/* Filtro por modalidade */}
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="mr-1 flex items-center gap-1 text-xs text-slate-500">
-          <ShoppingCart className="h-3.5 w-3.5" /> Modalidade:
+          <ShoppingCart aria-hidden className="h-3.5 w-3.5" /> Modalidade:
         </span>
         {chip("todas", "Todas")}
         {modalidades.map((m) => chip(m, m))}
@@ -118,7 +119,7 @@ export function ComprasPanel({
                         aria-expanded={open}
                         className="flex items-start gap-1.5 text-left transition hover:text-teal-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
                       >
-                        {open ? <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" /> : <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />}
+                        {open ? <ChevronDown aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" /> : <ChevronRight aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />}
                         <span>
                           <span className="font-medium text-slate-800">{c.objeto}</span>
                           <span className="block text-xs text-slate-500">{c.numero} · {c.fornecedor} · {c.data}</span>
@@ -177,7 +178,7 @@ export function ComprasPanel({
                 aria-expanded={open}
                 className="flex w-full items-start gap-2 p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
               >
-                {open ? <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" /> : <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />}
+                {open ? <ChevronDown aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" /> : <ChevronRight aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />}
                 <div className="min-w-0 flex-1">
                   <div className="font-medium text-slate-800">{c.objeto}</div>
                   <div className="text-xs text-slate-500">{c.numero} · {c.fornecedor}</div>
@@ -228,7 +229,7 @@ function DetalheContrato({ contrato, risco }: { contrato: Contratacao; risco: Ri
       {/* Análise de risco do processo (TCU) */}
       <div className="rounded-lg border border-slate-200 bg-white p-3">
         <div className="mb-1.5 flex items-center gap-2">
-          <ShieldAlert className="h-4 w-4 text-slate-500" />
+          <ShieldAlert aria-hidden className="h-4 w-4 text-slate-500" />
           <h4 className="text-sm font-semibold text-slate-700">Análise de risco do processo</h4>
           <span className={`inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold ${rm.txt}`}>
             <span className={`h-2 w-2 rounded-full ${rm.dot}`} /> Risco {rm.label.toLowerCase()}
@@ -358,6 +359,8 @@ function DetalheContrato({ contrato, risco }: { contrato: Contratacao; risco: Ri
       <p className="text-[11px] text-slate-400">
         Empenhos e pagamentos <b>não são publicados no PNCP</b> — por isso não são exibidos aqui. A execução orçamentária (empenhado/pago) fica no sistema próprio de cada ente e é consolidada no SICONFI e nos portais de transparência/TCE.
       </p>
+
+      <GlossarioStrip ks={["PNCP", "CATMAT"]} />
     </div>
   );
 }

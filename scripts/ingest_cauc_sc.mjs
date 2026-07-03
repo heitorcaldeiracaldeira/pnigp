@@ -14,6 +14,15 @@ const URLS = {
 const GRUPO = { "1": "Regularidade tributária federal (Receita/PGFN/FGTS)", "2": "Regularidade previdenciária", "3": "Envio de contas e relatórios fiscais (RREO/RGF/SICONFI)", "4": "Aplicação mínima (saúde/educação)", "5": "Dívida e demais requisitos" };
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 const splitCsv = (l) => l.split(";").map((x) => x.replace(/^"|"$/g, "").trim());
+// célula do extrato → {status, validade}: data = "comprovado" (válido até); "!" = "pendente" (não comprovado);
+// "Desabilitado" = item não se aplica na data. (semântica oficial — Metadados CAUC)
+const parseCelula = (v) => {
+  if (v === "!") return { status: "pendente", validade: null };
+  if (/desabilit/i.test(v || "")) return { status: "desabilitado", validade: null };
+  const m = /^(\d{2})\/(\d{2})\/(\d{2,4})$/.exec(v || "");
+  if (m) { const y = m[3].length === 2 ? "20" + m[3] : m[3]; return { status: "comprovado", validade: `${y}-${m[2]}-${m[1]}` }; }
+  return { status: "outro", validade: null };
+};
 
 async function baixar(url) {
   for (let t = 0; t < 4; t++) { try { const r = await fetch(url, { signal: AbortSignal.timeout(90000) }); if (!r.ok) throw 0; return new TextDecoder("latin1").decode(await r.arrayBuffer()); } catch { await sleep(2000 * (t + 1)); } }
@@ -26,6 +35,9 @@ async function main() {
   await db.query(`CREATE TABLE IF NOT EXISTS cauc_sc (
     cod_ibge TEXT PRIMARY KEY, data_pesquisa DATE, apto BOOLEAN, n_pendencias INTEGER,
     pendencias TEXT[], grupos_pendentes TEXT[], atualizado timestamptz DEFAULT now() )`);
+  await db.query(`CREATE TABLE IF NOT EXISTS cauc_detalhe_sc (
+    cod_ibge TEXT, codigo TEXT, status TEXT, validade DATE, atualizado timestamptz DEFAULT now(),
+    PRIMARY KEY (cod_ibge, codigo) )`); // extrato item a item (28 requisitos)
   const q = async (s, p) => { for (let t = 0; t < 6; t++) { try { return await db.query(s, p); } catch { await sleep(1000 * (t + 1)); } } throw new Error("db"); };
   const cod6 = new Map((await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M'`)).rows.map((r) => [r.cod_ibge.slice(0, 6), r.cod_ibge]));
 
@@ -51,6 +63,16 @@ async function main() {
       await q(`INSERT INTO cauc_sc (cod_ibge,data_pesquisa,apto,n_pendencias,pendencias,grupos_pendentes) VALUES ($1,$2,$3,$4,$5,$6)
                ON CONFLICT (cod_ibge) DO UPDATE SET data_pesquisa=EXCLUDED.data_pesquisa,apto=EXCLUDED.apto,n_pendencias=EXCLUDED.n_pendencias,pendencias=EXCLUDED.pendencias,grupos_pendentes=EXCLUDED.grupos_pendentes,atualizado=now()`,
         [cod, dataPesq, pend.length === 0, pend.length, pend, grupos]);
+      // extrato completo item a item
+      const detVals = [], detPh = [];
+      codCols.forEach((cc, k) => {
+        const { status, validade } = parseCelula(c[cc.i]);
+        const b = k * 4;
+        detPh.push(`($${b + 1},$${b + 2},$${b + 3},$${b + 4})`);
+        detVals.push(cod, cc.code, status, validade);
+      });
+      await q(`INSERT INTO cauc_detalhe_sc (cod_ibge,codigo,status,validade) VALUES ${detPh.join(",")}
+               ON CONFLICT (cod_ibge,codigo) DO UPDATE SET status=EXCLUDED.status, validade=EXCLUDED.validade, atualizado=now()`, detVals);
       total++;
     }
     console.log(`${esfera}: ${total} entes SC gravados (acum.)`);

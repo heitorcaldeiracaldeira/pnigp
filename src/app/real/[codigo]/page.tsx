@@ -3,7 +3,12 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, ClipboardList, Database, FileText, Landmark, Target, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { AssuntoCaptacao } from "@/components/assunto-captacao";
+import { LacunaCaptacaoEducacao, LacunaCaptacaoSaude, LacunaCaptacaoAssistencia } from "@/components/lacuna-captacao";
+import { CatalogoProgramas } from "@/components/catalogo-programas";
+import { MunicGestao } from "@/components/munic-gestao";
 import { EmendasCard } from "@/components/emendas-card";
+import { CaptacaoEmendas } from "@/components/captacao-emendas";
+import { EstaduaisEmendas } from "@/components/estaduais-emendas";
 import { ConveniosCard } from "@/components/convenios-card";
 import { Donut } from "@/components/charts/donut";
 import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
@@ -15,10 +20,17 @@ import { ComprasCategorias } from "@/components/compras-categorias";
 import { SazonalidadePreco } from "@/components/sazonalidade-preco";
 import { PesquisaPreco } from "@/components/pesquisa-preco";
 import { FornecedoresCard } from "@/components/fornecedores-card";
+import { FornecedoresSancionados } from "@/components/fornecedores-sancionados";
+import { SobreprecoCompras } from "@/components/sobrepreco-compras";
+import { VariacaoInterna } from "@/components/variacao-interna";
+import { RedFlagsFornecedores } from "@/components/red-flags-fornecedores";
 import { ComprasExtraCard } from "@/components/compras-extra";
 import { ResumoCompras } from "@/components/resumo-compras";
 import { DiagnosticoGestor } from "@/components/diagnostico-gestor";
-import { AuditoriaSC } from "@/components/auditoria-sc";
+import { AuditoriaLazy } from "@/components/auditoria-lazy";
+import { EstabSaudeLazy } from "@/components/estab-saude-lazy";
+import { CmedConsulta } from "@/components/cmed-consulta";
+import { SobreprecoMedicamentos } from "@/components/sobrepreco-medicamentos";
 import { SimuladorFiscal } from "@/components/simulador-fiscal";
 import { SaudeSC } from "@/components/saude-sc";
 import { AssuntoAtencaoPrimaria } from "@/components/assunto-atencao-primaria";
@@ -42,12 +54,26 @@ import { EficienciaEducacao } from "@/components/eficiencia-educacao";
 import { EficienciaSaude } from "@/components/eficiencia-saude";
 import { CatalogoBoasPraticas } from "@/components/catalogo-boas-praticas";
 import { EscolasDrill } from "@/components/escolas-drill";
-import { EstabSaudeDrill } from "@/components/estab-saude-drill";
-import { PerfilSaude } from "@/components/perfil-saude";
 import { PerfilEducacao } from "@/components/perfil-educacao";
 import { CensoTendencias } from "@/components/censo-tendencias";
 import { SerieExplicada } from "@/components/serie-explicada";
 import { PlacarEstrategico } from "@/components/placar-estrategico";
+import { CentralAlertas } from "@/components/central-alertas";
+import { RadarCrpSC } from "@/components/radar-crp-sc";
+import { CrpHistorico } from "@/components/crp-historico";
+import { AssistenciaSocialSC } from "@/components/assistencia-social-sc";
+import { EquipamentosSuasDrill } from "@/components/equipamentos-suas-drill";
+import { GeolocalizacaoLazy } from "@/components/geolocalizacao-lazy";
+import { InfraestruturaSC } from "@/components/infraestrutura-sc";
+import { Agropecuaria } from "@/components/agropecuaria-sc";
+import { ViesPrevisao } from "@/components/vies-previsao";
+import { RepassesStn } from "@/components/repasses-stn";
+import { PecaCompleta } from "@/components/peca-completa";
+import { PpaPrograma } from "@/components/ppa-programa";
+import { Acompanhamento } from "@/components/acompanhamento";
+import { AcompanhamentoFuncao } from "@/components/acompanhamento-funcao";
+import { MscDespesa } from "@/components/msc-despesa";
+import { MinutaLoa } from "@/components/minuta-loa";
 import { CabecalhoArea } from "@/components/cabecalho-area";
 import { EducacaoSC } from "@/components/educacao-sc";
 import { CruzamentosSC } from "@/components/cruzamentos-sc";
@@ -57,6 +83,9 @@ import { ComprasDestinosSCView } from "@/components/compras-destinos-sc";
 import { FolhaSC } from "@/components/folha-sc";
 import { PrevidenciaSC } from "@/components/previdencia-sc";
 import { CaucSCView } from "@/components/cauc-sc";
+import { AlertasNotificacao } from "@/components/alertas-notificacao";
+import { CadastroServidor } from "@/components/cadastro-servidor";
+import { CalendarioObrigacoes } from "@/components/calendario-obrigacoes";
 import { gerarInsightsSC } from "@/lib/insights-sc";
 import { ArvoreFinanceira } from "@/components/arvore-financeira";
 import type { NoFin } from "@/lib/orcamento";
@@ -64,38 +93,30 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getAnaliseComprasItensSC, getSazonalidadePrecoSC, getFornecedoresSC, getComprasExtraSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getEmendasSC, getConveniosSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPerfilSaudeSC, getCensoTendenciaSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC, getComprasCategoriasSC, getPerfilNecessidadeSC, getProgramasFederaisSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getAnaliseComprasItensSC, getSazonalidadePrecoSC, getFornecedoresSC, getComprasExtraSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getEmendasSC, getConveniosSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPerfilSaudeSC, getCensoTendenciaSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC, getComprasCategoriasSC, getPerfilNecessidadeSC, getProgramasFederaisSC, getRadarCrpSC, getCrpHistoricoSC, getAssistenciaSocialSC, getEquipamentosSuasSC, getPrecatoriosSC, getSaneamentoSC, getViesPrevisaoSC, getMacroindicadoresSC, getViesDespesaSC, getProjecaoReceitaSC, getTransferenciasStnSC, getPecaCompletaSC, getPpaProgramaSC, getAcompanhamentoSC, getAcompanhamentoFuncaoSC, getMscDespesaSC, getFornecedoresSancionadosSC, getSobreprecoSC, getVariacaoInternaSC, getMunicSC, getRedFlagsSC, getAlertasSC, getCatalogoProgramasSC, getSobreprecoMedicamentosSC, getAgropecuariaSC, getCaptacaoEmendasSC, getCadernoProgramasSC, getEmendasEstaduaisSC, getEmendasEstObjetosSC, getLacunaCaptacaoEducacaoSC, getLacunaCaptacaoSaudeSC, getLacunaCaptacaoAssistenciaSC, getCatalogoExtracao, getSiopsSerieSC, getConveniosRiscoSC, getNotificacaoResumoSC } from "@/lib/queries";
+import { PainelImpacto } from "@/components/painel-impacto";
+import { ResolverAlertas } from "@/components/resolver-alertas";
+import { BoletimGestao } from "@/components/boletim-gestao";
+import { Carimbo, CarimboFontes } from "@/components/carimbo";
+import { BaixarCsv } from "@/components/baixar-csv";
+import { PlanoEvolucaoI10, EstudoComprasI10, type FrenteI10 } from "@/components/plano-evolucao-i10";
+import { planosAusentes } from "@/lib/planos-ausentes";
+import { ProjetosElegiveis } from "@/components/projetos-elegiveis";
 import { fmtBRL, fmtBRLCompact, fmtPop, fmtData } from "@/lib/ui";
 
-export const metadata = { title: "PNIGP — Santa Catarina (dados oficiais SICONFI)" };
+export const metadata = { title: "i10 Gov 360 — Santa Catarina (dados oficiais SICONFI)" };
 export const dynamic = "force-dynamic";
 
 export default async function RealEntePage({ params }: { params: Promise<{ codigo: string }> }) {
   const { codigo } = await params;
   const [dados, entes, contratosResumo, pcaResumo, metasFiscais, rankingFiscal, pibPerCapita, indicadores, serieRenda, diagnostico, rgfResumo, saude, educacao, cruz, diagEstado, previne, fns, rpps, cauc, padroesCompras, contratosItens, economicidade, contratosVenc, atas, ideb, censoMatricula] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo), getMetasFiscaisSC(codigo), getRankingFiscalSC(), getPibPerCapitaSC(codigo), getIndicadoresSetoriaisSC(codigo), getSeriesIndicadoresSC(codigo), getDiagnosticoGestorSC(codigo), getRgfResumoSC(codigo), getSaudeSC(codigo), getEducacaoSC(codigo), getCruzamentosSC(codigo), getDiagnosticoEstadoSC(codigo), getPrevineSC(codigo), getFnsSC(codigo), getRppsSC(codigo), getCaucSC(codigo), getPadroesComprasSC(codigo), getContratosComItensSC(codigo), getEconomicidadeSC(codigo), getContratosVencimentoSC(codigo), getAtasSC(codigo), getIdebSC(codigo), getCensoMatriculaSC(codigo)]);
-  const previneFicha = await getPrevineFichaSC(codigo);
-  const fnsSerie = await getFnsSerieSC(codigo);
-  const repassesSaude = await getRepassesSaudeFichaSC(codigo);
-  const macProducao = await getMacProducaoSC(codigo);
-  const receitasDetalhe = await getReceitasDetalheSC(codigo);
-  const despSubfuncao = await getDespesaSubfuncaoSC(codigo);
-  const educacaoSerie = await getEducacaoSerieSC(codigo);
-  const iegmDados = await getIegmSC(codigo);
-  const captacao = await getCaptacaoTransferegovSC(codigo);
-  const emendas = await getEmendasSC(codigo);
-  const convenios = await getConveniosSC(codigo);
-  const fndeEdu = await getFndeEducacaoSC(codigo);
-  const otimReceita = await getOtimizadorReceitaSC(codigo);
-  const eficEdu = await getEficienciaEducacaoSC(codigo);
-  const eficSaude = await getEficienciaSaudeSC(codigo);
-  const escolas = await getEscolasSC(codigo);
-  const analiseItens = await getAnaliseComprasItensSC(codigo);
-  const comprasCategorias = await getComprasCategoriasSC(codigo);
-  const necessidade = await getPerfilNecessidadeSC(codigo);
-  const programasFederais = await getProgramasFederaisSC();
-  const sazPreco = await getSazonalidadePrecoSC();
-  const fornec = await getFornecedoresSC(codigo);
-  const comprasExtra = await getComprasExtraSC(codigo);
+  const [previneFicha, fnsSerie, repassesSaude, macProducao, receitasDetalhe, despSubfuncao, educacaoSerie, iegmDados, captacao, munic, emendas, convenios, fndeEdu, otimReceita, eficEdu, sobreMed, siopsSerie, conveniosRisco] = await Promise.all([
+    getPrevineFichaSC(codigo), getFnsSerieSC(codigo), getRepassesSaudeFichaSC(codigo), getMacProducaoSC(codigo), getReceitasDetalheSC(codigo), getDespesaSubfuncaoSC(codigo), getEducacaoSerieSC(codigo), getIegmSC(codigo), getCaptacaoTransferegovSC(codigo), getMunicSC(codigo), getEmendasSC(codigo), getConveniosSC(codigo), getFndeEducacaoSC(codigo), getOtimizadorReceitaSC(codigo), getEficienciaEducacaoSC(codigo), getSobreprecoMedicamentosSC(codigo), getSiopsSerieSC(codigo), getConveniosRiscoSC(codigo)]);
+  const [eficSaude, escolas, analiseItens, comprasCategorias, necessidade, alertas, assistSocial, equipSuas, precatorios, saneamento, viesPrev, macroLDO, viesDesp, projReceita, notifResumo] = await Promise.all([
+    getEficienciaSaudeSC(codigo), getEscolasSC(codigo), getAnaliseComprasItensSC(codigo), getComprasCategoriasSC(codigo), getPerfilNecessidadeSC(codigo), getAlertasSC(codigo), getAssistenciaSocialSC(codigo), getEquipamentosSuasSC(codigo), getPrecatoriosSC(codigo), getSaneamentoSC(codigo), getViesPrevisaoSC(codigo), getMacroindicadoresSC(codigo), getViesDespesaSC(codigo), getProjecaoReceitaSC(codigo), getNotificacaoResumoSC(codigo)]);
+  const [agropec, captacaoEmendas, cadernoProgramas, emendasEstaduais, emendasEstObjetos, lacunaEdu, lacunaSaude, lacunaAssist, extracao] = await Promise.all([getAgropecuariaSC(codigo), getCaptacaoEmendasSC(codigo), getCadernoProgramasSC(codigo), getEmendasEstaduaisSC(codigo), getEmendasEstObjetosSC(), getLacunaCaptacaoEducacaoSC(codigo), getLacunaCaptacaoSaudeSC(codigo), getLacunaCaptacaoAssistenciaSC(codigo), getCatalogoExtracao()]);
+  const [repassesStn, pecaCompleta, ppaPrograma, mscDespesa, fornecSancionados, sobrepreco, variacaoInterna, redFlags, acompanhamento, acompFuncao, programasFederais, catalogoProgramas, sazPreco, fornec, comprasExtra] = await Promise.all([
+    getTransferenciasStnSC(codigo), getPecaCompletaSC(codigo), getPpaProgramaSC(codigo), getMscDespesaSC(codigo), getFornecedoresSancionadosSC(codigo), getSobreprecoSC(codigo), getVariacaoInternaSC(codigo), getRedFlagsSC(codigo), getAcompanhamentoSC(codigo), getAcompanhamentoFuncaoSC(codigo), getProgramasFederaisSC(), getCatalogoProgramasSC(), getSazonalidadePrecoSC(), getFornecedoresSC(codigo), getComprasExtraSC(codigo)]);
   const estabSaude = await getEstabSaudeSC(codigo);
   const perfilSaude = await getPerfilSaudeSC(codigo);
   const perfilEdu = await getPerfilEducacaoSC(codigo);
@@ -109,6 +130,9 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const medianaInvestSC = investOrd.length ? investOrd[Math.floor(investOrd.length / 2)] : 0;
 
   const { ente, serie, funcoesLatest, receitasLatest } = dados;
+  // Bloqueio: a visão própria do ESTADO ainda não existe (é meio-municipal). Só municípios (tipo 'M') renderizam.
+  // Reabrir quando houver a comparação Estado×Estado (agregação de mais UFs). Ver memória feedback-estado-municipio-separados.
+  if (ente.tipo !== "M") notFound();
   const a = serie[serie.length - 1];
   const anterior = serie[serie.length - 2] ?? null;
   const resultado = a.receita - a.despesa;
@@ -118,7 +142,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const anoIni = serie[0].ano;
   const anoFim = a.ano;
 
-  const options = entes.map((e) => ({ value: e.cod_ibge, label: e.tipo === "E" ? `★ ${e.nome}` : e.nome }));
+  const options = entes.filter((e) => e.tipo === "M").map((e) => ({ value: e.cod_ibge, label: e.nome })); // só municípios no seletor (Estado bloqueado até visão própria)
   const receitaData = [
     { label: "Receita tributária (própria)", valor: a.tributaria },
     { label: "Transferências", valor: a.transferencias },
@@ -138,11 +162,12 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       label: "Visão geral",
       content: (
         <>
+          <CentralAlertas alertas={alertas} nome={ente.nome} />
           {minhaPos && (
             <div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 to-emerald-50 p-5">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-teal-700"><Target className="h-4 w-4" /> Índice Fiscal PNIGP <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] text-slate-500">real · finanças SICONFI</span></div>
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-teal-700"><Target className="h-4 w-4" /> Índice Fiscal i10 Gov 360 <span className="rounded-full bg-white/70 px-2 py-0.5 text-[10px] text-slate-500">real · finanças SICONFI</span></div>
                   <div className="mt-1 font-display text-4xl font-bold tracking-tight text-slate-900">{minhaPos.score.toFixed(1)}<span className="text-lg font-semibold text-slate-400"> /100</span></div>
                   <div className="text-xs text-slate-600"><strong className="text-teal-700">{minhaPos.posicao}º</strong> de {totalRank} entes de SC · gestão fiscal</div>
                 </div>
@@ -153,6 +178,24 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
                   <div className="flex justify-between gap-3"><span>Peso de pessoal</span><strong className="tabular-nums text-slate-800">{minhaPos.pessoal.toFixed(0)}%</strong></div>
                 </div>
               </div>
+              <details className="mt-3 border-t border-teal-200/60 pt-2 text-[11px] text-slate-600">
+                <summary className="cursor-pointer select-none font-semibold text-teal-800">Ver cálculo do índice</summary>
+                <p className="mt-1 text-slate-500">O índice é a <b>média dos percentis</b> (0–100) de 4 dimensões, comparando o município aos demais de SC. <a href="#metodologia-indice" className="font-medium text-indigo-600 hover:underline">metodologia completa →</a></p>
+                <div className="mt-2 overflow-hidden rounded-lg border border-slate-200 bg-white">
+                  <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 border-b border-slate-100 bg-slate-50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500"><span>Dimensão</span><span className="text-right">Valor do ente</span><span className="text-right">Percentil</span></div>
+                  {[
+                    { d: "Autonomia (tributária/receita)", v: `${minhaPos.autonomia.toFixed(0)}%`, p: minhaPos.pctAutonomia },
+                    { d: "Investimento (invest./despesa)", v: `${minhaPos.investimento.toFixed(0)}%`, p: minhaPos.pctInvestimento },
+                    { d: "Equilíbrio (resultado/receita)", v: `${minhaPos.equilibrio.toFixed(1)}%`, p: minhaPos.pctEquilibrio },
+                    { d: "Pessoal (pessoal/receita · invertido)", v: `${minhaPos.pessoal.toFixed(0)}%`, p: minhaPos.pctPessoal },
+                  ].map((r) => (
+                    <div key={r.d} className="grid grid-cols-[1fr_auto_auto] gap-x-4 border-b border-slate-100 px-3 py-1 tabular-nums"><span className="text-slate-600">{r.d}</span><span className="text-right text-slate-500">{r.v}</span><strong className="text-right text-slate-800">{r.p.toFixed(1)}</strong></div>
+                  ))}
+                  <div className="grid grid-cols-[1fr_auto] gap-x-4 bg-teal-50/50 px-3 py-1 tabular-nums"><span className="font-semibold text-teal-800">Índice = média dos 4 percentis</span><strong className="text-right text-teal-800">{minhaPos.score.toFixed(1)}</strong></div>
+                </div>
+                <p className="mt-1 text-[10px] text-slate-400">Percentil 100 = melhor posição em SC; 0 = pior. Pessoal é invertido (menor gasto → maior percentil). Fonte: SICONFI/RREO · exercício {a.ano}.</p>
+              </details>
+              <Carimbo className="mt-2" fonte="SICONFI · RREO (Tesouro Nacional)" competencia={`exercício ${a.ano}`} extraido={extracao.financas} />
             </div>
           )}
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -251,6 +294,18 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       label: "Finanças",
       content: (
         <>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <Carimbo fonte="SICONFI · RREO (Tesouro Nacional)" competencia={`série ${dados.serie[0]?.ano}–${a.ano}`} extraido={extracao.financas} />
+            <BaixarCsv nome={`serie-financeira-${ente.nome}`} label="Baixar série financeira (CSV)" linhas={dados.serie as unknown as Record<string, unknown>[]}
+              colunas={[
+                { chave: "ano", rotulo: "Ano" }, { chave: "receita", rotulo: "Receita" }, { chave: "receita_prevista", rotulo: "Receita prevista" },
+                { chave: "tributaria", rotulo: "Receita tributaria" }, { chave: "transferencias", rotulo: "Transferencias" }, { chave: "outras", rotulo: "Outras receitas" },
+                { chave: "despesa", rotulo: "Despesa" }, { chave: "resultado", rotulo: "Resultado orcamentario" }, { chave: "pessoal", rotulo: "Pessoal" },
+                { chave: "custeio", rotulo: "Custeio" }, { chave: "investimento", rotulo: "Investimento" }, { chave: "divida", rotulo: "Divida" },
+                { chave: "saude", rotulo: "Funcao Saude" }, { chave: "educacao", rotulo: "Funcao Educacao" }, { chave: "seguranca", rotulo: "Funcao Seguranca" },
+                { chave: "assistencia", rotulo: "Funcao Assistencia" }, { chave: "infraestrutura", rotulo: "Funcao Infraestrutura" }, { chave: "administracao", rotulo: "Funcao Administracao" },
+              ]} />
+          </div>
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <h3 className="font-semibold text-slate-800">De onde vem o dinheiro · {a.ano}</h3>
@@ -270,6 +325,45 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
               <OrcadoExecutado data={funcData} />
             </section>
           )}
+          {/* PRECATÓRIOS — estoque em R$ (API TJSC, regime especial) + regularidade do pagamento (CAUC 1.2). */}
+          {(precatorios || cauc?.itens.find((i) => i.codigo === "1.2")) && (() => {
+            const prec = cauc?.itens.find((i) => i.codigo === "1.2");
+            const meta = !prec ? null
+              : prec.status === "regular" ? { chip: "bg-emerald-100 text-emerald-700", txt: `Pagamento regular${prec.validade ? ` · até ${prec.validade}` : ""}` }
+              : prec.status === "vencido" ? { chip: "bg-rose-100 text-rose-700", txt: `Pagamento em atraso${prec.validade ? ` · venceu ${prec.validade}` : ""}` }
+              : prec.status === "pendente" ? { chip: "bg-amber-100 text-amber-700", txt: "Não comprovado (CAUC)" }
+              : { chip: "bg-slate-100 text-slate-500", txt: "Regularidade: N/A" };
+            const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+            return (
+              <section className="rounded-2xl border border-slate-200 bg-white p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="flex items-center gap-1.5 font-semibold text-slate-800">⚖️ Precatórios judiciais</h3>
+                  {meta && <span className={`rounded-full px-3 py-1 text-xs font-bold ${meta.chip}`}>{meta.txt}</span>}
+                </div>
+                {precatorios ? (
+                  <>
+                    <div className="mt-2 flex flex-wrap items-baseline gap-x-8 gap-y-1">
+                      <div><span className="text-2xl font-bold text-slate-800 tabular-nums">{brl(precatorios.valor)}</span> <span className="text-xs text-slate-500">estoque de precatórios</span></div>
+                      <div><span className="text-lg font-semibold text-slate-700 tabular-nums">{precatorios.qtde.toLocaleString("pt-BR")}</span> <span className="text-xs text-slate-500">precatórios · {precatorios.nEntes} órgão(s) devedor(es)</span></div>
+                    </div>
+                    {precatorios.entes.length > 0 && (
+                      <ul className="mt-3 divide-y divide-slate-100 border-t border-slate-100 text-sm">
+                        {precatorios.entes.map((e, i) => (
+                          <li key={i} className="flex items-center justify-between gap-3 py-1.5">
+                            <span className="truncate text-slate-600">{e.nome}{e.regime && !/geral/i.test(e.regime) ? <span className="ml-1 text-[10px] text-amber-600">({e.regime})</span> : null}</span>
+                            <span className="shrink-0 tabular-nums text-slate-700">{brl(e.valor)} <span className="text-[11px] text-slate-400">· {e.qtde}</span></span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </>
+                ) : (
+                  <p className="mt-1 text-sm text-slate-600">Sem precatórios registrados no Regime Especial do TJSC para este município.</p>
+                )}
+                <p className="mt-2 text-[11px] text-slate-400">Fonte: <b>TJSC — Regime Especial de Precatórios</b> (estoque e quantidade por órgão devedor) + <b>CAUC item 1.2</b>, Tesouro (regularidade do pagamento). Precatório não pago no prazo <b>impede transferências voluntárias</b> da União e pode levar a sequestro de recursos.</p>
+              </section>
+            );
+          })()}
         </>
       ),
     },
@@ -278,8 +372,13 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       {/* ESTUDOS COMPARATIVOS DE COMPRAS — FORA DO AR (distorção: comparação por valor TOTAL; refazer por VALOR UNITÁRIO item a item).
           Desativados: ResumoCompras (economia), PesquisaPreco, AnaliseComprasItens (sobrepreço/mais comprados), ComprasExtraCard (dispersão), SazonalidadePreco.
           Mantidos (dado do próprio município, sem comparação): ComprasSCSection, ComprasCategorias, FornecedoresCard. */}
+      <Carimbo className="mb-3" fonte="PNCP · Compras.gov.br (Portal Nacional de Contratações Públicas)" competencia="todos os anos publicados" extraido={extracao.itens ?? extracao.processos ?? extracao.compras} />
       <ComprasSCSection codigo={ente.cod_ibge} tipo={ente.tipo} />
       {fornec && <div className="mt-4"><FornecedoresCard dados={fornec} nome={ente.nome} /></div>}
+      {sobrepreco && <div className="mt-4"><SobreprecoCompras data={sobrepreco} nome={ente.nome} /></div>}
+      {variacaoInterna && <div className="mt-4"><VariacaoInterna data={variacaoInterna} nome={ente.nome} /></div>}
+      {redFlags && <div className="mt-4"><RedFlagsFornecedores data={redFlags} nome={ente.nome} /></div>}
+      {fornecSancionados && <div className="mt-4"><FornecedoresSancionados data={fornecSancionados} nome={ente.nome} /></div>}
       <div className="mt-4"><BaseMetodologica area="compras" /></div>
     </> },
     ...(padroesCompras ? [{ id: "padroes-compras", label: "Planejamento de Compras", content: <><AssuntoPadroesCompras dados={padroesCompras} contratos={contratosResumo} pca={pcaResumo} economia={economicidade} nome={ente.nome} /><div className="mt-4"><CatalogoBoasPraticas area="compras" /></div></> }] : []),
@@ -617,7 +716,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
                     <h3 className="font-semibold text-slate-800">Ranking fiscal · entes de Santa Catarina</h3>
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
                   </div>
-                  <p className="text-xs text-slate-500">Índice Fiscal PNIGP (real) — média de percentis de autonomia, investimento, equilíbrio e peso de pessoal entre os {totalRank} entes.</p>
+                  <p className="text-xs text-slate-500">Índice Fiscal i10 Gov 360 (real) — média de percentis de autonomia, investimento, equilíbrio e peso de pessoal entre os {totalRank} entes.</p>
                   {minhaPos && <p className="mt-2 text-sm text-slate-700"><strong className="text-teal-700">{ente.nome}</strong>: índice <strong>{minhaPos.score.toFixed(1)}</strong> — <strong>{minhaPos.posicao}º</strong> de {totalRank}.</p>}
                 </div>
                 <section className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -641,7 +740,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
                       </tbody>
                     </table>
                   </div>
-                  <p className="mt-2 text-[11px] text-slate-400">Índice fiscal real (SICONFI). Os índices completos PNIGP (ICEB/INVP/IGP 360) dependem de indicadores setoriais (saúde/educação/segurança/social/economia) ainda a coletar.</p>
+                  <p className="mt-2 text-[11px] text-slate-400">Índice fiscal real (SICONFI). Os índices completos do i10 Gov 360 (ICEB/INVP/IGP 360) dependem de indicadores setoriais (saúde/educação/segurança/social/economia) ainda a coletar.</p>
                 </section>
               </>
             );
@@ -652,14 +751,38 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
 
   const comprasDestinos = await getComprasDestinosSC(codigo === "42" ? undefined : codigo); // Estado = agregado SC · município = destinos dele
   const diag = diagnostico ?? diagEstado; // município: vs pares · Estado: limites legais absolutos
-  const insights = gerarInsightsSC({ diag, cruz, saude, educacao, pos: minhaPos, total: totalRank }); // análise automática (dado real)
+  const insights = gerarInsightsSC({ diag, cruz, saude, educacao, pos: minhaPos, total: totalRank, rpps, captacao }); // análise automática (dado real)
+  // Status da CRP + motivos do bloqueio (CRP vencida/judicial + pendência previdenciária no CAUC) — usado no Painel e na Captação
+  const crpInfo = rpps?.crp ? (() => {
+    const c = rpps.crp!; const motivos: string[] = [];
+    if (c.vencido && c.validade) motivos.push(`certificado vencido em ${c.validade}${c.diasValidade != null && c.diasValidade < 0 ? ` (há ${Math.abs(c.diasValidade)} dias)` : ""}`);
+    if (/judic/i.test(c.situacao)) motivos.push("regularidade obtida por decisão judicial (sub judice)");
+    if (cauc) for (const g of cauc.grupos.filter((g) => /previd/i.test(g))) motivos.push(`pendência no CAUC (${g})`);
+    return { vencido: c.vencido, dias: c.diasValidade, validade: c.validade, motivos };
+  })() : null;
+  tabs.push({ id: "alertas", label: `Central de Alertas${alertas.length ? ` (${alertas.length})` : ""}`, content: (
+    <>
+      <CentralAlertas alertas={alertas} nome={ente.nome} />
+      <p className="mt-3 text-[11px] text-slate-400">A Central de Alertas cruza CRP (previdência), CAUC, convênios, assistência social e fornecedores para revelar o que trava recursos ou expõe o município a risco — o &quot;ponto cego&quot; do gestor. Fontes oficiais; cada alerta traz a ação recomendada.</p>
+      <div className="mt-4"><PainelImpacto resumo={notifResumo} /></div>
+      <div className="mt-4"><ResolverAlertas codigo={codigo} /></div>
+      <div className="mt-4"><CalendarioObrigacoes hoje={new Date().toISOString().slice(0, 10)} crpValidade={crpInfo?.validade ?? null} contratos={contratosVenc?.aVencer.map((c) => ({ objeto: c.objeto, vigFim: c.vigFim, dias: c.dias }))} /></div>
+      <div className="mt-4"><BoletimGestao nome={ente.nome} alertas={alertas} resumo={notifResumo} /></div>
+      <div className="mt-4"><AlertasNotificacao alertas={alertas} nome={ente.nome} /></div>
+      <div className="mt-4"><CadastroServidor codigo={codigo} nome={ente.nome} /></div>
+    </>
+  ) });
   tabs.push({ id: "placar", label: "Visão do Prefeito", content: (
     <PlacarEstrategico nome={ente.nome} posicao={minhaPos?.posicao ?? null} total={totalRank || null} scoreFiscal={minhaPos?.score ?? null}
       tom={!diag ? null : diag.nAlertas === 0 ? "ok" : diag.nAlertas <= 2 ? "ressalva" : "critico"}
       saudePct={saude?.saudePct ?? null} educPct={educacao?.educPct ?? null} pessoalPct={rgfResumo?.pessoalPct ?? null} insights={insights} ano={diag?.ano ?? anoFim}
-      iegm={iegmDados ? { faixa: iegmDados.finalFaixa, pct: iegmDados.finalPct } : null} />
+      iegm={iegmDados ? { faixa: iegmDados.finalFaixa, pct: iegmDados.finalPct } : null} crp={crpInfo} />
   ) });
-  if (iegmDados) tabs.push({ id: "iegm", label: "Qualidade da Gestão (IEGM/TCE)", content: <><AssuntoIEGM dados={iegmDados} nome={ente.nome} /><div className="mt-4"><BaseMetodologica area="controle" /></div></> });
+  if (codigo === "42") { // Radar estadual de CRP — só na visão do Estado (SC)
+    const radarCrp = await getRadarCrpSC();
+    if (radarCrp) tabs.push({ id: "radar-crp", label: "Radar de CRP (SC)", content: <><RadarCrpSC data={radarCrp} /><div className="mt-4"><BaseMetodologica area="previdencia" /></div></> });
+  }
+  if (iegmDados) tabs.push({ id: "iegm", label: "Qualidade da Gestão (IEGM/TCE)", content: <><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><Carimbo fonte="TCE-SC · IRB — Instituto Rui Barbosa (iegm.irbcontas.org.br)" competencia={`índice oficial · exercício ${iegmDados.ano}`} extraido={extracao.iegm} /><BaixarCsv nome={`iegm-${ente.nome}-${iegmDados.ano}`} label="Baixar IEGM (CSV)" colunas={[{ chave: "nome", rotulo: "Dimensao" }, { chave: "pct", rotulo: "Indice (%)" }, { chave: "faixa", rotulo: "Faixa" }]} linhas={[...iegmDados.dimensoes, { nome: "IEGM (final)", pct: iegmDados.finalPct, faixa: iegmDados.finalFaixa }]} /></div><AssuntoIEGM dados={iegmDados} nome={ente.nome} /><div className="mt-4"><BaseMetodologica area="controle" /></div></> });
   if (diag) tabs.splice(1, 0, { id: "diagnostico", label: "Diagnóstico", content: <DiagnosticoGestor data={diag} /> });
 
   // PANORAMA 360° — cruza todas as dimensões num radar (50 = mediana dos pares)
@@ -715,8 +838,35 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       </div>
     ),
   });
-  if (diag) tabs.push({ id: "auditoria", label: "Auditoria", content: <AuditoriaSC data={diag} radar={radar} /> });
-  if (rgfResumo) tabs.push({ id: "simulador", label: "Simulador", content: <SimuladorFiscal ano={rgfResumo.ano} receita={a.receita} despesa={a.despesa} pessoal={a.pessoal} investimento={a.investimento} rclAjustada={rgfResumo.rclAjustada} pessoalPctBase={rgfResumo.pessoalPct} /> });
+  if (diag) tabs.push({ id: "auditoria", label: "Auditoria", content: <AuditoriaLazy codigo={codigo} radar={radar} /> });
+  // FRENTES DE EVOLUÇÃO COM O I10 — cenários acionáveis a partir do diagnóstico, ligados aos serviços de consultoria
+  const frentesI10: FrenteI10[] = [];
+  const naMesa = captacaoEmendas?.recursoNaMesa ?? 0;
+  const lacSaude = lacunaSaude?.blocosAbaixo.reduce((s, b) => s + b.gap, 0) ?? 0;
+  const lacEdu = lacunaEdu?.ausentes.reduce((s, a) => s + a.medianaPares, 0) ?? 0;
+  const lacAssist = lacunaAssist?.blocosAbaixo.reduce((s, b) => s + b.gap, 0) ?? 0;
+  const captTot = naMesa + lacSaude + lacEdu + lacAssist;
+  if (captTot > 0) frentesI10.push({ area: "Captação", cor: "bg-amber-100 text-amber-700", titulo: "Captar recurso federal disponível", diagnostico: `${naMesa > 0 ? `${fmtBRLCompact(naMesa)} em emendas empenhadas aguardam pagamento. ` : ""}Há programas federais que municípios de mesmo porte captam e ${ente.nome} ainda não.`, ganho: `até ${fmtBRLCompact(captTot)}`, acao: "Cobrar a liberação das emendas na mesa e aderir aos programas ausentes.", servico: "Radar de Captação + articulação de emendas, convênios e programas federais." });
+  if (minhaPos && minhaPos.autonomia < 25) frentesI10.push({ area: "Receita", cor: "bg-teal-100 text-teal-700", titulo: "Recuperar receita própria", diagnostico: `Autonomia de ${minhaPos.autonomia.toFixed(0)}% (receita própria ÷ total) — há espaço para ampliar a arrecadação local.`, acao: "Atualizar a planta genérica do IPTU, revisar o ISS e cobrar a dívida ativa.", servico: "Recuperação e otimização de receita municipal." });
+  const fundebEvo = receitasDetalhe?.itens.find((i) => i.item === "FUNDEB")?.valor ?? 0;
+  if (fundebEvo > 0) frentesI10.push({ area: "Educação", cor: "bg-blue-100 text-blue-700", titulo: "Ampliar o FUNDEB via tempo integral", diagnostico: `FUNDEB atual de ${fmtBRLCompact(fundebEvo)}; a matrícula em tempo integral pesa ~1,5× na distribuição do fundo.`, acao: "Expandir a oferta de tempo integral e ajustar o registro no Censo Escolar.", servico: "Educação: tempo integral, FUNDEB e BNCC Computação." });
+  if (previne && previne.indicadores.length) { const avg = previne.indicadores.reduce((s, x) => s + x.pct, 0) / previne.indicadores.length; const avgP = previne.indicadores.reduce((s, x) => s + x.paresPct, 0) / previne.indicadores.length; if (avg < avgP - 2) frentesI10.push({ area: "Saúde", cor: "bg-rose-100 text-rose-700", titulo: "Elevar o incentivo da Atenção Primária (Previne)", diagnostico: `Indicadores do Previne Brasil em ${avg.toFixed(0)}% na média, contra ${avgP.toFixed(0)}% dos pares — o repasse de APS é por desempenho, então melhorar os indicadores aumenta o recurso.`, ganho: `+${(avgP - avg).toFixed(0)} p.p. de desempenho`, acao: "Fechar as lacunas dos indicadores (pré-natal, citopatológico, vacinação, hipertensão/diabetes).", servico: "Apoio à Atenção Primária e ao desempenho do Previne Brasil." }); }
+  if (rgfResumo && rgfResumo.pessoalPct > 46) frentesI10.push({ area: "Fiscal", cor: "bg-purple-100 text-purple-700", titulo: "Reenquadrar a folha de pessoal", diagnostico: `Pessoal em ${rgfResumo.pessoalPct.toFixed(1)}% da RCL — próximo do limite prudencial da LRF (51,3%).`, acao: "Rever a estrutura de cargos e conter o crescimento vegetativo da folha.", servico: "Gestão fiscal e adequação à LRF." });
+  // Previdência própria (RPPS) — déficit atuarial / CRP
+  if (rpps && ((rpps.atuarial?.deficit ?? 0) < 0 || crpInfo?.vencido)) frentesI10.push({ area: "Previdência", cor: "bg-indigo-100 text-indigo-700", titulo: "Sanear o RPPS e garantir o CRP", diagnostico: `${(rpps.atuarial?.deficit ?? 0) < 0 ? `Déficit atuarial de ${fmtBRLCompact(-rpps.atuarial!.deficit)}. ` : ""}${crpInfo?.vencido ? "CRP vencido — bloqueia as transferências voluntárias da União." : "Atenção à regularidade previdenciária (CRP)."}`, acao: "Plano de amortização/equacionamento do déficit e regularização do CRP junto à SPREV.", servico: "Consultoria previdenciária: avaliação atuarial, equacionamento e CRP." });
+  // Extensão rural / agricultura familiar
+  if (agropec && agropec.estabFamiliar > 0) frentesI10.push({ area: "Rural", cor: "bg-lime-100 text-lime-700", titulo: "Projetos de extensão rural e agricultura familiar", diagnostico: `${agropec.estabFamiliar.toLocaleString("pt-BR")} estabelecimentos de agricultura familiar (${agropec.pctEstabFamiliar.toFixed(0)}% do total)${agropec.pronaf ? `; PRONAF de ${fmtBRLCompact(agropec.pronaf.vlTotal)}` : ""}.`, acao: "Patrulha mecanizada, adesão ao PRONAF/CAF, regularização no CAR, PAA e assistência técnica (EPAGRI/CIDASC).", servico: "Desenvolvimento rural: projetos de extensão e captação agro." });
+  // Melhoria dos processos de compras
+  if ((sobrepreco?.totalEconomia ?? 0) > 0 || (redFlags?.nCriticos ?? 0) > 0) frentesI10.push({ area: "Compras", cor: "bg-orange-100 text-orange-700", titulo: "Melhorar os processos de compras", diagnostico: `${(sobrepreco?.totalEconomia ?? 0) > 0 ? `Indícios de economia de até ${fmtBRLCompact(sobrepreco!.totalEconomia)} por preço unitário. ` : ""}${(redFlags?.nCriticos ?? 0) > 0 ? `${redFlags!.nCriticos} fornecedor(es) em situação crítica (concentração + sanção).` : ""}`, ganho: (sobrepreco?.totalEconomia ?? 0) > 0 ? `até ${fmtBRLCompact(sobrepreco!.totalEconomia)}` : undefined, acao: "Planejamento de compras (PCA), preço de referência item-a-item e controle de fornecedores, sob a Lei 14.133.", servico: "Compras públicas: planejamento, preço de referência e conformidade (Lei 14.133)." });
+  // Governança e planejamento
+  if (iegmDados && !/^(A|B\+)/.test(iegmDados.finalFaixa)) frentesI10.push({ area: "Governança", cor: "bg-slate-200 text-slate-700", titulo: "Fortalecer a governança e o planejamento", diagnostico: `IEGM (TCE-SC) na faixa ${iegmDados.finalFaixa} (${iegmDados.finalPct.toFixed(0)}%) — há espaço em planejamento, controle interno e instrumentos de gestão.`, acao: "Alinhar PPA/LDO/LOA, estruturar o controle interno e os planos setoriais, conselhos e fundos.", servico: "Governança, planejamento público (PPA/LDO/LOA) e controle interno." });
+  if (rgfResumo) tabs.push({ id: "simulador", label: "Simulador", content: <SimuladorFiscal ano={rgfResumo.ano} receita={a.receita} despesa={a.despesa} pessoal={a.pessoal} investimento={a.investimento} rclAjustada={rgfResumo.rclAjustada} pessoalPctBase={rgfResumo.pessoalPct} tributaria={a.tributaria} fundeb={fundebEvo} /> });
+  // SOLUÇÕES i10 — seção PRÓPRIA, separada das abas de dados (diretriz: não misturar comercial com dado, p/ não confundir o usuário)
+  const prioridadesProj = [lacunaSaude ? "saude" : "", lacunaEdu ? "educacao" : "", lacunaAssist ? "assistencia" : ""].filter(Boolean);
+  const pontosI10 = insights.filter((i) => i.severidade === "critico" || i.severidade === "atencao").map((i) => ({ severidade: i.severidade, area: i.area, titulo: i.titulo, detalhe: i.detalhe }));
+  if (conveniosRisco) { const crit = conveniosRisco.criticoN > 0; pontosI10.unshift({ severidade: crit ? "critico" : "atencao", area: "Convênios", titulo: crit ? "Convênios inadimplentes — risco de bloqueio de captação" : "Convênios a regularizar (prestação de contas)", detalhe: `${conveniosRisco.criticoN > 0 ? `${conveniosRisco.criticoN} convênio(s) inadimplente(s)/rejeitado(s) (${fmtBRLCompact(conveniosRisco.criticoValor)}). ` : ""}${conveniosRisco.atencaoN > 0 ? `${conveniosRisco.atencaoN} pendente(s) de prestação de contas (${fmtBRLCompact(conveniosRisco.atencaoValor)}). ` : ""}A inadimplência em convênio bloqueia novas transferências voluntárias da União (CAUC).` }); }
+  if (cauc && (!cauc.apto || cauc.nPendencias > 0)) { const bloq = !cauc.apto; pontosI10.unshift({ severidade: bloq ? "critico" : "atencao", area: "CAUC", titulo: bloq ? "Pendências no CAUC — transferências voluntárias bloqueadas" : "Pendências no CAUC a regularizar", detalhe: `${cauc.nPendencias} pendência(s) no CAUC${cauc.grupos.length ? ` (${cauc.grupos.slice(0, 3).join(", ")}${cauc.grupos.length > 3 ? "…" : ""})` : ""}${cauc.dataPesquisa ? `, consulta de ${cauc.dataPesquisa}` : ""}. O CAUC é a checagem de regularidade que a União faz antes de liberar convênios e transferências voluntárias — regularizar destrava a captação.` }); }
+  tabs.push({ id: "solucoes-i10", label: "Soluções i10", content: <><PlanoEvolucaoI10 nome={ente.nome} frentes={frentesI10} pontos={pontosI10} ausencias={planosAusentes(munic)} resumo={{ oportunidade: captTot, nRiscos: pontosI10.length, nProjetos: programasFederais.length }} /><div className="mt-4"><ProjetosElegiveis nome={ente.nome} programas={programasFederais} prioridades={prioridadesProj} /></div><div className="mt-4"><EstudoComprasI10 nome={ente.nome} /></div></> });
   if (saude) {
     const saudeConf = saude.saudePct != null
       ? { label: "Aplicação em saúde (ASPS)", valor: saude.saudePct, ancora: "mín. 15% — LC 141", nivel: (saude.saudePct >= 15 ? "ok" : saude.saudePct >= 14 ? "warn" : "bad") as "ok" | "warn" | "bad" }
@@ -730,12 +880,15 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       ...(previneFicha ? [{ label: "Previne — como melhorar", href: "#previne-ficha" }] : []),
       ...(fnsSerie.length > 1 ? [{ label: "Repasses (histórico)", href: "#fns-historico" }] : []),
     ];
-    tabs.push({ id: "saude", label: "Visão geral", content: (
+    tabs.push({ id: "saude", label: "Saúde — visão geral", content: (
       <>
-        <CabecalhoArea titulo="Saúde" intro="Como a saúde do município está hoje, o que a lei exige, o que fazer e onde aprofundar — da visão geral ao indicador." conformidade={saudeConf} indicadores={saudeInd} insights={insights.filter((i) => /sa[úu]de/i.test(i.area))} links={saudeLinks} />
+        <CabecalhoArea titulo="Saúde" intro="Como a saúde do município está hoje, o que a lei exige, o que fazer e onde aprofundar — da visão geral ao indicador." conformidade={saudeConf} indicadores={saudeInd} insights={insights.filter((i) => /sa[úu]de/i.test(i.area))} links={saudeLinks} /><CarimboFontes className="mb-3 mt-1" fontes={["SIOPS (DATASUS)", "CNES", "FNS", "Previne/SISAB"]} />
+        {siopsSerie.length > 0 && <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><Carimbo fonte="SIOPS · Ministério da Saúde (DATASUS)" competencia={`aplicação em saúde (ASPS) · série ${siopsSerie[0]?.ano}–${siopsSerie[siopsSerie.length - 1]?.ano}`} extraido={extracao.siops} /><BaixarCsv nome={`siops-ficha-${ente.nome}`} label="Baixar ficha SIOPS (CSV)" colunas={[{ chave: "ano", rotulo: "Ano" }, { chave: "saudePct", rotulo: "Aplicado em saude (%)" }, { chave: "saudeMin", rotulo: "Minimo constitucional (%)" }, { chave: "saudeValor", rotulo: "Valor aplicado saude" }, { chave: "transfSaudeValor", rotulo: "Transferencias saude" }, { chave: "transfUniaoValor", rotulo: "Transferencias da Uniao" }]} linhas={siopsSerie as unknown as Record<string, unknown>[]} /></div>}
         <div className="mb-4"><AnaliseSaude previne={previne} fns={fns} saude={saude} nome={ente.nome} /></div>
         <SaudeSC data={saude} previne={previne} fns={fns} />
         {eficSaude && <div className="mt-4"><EficienciaSaude dados={eficSaude} nome={ente.nome} /></div>}
+        {sobreMed && <div className="mt-4"><SobreprecoMedicamentos data={sobreMed} nome={ente.nome} /></div>}
+        <div className="mt-4"><CmedConsulta /></div>
         <div className="mt-4"><CatalogoBoasPraticas area="saude" /></div>
         <div className="mt-4"><BaseMetodologica area="saude" /></div>
       </>
@@ -746,56 +899,94 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       <h3 className="text-base font-bold text-slate-900">🏥 Equipamentos Públicos — Saúde</h3>
       <p className="text-sm text-slate-500">A rede de saúde de {ente.nome}, estabelecimento a estabelecimento (UBS, hospitais, UPA, CAPS) — composição, capacidade instalada e localização. Base para a regulação, referência e contrarreferência.</p>
     </div>
-    {perfilSaude && <div className="mt-4"><PerfilSaude dados={perfilSaude} nome={ente.nome} /></div>}
-    <div className="mt-4"><EstabSaudeDrill dados={estabSaude} nome={ente.nome} /></div>
+    <EstabSaudeLazy estabSaude={estabSaude} perfilSaude={perfilSaude} nome={ente.nome} />
   </> });
-  if (previneFicha) tabs.push({ id: "previne-ficha", label: "Atenção Primária", content: <AssuntoAtencaoPrimaria dados={previneFicha} nome={ente.nome} cod={codigo} /> });
-  if (fnsSerie.length > 1) tabs.push({ id: "fns-historico", label: "Histórico de Repasses", content: <SerieExplicada serie={fnsSerie} escopo="fns" cod={codigo} nome={ente.nome} /> });
+  if (previneFicha) tabs.push({ id: "previne-ficha", label: "Atenção Primária", content: <><Carimbo className="mb-3" fonte="Ministério da Saúde · SISAB / Previne Brasil" competencia="índice de desempenho da APS" extraido={extracao.previne} /><AssuntoAtencaoPrimaria dados={previneFicha} nome={ente.nome} cod={codigo} /></> });
+  if (fnsSerie.length > 1) tabs.push({ id: "fns-historico", label: "Histórico de Repasses", content: <><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><Carimbo fonte="FNS · Fundo Nacional de Saúde (fundo-a-fundo)" competencia={`repasses de saúde · série ${fnsSerie[0]?.ano}–${fnsSerie[fnsSerie.length - 1]?.ano}`} extraido={extracao.fns} /><BaixarCsv nome={`repasses-saude-fns-${ente.nome}`} label="Baixar repasses de saúde (CSV)" colunas={[{ chave: "ano", rotulo: "Ano" }, { chave: "total", rotulo: "Total repassado" }, { chave: "custeio", rotulo: "Custeio" }, { chave: "investimento", rotulo: "Investimento" }]} linhas={fnsSerie as unknown as Record<string, unknown>[]} /></div><SerieExplicada serie={fnsSerie} escopo="fns" cod={codigo} nome={ente.nome} /></> });
   if (repassesSaude) tabs.push({ id: "repasses-saude", label: "Repasses da Saúde", content: <RepassesSaudeFicha dados={repassesSaude} nome={ente.nome} /> });
   if (macProducao.length && saude) {
     const mac = repassesSaude?.programas.find((p) => p.key === "mac");
     tabs.push({ id: "mac", label: "Hospitais e Especialidades", content: <AssuntoMAC producao={macProducao} repasseValor={mac?.valorUlt ?? null} repasseAno={repassesSaude?.anoUlt ?? null} internMil={saude.internMil} internMilPares={saude.internMilPares} nome={ente.nome} /> });
   }
-  tabs.push({ id: "receitas", label: "Receitas (de onde vem)", content: <><AssuntoReceitas serie={dados.serie} detalhe={receitasDetalhe} nome={ente.nome} />{otimReceita && <div className="mt-4"><OtimizadorReceita dados={otimReceita} nome={ente.nome} /></div>}<div className="mt-4"><CatalogoBoasPraticas area="receita" /></div></> });
-  tabs.push({ id: "despesas", label: "Despesas (para onde vai)", content: <><AssuntoDespesas serie={dados.serie} funcoes={dados.funcoesLatest} subfuncoes={despSubfuncao} pessoalPct={rgfResumo?.pessoalPct ?? null} nome={ente.nome} /><div className="mt-4"><BaseMetodologica area="financas" /></div></> });
+  tabs.push({ id: "receitas", label: "Receitas (de onde vem)", content: <>{receitasDetalhe && <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><Carimbo fonte="SICONFI · RREO (Tesouro Nacional)" competencia="receitas por origem" extraido={extracao.receitas_det ?? extracao.financas} /><BaixarCsv nome={`receitas-detalhadas-${ente.nome}`} label="Baixar receitas por ano (CSV)" colunas={[{ chave: "item", rotulo: "Receita" }, { chave: "ano", rotulo: "Ano" }, { chave: "valor", rotulo: "Valor" }]} linhas={receitasDetalhe.itens.flatMap((i) => i.serie.map((s) => ({ item: i.item, ano: s.ano, valor: s.valor })))} /></div>}<AssuntoReceitas serie={dados.serie} detalhe={receitasDetalhe} nome={ente.nome} />{otimReceita && <div className="mt-4"><OtimizadorReceita dados={otimReceita} nome={ente.nome} /></div>}<div className="mt-4"><CatalogoBoasPraticas area="receita" /></div></> });
+  tabs.push({ id: "despesas", label: "Despesas (para onde vai)", content: <>{dados.funcoesLatest.length > 0 && <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><Carimbo fonte="SICONFI · RREO (Tesouro Nacional)" competencia={`despesa por função · ${a.ano}`} extraido={extracao.financas} /><div className="flex flex-wrap gap-2"><BaixarCsv nome={`despesa-por-funcao-${ente.nome}-${a.ano}`} label="Por função (CSV)" colunas={[{ chave: "nome", rotulo: "Função" }, { chave: "dotacao", rotulo: "Dotação" }, { chave: "empenhado", rotulo: "Empenhado" }]} linhas={dados.funcoesLatest as unknown as Record<string, unknown>[]} />{despSubfuncao && <BaixarCsv nome={`despesa-por-subfuncao-${ente.nome}-${despSubfuncao.anoUlt}`} label="Por subfunção (CSV)" colunas={[{ chave: "funcao", rotulo: "Função" }, { chave: "subfuncao", rotulo: "Subfunção" }, { chave: "empenhado", rotulo: "Empenhado" }]} linhas={Object.entries(despSubfuncao.porFuncao).flatMap(([f, subs]) => subs.map((s) => ({ funcao: f, subfuncao: s.subfuncao, empenhado: s.empenhado })))} />}</div></div>}<AssuntoDespesas serie={dados.serie} funcoes={dados.funcoesLatest} subfuncoes={despSubfuncao} pessoalPct={rgfResumo?.pessoalPct ?? null} nome={ente.nome} /><div className="mt-4"><BaseMetodologica area="financas" /></div></> });
   if (previneFicha) {
     const aps = repassesSaude?.programas.find((p) => p.key === "aps");
     tabs.push({ id: "accountability-aps", label: "Da verba ao resultado", content: (
       <AccountabilityAPS previne={previneFicha} apsValor={aps?.valorUlt ?? null} apsAno={repassesSaude?.anoUlt ?? null} saudePct={saude?.saudePct ?? null} cauc={cauc} nome={ente.nome} cod={codigo} />
     ) });
   }
-  if (educacao && educacaoSerie.length) tabs.push({ id: "educacao", label: "Educação", content: <>{(ideb || fndeEdu) && <div className="mb-4"><AnaliseEducacao ideb={ideb} fnde={fndeEdu} censo={censoMatricula} nome={ente.nome} /></div>}<AssuntoEducacao serie={educacaoSerie} edu={educacao} fundebValor={receitasDetalhe?.itens.find((i) => i.item === "FUNDEB")?.valor ?? null} matriculas={escolas?.matriculas ?? null} nome={ente.nome} />{censoMatricula && <div className="mt-4"><MatriculasCard dados={censoMatricula} nome={ente.nome} /></div>}{perfilEdu && <div className="mt-4"><PerfilEducacao dados={perfilEdu} nome={ente.nome} /></div>}{censoTend && <div className="mt-4"><CensoTendencias dados={censoTend} nome={ente.nome} /></div>}{ideb && <div className="mt-4"><IdebPainel dados={ideb} nome={ente.nome} /></div>}{fndeEdu && <div className="mt-4"><FndeEducacaoCard dados={fndeEdu} nome={ente.nome} /></div>}{eficEdu && <div className="mt-4"><EficienciaEducacao dados={eficEdu} nome={ente.nome} /></div>}<div className="mt-4"><CatalogoBoasPraticas area="educacao" /></div><div className="mt-4"><BaseMetodologica area="educacao" /></div></> });
+  if (educacao && educacaoSerie.length) tabs.push({ id: "educacao", label: "Educação", content: <><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><Carimbo fonte="SICONFI · RREO (Tesouro Nacional)" competencia={`aplicação em educação · série ${educacaoSerie[0]?.ano}–${educacaoSerie[educacaoSerie.length - 1]?.ano}`} extraido={extracao.rreo_const ?? extracao.financas} /><BaixarCsv nome={`educacao-serie-${ente.nome}`} label="Baixar série de educação (CSV)" colunas={[{ chave: "ano", rotulo: "Ano" }, { chave: "educPct", rotulo: "Aplicacao educacao (%)" }, { chave: "educValor", rotulo: "Valor aplicado" }, { chave: "fundebPct", rotulo: "FUNDEB (%)" }]} linhas={educacaoSerie as unknown as Record<string, unknown>[]} /></div>{(ideb || fndeEdu) && <div className="mb-4"><AnaliseEducacao ideb={ideb} fnde={fndeEdu} censo={censoMatricula} nome={ente.nome} /></div>}<AssuntoEducacao serie={educacaoSerie} edu={educacao} fundebValor={receitasDetalhe?.itens.find((i) => i.item === "FUNDEB")?.valor ?? null} matriculas={escolas?.matriculas ?? null} nome={ente.nome} />{censoMatricula && <div className="mt-4"><MatriculasCard dados={censoMatricula} nome={ente.nome} /></div>}{perfilEdu && <div className="mt-4"><PerfilEducacao dados={perfilEdu} nome={ente.nome} /></div>}{censoTend && <div className="mt-4"><CensoTendencias dados={censoTend} nome={ente.nome} /></div>}{ideb && <div className="mt-4"><Carimbo className="mb-2" fonte="INEP · IDEB (SAEB + Censo Escolar)" competencia="índice oficial (bianual)" extraido={extracao.ideb} /><IdebPainel dados={ideb} nome={ente.nome} /></div>}{fndeEdu && <div className="mt-4"><FndeEducacaoCard dados={fndeEdu} nome={ente.nome} /></div>}{eficEdu && <div className="mt-4"><EficienciaEducacao dados={eficEdu} nome={ente.nome} /></div>}<div className="mt-4"><CatalogoBoasPraticas area="educacao" /></div><div className="mt-4"><BaseMetodologica area="educacao" /></div></> });
   else if (fndeEdu || perfilEdu || escolas) tabs.push({ id: "educacao", label: "Educação", content: <>{perfilEdu && <div className="mb-4"><PerfilEducacao dados={perfilEdu} nome={ente.nome} /></div>}{fndeEdu && <div className="mb-4"><FndeEducacaoCard dados={fndeEdu} nome={ente.nome} /></div>}<div className="mt-4"><BaseMetodologica area="educacao" /></div></> });
   if (educacao) tabs.push({ id: "educacao-cruz", label: "Comparativo", content: <EducacaoSC data={educacao} /> });
+  if (assistSocial) {
+    const assistConf = assistSocial.cadTaxaAtualizacao != null
+      ? { label: "Atualização do CadÚnico", valor: assistSocial.cadTaxaAtualizacao, ancora: "quanto maior, melhor (gestão do cadastro)", nivel: (assistSocial.cadTaxaAtualizacao >= 80 ? "ok" : assistSocial.cadTaxaAtualizacao >= 70 ? "warn" : "bad") as "ok" | "warn" | "bad" }
+      : null;
+    const assistInd = [
+      { label: "Equipamentos (CRAS)", valor: `${assistSocial.cras}`, sub: `${assistSocial.creas} CREAS${assistSocial.habPorCras != null ? ` · 1/${Math.round(assistSocial.habPorCras).toLocaleString("pt-BR")} hab` : ""}` },
+      { label: "Famílias no CadÚnico", valor: assistSocial.cadFamilias.toLocaleString("pt-BR"), sub: `${assistSocial.cadPessoas.toLocaleString("pt-BR")} pessoas` },
+      { label: "Bolsa Família", valor: assistSocial.pbfFamilias.toLocaleString("pt-BR"), sub: "famílias beneficiárias" },
+      { label: "Cofinanciamento FNAS", valor: fmtBRLCompact(assistSocial.fnasUltimoAno), sub: `repasse ${assistSocial.anoUlt}` },
+    ];
+    tabs.push({ id: "assistencia", label: "Assistência — visão geral", content: <>
+      <CabecalhoArea titulo="Assistência Social" intro={`A rede de proteção social de ${ente.nome}: cobertura (CRAS/CREAS), demanda (CadÚnico e pobreza), transferência de renda (Bolsa Família) e o cofinanciamento federal (FNAS) — da visão geral à série histórica.`} conformidade={assistConf} indicadores={assistInd} insights={insights.filter((i) => /assist/i.test(i.area))} links={[]} /><CarimboFontes className="mb-3 mt-1" fontes={["SUAS/MDS", "CadÚnico", "FNAS", "MI Social"]} />
+      <AssistenciaSocialSC data={assistSocial} nome={ente.nome} />
+      <div className="mt-4"><CatalogoBoasPraticas area="assistencia" /></div>
+      <div className="mt-4"><BaseMetodologica area="assistencia" /></div>
+    </> });
+  }
+  if (equipSuas) tabs.push({ id: "equipamentos-assistencia", label: "Equipamentos", content: <EquipamentosSuasDrill dados={equipSuas} nome={ente.nome} /> });
+  tabs.push({ id: "geolocalizacao", label: "Geolocalização", content: <GeolocalizacaoLazy codigo={codigo} nome={ente.nome} /> });
+  if (saneamento) tabs.push({ id: "infraestrutura", label: "Saneamento", content: <><CarimboFontes className="mb-3" fontes={["IBGE Censo 2022", "SNIS (Min. Cidades)"]} /><InfraestruturaSC data={saneamento} nome={ente.nome} /></> });
+  if (agropec) tabs.push({ id: "agropecuaria", label: "Agropecuária", content: <><CarimboFontes className="mb-3" fontes={["Censo Agro 2017 (IBGE)", "CAF (MDA)", "CAR (SICAR)", "PRONAF (BCB)"]} /><Agropecuaria data={agropec} nome={ente.nome} /></> });
+  if (acompanhamento) tabs.push({ id: "acompanhamento", label: "Acompanhamento", content: <><Carimbo className="mb-3" fonte="SICONFI · RREO (Tesouro Nacional)" competencia="execução intra-anual — RREO do bimestre" extraido={extracao.financas} /><Acompanhamento data={acompanhamento} nome={ente.nome} />{acompFuncao && <div className="mt-3"><AcompanhamentoFuncao data={acompFuncao} nome={ente.nome} /></div>}</> });
+  if (viesPrev || repassesStn) tabs.push({ id: "planejamento", label: "Planejamento", content: <>
+    {repassesStn && <RepassesStn data={repassesStn} nome={ente.nome} />}
+    {viesPrev && <div className="mt-3"><ViesPrevisao data={viesPrev} macro={macroLDO} despesa={viesDesp} projecao={projReceita} nome={ente.nome} /></div>}
+    {pecaCompleta && <div className="mt-3"><PecaCompleta data={pecaCompleta} nome={ente.nome} /></div>}
+    {ppaPrograma && <div className="mt-3"><PpaPrograma data={ppaPrograma} nome={ente.nome} /></div>}
+    {mscDespesa && <div className="mt-3"><MscDespesa data={mscDespesa} nome={ente.nome} /></div>}
+    {pecaCompleta && projReceita && <div className="mt-3"><MinutaLoa peca={pecaCompleta} projecao={projReceita} mscDespesa={mscDespesa} nome={ente.nome} /></div>}
+  </> });
   if (rgfResumo) tabs.push({ id: "folha", label: "Folha / Pessoal", content: <><FolhaSC rgf={rgfResumo} serie={serie} /><div className="mt-4"><CatalogoBoasPraticas area="fiscal" /></div></> });
-  if (rpps) tabs.push({ id: "previdencia", label: "Previdência", content: <>
-    <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/40 p-4 text-sm text-slate-700">
-      <div className="font-semibold text-slate-800">🔖 Certidão de Regularidade Previdenciária (CRP)</div>
-      <p className="mt-1">A CRP atesta que o RPPS de {ente.nome} cumpre os critérios da Lei 9.717/1998 — é <b>exigida para receber transferências voluntárias da União e contratar operações de crédito</b>. É emitida semestralmente pelo Ministério da Previdência, com validade própria.</p>
+  if (rpps) {
+    const crpHist = await getCrpHistoricoSC(codigo);
+    const prevConf = rpps.coberturaPct > 0
+      ? { label: "Cobertura das contribuições", valor: rpps.coberturaPct, ancora: "ideal ≥ 100% dos benefícios", nivel: (rpps.coberturaPct >= 100 ? "ok" : rpps.coberturaPct >= 70 ? "warn" : "bad") as "ok" | "warn" | "bad" }
+      : null;
+    const prevInd = [
+      ...(rpps.crp ? [{ label: "CRP (regularidade)", valor: rpps.crp.vencido ? "Vencida" : "Válida", sub: rpps.crp.validade ? `validade ${rpps.crp.validade}${rpps.crp.diasValidade != null ? ` · ${rpps.crp.diasValidade}d` : ""}` : "" }] : []),
+      ...(rpps.atuarial ? [{ label: "Déficit atuarial (DRAA)", valor: fmtBRLCompact(rpps.atuarial.deficit), sub: `exercício ${rpps.atuarial.exercicio}` }] : []),
+      { label: "Resultado no exercício", valor: fmtBRLCompact(rpps.resultado), sub: `RPPS ${rpps.ano}` },
+    ];
+    const prevLinks = crpHist.length ? [{ label: "Histórico completo de CRP", href: "#crp-historico" }] : [];
+    tabs.push({ id: "previdencia", label: "Previdência", content: <>
+      <CabecalhoArea titulo="Previdência" intro={`Como está o RPPS de ${ente.nome}: a regularidade (CRP), o equilíbrio de caixa e o déficit atuarial — da visão geral ao histórico completo dos certificados.`} conformidade={prevConf} indicadores={prevInd} insights={insights.filter((i) => /previd/i.test(i.area))} links={prevLinks} /><Carimbo className="mb-3 mt-1" fonte="CADPREV/SPREV (Min. da Previdência)" competencia="regime próprio (RPPS)" extraido={extracao.rpps ?? extracao.rpps_crp} />
       {cauc && (() => {
         const prevPend = cauc.grupos.filter((g) => /previd/i.test(g));
         const ok = prevPend.length === 0;
         return (
-          <div className={`mt-2 rounded-xl border p-2.5 text-[13px] ${ok ? "border-emerald-200 bg-emerald-50" : "border-rose-300 bg-rose-50"}`}>
+          <div className={`mb-4 rounded-xl border p-2.5 text-[13px] ${ok ? "border-emerald-200 bg-emerald-50" : "border-rose-300 bg-rose-50"}`}>
             {ok
-              ? <><b className="text-emerald-700">✓ Regularidade previdenciária OK no CAUC</b>{cauc.dataPesquisa ? ` (consulta ${cauc.dataPesquisa})` : ""} — sem pendência no grupo previdenciário, indicando CRP válida para transferências.</>
+              ? <><b className="text-emerald-700">✓ Regularidade previdenciária OK no CAUC</b>{cauc.dataPesquisa ? ` (consulta ${cauc.dataPesquisa})` : ""} — sem pendência no grupo previdenciário, corroborando a CRP válida.</>
               : <><b className="text-rose-700">⚠️ Pendência de regularidade previdenciária no CAUC</b> — a CRP pode estar irregular/suspensa. {(cauc.pendencias.filter((p) => /previd/i.test(p)).join("; ") || prevPend.join("; "))}</>}
-            <div className="mt-0.5 text-[11px] text-slate-400">Status derivado do CAUC (grupo "Regularidade previdenciária"), que lê o CADIN/CRP diariamente — mesma lógica do nosso indicador de Regularidade.</div>
+            <div className="mt-0.5 text-[11px] text-slate-400">Status derivado do CAUC (grupo "Regularidade previdenciária"), que lê o CADIN/CRP diariamente — 2ª fonte que corrobora a CRP.</div>
           </div>
         );
       })()}
-      <p className="mt-2 text-slate-500">Para o <b>documento e a validade exatos</b>, consulte a CRP atual direto na fonte oficial:</p>
-      <a href="https://cadprev.previdencia.gov.br/Cadprev/pages/publico/crp/pesquisarEnteCrp.xhtml" target="_blank" rel="noopener noreferrer" className="mt-2 inline-block rounded-lg bg-teal-600 px-3 py-1.5 text-[13px] font-semibold text-white hover:bg-teal-700">Consultar a CRP de {ente.nome} no CADPREV ↗</a>
-      <p className="mt-2 text-[11px] text-slate-400">Fonte: CADPREV / Ministério da Previdência Social. (A consulta é pública; busque o ente pela UF/nome.)</p>
-    </div>
-    <PrevidenciaSC data={rpps} />
-    <div className="mt-4"><BaseMetodologica area="previdencia" /></div>
-  </> });
+      <PrevidenciaSC data={rpps} />
+      {crpHist.length > 0 && <div className="mt-4"><CrpHistorico historico={crpHist} nome={ente.nome} /></div>}
+      <div className="mt-4"><BaseMetodologica area="previdencia" /></div>
+    </> });
+  }
   if (cauc) tabs.push({ id: "cauc", label: "Regularidade (CAUC)", content: <CaucSCView data={cauc} /> });
   if (cruz) tabs.push({ id: "cruzamentos", label: "Cruzamentos", content: <CruzamentosSC data={cruz} /> });
   if (comprasDestinos) tabs.push({ id: "compras-sc", label: codigo === "42" ? "Para onde vai (SC)" : "Para onde vai", content: <ComprasDestinosSCView data={comprasDestinos} escopo={codigo === "42" ? "dos municípios de SC" : `de ${ente.nome}`} /> });
 
-  if (captacao || emendas || convenios) tabs.push({ id: "captacao", label: "Captação", content: <>{captacao && <AssuntoCaptacao dados={captacao} cod={codigo} nome={ente.nome} margem={minhaPos ? { investimento: minhaPos.investimento, medianaSC: medianaInvestSC } : undefined} necessidade={necessidade} programasFederais={programasFederais} />}{emendas && <div className="mt-4"><EmendasCard dados={emendas} nome={ente.nome} /></div>}{convenios && <div className="mt-4"><ConveniosCard dados={convenios} nome={ente.nome} /></div>}</> });
+  if (captacao || emendas || convenios || munic) tabs.push({ id: "captacao", label: "Captação", content: <><CarimboFontes className="mb-3" fontes={["Transferegov/SICONV", "Portal da Transparência (CGU)", "programas federais (curadoria)"]} />{captacao && <AssuntoCaptacao dados={captacao} cod={codigo} nome={ente.nome} margem={minhaPos ? { investimento: minhaPos.investimento, medianaSC: medianaInvestSC } : undefined} necessidade={necessidade} programasFederais={programasFederais} crpBloqueio={crpInfo} />}{lacunaSaude && <div className="mt-4"><LacunaCaptacaoSaude data={lacunaSaude} nome={ente.nome} /></div>}{lacunaEdu && <div className="mt-4"><LacunaCaptacaoEducacao data={lacunaEdu} nome={ente.nome} /></div>}{lacunaAssist && <div className="mt-4"><LacunaCaptacaoAssistencia data={lacunaAssist} nome={ente.nome} /></div>}{catalogoProgramas.length > 0 && <div className="mt-4"><CatalogoProgramas programas={catalogoProgramas} /></div>}{munic && <div className="mt-4"><MunicGestao data={munic} nome={ente.nome} /></div>}{emendas && <div className="mt-4">{emendas.porParlamentar.length > 0 && <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><Carimbo fonte="SICONV/Transferegov + Portal da Transparência" competencia="emendas por parlamentar" extraido={extracao.emendas ?? extracao.emendas_exec} /><BaixarCsv nome={`emendas-por-parlamentar-${ente.nome}`} label="Baixar emendas por parlamentar (CSV)" colunas={[{ chave: "parlamentar", rotulo: "Parlamentar" }, { chave: "valor", rotulo: "Valor indicado" }, { chave: "n", rotulo: "Nº de emendas" }]} linhas={emendas.porParlamentar as unknown as Record<string, unknown>[]} /></div>}<EmendasCard dados={emendas} nome={ente.nome} /></div>}{convenios && <div className="mt-4"><ConveniosCard dados={convenios} nome={ente.nome} /></div>}</> });
+  if (captacaoEmendas) tabs.push({ id: "emendas", label: "Federais", content: <CaptacaoEmendas data={captacaoEmendas} nome={ente.nome} necessidade={necessidade} programas={cadernoProgramas} cod={codigo} /> });
+  if (emendasEstaduais) tabs.push({ id: "emendas-estaduais", label: "Estaduais", content: <EstaduaisEmendas data={emendasEstaduais} nome={ente.nome} necessidade={necessidade} cod={codigo} programas={emendasEstObjetos} /> });
 
   if (escolas) tabs.push({ id: "equipamentos", label: "Equipamentos Públicos", content: <>
     <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-teal-50 to-white p-5">
@@ -807,11 +998,14 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
 
   // navegação temática (7 clusters): Resumo · Finanças · Compras & Contratos · Saúde · Educação · Equipamentos · Análise & Controle
   const GRUPOS: [string, string[]][] = [
-    ["Resumo", ["placar", "visao", "panorama", "diagnostico"]],
-    ["Finanças", ["financas", "receitas", "despesas", "execucao", "captacao", "folha", "previdencia", "metas", "simulador"]],
+    ["Resumo", ["placar", "visao", "panorama", "diagnostico", "geolocalizacao"]],
+    ["Finanças", ["financas", "acompanhamento", "receitas", "despesas", "execucao", "planejamento", "captacao", "folha", "previdencia", "metas", "simulador"]],
+    ["Emendas", ["emendas", "emendas-estaduais"]],
     ["Compras & Contratos", ["compras", "padroes-compras", "atas", "contratos", "planejamento", "compras-sc"]],
     ["Saúde", ["saude", "previne-ficha", "mac", "repasses-saude", "fns-historico", "accountability-aps", "equipamentos-saude"]],
     ["Educação", ["educacao", "educacao-cruz", "equipamentos", "indicadores"]],
+    ["Assistência", ["assistencia", "equipamentos-assistencia"]],
+    ["Infraestrutura", ["infraestrutura", "agropecuaria"]],
     ["Análise & Controle", ["cruzamentos", "iegm", "ranking", "transferencias", "cauc", "auditoria"]],
   ];
   const ORDEM = GRUPOS.flatMap(([, ids]) => ids);
@@ -826,13 +1020,18 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
           <Link href="/" className="flex items-center gap-2.5">
             <Logo />
             <div className="leading-tight">
-              <div className="font-display text-base font-bold tracking-tight text-slate-900">PNIGP</div>
+              <div className="font-display text-base font-bold tracking-tight text-slate-900">i10 Gov 360</div>
               <div className="hidden text-xs text-slate-500 sm:block">Santa Catarina · dados oficiais</div>
             </div>
           </Link>
-          <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">
-            <ArrowLeft className="h-4 w-4" /> Início
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href={`/comparar?cods=${codigo}`} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-teal-700">
+              <span aria-hidden>⚖️</span> Comparar
+            </Link>
+            <Link href="/" className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900">
+              <ArrowLeft className="h-4 w-4" /> Início
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -850,7 +1049,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
                 </span>
               </div>
               <p className="mt-1 text-sm text-slate-500">
-                {ente.tipo === "E" ? "Governo estadual" : "Município"} · {fmtPop(ente.populacao)} · série {anoIni}–{anoFim} · IBGE {ente.cod_ibge}
+                Município · {fmtPop(ente.populacao)} · série {anoIni}–{anoFim} · IBGE {ente.cod_ibge}
                 {pibPerCapita ? ` · PIB per capita ${fmtBRL(pibPerCapita)}` : ""}
               </p>
             </div>
@@ -871,7 +1070,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
         <PanelTabs tabs={tabs} />
 
         <footer className="py-6 text-center text-xs text-slate-500">
-          PNIGP · Instituto I10 — finanças do SICONFI ({anoIni}–{anoFim}), compras do PNCP e transferências do Transferegov/CGU. Bases oficiais usadas pelo TCE/SC.
+          i10 Gov 360 · Instituto I10 — finanças do SICONFI ({anoIni}–{anoFim}), compras do PNCP e transferências do Transferegov/CGU. Bases oficiais usadas pelo TCE/SC.
         </footer>
       </main>
     </div>

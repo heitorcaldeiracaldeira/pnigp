@@ -1,5 +1,6 @@
 import { ArrowDownRight, ArrowUpRight, Landmark, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { BarComposicao } from "@/components/bar-composicao";
+import { GlossarioStrip } from "@/components/termo";
 import { despesaCategoriaArvore, despesaFuncaoArvore, receitaClassificacao } from "@/lib/orcamento";
 import type { Financas } from "@/lib/queries";
 import { fmtBRL, fmtBRLCompact } from "@/lib/ui";
@@ -35,25 +36,25 @@ export function FinancasPanel({
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <Wallet className="h-4 w-4 text-teal-600" /> Receita total
+            <Wallet aria-hidden className="h-4 w-4 text-teal-600" /> Receita total
           </div>
           <div className="mt-1 text-2xl font-bold text-slate-900">{fmtBRLCompact(f.receita_total)}</div>
           {deltaRec != null && (
             <div className={`flex items-center gap-0.5 text-xs font-medium ${deltaRec >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-              {deltaRec >= 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+              {deltaRec >= 0 ? <ArrowUpRight aria-hidden className="h-3.5 w-3.5" /> : <ArrowDownRight aria-hidden className="h-3.5 w-3.5" />}
               {Math.abs(deltaRec).toFixed(1)}% vs. 2023
             </div>
           )}
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <Landmark className="h-4 w-4 text-indigo-600" /> Despesa total
+            <Landmark aria-hidden className="h-4 w-4 text-indigo-600" /> Despesa total
           </div>
           <div className="mt-1 text-2xl font-bold text-slate-900">{fmtBRLCompact(f.despesa_total)}</div>
         </div>
         <div className={`rounded-2xl border p-4 ${superavit ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50"}`}>
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            {superavit ? <TrendingUp className="h-4 w-4 text-emerald-600" /> : <TrendingDown className="h-4 w-4 text-rose-600" />}
+            {superavit ? <TrendingUp aria-hidden className="h-4 w-4 text-emerald-600" /> : <TrendingDown aria-hidden className="h-4 w-4 text-rose-600" />}
             Resultado do exercício
           </div>
           <div className={`mt-1 text-2xl font-bold ${superavit ? "text-emerald-700" : "text-rose-700"}`}>
@@ -63,7 +64,7 @@ export function FinancasPanel({
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <Wallet className="h-4 w-4 text-slate-500" /> Receita por habitante
+            <Wallet aria-hidden className="h-4 w-4 text-slate-500" /> Receita por habitante
           </div>
           <div className="mt-1 text-2xl font-bold text-slate-900">{fmtBRL(rpc)}</div>
         </div>
@@ -101,6 +102,8 @@ export function FinancasPanel({
       <p className="text-center text-xs text-slate-500">
         Fonte: SICONFI/FINBRA · valores do exercício de 2024 · dados simulados para demonstração
       </p>
+
+      <GlossarioStrip ks={["SICONFI", "RREO", "RCL", "FPM", "MSC"]} />
     </div>
   );
 }

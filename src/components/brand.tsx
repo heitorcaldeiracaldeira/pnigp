@@ -27,7 +27,7 @@ export function Wordmark({
     <span className="flex items-center gap-2.5">
       <Logo className={logoClass} />
       <span className="leading-tight">
-        <span className="block font-display text-base font-bold tracking-tight text-slate-900">PNIGP</span>
+        <span className="block font-display text-base font-bold tracking-tight text-slate-900">i10 Gov 360</span>
         {subtitle && <span className="block text-[11px] text-slate-500">{subtitle}</span>}
       </span>
     </span>

@@ -36,6 +36,7 @@ async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2 });
   db.on("error", () => {});
   await db.query(`CREATE TABLE IF NOT EXISTS iegm_sc (cod_ibge TEXT, ano INTEGER, indicador TEXT, pct NUMERIC, faixa TEXT, PRIMARY KEY (cod_ibge, ano, indicador))`);
+  await db.query(`ALTER TABLE iegm_sc ADD COLUMN IF NOT EXISTS atualizado_em timestamptz`).catch(() => {}); // data de inserção/atualização p/ o carimbo
   const q = async (s, p) => { for (let t = 0; t < 8; t++) { try { return await db.query(s, p); } catch { await sleep(1000 * (t + 1)); } } throw new Error("db"); };
   let grav = 0;
   for (const ano of ANOS) {
@@ -54,12 +55,16 @@ async function main() {
       if (!/^\d{7}$/.test(cod) || !ind) continue;
       const pct = parseFloat((c[iPct] || "").replace(",", ".")) || null;
       const faixa = (c[iFx] || "").trim() || null;
-      await q(`INSERT INTO iegm_sc (cod_ibge,ano,indicador,pct,faixa) VALUES ($1,$2,$3,$4,$5)
-               ON CONFLICT (cod_ibge,ano,indicador) DO UPDATE SET pct=EXCLUDED.pct, faixa=EXCLUDED.faixa`, [cod, ano, ind, pct, faixa]);
+      await q(`INSERT INTO iegm_sc (cod_ibge,ano,indicador,pct,faixa,atualizado_em) VALUES ($1,$2,$3,$4,$5,now())
+               ON CONFLICT (cod_ibge,ano,indicador) DO UPDATE SET pct=EXCLUDED.pct, faixa=EXCLUDED.faixa, atualizado_em=now()`, [cod, ano, ind, pct, faixa]);
       n++; grav++;
     }
     console.log(`Ano ${ano}: ${n} linhas (${TRIB})`);
   }
+  // auto-registra a data de coleta no etl_catalogo (para o carimbo "extraído em", mesmo rodando fora do orquestrador)
+  if (grav > 0) await db.query(`INSERT INTO etl_catalogo (id, label, ultima_exec, ultimo_status, atualizado_em)
+    VALUES ('iegm', 'IEGM — qualidade da gestão (TCE-SC/IRB, dados abertos)', now(), 'ok', now())
+    ON CONFLICT (id) DO UPDATE SET ultima_exec=now(), ultimo_status='ok', atualizado_em=now()`).catch(() => {});
   const cc = await db.query(`SELECT count(distinct cod_ibge) e, count(distinct ano) anos, count(*) n FROM iegm_sc`);
   console.log(`IEGM concluído: ${grav} nesta rodada · ${JSON.stringify(cc.rows[0])}`);
   await db.end();

@@ -1,0 +1,1107 @@
+[
+  {
+    "recurso": "RPPS_CRP",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "no_ente",
+      "sg_uf",
+      "nr_crp",
+      "ds_situacao",
+      "dt_emissao",
+      "dt_validade",
+      "tp_crp"
+    ]
+  },
+  {
+    "recurso": "RPPS_ALIQUOTA",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "no_ente",
+      "sg_uf",
+      "ds_plano_segregacao",
+      "no_sujeito_passivo",
+      "vl_aliquota",
+      "dt_inicio_vigencia",
+      "dt_fim_vigencia",
+      "id_vigente",
+      "tp_regime"
+    ]
+  },
+  {
+    "recurso": "RPPS_REGIME_PREVIDENCIARIO",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "tp_regime",
+      "dt_inicio",
+      "dt_fim",
+      "no_tipo_legislacao",
+      "nr_legislacao",
+      "dt_legislacao",
+      "te_ementa",
+      "tp_vinculo_legislacao"
+    ]
+  },
+  {
+    "recurso": "DAIR_IDENTIFICACAO",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_mes",
+      "dt_ano",
+      "dt_envio",
+      "te_finalidade",
+      "te_justificativa",
+      "dt_posicao",
+      "te_motivo_retificacao",
+      "te_descricao_retificacao",
+      "te_justicativa_retificacao"
+    ]
+  },
+  {
+    "recurso": "DAIR_CARTEIRA",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_mes_bimestre",
+      "dt_ano",
+      "no_segmento",
+      "no_tipo_ativo",
+      "pc_cmn",
+      "id_ativo",
+      "no_fundo",
+      "qt_rpps",
+      "vl_atual_ativo",
+      "vl_total_atual",
+      "pc_rpps",
+      "vl_patrimonio",
+      "pc_patrimonio"
+    ]
+  },
+  {
+    "recurso": "DAIR_APLICACOES_RESGATE",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_mes",
+      "dt_ano",
+      "no_segmeto",
+      "tp_ativo",
+      "ds_identificacao_ativo",
+      "nr_apr",
+      "no_fundo_constituido",
+      "tp_operacao",
+      "dt_operacao",
+      "dt_liquidacao",
+      "vl_quantidade",
+      "vl_ativo",
+      "vl_quantidade_antes",
+      "vl_operacao",
+      "vl_quantidade_apos"
+    ]
+  },
+  {
+    "recurso": "DAIR_FORMA_GESTAO",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_mes",
+      "dt_ano",
+      "dt_envio",
+      "no_objeto_contratacao",
+      "dt_assinatura_contrato",
+      "nr_prazo_vigencia",
+      "vl_mensal_contrato",
+      "nr_processo",
+      "no_modalidade_licitacao",
+      "tp_licitacao",
+      "dt_registro_responsavel",
+      "no_pessoa_representante",
+      "no_pessoa_responsavel"
+    ]
+  },
+  {
+    "recurso": "DAIR_FUNDO_INVEST_ANALISADOS",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_mes",
+      "dt_ano",
+      "dt_envio",
+      "nr_cnpj_empresa",
+      "no_empresa",
+      "no_segmento",
+      "no_tipo_ativo",
+      "nr_cnpj_fundo",
+      "no_fundo",
+      "dt_analise"
+    ]
+  },
+  {
+    "recurso": "DAIR_GOVERNANCA",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "no_ente",
+      "sg_uf",
+      "dt_mes",
+      "dt_ano",
+      "dt_envio",
+      "nr_norma_fundamento",
+      "dt_norma_fundamento",
+      "te_dispositivo_norma",
+      "no_tipo_norma",
+      "no_pessoa",
+      "no_cargo",
+      "tp_vinculo",
+      "no_vinculo_representatividade",
+      "no_orgao_entidade",
+      "no_atribuicao",
+      "no_entidade_governanca",
+      "te_ato_inicio_atuacao",
+      "dt_inicio_atuacao",
+      "te_ato_fim_atuacao",
+      "dt_fim_atuacao",
+      "no_tipo_certificacao",
+      "dt_validade_certificacao",
+      "no_entidade_certificadora",
+      "nr_cnpj_certificadora"
+    ]
+  },
+  {
+    "recurso": "DAIR_INSTITUICAO_CREDENCIADA",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_mes",
+      "dt_ano",
+      "nr_cnpj_empresa",
+      "no_empresa",
+      "tp_instituicao",
+      "ds_descricao",
+      "nr_processo",
+      "dt_termo_analise"
+    ]
+  },
+  {
+    "recurso": "DAIR_REGIME_ATA",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_mes",
+      "dt_ano",
+      "dt_envio",
+      "no_orgao",
+      "dt_reuniao",
+      "te_local_reuniao",
+      "te_principais_liberacoes"
+    ]
+  },
+  {
+    "recurso": "DIPR",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "idrubrica",
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_mes",
+      "dt_ano",
+      "dt_envio",
+      "no_plano",
+      "nr_cnpj_orgao",
+      "no_orgao",
+      "id_rubrica",
+      "no_rubrica",
+      "te_rubrica",
+      "vl_rubrica"
+    ]
+  },
+  {
+    "recurso": "DRAA_BASE_CALCULO_AMORTIZACAO",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "nr_codigo",
+      "no_tipo_norma",
+      "nr_norma_fundamento",
+      "dt_norma_fundamento",
+      "te_dispositivo_norma",
+      "nr_base_calculo",
+      "no_base_calculo"
+    ]
+  },
+  {
+    "recurso": "DRAA_BASE_CALCULO_ENTE",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "nr_codigo",
+      "no_tipo_norma",
+      "nr_norma_fundamento",
+      "dt_norma_fundamento",
+      "te_dispositivo_norma",
+      "nr_base_calculo",
+      "no_base_calculo"
+    ]
+  },
+  {
+    "recurso": "DRAA_COMPARATIVO_AVALIACAO",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "cd_comparativo",
+      "ds_comparativo",
+      "te_ano_avaliacao_mais_um",
+      "te_ano_avaliacao_atual",
+      "te_ano_avaliacao_menos_um"
+    ]
+  },
+  {
+    "recurso": "DRAA_COMPARATIVO_RECEITA",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "dt_exercicio_inicial",
+      "nr_fluxo",
+      "no_fluxo",
+      "vl_projetado",
+      "vl_executado",
+      "vl_diferenca"
+    ]
+  },
+  {
+    "recurso": "DRAA_CONTRIBUICAO",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "no_tipo_norma",
+      "nr_norma_fundamento",
+      "dt_norma_fundamento",
+      "te_dispositivo_norma",
+      "nr_base_calculo",
+      "no_base_calculo",
+      "tp_beneficiario",
+      "vl_anual_contribuicao",
+      "vl_mensal_contribuicao"
+    ]
+  },
+  {
+    "recurso": "DRAA_CUSTO_NORMAL_BENEF_CAPIT",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "no_tipo_norma",
+      "nr_norma_fundamento",
+      "dt_norma_fundamento",
+      "te_dispositivo_norma",
+      "cd_plano_beneficio",
+      "no_beneficio",
+      "vl_custo_anual_previsto",
+      "pc_contribuicao"
+    ]
+  },
+  {
+    "recurso": "DRAA_CUSTO_NORMAL_BENEF_COB",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "no_tipo_norma",
+      "nr_norma_fundamento",
+      "dt_norma_fundamento",
+      "te_dispositivo_norma",
+      "cd_plano_beneficio",
+      "no_beneficio",
+      "vl_custo_anual_previsto",
+      "pc_contribuicao"
+    ]
+  },
+  {
+    "recurso": "DRAA_CUSTO_NORMAL_REP_APOS",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "no_tipo_norma",
+      "nr_norma_fundamento",
+      "dt_norma_fundamento",
+      "te_dispositivo_norma",
+      "cd_custo_normal_reparticao",
+      "no_reparticao",
+      "vl_pago_dois_anos_antes",
+      "vl_pago_um_ano_antes",
+      "vl_pago_ano_atual",
+      "vl_minimo_um_ano_apos",
+      "vl_previsto_um_ano_apos",
+      "pc_contribuicao"
+    ]
+  },
+  {
+    "recurso": "DRAA_CUSTO_NORMAL_REP_AUX",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "no_tipo_norma",
+      "nr_norma_fundamento",
+      "dt_norma_fundamento",
+      "te_dispositivo_norma",
+      "cd_custo_normal_reparticao",
+      "no_reparticao",
+      "vl_pago_dois_anos_antes",
+      "vl_pago_um_ano_antes",
+      "vl_pago_ano_atual",
+      "vl_minimo_um_ano_apos",
+      "vl_previsto_um_ano_apos",
+      "pc_contribuicao"
+    ]
+  },
+  {
+    "recurso": "DRAA_DADOS_CONSOLIDADOS",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_mes",
+      "dt_ano",
+      "dt_envio",
+      "no_objeto_contratacao",
+      "dt_assinatura_contrato",
+      "nr_prazo_vigencia",
+      "vl_mensal_contrato",
+      "nr_processo",
+      "no_modalidade_licitacao",
+      "tp_licitacao",
+      "dt_registro_responsavel",
+      "no_pessoa_representante",
+      "no_pessoa_responsavel"
+    ]
+  },
+  {
+    "recurso": "DRAA_ENCAMINHAMENTO",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao"
+    ]
+  },
+  {
+    "recurso": "DRAA_ESTATISTICA",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "cnpj_orgao",
+      "no_orgao",
+      "cd_populacao",
+      "tp_populacao",
+      "no_cat_populacao",
+      "no_regra_enquadramento",
+      "no_criterio_aposentadoria",
+      "qt_grupo_masc",
+      "vl_medio_base_calculo_masc",
+      "vl_idade_media_masc",
+      "vl_idade_med_aposent_masc",
+      "vl_idade_med_adm_masc",
+      "vl_folha_mensal_masc",
+      "qt_grupo_fem",
+      "vl_medio_base_calculo_fem",
+      "vl_idade_media_fem",
+      "vl_idade_med_aposent_fem",
+      "vl_idade_med_adm_fem",
+      "vl_folha_mensal_fem"
+    ]
+  },
+  {
+    "recurso": "DRAA_FLUXO_ATUARIAL",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "tp_plano",
+      "tp_massa",
+      "dt_exercicio",
+      "nr_fluxo",
+      "no_fluxo",
+      "vl_projetado"
+    ]
+  },
+  {
+    "recurso": "DRAA_FORMA_AMORTIZACAO",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "cd_demonstrativo",
+      "ds_item_resultado",
+      "vl_geracao_atual"
+    ]
+  },
+  {
+    "recurso": "DRAA_HIPOTESE_ATUARIAL",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "cd_hipotese_demografica",
+      "ds_hipotese_demografica",
+      "tp_unidade",
+      "te_hipotese_demografica",
+      "vl_previsto_dois_antes",
+      "vl_ocorrido_dois_antes",
+      "vl_previsto_um_antes",
+      "vl_ocorrido_um_antes",
+      "vl_previsto_ano_avaliacao",
+      "vl_ocorrido_ano_avaliacao",
+      "vl_perspectiva_longo_prazo",
+      "te_justificativa_tecnica"
+    ]
+  },
+  {
+    "recurso": "DRAA_HIPOTESE_BIOMETRICA",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "cd_hipotese_biometrica_masc",
+      "ds_hipotese_biometrica_masc",
+      "cd_tipo_tabua_masc",
+      "tp_tabua_masc",
+      "nr_even_prev_menos_dois_anos_m",
+      "nr_even_ocor_menos_dois_anos_m",
+      "nr_even_prev_menos_um_ano_m",
+      "nr_even_ocor_menos_um_ano_m",
+      "nr_even_prev_menos_ano_aval_m",
+      "nr_even_ocor_menos_ano_aval_m",
+      "ds_justificativa_tecnica_masc",
+      "cd_hipotese_biometrica_fem",
+      "ds_hipotese_biometrica_fem",
+      "dt_exercicio_inicial",
+      "tp_sexo",
+      "cd_tipo_tabua_fem",
+      "tp_tabua_fem",
+      "nr_even_prev_menos_dois_anos_f",
+      "nr_even_ocor_menos_dois_anos_f",
+      "nr_even_prev_menos_um_ano_f",
+      "nr_even_ocor_menos_um_ano_f",
+      "nr_even_prev_menos_ano_aval_f",
+      "nr_even_ocor_menos_ano_aval_f",
+      "ds_justificativa_tecnica_fem"
+    ]
+  },
+  {
+    "recurso": "DRAA_NOTIFICACAO",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "nr_notificacao",
+      "no_tipo_documento",
+      "no_item_analise",
+      "no_situacao_item_analise",
+      "dt_notificao",
+      "dt_preclusao",
+      "dt_resposta",
+      "nr_prazo_resposta"
+    ]
+  },
+  {
+    "recurso": "DRAA_ORGAO_ENTIDADE",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "cnpj_orgao",
+      "no_orgao",
+      "dt_competencia_base_cadastral",
+      "tp_poder",
+      "tp_orgao"
+    ]
+  },
+  {
+    "recurso": "DRAA_PARECER_ATUARIAL",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "cd_tema",
+      "no_tema",
+      "te_parecer"
+    ]
+  },
+  {
+    "recurso": "DRAA_PLANO_AMORTIZACAO",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "dt_ano",
+      "tx_juros",
+      "vl_aporte",
+      "vl_aliquotas",
+      "vl_base_calculo",
+      "vl_saldo_inicial",
+      "vl_pagamentos",
+      "vl_saldo_final",
+      "vl_juros",
+      "vl_amortizacao"
+    ]
+  },
+  {
+    "recurso": "DRAA_PLANO_AMORTIZACAO_DEFICIT",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "nr_base_calculo",
+      "no_base_calculo"
+    ]
+  },
+  {
+    "recurso": "DRAA_PLANO_BENEFICIO",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "no_tipo_norma",
+      "nr_norma_fundamento",
+      "dt_norma_fundamento",
+      "te_dispositivo_norma",
+      "nr_plano_benefico",
+      "no_beneficio_plano",
+      "nr_regime_financeiro",
+      "ds_regime_financeiro",
+      "ds_metodo_financiamento"
+    ]
+  },
+  {
+    "recurso": "DRAA_PLANO_CUSTEIO",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "tp_contribuicao",
+      "vl_anual_base_calculo",
+      "vl_aliquota",
+      "vl_contribuicao_esperada",
+      "vl_aliquota_definida",
+      "vl_contribuicao_definida"
+    ]
+  },
+  {
+    "recurso": "DRAA_RETIFICACAO_NOTIFICACAO",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "in_retificacao",
+      "in_motivo_notificacao",
+      "nr_notificacao"
+    ]
+  },
+  {
+    "recurso": "DRAA_SEGREGACAO_MASSA",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "tp_massa",
+      "te_situacao",
+      "tp_plano",
+      "no_previdencia_complementar",
+      "no_beneficio_tesouro",
+      "no_tipo_norma",
+      "nr_norma_fundamento",
+      "dt_norma_fundamento",
+      "te_dispositivo_norma",
+      "no_segregacao_massa",
+      "dt_ingresso_segurado",
+      "nr_idade_segurado",
+      "in_segurado_servidor",
+      "in_segurado_aposentado",
+      "in_segurado_pensionista",
+      "no_atuario_responsavel",
+      "nr_registro_prof_atuario",
+      "tp_documento",
+      "nr_documento",
+      "dt_documento"
+    ]
+  },
+  {
+    "recurso": "DRAA_VALORES_COMPROMISSOS",
+    "status": 200,
+    "ok": true,
+    "exige_exercicio": false,
+    "count": 1,
+    "id_ente": [
+      "no_ente",
+      "nr_cnpj_entidade",
+      "sg_uf"
+    ],
+    "campos": [
+      "nr_cnpj_entidade",
+      "sg_uf",
+      "no_ente",
+      "dt_exercicio",
+      "dt_envio",
+      "te_situacao",
+      "tp_plano",
+      "tp_massa",
+      "cd_demonstrativo",
+      "ds_item_resultado",
+      "no_categoria_demonstrativo",
+      "vl_geracao_atual",
+      "vl_geracao_futura"
+    ]
+  }
+]

@@ -1,4 +1,5 @@
 import type { CaptacaoSC, PerfilNecessidade, ProgramaFederal } from "@/lib/queries";
+import { GlossarioStrip } from "@/components/termo";
 import { fmtBRLCompact } from "@/lib/ui";
 
 function dt(s: string | null) {
@@ -31,18 +32,23 @@ function tipoJanelaMeta(t: string, elegivel: boolean, temLista: boolean) {
 }
 
 // Radar de Captação (Transferegov, fonte original viva) — o ponto cego: quanto captou × vs pares × o que pode captar.
-export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, programasFederais }: { dados: CaptacaoSC; cod: string; nome: string; margem?: { investimento: number; medianaSC: number }; necessidade?: PerfilNecessidade; programasFederais?: ProgramaFederal[] }) {
+export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, programasFederais, crpBloqueio }: { dados: CaptacaoSC; cod: string; nome: string; margem?: { investimento: number; medianaSC: number }; necessidade?: PerfilNecessidade; programasFederais?: ProgramaFederal[]; crpBloqueio?: { vencido: boolean; dias: number | null; validade: string | null; motivos: string[] } | null }) {
   if (!dados) return null;
   const docLink = (id: string) => `/api/plano-trabalho?ente=${cod}&programa=${id}`;
   const vsMedia = dados.benchmark.media > 0 ? dados.totalCaptado / dados.benchmark.media : 0;
   const maxOrg = Math.max(1, ...dados.porOrgao.map((o) => o.valor));
   const maxAno = Math.max(1, ...dados.porAno.map((a) => a.valor));
   // déficit do município por área (casamento oportunidade × necessidade)
-  const necDe = (area: string) => (area === "saude" ? necessidade?.saude : area === "educacao" ? necessidade?.educacao : area === "assistencia" ? necessidade?.assistencia : null);
+  const necDe = (area: string) => (area === "saude" ? necessidade?.saude : area === "educacao" ? necessidade?.educacao : area === "assistencia" ? necessidade?.assistencia : area === "infraestrutura" ? necessidade?.infraestrutura : area === "habitacao" ? necessidade?.habitacao : area === "cultura" ? necessidade?.cultura : area === "esporte" ? necessidade?.esporte : area === "agricultura" ? necessidade?.agricultura : null);
   const combina = (area: string) => { const n = necDe(area); return n != null && n.deficit; };
   const carencias = [necessidade?.saude?.deficit ? { ic: "🏥", lbl: "Saúde", motivo: necessidade!.saude!.motivo } : null,
                      necessidade?.educacao?.deficit ? { ic: "🎓", lbl: "Educação", motivo: necessidade!.educacao!.motivo } : null,
-                     necessidade?.assistencia?.deficit ? { ic: "🤝", lbl: "Assistência social", motivo: necessidade!.assistencia!.motivo } : null].filter(Boolean) as { ic: string; lbl: string; motivo: string }[];
+                     necessidade?.assistencia?.deficit ? { ic: "🤝", lbl: "Assistência social", motivo: necessidade!.assistencia!.motivo } : null,
+                     necessidade?.infraestrutura?.deficit ? { ic: "🚰", lbl: "Saneamento/Infraestrutura", motivo: necessidade!.infraestrutura!.motivo } : null,
+                     necessidade?.habitacao?.deficit ? { ic: "🏘️", lbl: "Habitação", motivo: necessidade!.habitacao!.motivo } : null,
+                     necessidade?.cultura?.deficit ? { ic: "🎭", lbl: "Cultura", motivo: necessidade!.cultura!.motivo } : null,
+                     necessidade?.esporte?.deficit ? { ic: "⚽", lbl: "Esporte", motivo: necessidade!.esporte!.motivo } : null,
+                     necessidade?.agricultura?.deficit ? { ic: "🌾", lbl: "Agricultura", motivo: necessidade!.agricultura!.motivo } : null].filter(Boolean) as { ic: string; lbl: string; motivo: string }[];
   // oportunidades que ESTE município pode efetivamente pleitear (voluntária = todos · específica = só se elegível)
   const pleiteaveis = dados.abertos.filter((o) => o.tipoJanela === "voluntaria" || o.elegivel);
   const criticas = pleiteaveis.filter((o) => o.dias != null && o.dias <= 15);
@@ -53,10 +59,35 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
   const casadaUrgente = [...casadas].sort((a, b) => (a.dias ?? 999) - (b.dias ?? 999))[0] || null;
   const margemApertada = margem != null && margem.medianaSC > 0 && margem.investimento < margem.medianaSC;
   const temAlerta = pleiteaveis.length > 0 && (casadas.length > 0 || criticas.length > 0 || altas.length > 0 || margemApertada);
+  // CRP: sem certificado válido, os recursos pleiteáveis ficam BLOQUEADOS (não há repasse voluntário/emenda/convênio)
+  const crpVencida = crpBloqueio?.vencido === true;
+  const crpAVencer = !crpVencida && crpBloqueio?.dias != null && crpBloqueio.dias <= 90;
+  const valorBloqueado = pleiteaveis.reduce((s, o) => s + (o.valor || 0), 0);
   // ordena a lista exibida: casadas primeiro, depois por prazo
   const abertosOrd = [...dados.abertos].sort((a, b) => (Number(combina(b.area)) - Number(combina(a.area))) || ((a.dias ?? 999) - (b.dias ?? 999)));
   return (
     <div className="space-y-4">
+      {/* BLOQUEIO POR CRP — recursos que {nome} não pode receber sem regularidade previdenciária */}
+      {crpBloqueio && (crpVencida || crpAVencer) && (
+        <div className={`rounded-2xl border p-4 ${crpVencida ? "border-rose-300 bg-rose-50" : "border-amber-300 bg-amber-50"}`}>
+          <div className="flex items-start gap-3">
+            <span className="text-2xl">{crpVencida ? "🔒" : "⏳"}</span>
+            <div className="flex-1">
+              <div className={`font-semibold ${crpVencida ? "text-rose-800" : "text-amber-800"}`}>
+                {crpVencida
+                  ? <>CRP vencida — {pleiteaveis.length} recurso(s){valorBloqueado > 0 && <> ({fmtBRLCompact(valorBloqueado)})</>} <b>bloqueado(s)</b> para {nome}</>
+                  : <>CRP vence em {crpBloqueio.dias} dia(s) — {pleiteaveis.length} recurso(s){valorBloqueado > 0 && <> ({fmtBRLCompact(valorBloqueado)})</>} sob risco de bloqueio</>}
+              </div>
+              <div className="mt-0.5 text-sm text-slate-700">
+                {crpVencida
+                  ? <>Sem o Certificado de Regularidade Previdenciária válido, a União <b>não libera</b> transferências voluntárias, emendas nem convênios — as oportunidades abaixo ficam <b>indisponíveis até regularizar</b>.{crpBloqueio.motivos.length > 0 && <> Motivos: {crpBloqueio.motivos.join("; ")}.</>}</>
+                  : <>Renove a CRP antes de {crpBloqueio.validade ?? "o vencimento"} para não perder o acesso às oportunidades abaixo.</>}
+                {" "}<a href="#previdencia" className="font-semibold text-teal-700 hover:underline">ver previdência →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* ALERTA PROATIVO (mesma regra dos contratos a vencer): oportunidade aberta fechando logo */}
       {temAlerta && (
         <div className={`rounded-2xl border p-4 ${criticas.length > 0 ? "border-rose-300 bg-rose-50" : "border-teal-300 bg-teal-50"}`}>
@@ -131,7 +162,7 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
       {/* PODERÁ ACESSAR — janelas abertas hoje */}
       <section className="rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-emerald-800">✅ Pode captar agora — janela de proposta ABERTA</h3>
-        <p className="text-[11px] text-slate-400">Índice de criticidade por urgência da janela: Crítico ≤15 dias · Alto ≤45 · Médio ≤120 · Baixo &gt;120. Quanto menos dias, mais urgente agir.</p>
+        <p className="text-[11px] text-slate-500">Índice de criticidade por urgência da janela: Crítico ≤15 dias · Alto ≤45 · Médio ≤120 · Baixo &gt;120. Quanto menos dias, mais urgente agir.</p>
         {dados.abertos.length > 0 ? (
           <div className="mt-2 space-y-1.5">
             {abertosOrd.map((o) => {
@@ -155,6 +186,7 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
                       {match && <span className="rounded px-1.5 py-0.5 text-[10px] font-bold bg-emerald-600 text-white">🎯 combina com sua carência de {areaMeta(o.area).lbl.toLowerCase()}</span>}
                       <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-600">{areaMeta(o.area).ic} {areaMeta(o.area).lbl}</span>
                       {(() => { const tj = tipoJanelaMeta(o.tipoJanela, o.elegivel, o.temLista); return <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${tj.cls}`}>{tj.lbl}</span>; })()}
+                      {pleiteavel && crpVencida && <span className="rounded px-1.5 py-0.5 text-[10px] font-bold bg-rose-600 text-white">🔒 bloqueada — CRP vencida</span>}
                     </div>
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
                       <span>🏛️ {o.orgao}</span>
@@ -167,8 +199,8 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
                 </summary>
                 {/* FICHA da oportunidade — todos os dados p/ decisão */}
                 <div className="space-y-3 border-t border-slate-100 px-4 pb-4 pt-3">
-                  {o.objetivo && <div><div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Objetivo</div><p className="text-[13px] text-slate-700">{o.objetivo}</p></div>}
-                  {o.descricao && o.descricao !== o.objetivo && <div><div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Descrição</div><p className="text-[13px] text-slate-600">{o.descricao}</p></div>}
+                  {o.objetivo && <div><div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Objetivo</div><p className="text-[13px] text-slate-700">{o.objetivo}</p></div>}
+                  {o.descricao && o.descricao !== o.objetivo && <div><div className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Descrição</div><p className="text-[13px] text-slate-600">{o.descricao}</p></div>}
                   <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
                     {campos.map(([rotulo, valor]) => (
                       <div key={rotulo} className="flex justify-between gap-3 border-b border-slate-50 pb-1.5">
@@ -181,7 +213,7 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
                     <a href={docLink(o.id)} className="rounded-lg bg-teal-600 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-teal-700">📄 Gerar Plano de Trabalho (.docx)</a>
                     <a href="https://discricionarias.transferegov.sistema.gov.br/" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-teal-600 px-3 py-1.5 text-[12px] font-semibold text-teal-700 hover:bg-teal-50">Abrir no Transferegov ↗</a>
                   </div>
-                  <p className="text-[10px] text-slate-400">Fonte: Transferegov (api.transferegov.gestao.gov.br/fundoafundo) — dado oficial. Programa {o.codigo || o.id}.</p>
+                  <p className="text-[10px] text-slate-500">Fonte: Transferegov (api.transferegov.gestao.gov.br/fundoafundo) — dado oficial. Programa {o.codigo || o.id}.</p>
                 </div>
               </details>
               );
@@ -202,14 +234,14 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
               <h3 className="text-sm font-semibold text-slate-800">🔎 Programas federais monitorados — saúde, educação, infraestrutura, cultura, esporte, segurança e assistência</h3>
               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{programasFederais.length} programas · fontes oficiais</span>
             </div>
-            <p className="text-[12px] text-slate-500">Os programas federais não publicam janela aberta por API — as aberturas saem por portaria/seleção. Monitoramos {programasFederais.length} programas oficiais e <b>casamos com as carências de {nome}</b>. {nMatch > 0 ? <span className="font-semibold text-emerald-700">{nMatch} combina(m) hoje com o que falta aqui.</span> : "Cada item traz a fonte oficial e como pleitear."} <span className="text-slate-400">O casamento automático cobre saúde, educação e assistência social (com déficit medido); demais áreas listadas para o gestor avaliar.</span></p>
+            <p className="text-[12px] text-slate-500">Os programas federais não publicam janela aberta por API — as aberturas saem por portaria/seleção. Monitoramos {programasFederais.length} programas oficiais e <b>casamos com as carências de {nome}</b>. {nMatch > 0 ? <span className="font-semibold text-emerald-700">{nMatch} combina(m) hoje com o que falta aqui.</span> : "Cada item traz a fonte oficial e como pleitear."} <span className="text-slate-500">O casamento automático cobre saúde, educação e assistência social (com déficit medido); demais áreas listadas para o gestor avaliar.</span></p>
             <div className="mt-3 space-y-2">
               {ord.map((p) => { const match = combina(p.area); const n = necDe(p.area); return (
                 <div key={p.id} className={`rounded-xl border p-3 ${match ? "border-emerald-400 bg-emerald-50/40 ring-1 ring-emerald-200" : "border-slate-200"}`}>
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="rounded px-1.5 py-0.5 text-[10px] font-semibold bg-slate-100 text-slate-600">{areaMeta(p.area).ic} {areaMeta(p.area).lbl}</span>
                     {match && <span className="rounded px-1.5 py-0.5 text-[10px] font-bold bg-emerald-600 text-white">🎯 combina com sua carência de {areaMeta(p.area).lbl.toLowerCase()}</span>}
-                    <span className="text-[10px] text-slate-400">{p.fonte}</span>
+                    <span className="text-[10px] text-slate-500">{p.fonte}</span>
                   </div>
                   <div className="mt-1 text-sm font-semibold text-slate-900">{p.nome}</div>
                   <div className="text-[12px] text-slate-600">{p.objeto}</div>
@@ -223,7 +255,7 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
                 </div>
               ); })}
             </div>
-            <p className="mt-2 text-[10px] text-slate-400">Registro curado com proveniência (fonte oficial em cada programa), atualizado conforme as portarias. Integração automática entra quando FNS/FNDE publicarem feed de janela.</p>
+            <p className="mt-2 text-[10px] text-slate-500">Registro curado com proveniência (fonte oficial em cada programa), atualizado conforme as portarias. Integração automática entra quando FNS/FNDE publicarem feed de janela.</p>
           </section>
         );
       })()}
@@ -243,12 +275,12 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
           </div>
           {dados.porAno.length > 1 && (
             <div className="mt-4">
-              <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Por ano</div>
+              <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">Por ano</div>
               <div className="flex items-end gap-1" style={{ height: 60 }}>
                 {dados.porAno.map((a) => (
                   <div key={a.ano} className="flex flex-1 flex-col items-center justify-end" title={`${a.ano}: ${fmtBRLCompact(a.valor)}`}>
                     <div className="w-full rounded-t bg-teal-400" style={{ height: `${Math.max(3, (a.valor / maxAno) * 50)}px` }} />
-                    <span className="mt-0.5 text-[9px] text-slate-400">{String(a.ano).slice(2)}</span>
+                    <span className="mt-0.5 text-[9px] text-slate-500">{String(a.ano).slice(2)}</span>
                   </div>
                 ))}
               </div>
@@ -268,7 +300,7 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
             {dados.analises.tendencia && <li>{dados.analises.tendencia.delta >= 0 ? "📈" : "📉"} <b>Tendência:</b> a captação {dados.analises.tendencia.delta >= 0 ? "cresceu" : "caiu"} <b>{fmtBRLCompact(Math.abs(dados.analises.tendencia.delta))}</b> no último ano com registro ({dados.analises.tendencia.ultimoAno}).</li>}
             {dados.analises.naoCaptados > 0 && <li>🎯 <b>Oportunidade imediata:</b> há <b>{dados.analises.naoCaptados}</b> programa(s) com janela aberta que {nome} ainda não captou. <span className="text-slate-500">→ Gere o Plano de Trabalho acima e submeta no Transferegov.</span></li>}
           </ul>
-          <p className="mt-2 text-[10px] text-slate-400">Análises calculadas sobre a base oficial do governo federal (Transferegov fundo a fundo). Aprofundam-se ao integrar saúde (FNS), educação (FNDE) e assistência (FNAS).</p>
+          <p className="mt-2 text-[10px] text-slate-500">Análises calculadas sobre a base oficial do governo federal (Transferegov fundo a fundo). Aprofundam-se ao integrar saúde (FNS), educação (FNDE) e assistência (FNAS).</p>
         </section>
       )}
 
@@ -294,7 +326,7 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
             { t: "proposta", n: "Proposta de Trabalho", d: "1º passo no Transferegov", por: "A celebração começa pelo encaminhamento da proposta/plano de trabalho no Transferegov.br, após a divulgação do programa pelo concedente.", fonte: "Decreto 11.531/2023, art. 19 · Transferegov.br" },
             { t: "oficio-emenda", n: "Ofício ao Parlamentar", d: "Captar emenda parlamentar", por: "A indicação de emenda parte de solicitação formal ao parlamentar. Emendas individuais são de execução obrigatória (impositivas), o que aumenta a chance de recebimento.", fonte: "CF art. 166, §§9º-11 · EC 100/2019 (orçamento impositivo)" },
             { t: "oficio-concedente", n: "Ofício de Encaminhamento", d: "Enviar a proposta ao concedente", por: "Formaliza o protocolo da proposta junto ao órgão concedente e declara a regularidade do ente para celebrar o instrumento.", fonte: "Decreto 11.531/2023 · órgão concedente" },
-            { t: "termo-referencia", n: "Termo de Referência", d: "Fase de contratação (após o recurso)", por: "Depois de captado o recurso, a compra/obra exige Termo de Referência ou Projeto Básico. Use a Pesquisa de Preço do PNIGP para o valor de referência.", fonte: "Lei 14.133/2021, art. 6º, XXIII e art. 18" },
+            { t: "termo-referencia", n: "Termo de Referência", d: "Fase de contratação (após o recurso)", por: "Depois de captado o recurso, a compra/obra exige Termo de Referência ou Projeto Básico. Use a Pesquisa de Preço do i10 Gov 360 para o valor de referência.", fonte: "Lei 14.133/2021, art. 6º, XXIII e art. 18" },
             { t: "declaracoes", n: "Declarações", d: "Habilitação do ente", por: "Transferências voluntárias exigem comprovação de regularidade e de contrapartida. As declarações instruem a habilitação e evitam pendências no Transferegov.", fonte: "LC 101/2000 (LRF), art. 25 · Decreto 11.531/2023" },
           ].map((m) => (
             <div key={m.t} className="flex flex-col rounded-xl border border-slate-200 p-3">
@@ -304,7 +336,7 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
                 <a href={`/api/modelo?ente=${cod}&tipo=${m.t}`} className="shrink-0 self-start rounded-lg bg-teal-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-teal-700">.docx ↓</a>
               </div>
               <p className="mt-1.5 text-[11px] text-slate-600"><b className="text-slate-700">Por quê:</b> {m.por}</p>
-              <p className="mt-1 text-[10px] text-slate-400"><b>Fonte:</b> {m.fonte}</p>
+              <p className="mt-1 text-[10px] text-slate-500"><b>Fonte:</b> {m.fonte}</p>
             </div>
           ))}
         </div>
@@ -327,7 +359,7 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
             ))}
           </ul>
         </div>
-        <p className="mt-2 text-[10px] text-slate-400">Modelos pré-preenchidos pelo PNIGP (Instituto I10) com dados oficiais. Campos "(preencher)" exigem complemento do gestor. Base legal citada por documento; revise antes de protocolar. Para vincular a um programa específico, use "Gerar Plano de Trabalho" na oportunidade desejada.</p>
+        <p className="mt-2 text-[10px] text-slate-500">Modelos pré-preenchidos pelo i10 Gov 360 (Instituto I10) com dados oficiais. Campos "(preencher)" exigem complemento do gestor. Base legal citada por documento; revise antes de protocolar. Para vincular a um programa específico, use "Gerar Plano de Trabalho" na oportunidade desejada.</p>
       </section>
 
       {/* BENCHMARK — potencial comparativo */}
@@ -335,8 +367,10 @@ export function AssuntoCaptacao({ dados, cod, nome, margem, necessidade, program
         <b>Potencial de captação:</b> {nome} captou <b>{fmtBRLCompact(dados.totalCaptado)}</b>; a média dos municípios de SC é <b>{fmtBRLCompact(dados.benchmark.media)}</b> e o maior captou <b>{fmtBRLCompact(dados.benchmark.max)}</b>.{" "}
         {vsMedia < 1 ? <span className="text-amber-700">Está <b>abaixo da média</b> — há espaço para captar mais.</span> : <span className="text-emerald-700">Está acima da média.</span>}
         {dados.benchmark.melhores.length > 0 && <span className="text-slate-500"> Quem mais capta em SC: {dados.benchmark.melhores.map((m) => m.nome).slice(0, 3).join(", ")}.</span>}
-        <div className="mt-1 text-[11px] text-slate-400">Fonte: Transferegov (api.transferegov.gestao.gov.br, fundo a fundo) — dado oficial. Cobre Cultura/Segurança/Trabalho/etc.; saúde, educação e assistência (FNS/FNDE/FNAS) entram nas próximas integrações.</div>
+        <div className="mt-1 text-[11px] text-slate-500">Fonte: Transferegov (api.transferegov.gestao.gov.br, fundo a fundo) — dado oficial. Cobre Cultura/Segurança/Trabalho/etc.; saúde, educação e assistência (FNS/FNDE/FNAS) entram nas próximas integrações.</div>
       </div>
+
+      <GlossarioStrip ks={["CAUC", "CRP", "FPM"]} />
     </div>
   );
 }

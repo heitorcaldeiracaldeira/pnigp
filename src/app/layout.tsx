@@ -15,7 +15,7 @@ const sora = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "PNIGP — Painel do Prefeito",
+  title: "i10 Gov 360 — Painel do Prefeito",
   description:
     "Plataforma Nacional de Inteligência da Gestão Pública — Instituto I10. Inteligência, evidências e valor público para a gestão municipal.",
 };

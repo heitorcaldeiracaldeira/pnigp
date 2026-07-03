@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CalendarRange, Landmark, Wallet } from "lucide-react";
 import { MetasSection } from "@/components/metas-section";
+import { GlossarioStrip } from "@/components/termo";
 import { OrcadoExecutado } from "@/components/charts/orcado-executado";
 import { despesaFuncaoArvore, receitaClassificacao } from "@/lib/orcamento";
 import type { Financas, IndicadorRow } from "@/lib/queries";
@@ -191,6 +192,8 @@ export function PlanejamentoSection({
           )}
         </div>
       )}
+
+      <GlossarioStrip ks={["PPA", "LDO", "LOA", "SICONFI"]} />
     </div>
   );
 }

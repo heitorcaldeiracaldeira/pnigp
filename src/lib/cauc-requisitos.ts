@@ -1,0 +1,40 @@
+// Mapa oficial dos requisitos do CAUC (extraído dos Metadados CAUC Municípios — Tesouro Nacional).
+// Usado para rotular o extrato item a item (cauc_detalhe_sc) na UI.
+export const CAUC_GRUPOS: Record<string, string> = {
+  "1": "I — Adimplência financeira",
+  "2": "II — Prestação de contas de recursos federais",
+  "3": "III — Relatórios e informações fiscais",
+  "4": "IV — Competência tributária e previdência",
+  "5": "V — Limites e aplicações mínimas",
+};
+
+export const CAUC_REQUISITOS: Record<string, { label: string; fonte?: string }> = {
+  "1.1": { label: "Regularidade quanto a Tributos, Contribuições Previdenciárias Federais e Dívida Ativa da União", fonte: "PGFN/RFB" },
+  "1.2": { label: "Regularidade no pagamento de precatórios judiciais", fonte: "Transferegov" },
+  "1.3": { label: "Regularidade quanto a Contribuições para o FGTS", fonte: "CAIXA" },
+  "1.4": { label: "Adimplência financeira em empréstimos e financiamentos concedidos pela União", fonte: "SAHEM" },
+  "1.5": { label: "Regularidade perante o Poder Público Federal", fonte: "CADIN" },
+  "2.1.1": { label: "Prestação de contas de recursos federais recebidos anteriormente — SIAFI/Subsistema Transferências" },
+  "2.1.2": { label: "Prestação de contas de recursos federais recebidos anteriormente — Transferegov" },
+  "3.1.1": { label: "Relatório de Gestão Fiscal (RGF) — publicação" },
+  "3.1.2": { label: "Relatório de Gestão Fiscal (RGF) — encaminhamento ao SICONFI" },
+  "3.2.1": { label: "Relatório Resumido de Execução Orçamentária (RREO) — publicação" },
+  "3.2.2": { label: "RREO — encaminhamento ao SICONFI" },
+  "3.2.3": { label: "RREO — encaminhamento do Anexo 8 ao SIOPE" },
+  "3.2.4": { label: "RREO — encaminhamento do Anexo 12 ao SIOPS" },
+  "3.3": { label: "Encaminhamento das contas anuais" },
+  "3.4.1": { label: "Matriz de Saldos Contábeis — encaminhamento mensal" },
+  "3.4.2": { label: "Matriz de Saldos Contábeis — encaminhamento de encerramento" },
+  "3.5": { label: "Encaminhamento de informações para o Cadastro da Dívida Pública (CDP)" },
+  "3.6": { label: "Transparência da execução orçamentária e financeira em meio eletrônico de acesso público" },
+  "3.7": { label: "Adoção de Sistema Integrado de Administração Financeira e Controle (SIAFIC)" },
+  "4.1": { label: "Exercício da plena competência tributária" },
+  "4.2": { label: "Regularidade previdenciária" },
+  "5.1": { label: "Aplicação mínima de recursos em Educação" },
+  "5.2": { label: "Aplicação mínima de recursos em Saúde" },
+  "5.3": { label: "Limite de despesas com Parcerias Público-Privadas (PPP)" },
+  "5.4": { label: "Limite de operações de crédito, inclusive por antecipação de receita" },
+  "5.5": { label: "Aplicação mínima do Fundeb para pagamento de profissionais da educação básica" },
+  "5.6": { label: "Aplicação mínima da complementação da União ao Fundeb em despesas de capital" },
+  "5.7": { label: "Aplicação de 50% da complementação VAAT do Fundeb na educação infantil" },
+};

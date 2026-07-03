@@ -30,10 +30,10 @@ export function CabecalhoArea({
     <div className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white">
       {/* faixa título + parecer da área */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 bg-gradient-to-br from-slate-50 to-white px-5 py-3">
-        <h2 className="flex items-center gap-2 text-base font-bold text-slate-900"><Layers className="h-4 w-4 text-slate-400" /> {titulo} <span className="text-sm font-normal text-slate-400">— em camadas</span></h2>
+        <h2 className="flex items-center gap-2 text-base font-bold text-slate-900"><Layers aria-hidden className="h-4 w-4 text-slate-400" /> {titulo} <span className="text-sm font-normal text-slate-500">— em camadas</span></h2>
         {conformidade && (
           <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm font-semibold ${PILL[conformidade.nivel]}`}>
-            {conformidade.nivel === "ok" ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />} {ROTULO[conformidade.nivel]}
+            {conformidade.nivel === "ok" ? <CheckCircle2 aria-hidden className="h-4 w-4" /> : <AlertTriangle aria-hidden className="h-4 w-4" />} {ROTULO[conformidade.nivel]}
           </span>
         )}
       </div>
@@ -45,7 +45,7 @@ export function CabecalhoArea({
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {conformidade && (
             <div className={`rounded-xl border p-3 ${conformidade.nivel === "ok" ? "border-emerald-200 bg-emerald-50/50" : "border-amber-200 bg-amber-50/50"}`}>
-              <div className="flex items-center gap-1.5 text-xs text-slate-500"><Scale className="h-3.5 w-3.5" /> {conformidade.label}</div>
+              <div className="flex items-center gap-1.5 text-xs text-slate-500"><Scale aria-hidden className="h-3.5 w-3.5" /> {conformidade.label}</div>
               <div className={`mt-0.5 text-2xl font-bold tabular-nums ${COR[conformidade.nivel]}`}>{conformidade.valor.toFixed(1)}%</div>
               <div className="text-[11px] text-slate-500">{conformidade.ancora}</div>
             </div>
@@ -62,7 +62,7 @@ export function CabecalhoArea({
         {/* atenções da área */}
         {atencoes.length > 0 && (
           <div className="rounded-xl border border-amber-200 bg-amber-50/40 p-3">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-800"><AlertTriangle className="h-3.5 w-3.5" /> Atenção nesta área</div>
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-800"><AlertTriangle aria-hidden className="h-3.5 w-3.5" /> Atenção nesta área</div>
             <ul className="mt-1.5 space-y-1">
               {atencoes.map((a, i) => (
                 <li key={i} className="flex gap-2 text-xs text-slate-700"><span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${SEVDOT[a.severidade]}`} /><span><b>{a.titulo}</b> — {a.detalhe}</span></li>
@@ -74,7 +74,7 @@ export function CabecalhoArea({
         {/* plano da área (ações) */}
         {plano.length > 0 && (
           <div className="rounded-xl border border-teal-200 bg-teal-50/50 p-3">
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-teal-800"><ClipboardList className="h-3.5 w-3.5" /> O que fazer nesta área</div>
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-teal-800"><ClipboardList aria-hidden className="h-3.5 w-3.5" /> O que fazer nesta área</div>
             <ol className="mt-1.5 space-y-1.5">
               {plano.map((p, i) => (
                 <li key={i} className="flex gap-2 text-xs text-slate-700">
@@ -92,7 +92,7 @@ export function CabecalhoArea({
             <span className="text-xs font-medium text-slate-500">Aprofunde:</span>
             {links.map((l) => (
               <a key={l.href} href={l.href} className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-slate-200">
-                {l.label} <ArrowRight className="h-3 w-3" />
+                {l.label} <ArrowRight aria-hidden className="h-3 w-3" />
               </a>
             ))}
           </div>

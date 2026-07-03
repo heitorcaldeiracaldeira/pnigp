@@ -1,15 +1,33 @@
 // Gera insights narrativos a partir de dados REAIS já carregados (sem fabricar nada).
 // Cada insight aponta o quê, o porquê (com número) e a ação. Severidade ordena a exibição.
-import type { Cruzamentos, DiagGestor, EducacaoSC, SaudeSC, RankFiscalSC } from "@/lib/queries";
+import type { Cruzamentos, DiagGestor, EducacaoSC, SaudeSC, RankFiscalSC, RppsSC, CaptacaoSC } from "@/lib/queries";
 
 export type Insight = { severidade: "critico" | "atencao" | "oportunidade" | "destaque"; area: string; titulo: string; detalhe: string; acao?: string };
 const n1 = (x: number) => x.toLocaleString("pt-BR", { maximumFractionDigits: 1 });
+const brl = (x: number) => (Math.abs(x) >= 1e9 ? `R$ ${(x / 1e9).toLocaleString("pt-BR", { maximumFractionDigits: 2 })} bi` : Math.abs(x) >= 1e6 ? `R$ ${(x / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mi` : `R$ ${x.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`);
 
 export function gerarInsightsSC(d: {
   diag: DiagGestor; cruz: Cruzamentos; saude: NonNullable<SaudeSC> | null; educacao: NonNullable<EducacaoSC> | null; pos: RankFiscalSC | null; total: number;
+  rpps?: RppsSC; captacao?: CaptacaoSC | null;
 }): Insight[] {
   const out: Insight[] = [];
-  const { diag, cruz, saude, educacao, pos, total } = d;
+  const { diag, cruz, saude, educacao, pos, total, rpps, captacao } = d;
+
+  // CRÍTICO — CRP (Regularidade Previdenciária): sem CRP válida, a União bloqueia transferências voluntárias,
+  // emendas e convênios. Cruza com as janelas federais abertas que o município pode pleitear (recurso na mesa).
+  const crp = rpps?.crp;
+  if (crp) {
+    const dias = crp.diasValidade;
+    const pleiteaveis = (captacao?.abertos || []).filter((o) => o.tipoJanela === "voluntaria" || o.elegivel);
+    const valorEmJogo = pleiteaveis.reduce((s, o) => s + (o.valor || 0), 0);
+    const refCaptacao = pleiteaveis.length
+      ? ` Há ${pleiteaveis.length} oportunidade(s) federal(is) em aberto${valorEmJogo > 0 ? ` (${brl(valorEmJogo)})` : ""} que dependem da CRP válida para serem captadas.`
+      : "";
+    if (crp.vencido)
+      out.push({ severidade: "critico", area: "Previdência", titulo: "CRP vencida — transferências federais bloqueadas", detalhe: `O Certificado de Regularidade Previdenciária ${crp.validade ? `venceu em ${crp.validade}` : "está vencido"}${dias != null && dias < 0 ? ` (há ${Math.abs(dias)} dias)` : ""}.${refCaptacao}`, acao: "Regularizar o RPPS no CADPREV para reabrir o acesso a emendas, convênios e operações de crédito." });
+    else if (dias != null && dias <= 90)
+      out.push({ severidade: dias <= 30 ? "critico" : "atencao", area: "Previdência", titulo: `CRP vence em ${dias} dia(s)`, detalhe: `Certificado de Regularidade Previdenciária válido até ${crp.validade ?? "—"}.${refCaptacao}`, acao: "Renovar a CRP no CADPREV antes do vencimento para não interromper o acesso a transferências voluntárias da União." });
+  }
 
   // CRÍTICO — mínimos constitucionais
   if (saude?.saudePct != null && saude.saudePct < 15)

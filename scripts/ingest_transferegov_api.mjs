@@ -37,6 +37,8 @@ async function main() {
   for (const col of ["descricao TEXT", "codigo TEXT", "fundo TEXT", "natureza_despesa TEXT", "acao_orcamentaria TEXT", "valor_acao NUMERIC", "parcelas INTEGER", "dt_ini_esp DATE", "dt_fim_esp DATE", "dt_ini_emenda DATE", "dt_fim_emenda DATE"])
     await db.query(`ALTER TABLE programas_transferegov ADD COLUMN IF NOT EXISTS ${col}`);
   await db.query(`CREATE TABLE IF NOT EXISTS captacao_transferegov_sc (id_plano TEXT PRIMARY KEY, cod_ibge TEXT, uf TEXT, id_programa TEXT, situacao TEXT, valor_total_repasse NUMERIC, valor_voluntario NUMERIC, valor_total NUMERIC, dt_inicio DATE, dt_fim DATE, orgao_repassador TEXT)`);
+  for (const col of ["nome_ente_recebedor TEXT", "cnpj_ente_recebedor TEXT", "esfera TEXT"])
+    await db.query(`ALTER TABLE captacao_transferegov_sc ADD COLUMN IF NOT EXISTS ${col}`).catch(() => {});
   const q = async (s, p) => { for (let t = 0; t < 8; t++) { try { return await db.query(s, p); } catch { await sleep(1200 * (t + 1)); } } throw new Error("db"); };
 
   // 1) PROGRAMAS (fundo a fundo) — catálogo + janela voluntária
@@ -58,11 +60,16 @@ async function main() {
   let nplan = 0;
   for await (const arr of paginar("fundoafundo/plano_acao", `uf_ente_recebedor_plano_acao=eq.${UF}`)) {
     for (const p of arr) {
-      const cod = p.codigo_ibge_municipio_ente_recebedor_plano_acao ? String(p.codigo_ibge_municipio_ente_recebedor_plano_acao) : null;
-      await q(`INSERT INTO captacao_transferegov_sc (id_plano,cod_ibge,uf,id_programa,situacao,valor_total_repasse,valor_voluntario,valor_total,dt_inicio,dt_fim,orgao_repassador)
-               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-               ON CONFLICT (id_plano) DO UPDATE SET situacao=EXCLUDED.situacao, valor_total_repasse=EXCLUDED.valor_total_repasse, valor_total=EXCLUDED.valor_total`,
-        [String(p.id_plano_acao), cod, p.uf_ente_recebedor_plano_acao, p.id_programa != null ? String(p.id_programa) : null, p.situacao_plano_acao, num(p.valor_total_repasse_plano_acao), num(p.valor_repasse_voluntario_plano_acao), num(p.valor_total_plano_acao), dt(p.data_inicio_vigencia_plano_acao), dt(p.data_fim_vigencia_plano_acao), p.nome_orgao_repassador_plano_acao]);
+      const nomeRec = p.nome_ente_recebedor_plano_acao || "";
+      // Esfera do RECEBEDOR: municipal só se o nome indicar município/prefeitura/fundo municipal.
+      // Entes estaduais (ESTADO DE…, SECRETARIA DE ESTADO…) têm IBGE = capital → NÃO atribuir ao município (cod_ibge null).
+      const municipal = /\b(MUNIC[IÍ]P|PREFEITURA)/i.test(nomeRec);
+      const esfera = municipal ? "municipal" : (nomeRec ? "estadual/outra" : "indefinida");
+      const cod = municipal && p.codigo_ibge_municipio_ente_recebedor_plano_acao ? String(p.codigo_ibge_municipio_ente_recebedor_plano_acao) : null;
+      await q(`INSERT INTO captacao_transferegov_sc (id_plano,cod_ibge,uf,id_programa,situacao,valor_total_repasse,valor_voluntario,valor_total,dt_inicio,dt_fim,orgao_repassador,nome_ente_recebedor,cnpj_ente_recebedor,esfera)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+               ON CONFLICT (id_plano) DO UPDATE SET cod_ibge=EXCLUDED.cod_ibge, situacao=EXCLUDED.situacao, valor_total_repasse=EXCLUDED.valor_total_repasse, valor_total=EXCLUDED.valor_total, nome_ente_recebedor=EXCLUDED.nome_ente_recebedor, cnpj_ente_recebedor=EXCLUDED.cnpj_ente_recebedor, esfera=EXCLUDED.esfera`,
+        [String(p.id_plano_acao), cod, p.uf_ente_recebedor_plano_acao, p.id_programa != null ? String(p.id_programa) : null, p.situacao_plano_acao, num(p.valor_total_repasse_plano_acao), num(p.valor_repasse_voluntario_plano_acao), num(p.valor_total_plano_acao), dt(p.data_inicio_vigencia_plano_acao), dt(p.data_fim_vigencia_plano_acao), p.nome_orgao_repassador_plano_acao, nomeRec, p.cnpj_ente_recebedor_plano_acao || null, esfera]);
       nplan++;
     }
     console.log(`  ...${nplan} planos`);

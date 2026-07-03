@@ -1,5 +1,6 @@
-import { Database, PiggyBank, TrendingDown, TrendingUp, Users } from "lucide-react";
+import { Database, PiggyBank, ShieldAlert, ShieldCheck, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
+import { GlossarioStrip } from "@/components/termo";
 import type { RppsSC } from "@/lib/queries";
 
 const brl = (x: number) => (Math.abs(x) >= 1e9 ? "R$ " + (x / 1e9).toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + " bi" : "R$ " + (x / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " mi");
@@ -14,20 +15,52 @@ export function PrevidenciaSC({ data }: { data: NonNullable<RppsSC> }) {
     <div className="space-y-4">
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-800"><PiggyBank className="h-4 w-4 text-teal-600" /> Previdência própria (RPPS) — RREO Anexo 04 · {d.ano}</div>
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-800"><PiggyBank aria-hidden className="h-4 w-4 text-teal-600" /> Previdência própria (RPPS) — RREO Anexo 04 · {d.ano}</div>
           <span className={`rounded-full px-3 py-1 text-xs font-bold ${deficit ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>{deficit ? "Déficit no exercício" : "Superávit no exercício"}</span>
         </div>
         <p className="mt-1 text-sm text-slate-600">O fundo de aposentadorias e pensões dos servidores. Receitas previdenciárias × despesas com benefícios — déficit recorrente vira aporte do tesouro municipal.</p>
       </div>
 
+      {/* CRP — Certificado de Regularidade Previdenciária (CADPREV). Condição para transferências voluntárias da União. */}
+      {d.crp && (
+        <div className={`rounded-2xl border p-5 ${d.crp.vencido ? "border-rose-200 bg-gradient-to-br from-rose-50 to-orange-50" : "border-emerald-200 bg-emerald-50"}`}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-800">
+              {d.crp.vencido ? <ShieldAlert aria-hidden className="h-4 w-4 text-rose-600" /> : <ShieldCheck aria-hidden className="h-4 w-4 text-emerald-600" />}
+              CRP — Certificado de Regularidade Previdenciária
+            </div>
+            <span className={`rounded-full px-3 py-1 text-xs font-bold ${d.crp.vencido ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>{d.crp.vencido ? "Vencido / irregular" : "Regular"}</span>
+          </div>
+          <p className="mt-1 text-sm text-slate-600">Atestado de que o RPPS cumpre as normas da previdência. <b>Sem CRP válido, o município fica impedido de receber transferências voluntárias da União</b> e de contratar operações de crédito.</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="text-xs text-slate-500">Situação · emissão</div>
+              <div className="font-display text-lg font-bold text-slate-900">{d.crp.tipo || d.crp.situacao || "—"}</div>
+              <div className="text-[11px] text-slate-500">{d.crp.situacao && d.crp.tipo ? `${d.crp.situacao}` : ""}{d.crp.emissao ? ` · emitido em ${d.crp.emissao}` : ""}</div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="text-xs text-slate-500">Validade</div>
+              <div className={`font-display text-lg font-bold tabular-nums ${d.crp.vencido ? "text-rose-700" : "text-emerald-700"}`}>{d.crp.validade || "—"}</div>
+              <div className="text-[11px] text-slate-500">{d.crp.diasValidade == null ? "" : d.crp.diasValidade < 0 ? `vencido há ${Math.abs(d.crp.diasValidade)} dia(s)` : `vence em ${d.crp.diasValidade} dia(s)`}</div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="text-xs text-slate-500">Nº do CRP</div>
+              <div className="font-display text-lg font-bold tabular-nums text-slate-900">{d.crp.nrCrp || "—"}</div>
+              <div className="text-[11px] text-slate-500">consulta pública CADPREV</div>
+            </div>
+          </div>
+          {d.crp.vencido && <p className="mt-3 text-xs font-medium text-rose-700">Regularizar o CRP é pré-requisito para liberar emendas e convênios federais — verifique as pendências no CADPREV.</p>}
+        </div>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <div className="flex items-center gap-1 text-xs text-slate-500"><TrendingUp className="h-3.5 w-3.5" /> Receitas previdenciárias</div>
+          <div className="flex items-center gap-1 text-xs text-slate-500"><TrendingUp aria-hidden className="h-3.5 w-3.5" /> Receitas previdenciárias</div>
           <div className="font-display text-2xl font-bold tabular-nums text-slate-900">{brl(d.receita)}</div>
           <div className="text-[11px] text-slate-500">contribuições + patrimonial</div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <div className="flex items-center gap-1 text-xs text-slate-500"><TrendingDown className="h-3.5 w-3.5" /> Despesas (benefícios)</div>
+          <div className="flex items-center gap-1 text-xs text-slate-500"><TrendingDown aria-hidden className="h-3.5 w-3.5" /> Despesas (benefícios)</div>
           <div className="font-display text-2xl font-bold tabular-nums text-slate-900">{brl(d.despesa)}</div>
           <div className="text-[11px] text-slate-500">aposentadorias + pensões</div>
         </div>
@@ -40,7 +73,7 @@ export function PrevidenciaSC({ data }: { data: NonNullable<RppsSC> }) {
 
       {/* Cobertura: contribuições cobrem quanto dos benefícios */}
       <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <div className="mb-1 flex items-center justify-between text-sm"><span className="flex items-center gap-1.5 font-semibold text-slate-700"><Users className="h-4 w-4 text-teal-600" /> Contribuições cobrem dos benefícios</span><span className={`font-display text-lg font-bold tabular-nums ${d.coberturaPct >= 100 ? "text-emerald-700" : d.coberturaPct >= 70 ? "text-amber-700" : "text-rose-700"}`}>{n1(d.coberturaPct)}%</span></div>
+        <div className="mb-1 flex items-center justify-between text-sm"><span className="flex items-center gap-1.5 font-semibold text-slate-700"><Users aria-hidden className="h-4 w-4 text-teal-600" /> Contribuições cobrem dos benefícios</span><span className={`font-display text-lg font-bold tabular-nums ${d.coberturaPct >= 100 ? "text-emerald-700" : d.coberturaPct >= 70 ? "text-amber-700" : "text-rose-700"}`}>{n1(d.coberturaPct)}%</span></div>
         <div className="h-2.5 rounded-full bg-slate-100"><div className={`h-2.5 rounded-full ${d.coberturaPct >= 100 ? "bg-emerald-500" : d.coberturaPct >= 70 ? "bg-amber-500" : "bg-rose-500"}`} style={{ width: `${Math.min(100, d.coberturaPct)}%` }} /></div>
         <p className="mt-1.5 text-[11px] text-slate-500">Contribuições (segurados {brl(d.contribSegurados)} + patronais {brl(d.contribPatronais)}) = {brl(contrib)} · Benefícios = {brl(benef)}. Abaixo de 100% indica dependência crescente de aporte.</p>
       </div>
@@ -55,7 +88,7 @@ export function PrevidenciaSC({ data }: { data: NonNullable<RppsSC> }) {
 
       {d.atuarial && (
         <div className={`rounded-2xl border p-5 ${d.atuarial.deficit < 0 ? "border-rose-200 bg-gradient-to-br from-rose-50 to-orange-50" : "border-emerald-200 bg-emerald-50"}`}>
-          <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-800"><TrendingDown className="h-4 w-4 text-rose-600" /> Déficit atuarial — projeção de longo prazo (DRAA {d.atuarial.exercicio})</div>
+          <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-800"><TrendingDown aria-hidden className="h-4 w-4 text-rose-600" /> Déficit atuarial — projeção de longo prazo (DRAA {d.atuarial.exercicio})</div>
           <p className="mt-1 text-sm text-slate-600">Diferente do resultado anual (caixa): é o <b>rombo projetado em décadas</b> entre os compromissos futuros (aposentadorias/pensões) e os recursos do fundo. A bomba fiscal de verdade da previdência.</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <div className={`rounded-xl border p-4 ${d.atuarial.deficit < 0 ? "border-rose-200 bg-white" : "border-emerald-200 bg-white"}`}>
@@ -82,9 +115,11 @@ export function PrevidenciaSC({ data }: { data: NonNullable<RppsSC> }) {
       )}
 
       <p className="text-[11px] text-slate-500">
-        <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>
-        Resultado anual: SICONFI RREO Anexo 04. Déficit atuarial: CADPREV/SPREV (DRAA). Caixa (anual) × atuarial (décadas) são coisas distintas — ambas importam.
+        <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700"><Database aria-hidden className="h-3 w-3" /> Dados oficiais</span>
+        Resultado anual: SICONFI RREO Anexo 04. Déficit atuarial: CADPREV/SPREV (DRAA). CRP: CADPREV/SPREV (Consulta Pública). Caixa (anual) × atuarial (décadas) são coisas distintas — ambas importam.
       </p>
+
+      <GlossarioStrip ks={["CRP", "RGF"]} />
     </div>
   );
 }

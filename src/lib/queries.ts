@@ -804,16 +804,25 @@ export async function getMetasFiscaisSC(cod: string): Promise<{ latest: MetaFisc
 export type RankFiscalSC = {
   cod_ibge: string; nome: string; tipo: string; score: number; posicao: number;
   autonomia: number; investimento: number; equilibrio: number; pessoal: number; // % brutos p/ exibir
+  pctAutonomia: number; pctInvestimento: number; pctEquilibrio: number; pctPessoal: number; // percentis 0-100 que formam o score (transparência "ver cálculo")
 };
+
+// Data de extração por fonte (etl_catalogo.ultima_exec) — alimenta o carimbo "fonte · competência · extraído em".
+export async function getCatalogoExtracao(): Promise<Record<string, string>> {
+  const rows = await query<Record<string, unknown>>(`SELECT id, to_char(ultima_exec,'YYYY-MM-DD') d FROM etl_catalogo WHERE ultima_exec IS NOT NULL`).catch(() => []);
+  const m: Record<string, string> = {};
+  for (const r of rows) if (r.d) m[String(r.id)] = String(r.d);
+  return m;
+}
 
 export async function getRankingFiscalSC(): Promise<RankFiscalSC[]> {
   const rows = await query<Record<string, unknown>>(
     `SELECT DISTINCT ON (f.cod_ibge) f.cod_ibge, e.nome, e.tipo,
             f.receita, f.tributaria, f.despesa, f.resultado, f.pessoal, f.investimento
        FROM financas_sc f JOIN entes_sc e ON e.cod_ibge = f.cod_ibge
-      WHERE f.suspeito IS NOT TRUE
+      WHERE f.suspeito IS NOT TRUE AND e.tipo='M'
       ORDER BY f.cod_ibge, f.ano DESC`,
-  ).catch(() => []);
+  ).catch(() => []); // só municípios: o Estado (cod '42', tipo 'E') não entra no ranking municipal nem nos percentis
   if (!rows.length) return [];
   const base = rows.map((r) => {
     const receita = num(r.receita) || 0; const despesa = num(r.despesa) || 0;
@@ -837,10 +846,12 @@ export async function getRankingFiscalSC(): Promise<RankFiscalSC[]> {
   const pI = pct(base.map((b) => b.investimento));
   const pE = pct(base.map((b) => b.equilibrio));
   const pP = pct(base.map((b) => b.pessoal), true);
+  const r1 = (x: number) => Math.round(x * 10) / 10;
   const scored = base.map((b, i) => ({
-    ...b, score: Math.round(((pA[i] + pI[i] + pE[i] + pP[i]) / 4) * 10) / 10,
+    ...b, score: r1((pA[i] + pI[i] + pE[i] + pP[i]) / 4),
     autonomia: Math.round(b.autonomia * 1000) / 10, investimento: Math.round(b.investimento * 1000) / 10,
     equilibrio: Math.round(b.equilibrio * 1000) / 10, pessoal: Math.round(b.pessoal * 1000) / 10,
+    pctAutonomia: r1(pA[i]), pctInvestimento: r1(pI[i]), pctEquilibrio: r1(pE[i]), pctPessoal: r1(pP[i]),
   }));
   scored.sort((a, b) => b.score - a.score);
   return scored.map((s, i) => ({ ...s, posicao: i + 1 }));
@@ -874,7 +885,7 @@ export async function getIndicadoresSetoriaisSC(cod: string): Promise<IndicadorS
   // último valor por indicador (DISTINCT ON codigo), com média de SC do mesmo ano
   const rows = await query<Record<string, unknown>>(
     `SELECT DISTINCT ON (i.codigo) i.codigo, i.area, i.valor, i.unidade, i.fonte, i.ano,
-            (SELECT AVG(x.valor) FROM indicadores_sc x WHERE x.codigo=i.codigo AND x.ano=i.ano) AS media
+            (SELECT AVG(x.valor) FROM indicadores_sc x WHERE x.codigo=i.codigo AND x.ano=i.ano AND length(x.cod_ibge)=7) AS media
        FROM indicadores_sc i WHERE i.cod_ibge=$1 ORDER BY i.codigo, i.ano DESC`, [cod],
   ).catch(() => []);
   return rows
@@ -921,6 +932,45 @@ export async function getItensPersistidosSC(cnpj: string, ano: number, seq: numb
     beneficioLC: r.beneficio_lc ? String(r.beneficio_lc) : null,
     economiaPct: r.economia_pct == null ? null : num(r.economia_pct),
   }));
+}
+
+/** Localidade (UF/município) dos fornecedores por CNPJ (cnpj_loc, CNPJ→localidade da Receita). */
+export async function getLocalidadesCNPJ(cnpjs: string[]): Promise<Record<string, { uf: string | null; municipio: string | null }>> {
+  const lista = [...new Set(cnpjs.filter(Boolean))];
+  if (!lista.length) return {};
+  const rows = await query<Record<string, unknown>>(`SELECT cnpj, uf, municipio FROM cnpj_loc WHERE cnpj = ANY($1)`, [lista]).catch(() => []);
+  const map: Record<string, { uf: string | null; municipio: string | null }> = {};
+  for (const r of rows) map[String(r.cnpj)] = { uf: r.uf ? String(r.uf) : null, municipio: r.municipio ? String(r.municipio) : null };
+  return map;
+}
+
+// resolve a localidade de 1 CNPJ ao vivo (minhareceita.org — base Receita); usado p/ fornecedores fora do cache
+async function fetchLocalidadeReceita(cnpj: string): Promise<{ uf: string | null; municipio: string | null; razao: string | null; situacao: string | null } | null> {
+  try {
+    const r = await fetch(`https://minhareceita.org/${cnpj}`, { signal: AbortSignal.timeout(15000) });
+    if (!r.ok) return null;
+    const j = (await r.json()) as Record<string, unknown>;
+    return { uf: (j.uf as string) || null, municipio: (j.municipio as string) || null, razao: (j.razao_social as string) || (j.nome as string) || null, situacao: (j.descricao_situacao_cadastral as string) || null };
+  } catch { return null; }
+}
+
+/** Como getLocalidadesCNPJ, mas AUTO-RECUPERÁVEL: resolve ao vivo os CNPJs ausentes do cache e os grava
+ *  (limitado por requisição p/ não estourar latência/rate-limit). Ideal p/ fornecedores on-demand (PNCP). */
+export async function resolverLocalidadesCNPJ(cnpjs: string[]): Promise<Record<string, { uf: string | null; municipio: string | null }>> {
+  const lista = [...new Set(cnpjs.filter((c) => c && c.length === 14))];
+  if (!lista.length) return {};
+  const map = await getLocalidadesCNPJ(lista);
+  const faltam = lista.filter((c) => !map[c]);
+  for (const c of faltam.slice(0, 8)) { // teto por requisição
+    const loc = await fetchLocalidadeReceita(c);
+    if (loc && (loc.uf || loc.municipio)) {
+      map[c] = { uf: loc.uf, municipio: loc.municipio };
+      await query(`INSERT INTO cnpj_loc (cnpj,razao_social,municipio,uf,situacao) VALUES ($1,$2,$3,$4,$5)
+                   ON CONFLICT (cnpj) DO UPDATE SET municipio=COALESCE(cnpj_loc.municipio,EXCLUDED.municipio), uf=COALESCE(cnpj_loc.uf,EXCLUDED.uf), situacao=COALESCE(EXCLUDED.situacao,cnpj_loc.situacao), atualizado=now()`,
+        [c, loc.razao, loc.municipio, loc.uf, loc.situacao]).catch(() => {});
+    }
+  }
+  return map;
 }
 
 // ===== Diagnóstico do Gestor — pontos de análise + sugestões ancorados em LRF/CF/TCE =====
@@ -982,6 +1032,13 @@ export async function getDiagnosticoGestorSC(cod: string): Promise<DiagGestor> {
 }
 
 // ===== Cruzamento Saúde: gasto (SIOPS) × rede (CNES) × população =====
+// Série SIOPS (saúde) — % aplicado em ASPS, mínimo constitucional (15%) e transferências, por ano. Para a ficha/CSV.
+export type SiopsSerieSC = { ano: number; saudePct: number; saudeMin: number; saudeValor: number; transfSaudeValor: number; transfUniaoValor: number }[];
+export async function getSiopsSerieSC(cod: string): Promise<SiopsSerieSC> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, saude_pct, saude_min, saude_valor, transf_saude_valor, transf_uniao_valor FROM siops_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  return rows.map((r) => ({ ano: num(r.ano), saudePct: num(r.saude_pct), saudeMin: num(r.saude_min), saudeValor: num(r.saude_valor), transfSaudeValor: num(r.transf_saude_valor), transfUniaoValor: num(r.transf_uniao_valor) }));
+}
+
 export type SaudeSC = {
   pop: number; grupo: string;
   saudePct: number | null; saudeAno: number | null;
@@ -1476,9 +1533,14 @@ export type PerfilNecessidade = {
   saude: { deficit: boolean; motivo: string } | null;
   educacao: { deficit: boolean; motivo: string } | null;
   assistencia: { deficit: boolean; motivo: string } | null;
+  infraestrutura: { deficit: boolean; motivo: string } | null;
+  habitacao: { deficit: boolean; motivo: string } | null;
+  cultura: { deficit: boolean; motivo: string } | null;
+  esporte: { deficit: boolean; motivo: string } | null;
+  agricultura: { deficit: boolean; motivo: string } | null;
 };
 export async function getPerfilNecessidadeSC(cod: string): Promise<PerfilNecessidade> {
-  const [ub, id, ass] = await Promise.all([
+  const [ub, id, ass, esg, hab, mun] = await Promise.all([
     query<Record<string, unknown>>(`WITH u AS (
         SELECT e.cod_ibge, (count(s.codigo_cnes)::numeric / NULLIF(e.populacao,0)) * 10000 dens
         FROM entes_sc e LEFT JOIN estabelecimentos_saude_sc s ON s.cod_ibge=e.cod_ibge AND s.tipo_codigo IN (1,2)
@@ -1489,6 +1551,18 @@ export async function getPerfilNecessidadeSC(cod: string): Promise<PerfilNecessi
       SELECT (SELECT ideb FROM v WHERE cod_ibge=$1) minha, percentile_cont(0.5) WITHIN GROUP (ORDER BY ideb) mediana FROM v`, [cod]).catch(() => []),
     // assistência: habitantes por CRAS vs referência MDS (1 CRAS por 20 mil hab)
     query<Record<string, unknown>>(`SELECT cras, populacao, hab_por_cras FROM suas_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    // infraestrutura/saneamento: esgotamento sanitário adequado (Censo 2022) vs mediana de SC
+    query<Record<string, unknown>>(`WITH e AS (SELECT cod_ibge, pct::numeric p FROM saneamento_sc WHERE indicador='esgoto_adeq' AND pct IS NOT NULL)
+      SELECT (SELECT p FROM e WHERE cod_ibge=$1) minha, percentile_cont(0.5) WITHIN GROUP (ORDER BY p) mediana FROM e`, [cod]).catch(() => []),
+    // habitação: penetração do MCMV (unidades por 1.000 hab) vs mediana de SC — baixa = demanda habitacional não atendida
+    query<Record<string, unknown>>(`WITH h AS (SELECT m.cod_ibge, m.uh_financiadas/NULLIF(e.populacao,0)*1000 dens FROM mcmv_sc m JOIN entes_sc e ON e.cod_ibge=m.cod_ibge WHERE e.populacao>0)
+      SELECT (SELECT round(dens::numeric,1) FROM h WHERE cod_ibge=$1) minha, round(percentile_cont(0.5) WITHIN GROUP (ORDER BY dens)::numeric,1) mediana FROM h`, [cod]).catch(() => []),
+    // cultura/esporte/agricultura: déficit ESTRUTURAL = não tem o conselho da área (bloqueia acesso a verba federal). Fonte: MUNIC.
+    query<Record<string, unknown>>(`SELECT
+        bool_or(label ~* 'Conselho Municipal de Cultura' AND tem) tem_cult, (count(*) FILTER (WHERE label ~* 'cultura'))>0 has_cult,
+        bool_or(label ~* 'Conselho.*Esporte' AND tem) tem_esp, (count(*) FILTER (WHERE label ~* 'esporte'))>0 has_esp,
+        bool_or(label ~* 'Desenvolvimento Rural' AND tem) tem_agr, (count(*) FILTER (WHERE label ~* 'rural|agropec'))>0 has_agr
+      FROM munic_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
   ]);
   const sMin = ub[0]?.minha != null ? num(ub[0].minha) : null, sMed = num(ub[0]?.mediana);
   const eMin = id[0]?.minha != null ? num(id[0].minha) : null, eMed = num(id[0]?.mediana);
@@ -1499,10 +1573,18 @@ export async function getPerfilNecessidadeSC(cod: string): Promise<PerfilNecessi
     if (cras === 0 && pop > 0) assistencia = { deficit: true, motivo: `nenhum CRAS para ${pop.toLocaleString("pt-BR")} habitantes (referência MDS: 1 por 20 mil)` };
     else if (hpc != null && hpc > 0) assistencia = { deficit: hpc > REF_CRAS, motivo: `1 CRAS para ${Math.round(hpc).toLocaleString("pt-BR")} habitantes (${cras} CRAS; referência MDS: 1 por 20 mil)` };
   }
+  const ifMin = esg[0]?.minha != null ? num(esg[0].minha) : null, ifMed = num(esg[0]?.mediana);
+  const hMin = hab[0]?.minha != null ? num(hab[0].minha) : null, hMed = num(hab[0]?.mediana);
+  const m0 = mun[0];
   return {
     saude: sMin != null && sMed > 0 ? { deficit: sMin < sMed, motivo: `${sMin.toFixed(1)} UBS/posto por 10 mil hab. (mediana de SC: ${sMed.toFixed(1)})` } : null,
     educacao: eMin != null && eMed > 0 ? { deficit: eMin < eMed, motivo: `IDEB dos anos iniciais ${eMin.toFixed(1)} (mediana de SC: ${eMed.toFixed(1)})` } : null,
     assistencia,
+    infraestrutura: ifMin != null && ifMed > 0 ? { deficit: ifMin < ifMed, motivo: `esgotamento sanitário adequado em ${ifMin.toFixed(0)}% dos domicílios (mediana de SC: ${ifMed.toFixed(0)}%)` } : null,
+    habitacao: hMin != null && hMed > 0 ? { deficit: hMin < hMed, motivo: `${hMin.toFixed(1)} unidades MCMV por mil hab. (mediana de SC: ${hMed.toFixed(1)}) — baixa penetração indica demanda habitacional a atender` } : null,
+    cultura: m0 && m0.has_cult ? { deficit: !m0.tem_cult, motivo: m0.tem_cult ? "possui Conselho Municipal de Cultura" : "sem Conselho Municipal de Cultura — instrumento que viabiliza o acesso a recursos federais de cultura" } : null,
+    esporte: m0 && m0.has_esp ? { deficit: !m0.tem_esp, motivo: m0.tem_esp ? "possui Conselho Municipal de Esporte" : "sem Conselho Municipal de Esporte — instrumento que viabiliza o acesso a recursos federais de esporte" } : null,
+    agricultura: m0 && m0.has_agr ? { deficit: !m0.tem_agr, motivo: m0.tem_agr ? "possui Conselho Mun. de Desenvolvimento Rural" : "sem Conselho Municipal de Desenvolvimento Rural — instrumento de acesso a recursos da agricultura familiar" } : null,
   };
 }
 // Registro curado de programas federais (saúde/educação) que o município pode pleitear — com proveniência (link oficial).
@@ -1517,10 +1599,12 @@ function areaOportunidade(nome: string, orgao: string, fundo: string): string {
   const s = `${nome} ${orgao} ${fundo}`.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   if (/SAUDE|\bUBS\b|HOSPITAL|\bSUS\b|SAMU|FARMAC|VIGILANCIA SANIT|ATENCAO (BASICA|PRIMARIA)|UPA/.test(s)) return "saude";
   if (/EDUCA|ESCOLA|CRECHE|ENSINO|\bFNDE\b|MERENDA|PROFESSOR/.test(s)) return "educacao";
-  if (/PAVIMENTA|ESTRADA|\bOBRA|INFRAESTRUTURA|SANEAMENTO|HABITA|CIDADES|MOBILIDADE|DRENAGEM|PONTE/.test(s)) return "infraestrutura";
+  if (/HABITA|MORADIA|MINHA CASA|UNIDADE HABITAC/.test(s)) return "habitacao";
+  if (/PAVIMENTA|ESTRADA|\bOBRA|INFRAESTRUTURA|SANEAMENTO|CIDADES|MOBILIDADE|DRENAGEM|PONTE/.test(s)) return "infraestrutura";
   if (/SEGURANC|PENITENC|\bDEPEN\b|GUARDA MUNICIPAL|BOMBEIRO|VIOLENC|CRIMINAL/.test(s)) return "seguranca";
   if (/ASSISTENCIA SOCIAL|\bCRAS\b|\bCREAS\b|\bSUAS\b|ACOLHIMENTO|VULNERAB/.test(s)) return "assistencia";
-  if (/CULTURA|ESPORTE|TURISMO|LAZER|\bLIC\b/.test(s)) return "cultura";
+  if (/ESPORTE|DESPORTO|LAZER|GINASIO|QUADRA POLIESP/.test(s)) return "esporte";
+  if (/CULTURA|TURISMO|PATRIMONIO|MUSEU|BIBLIOTECA|\bLIC\b/.test(s)) return "cultura";
   if (/TRABALHO|EMPREGO|QUALIFICA|RENDA|PROFISSIONAL/.test(s)) return "trabalho";
   if (/AGRICUL|RURAL|\bPESCA\b|ABASTECIMENTO|PRODUTOR/.test(s)) return "agricultura";
   return "outros";
@@ -1848,15 +1932,65 @@ export type ConveniosSC = {
   porSituacao: { situacao: string; n: number; valor: number }[];
 } | null;
 export async function getConveniosSC(cod: string): Promise<ConveniosSC> {
+  // Fonte: convenios_captados_sc (Portal da Transparência por codigoIBGE, SÓ convenente de administração MUNICIPAL).
+  // Evita a contaminação da base SICONV (convenios_sc), onde propostas do ente ESTADUAL — sede na capital —
+  // eram atribuídas ao município da capital pelo COD_MUNIC_IBGE do proponente.
   const [tot, sit] = await Promise.all([
-    query<Record<string, unknown>>(`SELECT count(*) n, coalesce(sum(vl_repasse),0) repasse, coalesce(sum(vl_desembolsado),0) desemb FROM convenios_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
-    query<Record<string, unknown>>(`SELECT coalesce(NULLIF(situacao,''),'(sem situação)') situacao, count(*) n, coalesce(sum(vl_repasse),0) valor FROM convenios_sc WHERE cod_ibge=$1 GROUP BY 1 ORDER BY valor DESC NULLS LAST LIMIT 8`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT count(*) n, coalesce(sum(valor),0) repasse, coalesce(sum(valor_liberado),0) desemb FROM convenios_captados_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT coalesce(NULLIF(situacao,''),'(sem situação)') situacao, count(*) n, coalesce(sum(valor),0) valor FROM convenios_captados_sc WHERE cod_ibge=$1 GROUP BY 1 ORDER BY valor DESC NULLS LAST LIMIT 8`, [cod]).catch(() => []),
   ]);
   if (!tot.length || num(tot[0]?.n) === 0) return null;
   const repasse = num(tot[0].repasse), desemb = num(tot[0].desemb);
   return {
     n: num(tot[0].n), repasse, desembolsado: desemb, execPct: repasse > 0 ? Math.round((desemb / repasse) * 100) : 0,
     porSituacao: sit.map((r) => ({ situacao: String(r.situacao || ""), n: num(r.n), valor: num(r.valor) })),
+  };
+}
+
+// Resumo do sistema de notificações do município — alertas ativos (delta no log), escalonados (crítico sem tratar
+// há +30 dias, sobe de nível) e o painel de IMPACTO (o ROI: resolvidos, recurso destravado/captado). Serviço i10.
+export type NotificacaoResumoSC = {
+  ativos: number; criticosAtivos: number; escalonados: number; cadastrados: number;
+  impacto: { tipo: string; n: number; valor: number }[]; valorImpacto: number;
+} | null;
+export async function getNotificacaoResumoSC(cod: string): Promise<NotificacaoResumoSC> {
+  const [log, cad, imp] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT count(*) FILTER (WHERE resolvido_em IS NULL) ativos,
+      count(*) FILTER (WHERE resolvido_em IS NULL AND severidade='critico') criticos,
+      count(*) FILTER (WHERE resolvido_em IS NULL AND severidade='critico' AND enviado_em < now() - interval '30 days') escalonados
+      FROM notificacao_log WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT count(*) n FROM notificacao_cadastro WHERE cod_ibge=$1 AND ativo`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT tipo_impacto tipo, count(*) n, coalesce(sum(valor),0) valor FROM notificacao_impacto WHERE cod_ibge=$1 GROUP BY 1`, [cod]).catch(() => []),
+  ]);
+  const l = log[0] || {};
+  const impacto = imp.map((r) => ({ tipo: String(r.tipo || ""), n: num(r.n), valor: num(r.valor) }));
+  return {
+    ativos: num(l.ativos), criticosAtivos: num(l.criticos), escalonados: num(l.escalonados), cadastrados: num(cad[0]?.n),
+    impacto, valorImpacto: impacto.reduce((s, x) => s + x.valor, 0),
+  };
+}
+
+// Convênios A REGULARIZAR — situações que travam NOVAS transferências voluntárias da União (ligam ao CAUC).
+// Crítico: inadimplente / prestação rejeitada. Atenção: inadimplência suspensa / aguardando ou complementar prestação.
+export type ConveniosRiscoSC = {
+  criticoN: number; criticoValor: number; atencaoN: number; atencaoValor: number;
+  itens: { objeto: string; orgao: string; situacao: string; valor: number; ano: number; classe: "critico" | "atencao" }[];
+} | null;
+const CONV_CRIT = ["INADIMPLENTE", "PRESTAÇÃO DE CONTAS REJEITADA"];
+const CONV_ATEN = ["INADIMPLÊNCIA SUSPENSA", "AGUARDANDO PRESTAÇÃO DE CONTAS", "PRESTAÇÃO DE CONTAS EM COMPLEMENTAÇÃO"];
+export async function getConveniosRiscoSC(cod: string): Promise<ConveniosRiscoSC> {
+  const crit = `situacao = ANY($2)`, aten = `situacao = ANY($3)`;
+  const [agg, itens] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT count(*) FILTER (WHERE ${crit}) cn, coalesce(sum(valor) FILTER (WHERE ${crit}),0) cv,
+      count(*) FILTER (WHERE ${aten}) an, coalesce(sum(valor) FILTER (WHERE ${aten}),0) av
+      FROM convenios_captados_sc WHERE cod_ibge=$1`, [cod, CONV_CRIT, CONV_ATEN]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT objeto, orgao, situacao, valor, ano FROM convenios_captados_sc
+      WHERE cod_ibge=$1 AND (${crit} OR ${aten}) ORDER BY valor DESC NULLS LAST LIMIT 10`, [cod, CONV_CRIT, CONV_ATEN]).catch(() => []),
+  ]);
+  const a = agg[0]; if (!a || (num(a.cn) === 0 && num(a.an) === 0)) return null;
+  return {
+    criticoN: num(a.cn), criticoValor: num(a.cv), atencaoN: num(a.an), atencaoValor: num(a.av),
+    itens: itens.map((r) => ({ objeto: String(r.objeto || ""), orgao: String(r.orgao || ""), situacao: String(r.situacao || ""), valor: num(r.valor), ano: num(r.ano), classe: CONV_CRIT.includes(String(r.situacao)) ? "critico" as const : "atencao" as const })),
   };
 }
 
@@ -1964,6 +2098,123 @@ export async function getEmendasSC(cod: string): Promise<EmendasSC> {
     porParlamentar: parl.map((r) => ({ parlamentar: String(r.parlamentar || ""), valor: num(r.valor), n: num(r.n) })),
     execucao: temExec ? { empenhado: num(e0.emp), pago: num(e0.pago), restoPagar: num(e0.resto), ano: e0.ano != null ? num(e0.ano) : null, n: num(e0.n) } : null,
   };
+}
+
+// CAPTAÇÃO DE EMENDAS — o "como pedir": bancada federal (quem procurar) × histórico, recurso na mesa, janelas abertas.
+export type CaptacaoEmendasSC = {
+  eleitores: number;
+  bancada: { nome: string; casa: "camara" | "senado"; partido: string; email: string | null; telefone: string | null; foto: string | null; pagina: string | null; jaMunicipio: number; nMunicipio: number; aliado: boolean; votos: number; votosPct: number }[];
+  recursoNaMesa: number; recursoItens: { autor: string; empenhado: number; pago: number; naMesa: number; naBancada: boolean }[];
+  jaRecebido: number; indicadoTotal: number; impositivasN: number;
+  janelas: { nome: string; orgao: string; valorGlobal: number; dtFim: string }[];
+  execucaoFuncao: { funcao: string; pago: number; naMesa: number; restoAReceber: number; subfuncoes: { subfuncao: string; pago: number; naMesa: number }[] }[];
+} | null;
+export async function getCaptacaoEmendasSC(cod: string): Promise<CaptacaoEmendasSC> {
+  const norm = (s: unknown) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+  const [banc, porMuni, exec, indic, janelas, votos, elei, execFunc] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT id, nome, casa, partido, email, telefone, foto_url, pagina_url FROM bancada_federal_sc WHERE uf='SC' ORDER BY nome`).catch(() => []),
+    // aliados = quem EXECUTOU emenda (empenhado) no município nos últimos 4 anos — a indicação 2026 ainda está no prazo (não entregue) e tem ano nulo
+    query<Record<string, unknown>>(`SELECT autor parlamentar, coalesce(sum(empenhado),0) v, count(*) n FROM emendas_execucao_sc WHERE cod_ibge=$1 AND autor<>'' AND ano >= extract(year from current_date)::int - 3 GROUP BY 1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT autor, coalesce(sum(empenhado),0) emp, coalesce(sum(pago),0) pago FROM emendas_execucao_sc WHERE cod_ibge=$1 AND autor<>'' GROUP BY 1 ORDER BY (sum(empenhado)-sum(pago)) DESC NULLS LAST`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT coalesce(sum(valor_emenda),0) total, count(*) FILTER(WHERE impositivo) impos, coalesce(sum(desembolsado),0) desembolsado, coalesce(sum(empenhado),0) empenhado, count(*) n FROM emendas_indicacao_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT nome, orgao, coalesce(valor_global,0) vg, to_char(dt_fim_emenda,'YYYY-MM-DD') df FROM programas_transferegov WHERE dt_fim_emenda >= CURRENT_DATE ORDER BY dt_fim_emenda LIMIT 12`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT bancada_id, votos FROM votos_bancada_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT eleitores FROM eleitorado_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    // o que a emenda federal FINANCIOU no município, por função (área) e subfunção — dado que estava coletado e não exibido
+    query<Record<string, unknown>>(`SELECT coalesce(nullif(funcao,''),'Não classificado') funcao, coalesce(nullif(subfuncao,''),'—') subfuncao,
+      coalesce(sum(pago),0) pago, coalesce(sum(greatest(empenhado-pago,0)),0) namesa, coalesce(sum(greatest(resto_inscrito-resto_pago,0)),0) resto
+      FROM emendas_execucao_sc WHERE cod_ibge=$1 GROUP BY 1,2 ORDER BY 1, sum(pago) DESC`, [cod]).catch(() => []),
+  ]);
+  if (!banc.length) return null;
+  const eleitores = num(elei[0]?.eleitores);
+  const mMuni = new Map<string, { v: number; n: number }>(); for (const r of porMuni) mMuni.set(norm(r.parlamentar), { v: num(r.v), n: num(r.n) });
+  const mVotos = new Map<string, number>(); for (const r of votos) mVotos.set(String(r.bancada_id), num(r.votos));
+  const bancada = banc.map((b) => {
+    const k = norm(b.nome); const mm = mMuni.get(k); const vt = mVotos.get(String(b.id)) || 0;
+    return { nome: String(b.nome), casa: (String(b.casa) === "senado" ? "senado" : "camara") as "camara" | "senado", partido: String(b.partido || ""), email: (b.email as string) || null, telefone: (b.telefone as string) || null, foto: (b.foto_url as string) || null, pagina: (b.pagina_url as string) || null, jaMunicipio: mm?.v || 0, nMunicipio: mm?.n || 0, aliado: (mm?.v || 0) > 0, votos: vt, votosPct: eleitores > 0 ? Math.round((vt / eleitores) * 1000) / 10 : 0 };
+  }).sort((a, b) => (a.casa === b.casa ? 0 : a.casa === "senado" ? -1 : 1) || a.nome.localeCompare(b.nome, "pt-BR")); // senadores (A-Z) depois deputados (A-Z)
+  const benchNorm = new Set(banc.map((b) => norm(b.nome)));
+  const recursoItens = exec.map((r) => ({ autor: String(r.autor || ""), empenhado: num(r.emp), pago: num(r.pago), naMesa: Math.max(0, num(r.emp) - num(r.pago)), naBancada: benchNorm.has(norm(r.autor)) })).filter((r) => r.naMesa > 0);
+  const recursoNaMesa = recursoItens.reduce((s, r) => s + r.naMesa, 0);
+  const jaRecebido = exec.reduce((s, r) => s + num(r.pago), 0);
+  const funcMap = new Map<string, { funcao: string; pago: number; naMesa: number; restoAReceber: number; subfuncoes: { subfuncao: string; pago: number; naMesa: number }[] }>();
+  for (const r of execFunc) {
+    const f = String(r.funcao); if (!funcMap.has(f)) funcMap.set(f, { funcao: f, pago: 0, naMesa: 0, restoAReceber: 0, subfuncoes: [] });
+    const g = funcMap.get(f)!; g.pago += num(r.pago); g.naMesa += num(r.namesa); g.restoAReceber += num(r.resto);
+    g.subfuncoes.push({ subfuncao: String(r.subfuncao), pago: num(r.pago), naMesa: num(r.namesa) });
+  }
+  const execucaoFuncao = [...funcMap.values()].sort((a, b) => (b.pago + b.naMesa + b.restoAReceber) - (a.pago + a.naMesa + a.restoAReceber));
+  return {
+    bancada, eleitores, recursoNaMesa, recursoItens,
+    jaRecebido, indicadoTotal: num(indic[0]?.total), impositivasN: num(indic[0]?.impos),
+    janelas: janelas.map((r) => ({ nome: String(r.nome || ""), orgao: String(r.orgao || ""), valorGlobal: num(r.vg), dtFim: String(r.df || "") })),
+    execucaoFuncao,
+  };
+}
+
+// EMENDAS ESTADUAIS — bancada estadual (deputados ALESC eleitos) + votos/% no município. Execução (SEF-SC) é Power BI → pendente.
+export type EmendasEstaduaisSC = {
+  eleitores: number; execPago: number;
+  bench: { nome: string; partido: string; votos: number; votosPct: number; emendasTotal: number; foto: string | null; email: string | null; telefone: string | null; pagina: string | null }[];
+} | null;
+export async function getEmendasEstaduaisSC(cod: string): Promise<EmendasEstaduaisSC> {
+  const [banc, elei, exec] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT b.nome, b.partido, coalesce(v.votos,0) votos, coalesce(b.emendas_total,0) emendas_total, b.foto_url, b.email, b.telefone, b.pagina_url FROM bancada_estadual_sc b LEFT JOIN votos_estadual_sc v ON v.bancada_id=b.id AND v.cod_ibge=$1 ORDER BY b.nome`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT eleitores FROM eleitorado_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT valor_pago FROM emendas_estaduais_exec_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+  ]);
+  if (!banc.length) return null;
+  const eleitores = num(elei[0]?.eleitores);
+  return {
+    eleitores, execPago: num(exec[0]?.valor_pago),
+    bench: banc.map((b) => { const vt = num(b.votos); return { nome: String(b.nome), partido: String(b.partido || ""), votos: vt, votosPct: eleitores > 0 ? Math.round((vt / eleitores) * 1000) / 10 : 0, emendasTotal: num(b.emendas_total), foto: (b.foto_url as string) || null, email: (b.email as string) || null, telefone: (b.telefone as string) || null, pagina: (b.pagina_url as string) || null }; }),
+  };
+}
+
+// Catálogo REAL de objetos de emendas ESTADUAIS 2026 (Power BI SEF) — as "possibilidades reais" p/ o caderno estadual.
+// Top 40 por área (por valor), reusa o formato CadernoPrograma p/ render/incorporação idênticos ao federal.
+const ORGAO_OBJ_EST: Record<string, string> = { saude: "Secretaria de Estado da Saúde (SES)", educacao: "Secretaria de Estado da Educação (SED)", infraestrutura: "Secretaria de Infraestrutura e Mobilidade (SIE)", seguranca: "Secretaria de Segurança Pública (SSP)", agricultura: "Secretaria de Agricultura, Pesca e Desenv. Rural (SAR)", assistencia: "Secretaria de Assistência Social, Mulher e Família (SAS)", esporte: "Turismo, Cultura e Esporte (SOL) / FESPORTE", cultura: "Turismo, Cultura e Esporte (SOL) / FCC", habitacao: "Habitação de interesse social (Estado/COHAB)", outros: "Secretaria de Estado (a definir conforme o objeto)" };
+export async function getEmendasEstObjetosSC(): Promise<CadernoPrograma[]> {
+  const rows = await query<Record<string, unknown>>(`
+    SELECT id, area, objeto, valor FROM (
+      SELECT id, area, objeto, valor, ROW_NUMBER() OVER (PARTITION BY area ORDER BY valor DESC NULLS LAST) rn
+      FROM emendas_est_objetos_sc WHERE ano=2026
+    ) t WHERE rn <= 40 ORDER BY area, valor DESC`).catch(() => []);
+  return rows.map((r) => {
+    const objeto = String(r.objeto || "").trim();
+    const nome = objeto.length > 90 ? objeto.slice(0, 90).trim() + "…" : objeto;
+    return { id: `obj-${r.id}`, nome, orgao: ORGAO_OBJ_EST[String(r.area)] || ORGAO_OBJ_EST.outros, area: String(r.area), valor: num(r.valor), objetivo: objeto, elegivel: true, janelaEmenda: null };
+  });
+}
+
+// BUSCA & AGREGA — programas federais REAIS (Transferegov) casados com o município, p/ compor o Caderno de Emendas.
+// Classifica cada programa por área, checa elegibilidade e janela de emenda, e rankeia (elegível > janela aberta > valor).
+export type CadernoPrograma = { id: string; nome: string; orgao: string; area: string; valor: number; objetivo: string; elegivel: boolean; janelaEmenda: string | null };
+export async function getCadernoProgramasSC(cod: string): Promise<CadernoPrograma[]> {
+  const rows = await query<Record<string, unknown>>(`
+    SELECT p.id_programa id, p.nome, coalesce(p.orgao,'') orgao, coalesce(p.valor_global,0) valor, coalesce(p.objetivo,p.descricao,'') objetivo,
+           to_char(p.dt_fim_emenda,'YYYY-MM-DD') janela,
+           EXISTS(SELECT 1 FROM programa_beneficiario_sc b WHERE b.id_programa=p.id_programa AND b.cod_ibge=$1) elegivel,
+           EXISTS(SELECT 1 FROM programa_beneficiario_sc b WHERE b.id_programa=p.id_programa) tem_lista
+    FROM programas_transferegov p WHERE p.nome IS NOT NULL AND p.nome NOT ILIKE '%INATIVO%'`, [cod]).catch(() => []);
+  if (!rows.length) return [];
+  const hoje = new Date().toISOString().slice(0, 10);
+  const out = rows.map((r) => {
+    const area = classificaAreaPrograma(`${r.nome} ${r.orgao} ${r.objetivo}`);
+    const temLista = !!r.tem_lista;
+    const elegivel = !!r.elegivel || !temLista; // sem lista de beneficiários = aberto a todos
+    const janela = r.janela ? String(r.janela) : null;
+    // valor_global é o total NACIONAL do programa (não o pedido do município) → não exibir como valor da demanda
+    return { id: String(r.id), nome: String(r.nome || ""), orgao: String(r.orgao || ""), area, valor: num(r.valor), objetivo: String(r.objetivo || ""), elegivel, janelaEmenda: janela && janela >= hoje ? janela : null };
+  }).filter((p) => p.area && p.area !== "outros");
+  out.sort((a, b) => (Number(b.elegivel) - Number(a.elegivel)) || (Number(!!b.janelaEmenda) - Number(!!a.janelaEmenda)) || (b.valor - a.valor));
+  // TODAS as possibilidades: só dedup por nome+área (sem limite por área), até 300
+  const seen = new Set<string>(); const dedup: CadernoPrograma[] = [];
+  for (const p of out) {
+    const k = p.area + "|" + p.nome.toUpperCase().slice(0, 40); if (seen.has(k)) continue; seen.add(k);
+    dedup.push(p); if (dedup.length >= 300) break;
+  }
+  return dedup;
 }
 
 // Estabelecimentos de saúde do município (CNES) — rede completa para regulação: cada unidade + composição da rede.
@@ -2235,12 +2486,23 @@ export async function getFnsSC(cod: string): Promise<FnsSC> {
 }
 
 // Previdência (RPPS) — RREO Anexo 04. null = ente sem RPPS (está no RGPS/INSS)
-export type RppsSC = { ano: number; receita: number; despesa: number; resultado: number; contribSegurados: number; contribPatronais: number; aposentadorias: number; pensoes: number; coberturaPct: number; serie: { ano: number; resultado: number }[]; atuarial: { exercicio: number; deficit: number; ativos: number | null } | null } | null;
+export type CrpSC = { nrCrp: string; situacao: string; tipo: string; emissao: string | null; validade: string | null; diasValidade: number | null; vencido: boolean } | null;
+export type RppsSC = { ano: number; receita: number; despesa: number; resultado: number; contribSegurados: number; contribPatronais: number; aposentadorias: number; pensoes: number; coberturaPct: number; serie: { ano: number; resultado: number }[]; atuarial: { exercicio: number; deficit: number; ativos: number | null } | null; crp: CrpSC } | null;
+async function getCrpSC(cod: string): Promise<CrpSC> {
+  // CRP mais recente (CADPREV/SPREV) — mesmo dado da tela "Pesquisar Ente", já casado por cod_ibge
+  const c = (await query<Record<string, unknown>>(`SELECT nr_crp, ds_situacao, tp_crp, to_char(dt_emissao,'DD/MM/YYYY') emissao, to_char(dt_validade,'DD/MM/YYYY') validade, (dt_validade - current_date) dias FROM rpps_crp_sc WHERE cod_ibge=$1 ORDER BY dt_emissao DESC NULLS LAST LIMIT 1`, [cod]).catch(() => []))[0];
+  if (!c) return null;
+  const dias = c.dias == null ? null : num(c.dias);
+  const tipo = String(c.tp_crp || "");
+  const vencido = /venc/i.test(tipo) || (dias != null && dias < 0);
+  return { nrCrp: String(c.nr_crp || ""), situacao: String(c.ds_situacao || ""), tipo, emissao: c.emissao ? String(c.emissao) : null, validade: c.validade ? String(c.validade) : null, diasValidade: dias, vencido };
+}
 export async function getRppsSC(cod: string): Promise<RppsSC> {
   const rows = await query<Record<string, unknown>>(`SELECT ano, receita, despesa, resultado, contrib_segurados, contrib_patronais, aposentadorias, pensoes FROM rpps_sc WHERE cod_ibge=$1 ORDER BY ano DESC`, [cod]).catch(() => []);
   const at = (await query<Record<string, unknown>>(`SELECT exercicio, deficit_atuarial, ativos FROM rpps_atuarial_sc WHERE cod_ibge=$1 ORDER BY exercicio DESC LIMIT 1`, [cod]).catch(() => []))[0];
   const atuarial = at && at.deficit_atuarial != null ? { exercicio: num(at.exercicio), deficit: num(at.deficit_atuarial), ativos: at.ativos != null ? num(at.ativos) : null } : null;
-  if (!rows.length) return atuarial ? { ano: atuarial.exercicio, receita: 0, despesa: 0, resultado: 0, contribSegurados: 0, contribPatronais: 0, aposentadorias: 0, pensoes: 0, coberturaPct: 0, serie: [], atuarial } : null;
+  const crp = await getCrpSC(cod);
+  if (!rows.length) return (atuarial || crp) ? { ano: atuarial?.exercicio ?? new Date().getFullYear(), receita: 0, despesa: 0, resultado: 0, contribSegurados: 0, contribPatronais: 0, aposentadorias: 0, pensoes: 0, coberturaPct: 0, serie: [], atuarial, crp } : null;
   const r = rows[0];
   const benef = num(r.aposentadorias) + num(r.pensoes);
   const contrib = num(r.contrib_segurados) + num(r.contrib_patronais);
@@ -2250,16 +2512,701 @@ export async function getRppsSC(cod: string): Promise<RppsSC> {
     aposentadorias: num(r.aposentadorias), pensoes: num(r.pensoes),
     coberturaPct: benef > 0 ? Math.round((contrib / benef) * 1000) / 10 : 0, // contribuições cobrem quanto dos benefícios
     serie: rows.map((x) => ({ ano: num(x.ano), resultado: num(x.resultado) })).reverse(),
-    atuarial,
+    atuarial, crp,
+  };
+}
+
+// Histórico completo de CRP do ente — todos os certificados emitidos (mesma base da Consulta Pública do CADPREV,
+// ao abrir um ente). Ordenado do mais recente p/ o mais antigo. O 1º é o vigente.
+export type CrpHistItem = { nrCrp: string; situacao: string; tipo: string; emissao: string | null; validade: string | null; dias: number | null; vencido: boolean };
+export async function getCrpHistoricoSC(cod: string): Promise<CrpHistItem[]> {
+  const rows = await query<Record<string, unknown>>(`SELECT nr_crp, ds_situacao, tp_crp, to_char(dt_emissao,'DD/MM/YYYY') emissao, to_char(dt_validade,'DD/MM/YYYY') validade, (dt_validade - current_date) dias FROM rpps_crp_sc WHERE cod_ibge=$1 ORDER BY dt_emissao DESC NULLS LAST`, [cod]).catch(() => []);
+  return rows.map((r) => {
+    const dias = r.dias != null ? num(r.dias) : null;
+    const tipo = String(r.tp_crp || "");
+    return { nrCrp: String(r.nr_crp || ""), situacao: String(r.ds_situacao || ""), tipo, emissao: r.emissao ? String(r.emissao) : null, validade: r.validade ? String(r.validade) : null, dias, vencido: /venc/i.test(tipo) || (dias != null && dias < 0) };
+  });
+}
+
+// MOTOR DE LACUNA — captação NÃO-EMENDA (educação). Programas do FNDE que a MAIORIA dos municípios de SC capta e o
+// alvo NÃO capta = "dinheiro na mesa". Dado direto do sistema (SIMAD/FNDE liberações), sem cartilha. Janela 2023+.
+export type LacunaCaptacaoSC = {
+  totalRecebido: number; porAluno: number; medianaPorAluno: number; matriculas: number; abaixoDaMediana: boolean;
+  ausentes: { programa: string; penetracaoPct: number; medianaPares: number }[];
+  recebidos: { programa: string; valor: number }[];
+  pdde: { recebido: number; porAluno: number; medianaPorAluno: number; nEscolas: number; ano: number; abaixo: boolean } | null;
+  pnld: { demandada: number; atendimento: number; nVolumes: number; ano: number; cicloAberto: boolean } | null;
+} | null;
+export async function getLacunaCaptacaoEducacaoSC(cod: string): Promise<LacunaCaptacaoSC> {
+  // Os nomes do SIMAD vêm fragmentados (variantes/sufixos). Consolidamos em GRUPOS canônicos (grupoFnde) antes de medir
+  // penetração/ausência — assim "não recebe a categoria X" é um sinal real (ex.: falta Educação Integral/ETI), e não
+  // o artefato de "tem PNAE-Fundamental mas não PNAE-EJA" (sub-modalidade população-específica) que inflava falsos.
+  const [recTgt, matTgt, medPA, allRows, pddeTgt, pddeMed, pnldTgt] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT btrim(programa) programa, sum(valor) v FROM fnde_simad_sc WHERE cod_ibge=$1 AND ano>=2023 AND valor>0 GROUP BY 1 ORDER BY v DESC`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT sum(matriculas) m FROM censo_matricula_sc WHERE cod_ibge=$1 AND ano=(SELECT max(ano) FROM censo_matricula_sc)`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`WITH mun AS (SELECT cod_ibge FROM entes_sc WHERE tipo='M'),
+      mat AS (SELECT cod_ibge, sum(matriculas) m FROM censo_matricula_sc WHERE ano=(SELECT max(ano) FROM censo_matricula_sc) GROUP BY 1),
+      tot AS (SELECT f.cod_ibge, sum(f.valor) v FROM fnde_simad_sc f JOIN mun u ON u.cod_ibge=f.cod_ibge WHERE f.ano>=2023 AND f.valor>0 GROUP BY 1)
+      SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY t.v/nullif(m.m,0)) med FROM tot t JOIN mat m ON m.cod_ibge=t.cod_ibge WHERE m.m>0`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT f.cod_ibge, btrim(f.programa) programa, sum(f.valor) v FROM fnde_simad_sc f JOIN entes_sc e ON e.cod_ibge=f.cod_ibge AND e.tipo='M' WHERE f.ano>=2023 AND f.valor>0 GROUP BY 1,2`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT p.vl_total, p.qt_alunos, p.n_escolas, p.ano, CASE WHEN e.populacao<20000 THEN 1 WHEN e.populacao<100000 THEN 2 ELSE 3 END banda FROM pdde_sc p JOIN entes_sc e ON e.cod_ibge=p.cod_ibge WHERE p.cod_ibge=$1 ORDER BY p.ano DESC LIMIT 1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`WITH mun AS (SELECT cod_ibge, CASE WHEN populacao<20000 THEN 1 WHEN populacao<100000 THEN 2 ELSE 3 END banda FROM entes_sc WHERE tipo='M' AND populacao>0),
+      p AS (SELECT DISTINCT ON (cod_ibge) cod_ibge, vl_total, qt_alunos FROM pdde_sc ORDER BY cod_ibge, ano DESC)
+      SELECT m.banda, percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vl_total/nullif(p.qt_alunos,0)) med FROM p JOIN mun m ON m.cod_ibge=p.cod_ibge WHERE p.qt_alunos>0 GROUP BY m.banda`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT qtd_demandada, qtd_atendimento, n_volumes, ano FROM pnld_reserva_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []),
+  ]);
+  const matriculas = num(matTgt[0]?.m);
+  const totalRecebido = recTgt.reduce((s, r) => s + num(r.v), 0);
+  if (!recTgt.length && !matriculas) return null;
+  const porAluno = matriculas > 0 ? Math.round(totalRecebido / matriculas) : 0;
+  const medianaPorAluno = Math.round(num(medPA[0]?.med));
+  const TOT = 295;
+  const EXCLUI = new Set(["outros", "fundeb", "apoio"]); // transferências automáticas/legado — não são "adesão pendente"
+  // penetração + mediana por GRUPO canônico (consolida as variantes fragmentadas do SIMAD)
+  const gruposTgt = new Set(recTgt.map((r) => grupoFnde(String(r.programa)).chave));
+  const porGrupo = new Map<string, { rotulo: string; mun: Map<string, number> }>();
+  for (const r of allRows) {
+    const g = grupoFnde(String(r.programa));
+    if (EXCLUI.has(g.chave)) continue;
+    if (!porGrupo.has(g.chave)) porGrupo.set(g.chave, { rotulo: g.rotulo, mun: new Map() });
+    const mm = porGrupo.get(g.chave)!.mun;
+    mm.set(String(r.cod_ibge), (mm.get(String(r.cod_ibge)) || 0) + num(r.v));
+  }
+  const ausentes = [...porGrupo.entries()]
+    .filter(([chave, g]) => !gruposTgt.has(chave) && g.mun.size >= TOT * 0.4)
+    .map(([, g]) => {
+      const vs = [...g.mun.values()].sort((a, b) => a - b);
+      const med = vs[Math.floor(vs.length / 2)] || 0;
+      return { programa: g.rotulo, penetracaoPct: Math.min(100, Math.round((g.mun.size / TOT) * 100)), medianaPares: Math.round(med) };
+    })
+    .filter((a) => a.medianaPares > 0)
+    .sort((a, b) => b.medianaPares - a.medianaPares).slice(0, 12);
+  // recebidos consolidados por grupo (rótulo leigo, não as variantes cruas)
+  const recGrupo = new Map<string, number>();
+  for (const r of recTgt) { const g = grupoFnde(String(r.programa)); if (EXCLUI.has(g.chave)) continue; recGrupo.set(g.rotulo, (recGrupo.get(g.rotulo) || 0) + num(r.v)); }
+  const recebidos = [...recGrupo.entries()].map(([programa, valor]) => ({ programa, valor })).sort((a, b) => b.valor - a.valor).slice(0, 8);
+  // PDDE — pago direto à escola (fora do SIMAD): R$/aluno vs mediana do PORTE = adesão/execução abaixo dos pares
+  const pt = pddeTgt[0];
+  const pdde = pt ? (() => {
+    const recebido = num(pt.vl_total), alunos = num(pt.qt_alunos), banda = num(pt.banda);
+    const pA = alunos > 0 ? Math.round(recebido / alunos) : 0;
+    const med = Math.round(num(pddeMed.find((r) => num(r.banda) === banda)?.med));
+    return { recebido, porAluno: pA, medianaPorAluno: med, nEscolas: num(pt.n_escolas), ano: num(pt.ano), abaixo: pA > 0 && med > 0 && pA < med };
+  })() : null;
+  // PNLD reserva técnica (demanda de livros) — adequação de material, NÃO captação. atendimento=0 no ciclo aberto (timing).
+  const nt = pnldTgt[0];
+  const pnld = nt && num(nt.qtd_demandada) > 0 ? { demandada: num(nt.qtd_demandada), atendimento: num(nt.qtd_atendimento), nVolumes: num(nt.n_volumes), ano: num(nt.ano), cicloAberto: num(nt.qtd_atendimento) === 0 } : null;
+  return { totalRecebido, porAluno, medianaPorAluno, matriculas, abaixoDaMediana: porAluno > 0 && medianaPorAluno > 0 && porAluno < medianaPorAluno, ausentes, recebidos, pdde, pnld };
+}
+
+// MOTOR DE LACUNA — captação NÃO-EMENDA (saúde). Blocos do FNS são universais (todos recebem), então o sinal é
+// R$/HABITANTE por bloco ABAIXO da mediana dos pares — muito repasse é por produção/desempenho (Previne/PAP/MAC),
+// logo receber pouco por habitante = captação abaixo do potencial. Dado direto (FNS fundo-a-fundo). Janela 2023+.
+export type LacunaSaudeSC = {
+  totalRecebido: number; porHab: number; medianaPorHab: number; populacao: number; abaixoDaMediana: boolean;
+  blocosAbaixo: { bloco: string; seuPorHab: number; medianaPorHab: number; gap: number }[];
+  blocos: { bloco: string; valor: number }[];
+} | null;
+export async function getLacunaCaptacaoSaudeSC(cod: string): Promise<LacunaSaudeSC> {
+  const bloco = `coalesce(nullif(btrim(area_nome),''),'Outros repasses')`;
+  // só blocos POR-RESIDENTE (per capita justo). Exclui MAC/Especializada (produção/referência regional) e investimento (lumpy).
+  const perResidente = `(area_nome ILIKE '%PRIM_RIA%' OR area_nome ILIKE '%FARMAC%' OR area_nome ILIKE '%VIGIL%' OR area_nome ILIKE '%GEST_O DO SUS%')`;
+  // porte por população (comparar SEMPRE dentro do mesmo porte — o repasse per capita é regressivo)
+  const bandaSql = `CASE WHEN populacao < 20000 THEN 1 WHEN populacao < 100000 THEN 2 ELSE 3 END`;
+  const [recTgt, popTgt, medBloco] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT ${bloco} bloco, sum(vl_total) v FROM fns_repasse_sc WHERE cod_ibge=$1 AND ano>=2023 AND vl_total>0 AND ${perResidente} GROUP BY 1 ORDER BY v DESC`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT populacao, ${bandaSql} banda FROM entes_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`WITH mun AS (SELECT cod_ibge, populacao, ${bandaSql} banda FROM entes_sc WHERE tipo='M' AND populacao>0),
+      rec AS (SELECT f.cod_ibge, ${bloco} bloco, sum(f.vl_total) v FROM fns_repasse_sc f JOIN mun m ON m.cod_ibge=f.cod_ibge WHERE f.ano>=2023 AND f.vl_total>0 AND ${perResidente} GROUP BY 1,2),
+      pc AS (SELECT m.banda, r.bloco, r.v/m.populacao pc FROM rec r JOIN mun m ON m.cod_ibge=r.cod_ibge)
+      SELECT banda, bloco, percentile_cont(0.5) WITHIN GROUP (ORDER BY pc) med_pc, count(*) nm FROM pc GROUP BY banda, bloco`).catch(() => []),
+  ]);
+  const populacao = num(popTgt[0]?.populacao); const banda = num(popTgt[0]?.banda);
+  const totalRecebido = recTgt.reduce((s, r) => s + num(r.v), 0);
+  if (!recTgt.length || !populacao) return null;
+  const medMap = new Map(medBloco.filter((r) => num(r.banda) === banda).map((r) => [String(r.bloco), num(r.med_pc)]));
+  const porHab = Math.round(totalRecebido / populacao);
+  const medianaPorHab = Math.round([...medMap.values()].reduce((s, v) => s + v, 0)); // mediana comparável do porte (soma dos blocos)
+  const blocosAbaixo = recTgt.map((r) => {
+    const seuPc = num(r.v) / populacao; const medPc = medMap.get(String(r.bloco)) || 0;
+    return { bloco: String(r.bloco), seuPorHab: Math.round(seuPc), medianaPorHab: Math.round(medPc), gap: Math.round((medPc - seuPc) * populacao) };
+  }).filter((b) => b.medianaPorHab > 0 && b.seuPorHab < b.medianaPorHab * 0.85 && b.gap > 0).sort((a, b) => b.gap - a.gap).slice(0, 8);
+  return { totalRecebido, porHab, medianaPorHab, populacao, abaixoDaMediana: porHab > 0 && medianaPorHab > 0 && porHab < medianaPorHab, blocosAbaixo, blocos: recTgt.slice(0, 8).map((r) => ({ bloco: String(r.bloco), valor: num(r.v) })) };
+}
+
+// MOTOR DE LACUNA — captação NÃO-EMENDA (assistência social). FNAS fundo-a-fundo (PSB/PSE) por FAMÍLIA do CadÚnico
+// (o SUAS escala com vulnerabilidade, não população), comparado dentro do MESMO PORTE (repasse é regressivo). Janela 2023+.
+export type LacunaAssistenciaSC = {
+  totalRecebido: number; porFamilia: number; medianaPorFamilia: number; cadFamilias: number; abaixoDaMediana: boolean;
+  blocosAbaixo: { bloco: string; seuPorFamilia: number; medianaPorFamilia: number; gap: number }[];
+  blocos: { bloco: string; valor: number }[];
+} | null;
+export async function getLacunaCaptacaoAssistenciaSC(cod: string): Promise<LacunaAssistenciaSC> {
+  const bandaSql = `CASE WHEN populacao < 20000 THEN 1 WHEN populacao < 100000 THEN 2 ELSE 3 END`;
+  const PSB = "Proteção Social Básica (PSB)", PSE = "Proteção Social Especial (PSE)";
+  const [recTgt, denTgt, medBloco] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT '${PSB}' bloco, coalesce(sum(fnas_psb),0) v FROM assistencia_repasse_sc WHERE cod_ibge=$1 AND ano>=2023
+      UNION ALL SELECT '${PSE}', coalesce(sum(fnas_pse),0) FROM assistencia_repasse_sc WHERE cod_ibge=$1 AND ano>=2023`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT (SELECT cad_familias FROM assistencia_social_sc WHERE cod_ibge=$1) cad, ${bandaSql} banda FROM entes_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`WITH cad AS (SELECT DISTINCT ON (cod_ibge) cod_ibge, cad_familias FROM assistencia_social_sc WHERE cad_familias>0 ORDER BY cod_ibge, anomes_ref DESC),
+      mun AS (SELECT e.cod_ibge, ${bandaSql} banda, c.cad_familias cf FROM entes_sc e JOIN cad c ON c.cod_ibge=e.cod_ibge WHERE e.tipo='M' AND e.populacao>0),
+      rec AS (SELECT cod_ibge, '${PSB}' bloco, coalesce(sum(fnas_psb),0) v FROM assistencia_repasse_sc WHERE ano>=2023 GROUP BY 1
+              UNION ALL SELECT cod_ibge, '${PSE}', coalesce(sum(fnas_pse),0) FROM assistencia_repasse_sc WHERE ano>=2023 GROUP BY 1),
+      pc AS (SELECT m.banda, r.bloco, r.v/m.cf pc FROM rec r JOIN mun m ON m.cod_ibge=r.cod_ibge)
+      SELECT banda, bloco, percentile_cont(0.5) WITHIN GROUP (ORDER BY pc) med_pf FROM pc GROUP BY banda, bloco`).catch(() => []),
+  ]);
+  const cadFamilias = num(denTgt[0]?.cad); const banda = num(denTgt[0]?.banda);
+  const totalRecebido = recTgt.reduce((s, r) => s + num(r.v), 0);
+  if (!totalRecebido || !cadFamilias) return null;
+  const medMap = new Map(medBloco.filter((r) => num(r.banda) === banda).map((r) => [String(r.bloco), num(r.med_pf)]));
+  const porFamilia = Math.round(totalRecebido / cadFamilias);
+  const medianaPorFamilia = Math.round([...medMap.values()].reduce((s, v) => s + v, 0));
+  const blocosAbaixo = recTgt.map((r) => {
+    const seuPf = num(r.v) / cadFamilias; const medPf = medMap.get(String(r.bloco)) || 0;
+    return { bloco: String(r.bloco), seuPorFamilia: Math.round(seuPf), medianaPorFamilia: Math.round(medPf), gap: Math.round((medPf - seuPf) * cadFamilias) };
+  }).filter((b) => b.medianaPorFamilia > 0 && b.seuPorFamilia < b.medianaPorFamilia * 0.85 && b.gap > 0).sort((a, b) => b.gap - a.gap);
+  return { totalRecebido, porFamilia, medianaPorFamilia, cadFamilias, abaixoDaMediana: porFamilia > 0 && medianaPorFamilia > 0 && porFamilia < medianaPorFamilia, blocosAbaixo, blocos: recTgt.filter((r) => num(r.v) > 0).map((r) => ({ bloco: String(r.bloco), valor: num(r.v) })) };
+}
+
+// Radar de CRP (estadual) — todos os municípios com CRP, status atual e o valor federal "em jogo":
+// soma (por programa distinto) das janelas abertas que o município pode pleitear — voluntárias valem p/ todos,
+// específicas/emenda só p/ elegível (programa_beneficiario_sc). CRP vencida bloqueia o acesso a esse pool.
+export type RadarCrpItem = { codIbge: string; nome: string; ehEstado: boolean; populacao: number; nrCrp: string | null; validade: string | null; dias: number | null; vencido: boolean; valorEmJogo: number; nJanelas: number };
+export type CrpAlerta = { codIbge: string; nome: string; ehEstado: boolean; evento: string; categoriaPara: string; dias: number | null; validade: string | null; criado: string | null };
+export type RadarCrpSCData = { municipios: RadarCrpItem[]; janelasAbertas: number; valorPool: number; alertas: CrpAlerta[] } | null;
+export async function getRadarCrpSC(): Promise<RadarCrpSCData> {
+  const rows = await query<Record<string, unknown>>(`
+    WITH abertos AS (
+      SELECT id_programa, coalesce(valor_global,0) valor, dt_fim_vol df, true voluntaria FROM programas_transferegov WHERE dt_fim_vol >= CURRENT_DATE
+      UNION ALL
+      SELECT id_programa, coalesce(valor_global,0), dt_fim_esp, false FROM programas_transferegov WHERE dt_fim_esp >= CURRENT_DATE
+      UNION ALL
+      SELECT id_programa, coalesce(valor_global,0), dt_fim_emenda, false FROM programas_transferegov WHERE dt_fim_emenda >= CURRENT_DATE
+    ),
+    prog AS (SELECT id_programa, max(valor) valor, bool_or(voluntaria) tem_vol FROM abertos GROUP BY id_programa),
+    base AS (SELECT coalesce(sum(valor),0) valor_vol, count(*) n_vol FROM prog WHERE tem_vol),
+    extra AS (SELECT b.cod_ibge, sum(p.valor) valor_ext, count(*) n_ext FROM prog p JOIN programa_beneficiario_sc b ON b.id_programa = p.id_programa WHERE p.tem_vol = false GROUP BY b.cod_ibge),
+    crp AS (SELECT DISTINCT ON (cod_ibge) cod_ibge, nr_crp, to_char(dt_validade,'DD/MM/YYYY') validade, (dt_validade - CURRENT_DATE) dias FROM rpps_crp_sc ORDER BY cod_ibge, dt_emissao DESC)
+    SELECT e.cod_ibge, e.nome, e.tipo, e.populacao, c.nr_crp, c.validade, c.dias,
+      (SELECT valor_vol FROM base) + coalesce(x.valor_ext,0) valor_risco,
+      (SELECT n_vol FROM base) + coalesce(x.n_ext,0) n_janelas
+    FROM entes_sc e JOIN crp c ON c.cod_ibge = e.cod_ibge LEFT JOIN extra x ON x.cod_ibge = e.cod_ibge
+    WHERE e.tipo IN ('M','E')`).catch(() => []); // municípios + Governo do Estado (ambos têm RPPS/CRP próprios)
+  if (!rows.length) return null;
+  const municipios: RadarCrpItem[] = rows.map((r) => {
+    const dias = r.dias != null ? num(r.dias) : null;
+    return { codIbge: String(r.cod_ibge), nome: String(r.nome), ehEstado: r.tipo === "E", populacao: num(r.populacao), nrCrp: r.nr_crp ? String(r.nr_crp) : null, validade: r.validade ? String(r.validade) : null, dias, vencido: dias != null && dias < 0, valorEmJogo: num(r.valor_risco), nJanelas: num(r.n_janelas) };
+  });
+  // pool de janelas voluntárias (comum a todos) — headline honesto: não é aditivo entre municípios
+  const j = await query<Record<string, unknown>>(`
+    WITH abertos AS (
+      SELECT id_programa, coalesce(valor_global,0) valor, true v FROM programas_transferegov WHERE dt_fim_vol >= CURRENT_DATE
+      UNION ALL SELECT id_programa, coalesce(valor_global,0), false FROM programas_transferegov WHERE dt_fim_esp >= CURRENT_DATE
+      UNION ALL SELECT id_programa, coalesce(valor_global,0), false FROM programas_transferegov WHERE dt_fim_emenda >= CURRENT_DATE),
+    prog AS (SELECT id_programa, max(valor) valor, bool_or(v) tv FROM abertos GROUP BY id_programa)
+    SELECT coalesce(sum(valor),0) vol, count(*) n FROM prog WHERE tv`).catch(() => []);
+  // feed de novidades: transições de CRP detectadas pela varredura (alerta_crp) — mais recentes/severas primeiro
+  const al = await query<Record<string, unknown>>(`
+    SELECT cod_ibge, nome, eh_estado, evento, categoria_para, dias, validade, to_char(criado,'DD/MM/YYYY') criado
+    FROM crp_alertas WHERE evento IN ('entrou_vencido','entrou_30','entrou_90')
+    ORDER BY criado DESC, (CASE evento WHEN 'entrou_vencido' THEN 0 WHEN 'entrou_30' THEN 1 ELSE 2 END), id DESC LIMIT 12`).catch(() => []);
+  const alertas: CrpAlerta[] = al.map((r) => ({ codIbge: String(r.cod_ibge), nome: String(r.nome), ehEstado: r.eh_estado === true, evento: String(r.evento), categoriaPara: String(r.categoria_para), dias: r.dias != null ? num(r.dias) : null, validade: r.validade ? String(r.validade) : null, criado: r.criado ? String(r.criado) : null }));
+  return { municipios, janelasAbertas: num(j[0]?.n), valorPool: num(j[0]?.vol), alertas };
+}
+
+// Precatórios — estoque de dívida judicial do município (API do TJSC, regime especial). Replicável por UF.
+export type PrecatoriosSC = { valor: number; qtde: number; nEntes: number; entes: { nome: string; valor: number; qtde: number; regime: string | null }[] } | null;
+export async function getPrecatoriosSC(cod: string): Promise<PrecatoriosSC> {
+  const r = (await query<Record<string, unknown>>(`SELECT total_valor, total_qtde, n_entes FROM precatorios_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r) return null;
+  const ent = await query<Record<string, unknown>>(`SELECT de_entidade, valor, qtde, regime FROM precatorios_entes_sc WHERE cod_ibge=$1 AND valor>0 ORDER BY valor DESC LIMIT 8`, [cod]).catch(() => []);
+  return { valor: num(r.total_valor), qtde: num(r.total_qtde), nEntes: num(r.n_entes), entes: ent.map((x) => ({ nome: String(x.de_entidade || ""), valor: num(x.valor), qtde: num(x.qtde), regime: x.regime ? String(x.regime) : null })) };
+}
+
+// Infraestrutura — Saneamento (Censo 2022 IBGE): cobertura de água/esgoto/lixo por domicílio.
+export type SaneamentoItem = { ch: string; label: string; pct: number; domicilios: number; atendidos: number; deficit: number; mediaUF: number };
+export type SnisPrestador = { prestador: string; sigla: string; abrangencia: string; natureza: string; atendAgua: number | null; atendEsgoto: number | null; coletaEsgoto: number | null; tratEsgoto: number | null; perdas: number | null };
+export type SnisSerieAno = { ano: number; agua: number | null; esgoto: number | null; perdas: number | null };
+export type SaneamentoSC = { ano: number; fonte: string; itens: SaneamentoItem[]; snis: { ano: number; prestadores: SnisPrestador[]; serie: SnisSerieAno[] } | null } | null;
+export async function getSaneamentoSC(cod: string): Promise<SaneamentoSC> {
+  const [r, sn, serie] = await Promise.all([
+    query<Record<string, unknown>>(`
+    SELECT s.indicador, s.label, s.pct, s.domicilios, s.atendidos, s.ano, s.fonte,
+           (SELECT round(avg(pct), 1) FROM saneamento_sc x WHERE x.indicador = s.indicador AND length(x.cod_ibge)=7) media_uf
+    FROM saneamento_sc s WHERE s.cod_ibge = $1
+    ORDER BY array_position(ARRAY['agua_rede','esgoto_adeq','lixo_coletado']::text[], s.indicador)`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT prestador, sigla, abrangencia, natureza, atend_agua, atend_esgoto, coleta_esgoto, trat_esgoto, perdas_agua, ano FROM snis_sc WHERE cod_ibge=$1 AND ano=(SELECT max(ano) FROM snis_sc WHERE cod_ibge=$1) ORDER BY atend_agua DESC NULLS LAST`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT DISTINCT ON (ano) ano, atend_agua, atend_esgoto, perdas_agua FROM snis_sc WHERE cod_ibge=$1 ORDER BY ano, atend_agua DESC NULLS LAST`, [cod]).catch(() => []),
+  ]);
+  if (!r.length && !sn.length) return null;
+  const numN = (v: unknown) => (v == null ? null : num(v));
+  return {
+    ano: num(r[0]?.ano) || 2022, fonte: String(r[0]?.fonte || "IBGE Censo 2022"),
+    itens: r.map((x) => { const dom = num(x.domicilios), at = num(x.atendidos); return { ch: String(x.indicador), label: String(x.label), pct: num(x.pct), domicilios: dom, atendidos: at, deficit: Math.max(0, dom - at), mediaUF: num(x.media_uf) }; }),
+    snis: sn.length ? {
+      ano: num(sn[0].ano),
+      prestadores: sn.map((x) => ({ prestador: String(x.prestador || ""), sigla: String(x.sigla || ""), abrangencia: String(x.abrangencia || ""), natureza: String(x.natureza || ""), atendAgua: numN(x.atend_agua), atendEsgoto: numN(x.atend_esgoto), coletaEsgoto: numN(x.coleta_esgoto), tratEsgoto: numN(x.trat_esgoto), perdas: numN(x.perdas_agua) })),
+      serie: serie.map((x) => ({ ano: num(x.ano), agua: numN(x.atend_agua), esgoto: numN(x.atend_esgoto), perdas: numN(x.perdas_agua) })),
+    } : null,
+  };
+}
+
+// PROTÓTIPO — Viés de previsão de receita (semente do motor de sugestão de peças orçamentárias).
+// Compara receita PREVISTA (LOA) × REALIZADA por ano → erro sistemático e acurácia do município.
+export type ViesPrevisaoSC = {
+  serie: { ano: number; previsto: number; realizado: number; vies: number; pandemia: boolean }[];
+  viesMedio: number; erroMedioAbs: number; ufErroMedio: number;
+  direcao: "subestima" | "superestima" | "neutro";
+  classe: { label: string; cor: string };
+  proximoAno: number; ajusteSugerido: number;
+} | null;
+export async function getViesPrevisaoSC(cod: string): Promise<ViesPrevisaoSC> {
+  const [r, uf] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT ano, receita_prevista p, receita a FROM financas_sc WHERE cod_ibge=$1 AND receita_prevista>0 AND receita>0 ORDER BY ano`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT round(avg(abs((receita-receita_prevista)/receita_prevista))*100,1) e FROM financas_sc WHERE receita_prevista>0 AND receita>0 AND ano>=2019 AND length(cod_ibge)=7`).catch(() => []), // exclui o Estado (cod '42') da média-UF de erro de previsão
+  ]);
+  if (r.length < 2) return null;
+  const serie = r.map((x) => { const p = num(x.p), a = num(x.a), ano = num(x.ano); return { ano, previsto: p, realizado: a, vies: p ? ((a - p) / p) * 100 : 0, pandemia: ano === 2020 || ano === 2021 }; });
+  // métricas excluindo pandemia (anos atípicos não definem o comportamento estrutural)
+  const base = serie.filter((s) => !s.pandemia);
+  const usar = base.length >= 2 ? base : serie;
+  const viesMedio = usar.reduce((s, x) => s + x.vies, 0) / usar.length;
+  const erroMedioAbs = usar.reduce((s, x) => s + Math.abs(x.vies), 0) / usar.length;
+  const direcao = viesMedio > 3 ? "subestima" : viesMedio < -3 ? "superestima" : "neutro";
+  const classe = erroMedioAbs < 5 ? { label: "Previsão realista", cor: "#16a34a" } : erroMedioAbs < 12 ? { label: "Precisão moderada", cor: "#d97706" } : { label: "Previsão pouco confiável", cor: "#dc2626" };
+  return {
+    serie, viesMedio: Math.round(viesMedio * 10) / 10, erroMedioAbs: Math.round(erroMedioAbs * 10) / 10,
+    ufErroMedio: num(uf[0]?.e), direcao, classe,
+    proximoAno: serie[serie.length - 1].ano + 1, ajusteSugerido: Math.round(viesMedio * 10) / 10,
+  };
+}
+
+// MACROINDICADORES — metas da LDO × realizado (o que o município consolida como meta, mapeado contra a realidade).
+export type MacroLDOItem = { chave: string; label: string; meta: number | null; realizado: number; cumpriu: boolean | null; tipo: "meta" | "execucao"; melhorMenor: boolean };
+export type MacroLDOSC = { ano: number; itens: MacroLDOItem[]; primarioCumpridos: number; primarioTotal: number } | null;
+export async function getMacroindicadoresSC(cod: string): Promise<MacroLDOSC> {
+  const r = await query<Record<string, unknown>>(`SELECT * FROM metas_fiscais_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!r.length) return null;
+  const u = r[r.length - 1];
+  const comMeta = r.filter((x) => num(x.meta_primario) !== 0);
+  const cumpridos = comMeta.filter((x) => num(x.resultado_primario) >= num(x.meta_primario)).length;
+  const itens: MacroLDOItem[] = [
+    { chave: "primario", label: "Resultado primário", meta: num(u.meta_primario), realizado: num(u.resultado_primario), cumpriu: num(u.resultado_primario) >= num(u.meta_primario), tipo: "meta", melhorMenor: false },
+    { chave: "nominal", label: "Resultado nominal", meta: num(u.meta_nominal), realizado: num(u.resultado_nominal), cumpriu: num(u.resultado_nominal) >= num(u.meta_nominal), tipo: "meta", melhorMenor: false },
+    { chave: "receita", label: "Receita primária", meta: num(u.receita_prim_prev), realizado: num(u.receita_prim_real), cumpriu: null, tipo: "execucao", melhorMenor: false },
+    { chave: "despesa", label: "Despesa primária", meta: num(u.despesa_prim_dot), realizado: num(u.despesa_prim_emp), cumpriu: null, tipo: "execucao", melhorMenor: true },
+    { chave: "dcl", label: "Dívida consolidada líquida", meta: num(u.dcl_inicio), realizado: num(u.dcl_fim), cumpriu: num(u.dcl_fim) <= num(u.dcl_inicio), tipo: "execucao", melhorMenor: true },
+  ];
+  return { ano: num(u.ano), itens, primarioCumpridos: cumpridos, primarioTotal: comMeta.length };
+}
+
+// PROTÓTIPO — Viés de despesa por FUNÇÃO: dotação (orçado) × empenhado (executado) → taxa de execução.
+// Revela onde o município SUPERORÇA e contingencia (execução baixa = dotação inflada).
+export type ViesDespesaItem = { funcao: string; dotacao: number; empenhado: number; execucao: number };
+export type ViesDespesaSC = { itens: ViesDespesaItem[]; execGlobal: number; anos: number[]; maisInflada: ViesDespesaItem | null } | null;
+export async function getViesDespesaSC(cod: string): Promise<ViesDespesaSC> {
+  const r = await query<Record<string, unknown>>(`
+    SELECT funcao, sum(dotacao) dot, sum(empenhado) emp
+    FROM despesa_subfuncao_sc WHERE cod_ibge=$1 AND dotacao IS NOT NULL AND dotacao>0
+    GROUP BY funcao HAVING sum(dotacao)>0 ORDER BY sum(dotacao) DESC`, [cod]).catch(() => []);
+  if (r.length < 2) return null;
+  const anosR = await query<Record<string, unknown>>(`SELECT DISTINCT ano FROM despesa_subfuncao_sc WHERE cod_ibge=$1 AND dotacao IS NOT NULL ORDER BY ano`, [cod]).catch(() => []);
+  const itens: ViesDespesaItem[] = r.map((x) => { const d = num(x.dot), e = num(x.emp); return { funcao: String(x.funcao), dotacao: d, empenhado: e, execucao: d ? Math.round((e / d) * 1000) / 10 : 0 }; });
+  const totD = itens.reduce((s, x) => s + x.dotacao, 0), totE = itens.reduce((s, x) => s + x.empenhado, 0);
+  // "mais inflada" = função relevante (>2% do orçamento) com menor execução
+  const relevantes = itens.filter((x) => x.dotacao >= totD * 0.02);
+  const maisInflada = relevantes.length ? relevantes.reduce((a, b) => (b.execucao < a.execucao ? b : a)) : null;
+  return { itens, execGlobal: totD ? Math.round((totE / totD) * 1000) / 10 : 0, anos: anosR.map((x) => num(x.ano)), maisInflada };
+}
+
+// PROTÓTIPO — Projeção de receita por ORIGEM (FPM, ISS, ICMS, IPTU…) extrapolando a tendência do ARRECADADO real.
+// Parte do realizado (não da previsão) → já corrige o viés histórico. Mediana do crescimento anual, com cap.
+export type ProjReceitaItem = { item: string; tipo: "federal" | "estadual" | "propria"; fonteProjecao: string; serie: { ano: number; valor: number }[]; crescimento: number; atual: number; projetado: number; oficial: boolean };
+export type ProjecaoReceitaSC = { proximoAno: number; itens: ProjReceitaItem[]; totalAtual: number; totalProjetado: number } | null;
+// classificação da origem → quem projeta oficialmente (arquitetura pronta p/ plugar STN/SEF-SC sem retrabalho)
+const TIPO_RECEITA: Record<string, "federal" | "estadual" | "propria"> = {
+  FPM: "federal", ITR: "federal", "IPI-Exportação": "federal", FUNDEB: "federal", IRRF: "federal",
+  ICMS: "estadual", IPVA: "estadual",
+  IPTU: "propria", ISS: "propria", ITBI: "propria", "Rend. Aplicação": "propria",
+};
+export async function getProjecaoReceitaSC(cod: string): Promise<ProjecaoReceitaSC> {
+  const [r, stn] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT item, ano, valor FROM receitas_detalhe_sc WHERE cod_ibge=$1 AND item NOT IN ('RCL') AND valor>0 ORDER BY item, ano`, [cod]).catch(() => []),
+    // ÂNCORA OFICIAL: transferências federais realizadas (STN/Tesouro), anual — vencem a tendência interna
+    query<Record<string, unknown>>(`SELECT item, ano, sum(valor) v FROM transferencias_stn_sc WHERE cod_ibge=$1 GROUP BY item, ano ORDER BY item, ano`, [cod]).catch(() => []),
+  ]);
+  if (r.length < 4) return null;
+  const maxAnoRec = Math.max(...r.map((x) => num(x.ano)));
+  // projeção ancorada no STN: mediana do crescimento da série oficial (anos completos ≤ maxAno da receita)
+  const stnByItem = new Map<string, { ano: number; v: number }[]>();
+  for (const x of stn) { const it = String(x.item); const ano = num(x.ano); if (ano > maxAnoRec) continue; if (!stnByItem.has(it)) stnByItem.set(it, []); stnByItem.get(it)!.push({ ano, v: num(x.v) }); }
+  const oficMap = new Map<string, { valor: number; fonte: string }>();
+  for (const [it, serie] of stnByItem) {
+    if (serie.length < 3) continue;
+    const gs: number[] = []; for (let i = 1; i < serie.length; i++) { const p = serie[i - 1].v; if (p > 0) gs.push((serie[i].v - p) / p); }
+    gs.sort((a, b) => a - b); let cg = gs.length ? gs[Math.floor(gs.length / 2)] : 0; cg = Math.max(-0.2, Math.min(0.3, cg));
+    oficMap.set(it, { valor: serie[serie.length - 1].v * (1 + cg), fonte: "STN (oficial)" });
+  }
+  const map = new Map<string, { ano: number; valor: number }[]>();
+  for (const x of r) { const it = String(x.item); if (!map.has(it)) map.set(it, []); map.get(it)!.push({ ano: num(x.ano), valor: num(x.valor) }); }
+  const anos = [...new Set(r.map((x) => num(x.ano)))].sort((a, b) => a - b);
+  const proximoAno = anos[anos.length - 1] + 1;
+  const itens: ProjReceitaItem[] = [];
+  for (const [item, serie] of map) {
+    if (serie.length < 3) continue;
+    const g: number[] = [];
+    for (let i = 1; i < serie.length; i++) { const p = serie[i - 1].valor; if (p > 0) g.push((serie[i].valor - p) / p); }
+    g.sort((a, b) => a - b);
+    let cr = g.length ? g[Math.floor(g.length / 2)] : 0; // mediana (robusta a outliers)
+    cr = Math.max(-0.2, Math.min(0.3, cr));
+    const atual = serie[serie.length - 1].valor;
+    const tipo = TIPO_RECEITA[item] || "propria";
+    const of = oficMap.get(item);
+    // ICMS/IPVA: a cota-parte do receitas_detalhe (SICONFI) É o repasse oficial do Estado — validada vs FECAM (ICMS de Floripa bate). Marca como oficial, mantendo a projeção pela própria série oficial.
+    const ehEstadualOficial = !of && (item === "ICMS" || item === "IPVA");
+    const projetado = of ? Math.round(of.valor) : Math.round(atual * (1 + cr));
+    const fonteProj = of ? of.fonte : ehEstadualOficial ? "SEF-SC — cota-parte estadual (via SICONFI)" : "tendência (mediana do crescimento real)";
+    itens.push({ item, tipo, fonteProjecao: fonteProj, serie, crescimento: Math.round(cr * 1000) / 10, atual, projetado, oficial: !!of || ehEstadualOficial });
+  }
+  if (itens.length < 2) return null;
+  itens.sort((a, b) => b.projetado - a.projetado);
+  return { proximoAno, itens, totalAtual: itens.reduce((s, x) => s + x.atual, 0), totalProjetado: itens.reduce((s, x) => s + x.projetado, 0) };
+}
+
+// Transferências da União por município (OFICIAL, STN/Tesouro) — mensal + anual por repasse + soma total.
+export type TransfMensalItem = { item: string; meses: number[]; anual: number; compoeFundeb: boolean };
+export type TransferenciasStnSC = { ano: number; anosDisponiveis: number[]; itens: TransfMensalItem[]; totalMeses: number[]; totalAnual: number } | null;
+const COMPOE_FUNDEB = new Set(["FPM", "ITR", "Lei Kandir (LC 87/96)"]); // sofrem dedução de 20% p/ o FUNDEB
+export async function getTransferenciasStnSC(cod: string, ano?: number): Promise<TransferenciasStnSC> {
+  const anosR = await query<Record<string, unknown>>(`SELECT DISTINCT ano FROM transferencias_stn_sc WHERE cod_ibge=$1 ORDER BY ano DESC`, [cod]).catch(() => []);
+  if (!anosR.length) return null;
+  const anosDisponiveis = anosR.map((x) => num(x.ano));
+  const alvo = ano && anosDisponiveis.includes(ano) ? ano : anosDisponiveis[0];
+  const r = await query<Record<string, unknown>>(`SELECT item, mes, valor FROM transferencias_stn_sc WHERE cod_ibge=$1 AND ano=$2`, [cod, alvo]).catch(() => []);
+  if (!r.length) return null;
+  const map = new Map<string, number[]>();
+  for (const x of r) { const it = String(x.item); if (!map.has(it)) map.set(it, new Array(12).fill(0)); const m = num(x.mes); if (m >= 1 && m <= 12) map.get(it)![m - 1] += num(x.valor); }
+  const itens: TransfMensalItem[] = [...map.entries()].map(([item, meses]) => ({ item, meses: meses.map((v) => Math.round(v * 100) / 100), anual: Math.round(meses.reduce((s, v) => s + v, 0) * 100) / 100, compoeFundeb: COMPOE_FUNDEB.has(item) }))
+    .filter((x) => x.anual > 0).sort((a, b) => b.anual - a.anual);
+  const totalMeses = new Array(12).fill(0); for (const it of itens) it.meses.forEach((v, i) => (totalMeses[i] += v));
+  return { ano: alvo, anosDisponiveis, itens, totalMeses: totalMeses.map((v) => Math.round(v * 100) / 100), totalAnual: Math.round(itens.reduce((s, x) => s + x.anual, 0) * 100) / 100 };
+}
+
+// PEÇA ORÇAMENTÁRIA COMPLETA (sugestão) — receita projetada → despesa por função respeitando vinculações + LRF.
+export type PecaFuncao = { funcao: string; pctHist: number; valorSugerido: number; minimo: number | null; ajustadoAoMinimo: boolean };
+export type PecaCompletaSC = {
+  anoBase: number; proximoAno: number; crescimento: number;
+  receitaProjetada: number; baseVinculavel: number; despesaTotal: number;
+  funcoes: PecaFuncao[];
+  saudeMin: number; educMin: number; pessoalProjetado: number; pessoalPctReceita: number;
+  pessoalPctRCL: number | null; // % oficial sobre a RCL (base correta da LRF)
+  ldo: { ano: number; receitaPrev: number; despesaDot: number; metaResultado: number } | null; // âncora na última LDO do município
+  alertas: string[];
+} | null;
+export async function getPecaCompletaSC(cod: string): Promise<PecaCompletaSC> {
+  const [r, rgf, mf] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT ano, receita, tributaria, transferencias, despesa, pessoal, saude, educacao, seguranca, assistencia, infraestrutura, administracao FROM financas_sc WHERE cod_ibge=$1 AND receita>0 ORDER BY ano`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT pessoal_pct FROM rgf_sc WHERE cod_ibge=$1 AND pessoal_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT ano, receita_prim_prev, despesa_prim_dot, meta_primario FROM metas_fiscais_sc WHERE cod_ibge=$1 AND receita_prim_prev>0 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []),
+  ]);
+  if (r.length < 2) return null;
+  const u = r[r.length - 1];
+  // crescimento: mediana do crescimento anual da receita (exclui pandemia 2020-21)
+  const serie = r.map((x) => ({ ano: num(x.ano), rec: num(x.receita) })).filter((x) => !(x.ano === 2020 || x.ano === 2021) || r.length <= 3);
+  const g: number[] = []; for (let i = 1; i < serie.length; i++) { const p = serie[i - 1].rec; if (p > 0) g.push((serie[i].rec - p) / p); }
+  g.sort((a, b) => a - b); let cr = g.length ? g[Math.floor(g.length / 2)] : 0.05; cr = Math.max(-0.1, Math.min(0.2, cr));
+  const f = 1 + cr;
+  const receitaProjetada = num(u.receita) * f;
+  const baseVinculavel = (num(u.tributaria) + num(u.transferencias)) * f; // impostos + transferências = base dos mínimos
+  const despesaTotal = receitaProjetada; // orçamento equilibrado
+  const despHist = num(u.despesa) || 1;
+  const FUNCS: [string, number][] = [["Saúde", num(u.saude)], ["Educação", num(u.educacao)], ["Administração", num(u.administracao)], ["Assistência Social", num(u.assistencia)], ["Segurança", num(u.seguranca)], ["Urbanismo/Infraestrutura", num(u.infraestrutura)]];
+  const somaConhecidas = FUNCS.reduce((s, [, v]) => s + v, 0);
+  const saudeMin = 0.15 * baseVinculavel, educMin = 0.25 * baseVinculavel;
+  const alertas: string[] = [];
+  const funcoes: PecaFuncao[] = FUNCS.map(([nome, hist]) => {
+    const pctHist = despHist ? hist / despHist : 0;
+    let valor = pctHist * despesaTotal, minimo: number | null = null, ajust = false;
+    if (nome === "Saúde") { minimo = saudeMin; if (valor < minimo) { valor = minimo; ajust = true; alertas.push("Saúde ajustada ao piso constitucional de 15% (histórico abaixo do mínimo)."); } }
+    if (nome === "Educação") { minimo = educMin; if (valor < minimo) { valor = minimo; ajust = true; alertas.push("Educação ajustada ao piso constitucional de 25% (histórico abaixo do mínimo)."); } }
+    return { funcao: nome, pctHist: Math.round(pctHist * 1000) / 10, valorSugerido: Math.round(valor), minimo: minimo ? Math.round(minimo) : null, ajustadoAoMinimo: ajust };
+  });
+  const outras = Math.max(0, despesaTotal - funcoes.reduce((s, x) => s + x.valorSugerido, 0));
+  if (outras > 0) funcoes.push({ funcao: "Demais funções / Encargos", pctHist: Math.round((1 - somaConhecidas / despHist) * 1000) / 10, valorSugerido: Math.round(outras), minimo: null, ajustadoAoMinimo: false });
+  const pessoalProjetado = num(u.pessoal) * f;
+  const pessoalPctReceita = receitaProjetada ? Math.round((pessoalProjetado / receitaProjetada) * 1000) / 10 : 0;
+  const pessoalPctRCL = rgf[0]?.pessoal_pct != null ? Math.round(num(rgf[0].pessoal_pct) * 10) / 10 : null;
+  // o limite da LRF é sobre a RCL — usar o % oficial (rgf_sc) quando disponível
+  if (pessoalPctRCL != null && pessoalPctRCL > 54) alertas.push(`Despesa de pessoal em ${pessoalPctRCL}% da RCL — acima do limite máximo da LRF (54%); a peça precisa conter a folha.`);
+  else if (pessoalPctRCL != null && pessoalPctRCL > 51.3) alertas.push(`Despesa de pessoal em ${pessoalPctRCL}% da RCL — acima do limite prudencial (51,3%); espaço apertado para a folha na LOA.`);
+  const ldo = mf[0] ? { ano: num(mf[0].ano), receitaPrev: Math.round(num(mf[0].receita_prim_prev)), despesaDot: Math.round(num(mf[0].despesa_prim_dot)), metaResultado: Math.round(num(mf[0].meta_primario)) } : null;
+  return { anoBase: num(u.ano), proximoAno: num(u.ano) + 1, crescimento: Math.round(cr * 1000) / 10, receitaProjetada: Math.round(receitaProjetada), baseVinculavel: Math.round(baseVinculavel), despesaTotal: Math.round(despesaTotal), funcoes, saudeMin: Math.round(saudeMin), educMin: Math.round(educMin), pessoalProjetado: Math.round(pessoalProjetado), pessoalPctReceita, pessoalPctRCL, ldo, alertas };
+}
+
+// ACOMPANHAMENTO por FUNÇÃO (intra-anual) — orçado (dotação) × realizado (empenhado) até o bimestre, por função.
+export type AcompFuncaoItem = { funcao: string; dotacao: number; empenhado: number; execucao: number };
+export type AcompanhamentoFuncaoSC = { ano: number; bimestre: number; mesAte: number; ritmoEsperado: number; itens: AcompFuncaoItem[]; totalDotacao: number; totalEmpenhado: number } | null;
+export async function getAcompanhamentoFuncaoSC(cod: string): Promise<AcompanhamentoFuncaoSC> {
+  const r = await query<Record<string, unknown>>(`SELECT funcao, dotacao, empenhado, bimestre, ano FROM acompanhamento_funcao_sc WHERE cod_ibge=$1 AND ano=(SELECT max(ano) FROM acompanhamento_funcao_sc WHERE cod_ibge=$1) AND dotacao>0 ORDER BY dotacao DESC`, [cod]).catch(() => []);
+  if (!r.length) return null;
+  const bim = num(r[0].bimestre), ano = num(r[0].ano);
+  const itens = r.map((x) => { const d = num(x.dotacao), e = num(x.empenhado); return { funcao: String(x.funcao), dotacao: d, empenhado: e, execucao: d ? Math.round((e / d) * 1000) / 10 : 0 }; });
+  return { ano, bimestre: bim, mesAte: bim * 2, ritmoEsperado: Math.round((bim * 2 / 12) * 1000) / 10, itens, totalDotacao: itens.reduce((s, x) => s + x.dotacao, 0), totalEmpenhado: itens.reduce((s, x) => s + x.empenhado, 0) };
+}
+
+// RED FLAGS DE FORNECEDORES — sinais de risco de integridade: concentração + sancionado + sobrepreço.
+export type RedFlagItem = { fornecedor: string; nContratos: number; valorTotal: number; sharePct: number; sancionado: boolean; sancTipo: string; sancOrgao: string; sobreprecoEconomia: number; flags: number };
+export type RedFlagsSC = { topConcentracao: number; nCriticos: number; nFlagged: number; itens: RedFlagItem[] } | null;
+export async function getRedFlagsSC(cod: string): Promise<RedFlagsSC> {
+  const [r, t] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT fornecedor, n_contratos, valor_total, share_pct, sancionado, sanc_tipo, sanc_orgao, sobrepreco_economia, flags FROM red_flags_fornecedores_sc WHERE cod_ibge=$1 ORDER BY flags DESC, valor_total DESC LIMIT 12`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT count(*) FILTER(WHERE flags>=1) flagged, count(*) FILTER(WHERE flags>=2) crit, max(share_pct) topc FROM red_flags_fornecedores_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+  ]);
+  if (!r.length) return null;
+  return {
+    topConcentracao: num(t[0]?.topc), nCriticos: num(t[0]?.crit), nFlagged: num(t[0]?.flagged),
+    itens: r.map((x) => ({ fornecedor: String(x.fornecedor || ""), nContratos: num(x.n_contratos), valorTotal: num(x.valor_total), sharePct: num(x.share_pct), sancionado: !!x.sancionado, sancTipo: String(x.sanc_tipo || ""), sancOrgao: String(x.sanc_orgao || ""), sobreprecoEconomia: num(x.sobrepreco_economia), flags: num(x.flags) })),
+  };
+}
+
+// IBGE MUNIC — instrumentos de gestão do município (planos, conselhos, fundos, instrumentos legais). Base de dados oficial.
+export type MunicItem = { label: string; tem: boolean; valor: string };
+export type MunicGrupo = { grupo: string; itens: MunicItem[]; tem: number; total: number };
+export type MunicSC = { ano: number; grupos: MunicGrupo[]; totalTem: number; total: number } | null;
+export async function getMunicSC(cod: string): Promise<MunicSC> {
+  const r = await query<Record<string, unknown>>(`SELECT grupo, label, tem, valor, ano FROM munic_sc WHERE cod_ibge=$1 ORDER BY grupo, label`, [cod]).catch(() => []);
+  if (!r.length) return null;
+  const ano = num(r[0].ano);
+  const ordem = ["Planos", "Conselhos", "Fundos", "Instrumentos legais", "Órgãos", "Outros"];
+  const map = new Map<string, MunicItem[]>();
+  for (const x of r) { const g = String(x.grupo || "Outros"); if (!map.has(g)) map.set(g, []); map.get(g)!.push({ label: String(x.label || ""), tem: !!x.tem, valor: String(x.valor || "") }); }
+  const grupos: MunicGrupo[] = [...map.entries()].map(([grupo, itens]) => ({ grupo, itens, tem: itens.filter((i) => i.tem).length, total: itens.length }))
+    .sort((a, b) => (ordem.indexOf(a.grupo) + 99) % 100 - (ordem.indexOf(b.grupo) + 99) % 100);
+  return { ano, grupos, totalTem: r.filter((x) => x.tem).length, total: r.length };
+}
+
+// VARIAÇÃO INTERNA DE PREÇOS — o MESMO município comprou o MESMO item a preços diferentes (incoerência interna).
+export type VariacaoInternaItem = { descricao: string; unidade: string; nCompras: number; menor: number; maior: number; razao: number; qtd: number; economia: number };
+export type VariacaoInternaSC = { totalEconomia: number; nItens: number; itens: VariacaoInternaItem[] } | null;
+export async function getVariacaoInternaSC(cod: string): Promise<VariacaoInternaSC> {
+  const [r, t] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT descricao, unidade, n_compras, menor, maior, razao, qtd_total, economia FROM variacao_interna_sc WHERE cod_ibge=$1 ORDER BY economia DESC LIMIT 20`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT count(*) n, sum(economia) e FROM variacao_interna_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+  ]);
+  if (!r.length) return null;
+  return {
+    totalEconomia: num(t[0]?.e), nItens: num(t[0]?.n),
+    itens: r.map((x) => ({ descricao: String(x.descricao || ""), unidade: String(x.unidade || ""), nCompras: num(x.n_compras), menor: num(x.menor), maior: num(x.maior), razao: num(x.razao), qtd: num(x.qtd_total), economia: num(x.economia) })),
+  };
+}
+
+// COMPRAS POR PREÇO UNITÁRIO — itens em que o município pagou acima da mediana de SC para o MESMO item (sobrepreço).
+export type SobreprecoItem = { descricao: string; unidade: string; ano: number; quantidade: number; unitPago: number; unitRef: number; acimaPct: number; economia: number; nMunisRef: number };
+export type SobreprecoSC = { totalEconomia: number; nItens: number; itens: SobreprecoItem[] } | null;
+export async function getSobreprecoSC(cod: string): Promise<SobreprecoSC> {
+  const [r, t] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT descricao, unidade, ano, quantidade, unit_pago, unit_ref, acima_pct, economia, n_munis_ref FROM sobrepreco_compras_sc WHERE cod_ibge=$1 ORDER BY economia DESC LIMIT 30`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT count(*) n, sum(economia) e FROM sobrepreco_compras_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+  ]);
+  if (!r.length) return null;
+  return {
+    totalEconomia: num(t[0]?.e), nItens: num(t[0]?.n),
+    itens: r.map((x) => ({ descricao: String(x.descricao || ""), unidade: String(x.unidade || ""), ano: num(x.ano), quantidade: num(x.quantidade), unitPago: num(x.unit_pago), unitRef: num(x.unit_ref), acimaPct: num(x.acima_pct), economia: num(x.economia), nMunisRef: num(x.n_munis_ref) })),
+  };
+}
+
+// CEIS/CNEP × FORNECEDORES — fornecedores do município com sanção VIGENTE (controle). Cruza contratos×sanções por CNPJ.
+export type FornecedorSancionado = { fornecedor: string; fonte: string; tipoSancao: string; orgao: string; fundamentacao: string; dataInicio: string | null; dataFim: string | null; nContratos: number; valorTotal: number; vigente: boolean };
+export type FornecedoresSancionadosSC = { total: number; valorTotal: number; comContratoVigente: number; itens: FornecedorSancionado[] } | null;
+export async function getFornecedoresSancionadosSC(cod: string): Promise<FornecedoresSancionadosSC> {
+  const r = await query<Record<string, unknown>>(`
+    SELECT c.fornecedor, s.fonte, s.tipo_sancao, s.orgao, s.fundamentacao, to_char(s.data_inicio,'YYYY-MM-DD') data_inicio, to_char(s.data_fim,'YYYY-MM-DD') data_fim,
+      count(DISTINCT c.id) n, sum(c.valor_global) valor, bool_or(c.vig_fim >= current_date) vigente
+    FROM contratos_sc c JOIN sancoes s ON regexp_replace(c.ni_fornecedor,'[^0-9]','','g')=regexp_replace(s.ni,'[^0-9]','','g')
+    WHERE c.cod_ibge=$1 AND length(regexp_replace(c.ni_fornecedor,'[^0-9]','','g'))>=11
+      AND (s.data_fim IS NULL OR s.data_fim >= current_date)
+    GROUP BY c.fornecedor, s.fonte, s.tipo_sancao, s.orgao, s.fundamentacao, s.data_inicio, s.data_fim
+    ORDER BY valor DESC NULLS LAST`, [cod]).catch(() => []);
+  if (!r.length) return null;
+  const itens = r.map((x) => ({ fornecedor: String(x.fornecedor || ""), fonte: String(x.fonte || ""), tipoSancao: String(x.tipo_sancao || ""), orgao: String(x.orgao || ""), fundamentacao: String(x.fundamentacao || ""), dataInicio: x.data_inicio ? String(x.data_inicio).slice(0, 10) : null, dataFim: x.data_fim ? String(x.data_fim).slice(0, 10) : null, nContratos: num(x.n), valorTotal: num(x.valor), vigente: !!x.vigente }));
+  return { total: itens.length, valorTotal: itens.reduce((s, i) => s + i.valorTotal, 0), comContratoVigente: itens.filter((i) => i.vigente).length, itens };
+}
+
+// MSC ANCORADA AO RREO — despesa empenhada por NATUREZA e por FONTE (forma da MSC × total exato do RREO).
+export type MscDespesaSC = {
+  ano: number; totalRreo: number;
+  natureza: { categoria: string; valor: number; pct: number }[];
+  fonte: { categoria: string; valor: number; pct: number }[];
+} | null;
+export async function getMscDespesaSC(cod: string): Promise<MscDespesaSC> {
+  const r = await query<Record<string, unknown>>(`SELECT tipo, categoria, valor, total_rreo, ano FROM msc_despesa_sc WHERE cod_ibge=$1 AND ano=(SELECT max(ano) FROM msc_despesa_sc WHERE cod_ibge=$1) ORDER BY valor DESC`, [cod]).catch(() => []);
+  if (!r.length) return null;
+  const ano = num(r[0].ano), totalRreo = num(r[0].total_rreo);
+  const monta = (tipo: string) => r.filter((x) => x.tipo === tipo).map((x) => ({ categoria: String(x.categoria), valor: num(x.valor), pct: totalRreo ? Math.round((num(x.valor) / totalRreo) * 1000) / 10 : 0 }));
+  return { ano, totalRreo, natureza: monta("natureza"), fonte: monta("fonte") };
+}
+
+// PPA POR PROGRAMA — detalhamento da despesa por FUNÇÃO → SUBFUNÇÃO (orçado×executado), o nível programático.
+export type PpaSubfuncao = { subfuncao: string; dotacao: number; empenhado: number; execucao: number };
+export type PpaFuncao = { funcao: string; dotacao: number; empenhado: number; execucao: number; subfuncoes: PpaSubfuncao[] };
+export type PpaProgramaSC = { ano: number; funcoes: PpaFuncao[]; totalDotacao: number; totalEmpenhado: number } | null;
+export async function getPpaProgramaSC(cod: string): Promise<PpaProgramaSC> {
+  // último ano COMPLETO (com detalhe de subfunção — exclui o ano corrente parcial, que vem como "Demais Subfunções")
+  const ay = await query<Record<string, unknown>>(`SELECT ano FROM despesa_subfuncao_sc WHERE cod_ibge=$1 AND dotacao IS NOT NULL GROUP BY ano HAVING count(DISTINCT subfuncao) > 12 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []);
+  if (!ay.length) return null;
+  const ano = num(ay[0].ano);
+  const r = await query<Record<string, unknown>>(`SELECT funcao, subfuncao, dotacao, empenhado FROM despesa_subfuncao_sc WHERE cod_ibge=$1 AND ano=$2 AND dotacao>0 ORDER BY funcao, dotacao DESC`, [cod, ano]).catch(() => []);
+  if (!r.length) return null;
+  const map = new Map<string, PpaSubfuncao[]>();
+  for (const x of r) { const fn = String(x.funcao); if (!map.has(fn)) map.set(fn, []); const d = num(x.dotacao), e = num(x.empenhado); map.get(fn)!.push({ subfuncao: String(x.subfuncao), dotacao: d, empenhado: e, execucao: d ? Math.round((e / d) * 1000) / 10 : 0 }); }
+  const funcoes: PpaFuncao[] = [...map.entries()].map(([funcao, subs]) => { const dot = subs.reduce((s, x) => s + x.dotacao, 0), emp = subs.reduce((s, x) => s + x.empenhado, 0); return { funcao, dotacao: dot, empenhado: emp, execucao: dot ? Math.round((emp / dot) * 1000) / 10 : 0, subfuncoes: subs }; }).filter((f) => f.dotacao > 0).sort((a, b) => b.dotacao - a.dotacao);
+  return { ano, funcoes, totalDotacao: funcoes.reduce((s, x) => s + x.dotacao, 0), totalEmpenhado: funcoes.reduce((s, x) => s + x.empenhado, 0) };
+}
+
+// ACOMPANHAMENTO intra-anual — execução do orçamento até o bimestre (RREO vigente) vs ritmo esperado.
+export type AcompanhamentoSC = {
+  ano: number; bimestre: number; mesAte: number; ritmoEsperado: number;
+  receitaPrevista: number; receitaRealizada: number; receitaPct: number;
+  despesaDotacao: number; despesaEmpenhada: number; despesaPct: number;
+  receitaUfMedia: number;
+} | null;
+export async function getAcompanhamentoSC(cod: string): Promise<AcompanhamentoSC> {
+  const [r, uf] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT * FROM acompanhamento_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT round(avg(receita_realizada/NULLIF(receita_prevista,0))*100,1) m FROM acompanhamento_sc WHERE ano=(SELECT max(ano) FROM acompanhamento_sc) AND receita_prevista>0`).catch(() => []),
+  ]);
+  if (!r.length) return null;
+  const x = r[0];
+  const recPrev = num(x.receita_prevista), recReal = num(x.receita_realizada), despDot = num(x.despesa_dotacao), despEmp = num(x.despesa_empenhada);
+  const bim = num(x.bimestre);
+  return {
+    ano: num(x.ano), bimestre: bim, mesAte: bim * 2, ritmoEsperado: Math.round((bim * 2 / 12) * 1000) / 10,
+    receitaPrevista: recPrev, receitaRealizada: recReal, receitaPct: recPrev ? Math.round((recReal / recPrev) * 1000) / 10 : 0,
+    despesaDotacao: despDot, despesaEmpenhada: despEmp, despesaPct: despDot ? Math.round((despEmp / despDot) * 1000) / 10 : 0,
+    receitaUfMedia: num(uf[0]?.m),
   };
 }
 
 // CAUC — regularidade fiscal para transferências voluntárias (Tesouro; lê CADIN diariamente)
-export type CaucSC = { dataPesquisa: string | null; apto: boolean; nPendencias: number; pendencias: string[]; grupos: string[] } | null;
+export type CaucItem = { codigo: string; status: "regular" | "vencido" | "pendente" | "desabilitado"; validade: string | null };
+export type CaucSC = { dataPesquisa: string | null; apto: boolean; nPendencias: number; pendencias: string[]; grupos: string[]; itens: CaucItem[] } | null;
 export async function getCaucSC(cod: string): Promise<CaucSC> {
   const r = (await query<Record<string, unknown>>(`SELECT to_char(data_pesquisa,'DD/MM/YYYY') dp, apto, n_pendencias, pendencias, grupos_pendentes FROM cauc_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
   if (!r) return null;
-  return { dataPesquisa: r.dp ? String(r.dp) : null, apto: !!r.apto, nPendencias: num(r.n_pendencias), pendencias: Array.isArray(r.pendencias) ? (r.pendencias as string[]) : [], grupos: Array.isArray(r.grupos_pendentes) ? (r.grupos_pendentes as string[]) : [] };
+  // extrato item a item (cauc_detalhe_sc): "comprovado" vira regular/vencido conforme a validade vs hoje
+  const det = await query<Record<string, unknown>>(`SELECT codigo, status, to_char(validade,'DD/MM/YYYY') validade, (validade < current_date) vencido FROM cauc_detalhe_sc WHERE cod_ibge=$1 ORDER BY string_to_array(codigo,'.')::int[]`, [cod]).catch(() => []);
+  const itens: CaucItem[] = det.map((x) => {
+    let status = String(x.status);
+    if (status === "comprovado") status = x.vencido === true ? "vencido" : "regular";
+    else if (status !== "pendente" && status !== "desabilitado") status = "pendente";
+    return { codigo: String(x.codigo), status: status as CaucItem["status"], validade: x.validade ? String(x.validade) : null };
+  });
+  return { dataPesquisa: r.dp ? String(r.dp) : null, apto: !!r.apto, nPendencias: num(r.n_pendencias), pendencias: Array.isArray(r.pendencias) ? (r.pendencias as string[]) : [], grupos: Array.isArray(r.grupos_pendentes) ? (r.grupos_pendentes as string[]) : [], itens };
+}
+
+// Assistência Social (MDS / MI Social) — consolidado (CadÚnico, Bolsa Família, CRAS/CREAS) + série FNAS (PSB/PSE).
+export type AssistenciaSocialSC = {
+  refMes: string | null; populacao: number;
+  cras: number; creas: number; acolhimento: number; habPorCras: number | null; deficitCras: boolean;
+  cadFamilias: number; cadPessoas: number; cadPobreza: number; cadRendaZero: number; cadTaxaAtualizacao: number | null;
+  pbfFamilias: number; pbfBeneficioMedio: number | null;
+  gapCobertura: number; // famílias em pobreza no CadÚnico que ainda não recebem o Bolsa Família (busca ativa)
+  bpcBeneficiarios: number; bpcValorMes: number; bpcIdosos: number; bpcDeficientes: number; // BPC (idosos/deficientes de baixa renda)
+  condSaude: { cobertura: number; mediana: number; periodo: string; deficit: boolean } | null; // acompanhamento de saúde do PBF (condicionalidade)
+  serieVulnerab: { ano: number; pbf: number; bpc: number }[]; // trajetória da proteção social (MI Social, série anual)
+  trajetoria: { pbfVar: number | null; bpcVar: number | null; anos: number } | null; // variação % no período
+  fnasUltimoAno: number; anoUlt: number;
+  serie: { ano: number; total: number; psb: number; pse: number }[];
+} | null;
+const REF_CRAS_HAB = 20000; // NOB-SUAS: 1 CRAS por ~20 mil hab
+export async function getAssistenciaSocialSC(cod: string): Promise<AssistenciaSocialSC> {
+  const r = (await query<Record<string, unknown>>(`SELECT anomes_ref, populacao, cras, creas, acolhimento, hab_por_cras, cad_familias, cad_pessoas, cad_familias_pobreza, cad_familias_renda_zero, cad_taxa_atualizacao, pbf_familias, pbf_beneficio_medio, bpc_beneficiarios, bpc_valor, bpc_idosos, bpc_deficientes, fnas_repasse_ult_ano, ano_ult FROM assistencia_social_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r) return null;
+  const serieRows = await query<Record<string, unknown>>(`SELECT ano, fnas_total, fnas_psb, fnas_pse FROM assistencia_repasse_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  // condicionalidade de saúde do Bolsa Família (cobertura de acompanhamento) vs mediana de SC — última vigência disponível
+  const cs = (await query<Record<string, unknown>>(`WITH p AS (SELECT max(anomes) m FROM mi_social_serie_sc WHERE indicador='cond_saude_cobertura' AND valor>0),
+      c AS (SELECT cod_ibge, valor FROM mi_social_serie_sc WHERE indicador='cond_saude_cobertura' AND anomes=(SELECT m FROM p) AND valor>0 AND length(cod_ibge)=7)
+      SELECT (SELECT m FROM p) periodo, (SELECT valor FROM c WHERE cod_ibge=$1) minha, percentile_cont(0.5) WITHIN GROUP (ORDER BY valor) mediana FROM c`, [cod]).catch(() => []))[0];
+  // trajetória da proteção social: série anual (último mês de cada ano) de famílias no PBF e beneficiários do BPC
+  const svRows = await query<Record<string, unknown>>(`WITH base AS (
+      SELECT left(anomes,4)::int ano, indicador, valor, row_number() OVER (PARTITION BY left(anomes,4), indicador ORDER BY anomes DESC) rn
+      FROM mi_social_serie_sc WHERE cod_ibge=$1 AND indicador IN ('pbf_familias','bpc_beneficiarios') AND valor>0)
+      SELECT ano, indicador, valor FROM base WHERE rn=1 AND ano>=2010 ORDER BY ano`, [cod]).catch(() => []);
+  const am = String(r.anomes_ref || ""); // "AAAAMM" → "MM/AAAA"
+  const refMes = /^\d{6}$/.test(am) ? `${am.slice(4, 6)}/${am.slice(0, 4)}` : am || null;
+  const hpc = r.hab_por_cras != null ? num(r.hab_por_cras) : null;
+  const cras = num(r.cras), pop = num(r.populacao);
+  const svMap = new Map<number, { ano: number; pbf: number; bpc: number }>();
+  for (const x of svRows) { const a = num(x.ano); const e = svMap.get(a) || { ano: a, pbf: 0, bpc: 0 }; if (x.indicador === "pbf_familias") e.pbf = num(x.valor); else e.bpc = num(x.valor); svMap.set(a, e); }
+  const serieVulnerab = [...svMap.values()].sort((a, b) => a.ano - b.ano);
+  let trajetoria: { pbfVar: number | null; bpcVar: number | null; anos: number } | null = null;
+  if (serieVulnerab.length >= 2) {
+    const ult = serieVulnerab[serieVulnerab.length - 1];
+    const ref = serieVulnerab.find((s) => s.ano >= ult.ano - 5) ?? serieVulnerab[0];
+    trajetoria = { pbfVar: ref.pbf > 0 ? Math.round(((ult.pbf - ref.pbf) / ref.pbf) * 100) : null, bpcVar: ref.bpc > 0 ? Math.round(((ult.bpc - ref.bpc) / ref.bpc) * 100) : null, anos: ult.ano - ref.ano };
+  }
+  return {
+    refMes, populacao: pop, cras, creas: num(r.creas), acolhimento: num(r.acolhimento), habPorCras: hpc,
+    deficitCras: (cras === 0 && pop > 0) || (hpc != null && hpc > REF_CRAS_HAB),
+    cadFamilias: num(r.cad_familias), cadPessoas: num(r.cad_pessoas), cadPobreza: num(r.cad_familias_pobreza), cadRendaZero: num(r.cad_familias_renda_zero),
+    cadTaxaAtualizacao: r.cad_taxa_atualizacao != null ? num(r.cad_taxa_atualizacao) : null,
+    pbfFamilias: num(r.pbf_familias), pbfBeneficioMedio: r.pbf_beneficio_medio != null ? num(r.pbf_beneficio_medio) : null,
+    gapCobertura: Math.max(0, num(r.cad_familias_pobreza) - num(r.pbf_familias)),
+    bpcBeneficiarios: num(r.bpc_beneficiarios), bpcValorMes: num(r.bpc_valor), bpcIdosos: num(r.bpc_idosos), bpcDeficientes: num(r.bpc_deficientes),
+    condSaude: cs && cs.minha != null && num(cs.mediana) > 0
+      ? { cobertura: num(cs.minha), mediana: num(cs.mediana), periodo: `${String(cs.periodo).slice(4, 6)}/${String(cs.periodo).slice(0, 4)}`, deficit: num(cs.minha) < num(cs.mediana) }
+      : null,
+    serieVulnerab, trajetoria,
+    fnasUltimoAno: num(r.fnas_repasse_ult_ano), anoUlt: num(r.ano_ult),
+    serie: serieRows.map((x) => ({ ano: num(x.ano), total: num(x.fnas_total), psb: num(x.fnas_psb), pse: num(x.fnas_pse) })),
+  };
+}
+
+// Equipamentos da Assistência Social (unidades CRAS/CREAS/Centro POP/Acolhimento…) — CadSUAS, uma a uma.
+export type EquipamentosSuasSC = {
+  total: number; comEndereco: number;
+  porTipo: { tipo: string; n: number }[];
+  lista: { nome: string; tipo: string; nrId: string | null; endereco: string | null; telefone: string | null }[];
+} | null;
+export async function getEquipamentosSuasSC(cod: string): Promise<EquipamentosSuasSC> {
+  const rows = await query<Record<string, unknown>>(`SELECT nome, tipo, nr_identificador, endereco, telefone FROM equipamentos_suas_sc WHERE cod_ibge=$1 ORDER BY tipo, nome`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const m = new Map<string, number>();
+  for (const r of rows) { const t = String(r.tipo || "OUTRA"); m.set(t, (m.get(t) || 0) + 1); }
+  return {
+    total: rows.length, comEndereco: rows.filter((r) => r.endereco).length,
+    porTipo: [...m.entries()].map(([tipo, n]) => ({ tipo, n })).sort((a, b) => b.n - a.n),
+    lista: rows.map((r) => ({ nome: String(r.nome || ""), tipo: String(r.tipo || ""), nrId: r.nr_identificador ? String(r.nr_identificador) : null, endereco: r.endereco ? String(r.endereco) : null, telefone: r.telefone ? String(r.telefone) : null })),
+  };
+}
+
+// Mapa unificado de equipamentos PÚBLICOS (saúde + educação + assistência) com coordenadas, por município.
+export type CatEquip = "saude" | "saude_filantropica" | "educacao" | "assistencia" | "prisional" | "socioeducativo" | "policia" | "guarda_municipal" | "bombeiros" | "defesa_civil";
+export type PontoEquip = { cat: CatEquip; nome: string; tipo: string; bairro: string | null; lat: number; lon: number; aprox?: boolean };
+export type MapaEquipamentosSC = { pontos: PontoEquip[]; porCat: Record<string, number>; center: [number, number]; assistOcultos: number } | null;
+export async function getMapaEquipamentosSC(cod: string): Promise<MapaEquipamentosSC> {
+  const [sau, fil, edu, ass, jus, ocultosR] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT nome, tipo, bairro, latitude lat, longitude lon FROM estabelecimentos_saude_sc WHERE cod_ibge=$1 AND natureza_grupo='Público' AND latitude IS NOT NULL`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT nome, tipo, bairro, latitude lat, longitude lon FROM estabelecimentos_saude_sc WHERE cod_ibge=$1 AND natureza_grupo='Filantrópico' AND latitude IS NOT NULL`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT nome, dependencia, bairro, latitude lat, longitude lon FROM escolas_sc WHERE cod_ibge=$1 AND dependencia::text IN ('1','2','3') AND latitude IS NOT NULL`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT nome, tipo, latitude lat, longitude lon, geo_fonte FROM equipamentos_suas_sc WHERE cod_ibge=$1 AND latitude IS NOT NULL`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT cat, nome, tipo, latitude lat, longitude lon, aprox FROM equipamentos_justica_sc WHERE cod_ibge=$1 AND latitude IS NOT NULL`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT count(*) n FROM equipamentos_suas_sc WHERE cod_ibge=$1 AND latitude IS NULL`, [cod]).catch(() => []),
+  ]);
+  const assistOcultos = num(ocultosR[0]?.n);
+  const DEP: Record<string, string> = { "1": "Escola Federal", "2": "Escola Estadual", "3": "Escola Municipal" };
+  const pontos: PontoEquip[] = [
+    ...sau.map((r) => ({ cat: "saude" as const, nome: String(r.nome || ""), tipo: String(r.tipo || "Saúde"), bairro: r.bairro ? String(r.bairro) : null, lat: num(r.lat), lon: num(r.lon) })),
+    ...fil.map((r) => ({ cat: "saude_filantropica" as const, nome: String(r.nome || ""), tipo: String(r.tipo || "Saúde filantrópica"), bairro: r.bairro ? String(r.bairro) : null, lat: num(r.lat), lon: num(r.lon) })),
+    ...edu.map((r) => ({ cat: "educacao" as const, nome: String(r.nome || ""), tipo: DEP[String(r.dependencia)] || "Escola pública", bairro: r.bairro ? String(r.bairro) : null, lat: num(r.lat), lon: num(r.lon) })),
+    ...ass.map((r) => ({ cat: "assistencia" as const, nome: String(r.nome || ""), tipo: String(r.tipo || "SUAS"), bairro: null, lat: num(r.lat), lon: num(r.lon), aprox: r.geo_fonte === "cep" })),
+    ...jus.map((r) => ({ cat: String(r.cat) as CatEquip, nome: String(r.nome || ""), tipo: String(r.tipo || ""), bairro: null, lat: num(r.lat), lon: num(r.lon), aprox: r.aprox === true })),
+  ].filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lon) && p.lat !== 0 && p.lat > -34 && p.lat < 6);
+  if (!pontos.length) return null;
+  const center: [number, number] = [pontos.reduce((s, p) => s + p.lat, 0) / pontos.length, pontos.reduce((s, p) => s + p.lon, 0) / pontos.length];
+  const porCat: Record<string, number> = {};
+  for (const p of pontos) porCat[p.cat] = (porCat[p.cat] || 0) + 1;
+  return { pontos, porCat, center, assistOcultos };
 }
 
 export type RgfResumo = { ano: number; pessoalPct: number; rclAjustada: number; dclPct: number | null } | null;
@@ -2267,4 +3214,132 @@ export async function getRgfResumoSC(cod: string): Promise<RgfResumo> {
   const r = (await query<Record<string, unknown>>(`SELECT ano, pessoal_pct, rcl_ajustada, dcl_pct FROM rgf_sc WHERE cod_ibge=$1 AND pessoal_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
   if (!r) return null;
   return { ano: num(r.ano), pessoalPct: num(r.pessoal_pct), rclAjustada: num(r.rcl_ajustada), dclPct: r.dcl_pct == null ? null : num(r.dcl_pct) };
+}
+
+// Central de Alertas — amarra os pontos cegos do município num feed priorizado (risco a evitar + ação).
+export type Alerta = { sev: "critico" | "alto" | "medio"; area: string; titulo: string; detalhe: string; acao: string };
+export async function getAlertasSC(cod: string): Promise<Alerta[]> {
+  const [crp, cauc, assist, cs, rf, conv, draa, semrreo] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT tp_crp, ds_situacao, dt_validade FROM rpps_crp_sc WHERE cod_ibge=$1 ORDER BY dt_emissao DESC NULLS LAST LIMIT 1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT count(*) FILTER (WHERE status='pendente') venc, count(*) tot FROM cauc_detalhe_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT GREATEST(0, cad_familias_pobreza - pbf_familias) gap, cras, hab_por_cras, populacao FROM assistencia_social_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`WITH p AS (SELECT max(anomes) m FROM mi_social_serie_sc WHERE indicador='cond_saude_cobertura' AND valor>0),
+      c AS (SELECT cod_ibge, valor FROM mi_social_serie_sc WHERE indicador='cond_saude_cobertura' AND anomes=(SELECT m FROM p) AND valor>0 AND length(cod_ibge)=7)
+      SELECT (SELECT valor FROM c WHERE cod_ibge=$1) minha, percentile_cont(0.5) WITHIN GROUP (ORDER BY valor) mediana FROM c`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT count(*) FILTER (WHERE sancionado AND share_pct > 25) crit FROM red_flags_fornecedores_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT count(*) n, coalesce(sum(valor),0) v FROM convenios_captados_sc WHERE cod_ibge=$1 AND situacao IN ('INADIMPLENTE','PRESTAÇÃO DE CONTAS REJEITADA')`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT EXISTS(SELECT 1 FROM rpps_sc WHERE cod_ibge=$1) tem_rpps, EXISTS(SELECT 1 FROM rpps_atuarial_sc WHERE cod_ibge=$1) tem_draa`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT (EXISTS(SELECT 1 FROM financas_sc WHERE cod_ibge=$1) AND NOT EXISTS(SELECT 1 FROM rreo_const_sc WHERE cod_ibge=$1) AND NOT EXISTS(SELECT 1 FROM rgf_sc WHERE cod_ibge=$1)) sem_rreo`, [cod]).catch(() => []),
+  ]);
+  const A: Alerta[] = [];
+  // CRP previdenciário
+  const c0 = crp[0];
+  if (c0 && (/VENC/i.test(String(c0.tp_crp || "")) || (c0.dt_validade && new Date(String(c0.dt_validade)) < new Date()))) {
+    A.push({ sev: "critico", area: "Previdência", titulo: "CRP previdenciário vencido", detalhe: `Situação: ${c0.ds_situacao || c0.tp_crp}. Sem CRP regular, o ente fica bloqueado de transferências voluntárias e contratos com a União.`, acao: "Regularizar o RPPS junto à SPREV/Min. da Previdência para reemitir o CRP." });
+  }
+  // RPPS sem DRAA (estudo atuarial) no CADPREV — obrigatório e condição do CRP
+  if (draa[0]?.tem_rpps && !draa[0]?.tem_draa) {
+    A.push({ sev: "alto", area: "Previdência", titulo: "RPPS sem estudo atuarial (DRAA) no CADPREV", detalhe: "O ente tem RPPS mas não há DRAA (avaliação atuarial) enviado ao CADPREV. O DRAA é obrigatório e condição para o CRP — sua ausência arrisca a regularidade previdenciária e o recebimento de transferências voluntárias.", acao: "Elaborar e enviar o DRAA ao CADPREV/SPREV (avaliação atuarial anual do RPPS)." });
+  }
+  // Município não publica RREO/RGF no SICONFI (só a DCA) — obrigatórios pela LRF + cega o acompanhamento
+  if (semrreo[0]?.sem_rreo) {
+    A.push({ sev: "medio", area: "Fiscal", titulo: "Município não publica RREO/RGF no SICONFI", detalhe: "O ente publica a DCA anual, mas não há RREO (bimestral) nem RGF (quadrimestral) no SICONFI — ambos obrigatórios pela LRF (arts. 52–55). A ausência é ponto de transparência e deixa o acompanhamento orçamentário e o controle de pessoal/LRF sem base atualizada.", acao: "Publicar o RREO e o RGF no SICONFI dentro dos prazos legais (Siconfi/Tesouro Nacional)." });
+  }
+  // CAUC
+  const cv = num(cauc[0]?.venc);
+  if (cv > 0) A.push({ sev: "critico", area: "Fiscal", titulo: `${cv} requisito(s) pendente(s) no CAUC`, detalhe: "Pendências no CAUC bloqueiam a celebração de convênios e o recebimento de transferências voluntárias.", acao: "Regularizar os itens pendentes no extrato do CAUC (Tesouro) para destravar repasses." });
+  // Convênios inadimplentes / prestação de contas rejeitada
+  const cvn = num(conv[0]?.n), cvv = num(conv[0]?.v);
+  if (cvn > 0) A.push({ sev: "critico", area: "Captação", titulo: `${cvn} convênio(s) inadimplente(s)/com prestação rejeitada`, detalhe: `Valor envolvido: ${cvv >= 1e6 ? `R$ ${(cvv / 1e6).toFixed(1)} mi` : `R$ ${cvv.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`}. A inadimplência em convênio inscreve o ente no CAUC e bloqueia novas transferências voluntárias da União.`, acao: "Regularizar a prestação de contas ou o débito do convênio junto ao órgão concedente/Transferegov." });
+  // Assistência: gap BF + déficit CRAS
+  const a0 = assist[0];
+  if (a0) {
+    const gap = num(a0.gap);
+    if (gap > 0) A.push({ sev: "alto", area: "Assistência", titulo: `${gap.toLocaleString("pt-BR")} famílias pobres fora do Bolsa Família`, detalhe: "Famílias em pobreza no CadÚnico que ainda não recebem o benefício — renda federal na mesa, sem custo próprio.", acao: "Busca ativa dessas famílias para inclusão no Bolsa Família." });
+    const hpc = a0.hab_por_cras != null ? num(a0.hab_por_cras) : null;
+    if (num(a0.cras) === 0 || (hpc != null && hpc > 20000)) A.push({ sev: "medio", area: "Assistência", titulo: "Cobertura de CRAS abaixo da referência", detalhe: `Referência NOB-SUAS: 1 CRAS por 20 mil habitantes.${hpc != null ? ` Hoje: 1 para ${Math.round(hpc).toLocaleString("pt-BR")} hab.` : ""}`, acao: "Ampliar a rede de CRAS ou pactuar regionalmente para destravar cofinanciamento." });
+  }
+  // Condicionalidade de saúde do PBF
+  const csMin = cs[0]?.minha != null ? num(cs[0].minha) : null, csMed = num(cs[0]?.mediana);
+  if (csMin != null && csMed > 0 && csMin < csMed) A.push({ sev: "medio", area: "Assistência", titulo: `Acompanhamento de saúde do Bolsa Família baixo (${(csMin * 100).toFixed(0)}%)`, detalhe: `Abaixo da mediana de SC (${(csMed * 100).toFixed(0)}%). Cobertura baixa da condicionalidade arrisca o bloqueio do benefício das famílias.`, acao: "Reforçar a busca ativa de saúde (vacinação, pré-natal, acompanhamento infantil)." });
+  // Red flags de fornecedores
+  const rc = num(rf[0]?.crit);
+  if (rc > 0) A.push({ sev: "alto", area: "Compras", titulo: `${rc} fornecedor(es) com concentração + sanção`, detalhe: "Fornecedores que concentram >25% das compras E têm sanção vigente — combinação que merece verificação.", acao: "Revisar a regularidade e a competitividade desses contratos (decisão discricionária do órgão)." });
+  const ordem = { critico: 0, alto: 1, medio: 2 };
+  return A.sort((x, y) => ordem[x.sev] - ordem[y.sev]);
+}
+
+// Catálogo UNIFICADO de programas federais: curados (descrição rica) + Transferegov (fundoafundo + gestão ágil), classificados por área.
+export type CatalogoItem = ProgramaFederal & { curado: boolean; modalidade: string };
+function classificaAreaPrograma(txt: string): string {
+  const s = txt.toUpperCase();
+  if (/CULTURA|ALDIR|PAULO GUSTAVO|MINC|PATRIMON|MUSEU|BIBLIOTEC/.test(s)) return "cultura";
+  if (/SEGURAN|SENASP|PENITENC|\bFNSP\b|PRISION|GUARDA MUNICIPAL/.test(s)) return "seguranca";
+  if (/SA[ÚU]DE|\bSUS\b|\bFNS\b|FARM[ÁA]C|SAMU|HOSPITAL|UPA|UBS/.test(s)) return "saude";
+  if (/EDUCA|FNDE|ESCOLA|CRECHE|ENSINO/.test(s)) return "educacao";
+  if (/HABITA|MORADIA|MINHA CASA/.test(s)) return "habitacao";
+  if (/ASSIST|SUAS|\bCRAS\b|SOCIAL|FOME|ALIMENTA|CADUNICO|CRIAN[ÇC]A|IDOSO/.test(s)) return "assistencia";
+  if (/AGRICUL|RURAL|PESCA|ABASTECIMENTO|PRODUTOR/.test(s)) return "agricultura";
+  if (/ESPORTE|DESPORTO/.test(s)) return "esporte";
+  if (/CIDADES|MOBILIDAD|PAVIMENTA|SANEAMENTO|URBAN|INFRAESTRUT|DRENAGEM|ESTRADA|PONTE|TRANSPORTE/.test(s)) return "infraestrutura";
+  return "outros";
+}
+export async function getCatalogoProgramasSC(): Promise<CatalogoItem[]> {
+  const [curados, tg] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT id, area, nome, objeto, orgao, fonte, link, elegibilidade, janela FROM programas_federais_sc`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT id_programa, nome, orgao, modalidade, objetivo, dt_fim_vol FROM programas_transferegov WHERE nome IS NOT NULL ORDER BY nome`).catch(() => []),
+  ]);
+  const cur: CatalogoItem[] = curados.map((r) => ({ id: String(r.id), area: String(r.area || ""), nome: String(r.nome || ""), objeto: String(r.objeto || ""), orgao: String(r.orgao || ""), fonte: String(r.fonte || ""), link: String(r.link || ""), elegibilidade: String(r.elegibilidade || ""), janela: String(r.janela || ""), curado: true, modalidade: "Curado" }));
+  const modLbl = (m: string) => (/AGIL/i.test(m) ? "fundo a fundo (gestão ágil)" : /FUNDO/i.test(m) ? "fundo a fundo" : m || "Transferegov");
+  const tgItems: CatalogoItem[] = tg.map((r) => {
+    const nome = String(r.nome || ""), orgao = String(r.orgao || "");
+    const fim = r.dt_fim_vol ? new Date(String(r.dt_fim_vol)) : null;
+    const aberto = fim && fim >= new Date();
+    return { id: "tg-" + String(r.id_programa), area: classificaAreaPrograma(nome + " " + orgao), nome, objeto: String(r.objetivo || ""), orgao: orgao || "Transferegov", fonte: "Transferegov · " + modLbl(String(r.modalidade || "")), link: "https://www.gov.br/transferegov/pt-br", elegibilidade: "", janela: aberto ? `Janela voluntária aberta até ${fim!.toLocaleDateString("pt-BR")}` : "Consultar janela no Transferegov", curado: false, modalidade: String(r.modalidade || "") };
+  });
+  return [...cur, ...tgItems].sort((a, b) => (a.curado === b.curado ? a.nome.localeCompare(b.nome) : a.curado ? -1 : 1));
+}
+
+// Indícios de sobrepreço em MEDICAMENTOS vs o teto legal CMED/PMVG (a verificar; casado por substância+dosagem).
+export type SobreprecoMedItem = { descricao: string; dose: string; paga: number; teto: number; excessoPct: number; quantidade: number; economia: number; nPmvg: number };
+export type SobreprecoMedicamentosSC = { n: number; economiaTotal: number; itens: SobreprecoMedItem[] } | null;
+export async function getSobreprecoMedicamentosSC(cod: string): Promise<SobreprecoMedicamentosSC> {
+  const [itens, tot] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT descricao, dose, paga, teto, excesso_pct, quantidade, economia, n_pmvg FROM sobrepreco_medicamentos_sc WHERE cod_ibge=$1 ORDER BY economia DESC NULLS LAST LIMIT 20`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT count(*) n, coalesce(sum(economia),0) eco FROM sobrepreco_medicamentos_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+  ]);
+  if (!itens.length) return null;
+  return {
+    n: num(tot[0]?.n), economiaTotal: num(tot[0]?.eco),
+    itens: itens.map((r) => ({ descricao: String(r.descricao || ""), dose: String(r.dose || ""), paga: num(r.paga), teto: num(r.teto), excessoPct: num(r.excesso_pct), quantidade: num(r.quantidade), economia: num(r.economia), nPmvg: num(r.n_pmvg) })),
+  };
+}
+
+// AGRICULTURA e AGRICULTURA FAMILIAR (Censo Agropecuário 2017, IBGE) — estabelecimentos + área, familiar vs não-familiar.
+export type AgropecuariaSC = {
+  estabTotal: number; estabFamiliar: number; estabNaoFamiliar: number; areaTotal: number; areaFamiliar: number; areaNaoFamiliar: number; pctEstabFamiliar: number; pctAreaFamiliar: number; medEstabFamiliarSC: number;
+  caf: { fisica: number; rural: number; juridica: number; competencia: string | null } | null;
+  car: { total: number; ativos: number } | null;
+  pronaf: { anoMax: number; vlTotal: number; vlCusteio: number; vlInvestimento: number; serie: { ano: number; vl: number }[] } | null;
+} | null;
+export async function getAgropecuariaSC(cod: string): Promise<AgropecuariaSC> {
+  const [r, med, caf, car, pronaf] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT estab_total, estab_familiar, estab_nao_familiar, area_total_ha, area_familiar_ha, area_nao_familiar_ha FROM agropecuaria_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY estab_familiar/NULLIF(estab_total,0)*100) m FROM agropecuaria_sc WHERE estab_total>0 AND length(cod_ibge)=7`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT caf_fisica, caf_rural, caf_juridica, to_char(competencia,'YYYY-MM') comp FROM caf_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT imoveis_total, imoveis_ativos FROM car_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT ano, vl_total, vl_custeio, vl_investimento FROM pronaf_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []),
+  ]);
+  if (!r.length || num(r[0].estab_total) === 0) return null;
+  const x = r[0]; const et = num(x.estab_total), ef = num(x.estab_familiar), at = num(x.area_total_ha), af = num(x.area_familiar_ha);
+  const pr = pronaf.length ? pronaf[pronaf.length - 1] : null;
+  return {
+    estabTotal: et, estabFamiliar: ef, estabNaoFamiliar: num(x.estab_nao_familiar),
+    areaTotal: at, areaFamiliar: af, areaNaoFamiliar: num(x.area_nao_familiar_ha),
+    pctEstabFamiliar: et > 0 ? Math.round((ef / et) * 1000) / 10 : 0, pctAreaFamiliar: at > 0 ? Math.round((af / at) * 1000) / 10 : 0,
+    medEstabFamiliarSC: Math.round(num(med[0]?.m) * 10) / 10,
+    caf: caf.length ? { fisica: num(caf[0].caf_fisica), rural: num(caf[0].caf_rural), juridica: num(caf[0].caf_juridica), competencia: (caf[0].comp as string) || null } : null,
+    car: car.length ? { total: num(car[0].imoveis_total), ativos: num(car[0].imoveis_ativos) } : null,
+    pronaf: pr ? { anoMax: num(pr.ano), vlTotal: num(pr.vl_total), vlCusteio: num(pr.vl_custeio), vlInvestimento: num(pr.vl_investimento), serie: pronaf.map((p) => ({ ano: num(p.ano), vl: num(p.vl_total) })) } : null,
+  };
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Database, HandCoins, Loader2 } from "lucide-react";
 import { Donut } from "@/components/charts/donut";
 import { LinhasFinanceiras } from "@/components/charts/linhas-financeiras";
+import { BaixarCsv } from "@/components/baixar-csv";
 import { fmtBRLCompact } from "@/lib/ui";
 
 type Transf = {
@@ -74,7 +75,7 @@ export function TransferenciasSCSection({ codigo }: { codigo: string }) {
         const serie = (data.por_ano ?? []).filter((a) => a.ano >= 2018).map((a) => ({ ano: a.ano, celebrado: a.valor, liberado: a.liberado }));
         return serie.length > 1 ? (
           <section className="rounded-2xl border border-slate-200 bg-white p-5">
-            <h3 className="font-semibold text-slate-800">Evolução das transferências por ano</h3>
+            <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold text-slate-800">Evolução das transferências por ano</h3><BaixarCsv nome={`transferencias-evolucao-${codigo}`} label="Evolução (CSV)" colunas={[{ chave: "ano", rotulo: "Ano" }, { chave: "n", rotulo: "Nº instrumentos" }, { chave: "valor", rotulo: "Valor celebrado" }, { chave: "liberado", rotulo: "Valor liberado" }]} linhas={(data.por_ano ?? []) as unknown as Record<string, unknown>[]} /></div>
             <p className="mb-2 text-xs text-slate-500">Valor celebrado × liberado por ano de início da vigência</p>
             <LinhasFinanceiras
               data={serie as unknown as Record<string, number>[]}
@@ -94,7 +95,7 @@ export function TransferenciasSCSection({ codigo }: { codigo: string }) {
 
       {data.top.length > 0 && (
         <section className="rounded-2xl border border-slate-200 bg-white p-5">
-          <h3 className="mb-3 font-semibold text-slate-800">Maiores convênios / instrumentos</h3>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><h3 className="font-semibold text-slate-800">Maiores convênios / instrumentos</h3><BaixarCsv nome={`convenios-uniao-${codigo}`} label="Baixar convênios (CSV)" colunas={[{ chave: "objeto", rotulo: "Objeto" }, { chave: "orgao", rotulo: "Concedente" }, { chave: "convenente", rotulo: "Recebedor" }, { chave: "situacao", rotulo: "Situacao" }, { chave: "valor", rotulo: "Valor celebrado" }, { chave: "liberado", rotulo: "Valor liberado" }, { chave: "inicio", rotulo: "Inicio" }, { chave: "fim", rotulo: "Fim" }]} linhas={data.top as unknown as Record<string, unknown>[]} /></div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

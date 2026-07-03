@@ -31,6 +31,7 @@ async function main() {
     codigo_emenda TEXT, ano INTEGER, cod_ibge TEXT, localidade TEXT, tipo TEXT, autor TEXT, funcao TEXT, subfuncao TEXT,
     empenhado NUMERIC, liquidado NUMERIC, pago NUMERIC, resto_inscrito NUMERIC, resto_pago NUMERIC,
     PRIMARY KEY (codigo_emenda, ano))`);
+  await db.query(`ALTER TABLE emendas_execucao_sc ADD COLUMN IF NOT EXISTS nivel TEXT`).catch(() => {}); // municipal | estadual (localidade UF)
   await db.query(`CREATE TABLE IF NOT EXISTS emendas_check (ano INTEGER PRIMARY KEY, n INTEGER)`);
   const q = async (s, p) => { for (let t = 0; t < 8; t++) { try { return await db.query(s, p); } catch { await sleep(1200 * (t + 1)); } } throw new Error("db"); };
   // mapa nome-município SC → cod_ibge
@@ -49,14 +50,16 @@ async function main() {
       vistas += arr.length;
       for (const e of arr) {
         const loc = String(e.localidadeDoGasto || "");
-        if (!/-\s*SC\s*$/i.test(loc)) continue; // só localidade em SC
-        const cidade = norm(loc.replace(/-\s*SC\s*$/i, ""));
-        const cod = mapMun.get(cidade) || null;
-        await q(`INSERT INTO emendas_execucao_sc (codigo_emenda,ano,cod_ibge,localidade,tipo,autor,funcao,subfuncao,empenhado,liquidado,pago,resto_inscrito,resto_pago)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
-                 ON CONFLICT (codigo_emenda,ano) DO UPDATE SET empenhado=EXCLUDED.empenhado, liquidado=EXCLUDED.liquidado, pago=EXCLUDED.pago, cod_ibge=EXCLUDED.cod_ibge`,
+        const municipal = /-\s*SC\s*$/i.test(loc);            // "Cidade - SC" → atribuível ao município
+        const estadualSC = /SANTA\s+CATARINA\s*\(UF\)/i.test(loc); // nível estado — NÃO dropar mais (completude)
+        if (!municipal && !estadualSC) continue;
+        const nivel = municipal ? "municipal" : "estadual";
+        const cod = municipal ? (mapMun.get(norm(loc.replace(/-\s*SC\s*$/i, ""))) || null) : null; // estadual fica sem cod_ibge (não entra em município)
+        await q(`INSERT INTO emendas_execucao_sc (codigo_emenda,ano,cod_ibge,localidade,tipo,autor,funcao,subfuncao,empenhado,liquidado,pago,resto_inscrito,resto_pago,nivel)
+                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+                 ON CONFLICT (codigo_emenda,ano) DO UPDATE SET empenhado=EXCLUDED.empenhado, liquidado=EXCLUDED.liquidado, pago=EXCLUDED.pago, cod_ibge=EXCLUDED.cod_ibge, nivel=EXCLUDED.nivel`,
           [String(e.codigoEmenda), ano, cod, loc, e.tipoEmenda || null, e.nomeAutor || e.autor || null, e.funcao || null, e.subfuncao || null,
-            vlr(e.valorEmpenhado), vlr(e.valorLiquidado), vlr(e.valorPago), vlr(e.valorRestoInscrito), vlr(e.valorRestoPago)]);
+            vlr(e.valorEmpenhado), vlr(e.valorLiquidado), vlr(e.valorPago), vlr(e.valorRestoInscrito), vlr(e.valorRestoPago), nivel]);
         gravAno++; totalGrav++;
       }
       if (arr.length < 15) break; // última página

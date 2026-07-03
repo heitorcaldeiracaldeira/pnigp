@@ -1,3 +1,5 @@
+"use client";
+
 import type { EstabSaudeSC } from "@/lib/queries";
 
 // Equipamentos públicos de saúde — rede CNES estabelecimento a estabelecimento. Foco em regulação: composição da rede,
