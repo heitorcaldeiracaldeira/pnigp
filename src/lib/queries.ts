@@ -1626,10 +1626,10 @@ export async function getCaptacaoTransferegovSC(cod: string): Promise<CaptacaoSC
         UNION ALL
         SELECT id_programa, nome, orgao, objetivo, descricao, modalidade, coalesce(valor_global,0), fundo, natureza_despesa, acao_orcamentaria, coalesce(valor_acao,0), coalesce(parcelas,0), situacao, ano, codigo, 'emenda', dt_ini_emenda, dt_fim_emenda FROM programas_transferegov WHERE dt_fim_emenda >= CURRENT_DATE
       ) x ORDER BY (x.df - CURRENT_DATE) ASC LIMIT 50`, [cod]).catch(() => []),
-    query<Record<string, unknown>>(`SELECT coalesce(avg(t),0) media, coalesce(max(t),0) maxv FROM (SELECT cod_ibge, sum(valor_total_repasse) t FROM captacao_transferegov_sc GROUP BY cod_ibge) s`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT coalesce(avg(t),0) media, coalesce(max(t),0) maxv FROM (SELECT cod_ibge, sum(valor_total_repasse) t FROM captacao_transferegov_sc WHERE esfera='municipal' AND cod_ibge IS NOT NULL GROUP BY cod_ibge) s`).catch(() => []),
     query<Record<string, unknown>>(`SELECT e.nome, sum(c.valor_total_repasse) v FROM captacao_transferegov_sc c JOIN entes_sc e ON e.cod_ibge=c.cod_ibge GROUP BY e.nome ORDER BY v DESC NULLS LAST LIMIT 5`).catch(() => []),
-    query<Record<string, unknown>>(`SELECT (SELECT count(*) FROM programas_transferegov) np, (SELECT count(*) FROM programas_transferegov WHERE dt_fim_vol >= CURRENT_DATE OR dt_fim_esp >= CURRENT_DATE OR dt_fim_emenda >= CURRENT_DATE) na, (SELECT coalesce(sum(valor_total_repasse),0) FROM captacao_transferegov_sc) tsc, (SELECT count(distinct cod_ibge) FROM captacao_transferegov_sc) nm`).catch(() => []),
-    query<Record<string, unknown>>(`SELECT (SELECT count(*)+1 FROM (SELECT cod_ibge, sum(valor_total_repasse) t FROM captacao_transferegov_sc GROUP BY cod_ibge) s WHERE t > (SELECT coalesce(sum(valor_total_repasse),0) FROM captacao_transferegov_sc WHERE cod_ibge=$1)) pos, (SELECT count(*) FROM programas_transferegov p WHERE (dt_fim_vol >= CURRENT_DATE OR dt_fim_esp >= CURRENT_DATE OR dt_fim_emenda >= CURRENT_DATE) AND NOT EXISTS (SELECT 1 FROM captacao_transferegov_sc c WHERE c.cod_ibge=$1 AND c.id_programa=p.id_programa)) naocap`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT (SELECT count(*) FROM programas_transferegov) np, (SELECT count(*) FROM programas_transferegov WHERE dt_fim_vol >= CURRENT_DATE OR dt_fim_esp >= CURRENT_DATE OR dt_fim_emenda >= CURRENT_DATE) na, (SELECT coalesce(sum(valor_total_repasse),0) FROM captacao_transferegov_sc WHERE esfera='municipal' AND cod_ibge IS NOT NULL) tsc, (SELECT count(distinct cod_ibge) FROM captacao_transferegov_sc WHERE esfera='municipal' AND cod_ibge IS NOT NULL) nm`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT (SELECT count(*)+1 FROM (SELECT cod_ibge, sum(valor_total_repasse) t FROM captacao_transferegov_sc WHERE esfera='municipal' AND cod_ibge IS NOT NULL GROUP BY cod_ibge) s WHERE t > (SELECT coalesce(sum(valor_total_repasse),0) FROM captacao_transferegov_sc WHERE cod_ibge=$1 AND esfera='municipal')) pos, (SELECT count(*) FROM programas_transferegov p WHERE (dt_fim_vol >= CURRENT_DATE OR dt_fim_esp >= CURRENT_DATE OR dt_fim_emenda >= CURRENT_DATE) AND NOT EXISTS (SELECT 1 FROM captacao_transferegov_sc c WHERE c.cod_ibge=$1 AND c.id_programa=p.id_programa)) naocap`, [cod]).catch(() => []),
   ]);
   const total = num(tot[0]?.total);
   if (!tot.length || (num(tot[0]?.n) === 0 && !abertos.length)) return null;
@@ -2300,7 +2300,7 @@ export type EscolasSC = {
   ano: number; total: number; matriculas: number; docentes: number; profissionais: number;
   alunoPorDocente: number | null; alunoPorProf: number | null; infraMedia: number;
   lacunas: { semInternet: number; semBiblioteca: number; semQuadra: number; semEsgoto: number; semAcessibilidade: number };
-  lista: { nome: string; matriculas: number; docentes: number; profissionais: number; turmas: number; alunoPorTurma: number | null; etapas: { etapa: string; n: number }[]; series: { serie: string; mat: number; tur: number; alunoPorTurma: number | null }[]; especial: number; alunoPorDoc: number | null; infraScore: number; zona: number; lat: number | null; lon: number | null; bairro: string; infra: { agua: boolean; energia: boolean; esgoto: boolean; internet: boolean; biblioteca: boolean; labInfo: boolean; quadra: boolean; refeitorio: boolean; acessibilidade: boolean } }[];
+  lista: { nome: string; matriculas: number; docentes: number; profissionais: number; turmas: number; alunoPorTurma: number | null; etapas: { etapa: string; n: number }[]; series: { serie: string; mat: number; tur: number; alunoPorTurma: number | null }[]; especial: number; alunoPorDoc: number | null; infraScore: number; zona: number; lat: number | null; lon: number | null; bairro: string; afd: number | null; tdi: number | null; atu: number | null; infra: { agua: boolean; energia: boolean; esgoto: boolean; internet: boolean; biblioteca: boolean; labInfo: boolean; quadra: boolean; refeitorio: boolean; acessibilidade: boolean } }[];
 } | null;
 // Índice de Infraestrutura (0–100): essenciais pesam 2, complementares 1.
 const _infraScore = (i: { agua: boolean; energia: boolean; esgoto: boolean; internet: boolean; biblioteca: boolean; labInfo: boolean; quadra: boolean; refeitorio: boolean; acessibilidade: boolean }) => {
@@ -2309,7 +2309,11 @@ const _infraScore = (i: { agua: boolean; energia: boolean; esgoto: boolean; inte
   return Math.round((W.reduce((s, [v, w]) => s + (v ? w : 0), 0) / tot) * 100);
 };
 export async function getEscolasSC(cod: string): Promise<EscolasSC> {
-  const rows = await query<Record<string, unknown>>(`SELECT s.nome, coalesce(s.matriculas,0) matriculas, coalesce(s.docentes,0) docentes, coalesce(s.profissionais,0) profissionais, coalesce(s.n_turmas,0) n_turmas, s.localizacao, s.latitude, s.longitude, s.bairro, s.ano, s.tem_agua, s.tem_energia, s.tem_esgoto, s.tem_internet, s.tem_biblioteca, s.tem_lab_info, s.tem_quadra, s.tem_refeitorio, s.tem_acessibilidade, s.series, h.modalidade FROM escolas_sc s LEFT JOIN escolas_hist_sc h ON h.co_entidade=s.co_entidade AND h.ano=2025 WHERE s.cod_ibge=$1 AND s.dependencia=3 ORDER BY s.matriculas DESC NULLS LAST`, [cod]).catch(() => []);
+  const rows = await query<Record<string, unknown>>(`SELECT s.nome, coalesce(s.matriculas,0) matriculas, coalesce(s.docentes,0) docentes, coalesce(s.profissionais,0) profissionais, coalesce(s.n_turmas,0) n_turmas, s.localizacao, s.latitude, s.longitude, s.bairro, s.ano, s.tem_agua, s.tem_energia, s.tem_esgoto, s.tem_internet, s.tem_biblioteca, s.tem_lab_info, s.tem_quadra, s.tem_refeitorio, s.tem_acessibilidade, s.series, h.modalidade,
+    (SELECT coalesce(fun_ai,fun_af,ed_inf) FROM indicadores_inep_escola_sc WHERE co_entidade=s.co_entidade AND indicador='AFD' ORDER BY ano DESC LIMIT 1) afd_esc,
+    (SELECT coalesce(fun_ai,fun_af) FROM indicadores_inep_escola_sc WHERE co_entidade=s.co_entidade AND indicador='TDI' ORDER BY ano DESC LIMIT 1) tdi_esc,
+    (SELECT coalesce(fun_ai,fun_af,ed_inf) FROM indicadores_inep_escola_sc WHERE co_entidade=s.co_entidade AND indicador='ATU' ORDER BY ano DESC LIMIT 1) atu_esc
+   FROM escolas_sc s LEFT JOIN escolas_hist_sc h ON h.co_entidade=s.co_entidade AND h.ano=2025 WHERE s.cod_ibge=$1 AND s.dependencia=3 ORDER BY s.matriculas DESC NULLS LAST`, [cod]).catch(() => []);
   if (!rows.length) return null;
   const b = (v: unknown) => v === true;
   const matriculas = rows.reduce((s, r) => s + num(r.matriculas), 0);
@@ -2325,7 +2329,7 @@ export async function getEscolasSC(cod: string): Promise<EscolasSC> {
     const turmas = num(r.n_turmas);
     const serRaw = (Array.isArray(r.series) ? r.series : []) as { serie: string; mat: number; tur: number }[];
     const series = serRaw.map((s) => ({ serie: s.serie, mat: num(s.mat), tur: num(s.tur), alunoPorTurma: num(s.tur) > 0 ? Math.round((num(s.mat) / num(s.tur)) * 10) / 10 : null }));
-    return { nome: String(r.nome || ""), matriculas: num(r.matriculas), docentes: num(r.docentes), profissionais: num(r.profissionais), turmas, alunoPorTurma: turmas > 0 ? Math.round((num(r.matriculas) / turmas) * 10) / 10 : null, etapas, series, especial: num(mod.especial), alunoPorDoc: num(r.docentes) > 0 ? Math.round((num(r.matriculas) / num(r.docentes)) * 10) / 10 : null, infraScore: _infraScore(infra), zona: num(r.localizacao), lat: r.latitude != null ? num(r.latitude) : null, lon: r.longitude != null ? num(r.longitude) : null, bairro: String(r.bairro || ""), infra };
+    return { nome: String(r.nome || ""), matriculas: num(r.matriculas), docentes: num(r.docentes), profissionais: num(r.profissionais), turmas, alunoPorTurma: turmas > 0 ? Math.round((num(r.matriculas) / turmas) * 10) / 10 : null, etapas, series, especial: num(mod.especial), alunoPorDoc: num(r.docentes) > 0 ? Math.round((num(r.matriculas) / num(r.docentes)) * 10) / 10 : null, infraScore: _infraScore(infra), zona: num(r.localizacao), lat: r.latitude != null ? num(r.latitude) : null, lon: r.longitude != null ? num(r.longitude) : null, bairro: String(r.bairro || ""), afd: r.afd_esc != null ? num(r.afd_esc) : null, tdi: r.tdi_esc != null ? num(r.tdi_esc) : null, atu: r.atu_esc != null ? num(r.atu_esc) : null, infra };
   });
   return {
     ano: num(rows[0].ano), total: rows.length, matriculas, docentes, profissionais,
@@ -2666,6 +2670,226 @@ export async function getLacunaCaptacaoAssistenciaSC(cod: string): Promise<Lacun
     return { bloco: String(r.bloco), seuPorFamilia: Math.round(seuPf), medianaPorFamilia: Math.round(medPf), gap: Math.round((medPf - seuPf) * cadFamilias) };
   }).filter((b) => b.medianaPorFamilia > 0 && b.seuPorFamilia < b.medianaPorFamilia * 0.85 && b.gap > 0).sort((a, b) => b.gap - a.gap);
   return { totalRecebido, porFamilia, medianaPorFamilia, cadFamilias, abaixoDaMediana: porFamilia > 0 && medianaPorFamilia > 0 && porFamilia < medianaPorFamilia, blocosAbaixo, blocos: recTgt.filter((r) => num(r.v) > 0).map((r) => ({ bloco: String(r.bloco), valor: num(r.v) })) };
+}
+
+// Acesso financeiro por município (BCB) — 3 camadas: agências (bancos), postos de cooperativas de crédito, correspondentes.
+// Diferencial SC: cooperativista. Contexto por PORTE (banda) + SC-wide. Read-only sobre acesso_financeiro_sc.
+export type AcessoFinanceiroSC = {
+  agencias: number; bancos: number; postosBanco: number; postosCoop: number; cooperativas: number; postosOutros: number; correspondentes: number;
+  bancosLista: string[]; cooperativasLista: string[]; posicao: string; competencia: string; populacao: number;
+  perfil: "agencia" | "cooperativa" | "correspondente"; temAgencia: boolean; soCooperativa: boolean;
+  medAgencias: number; medPostosCoop: number; medCorresp: number;
+  scAgencias: number; scPostosCoop: number; scCorresp: number; scMunisComAgencia: number; scMunisSoCoop: number; scTot: number; coletado: string;
+  pix: { mes: number; vlRecebido: number; vlRecebidoPj: number; nPesPj: number; medVlRecebido: number; coletado: string; serie: { mes: number; vl: number; vlPj: number }[] } | null;
+  estban: { mes: number; credito: number; rural: number; agroind: number; imob: number; poupanca: number; prazo: number; vista: number; ativo: number; medCredito: number; medPoupanca: number; coletado: string; serie: { mes: number; credito: number; poupanca: number }[] } | null;
+} | null;
+export async function getAcessoFinanceiroSC(cod: string): Promise<AcessoFinanceiroSC> {
+  const BANDA = `CASE WHEN populacao<20000 THEN 1 WHEN populacao<100000 THEN 2 ELSE 3 END`;
+  const [tgt, med, sc, pixT, pixMed, pixSerie, estbanT, estbanSerie, estbanMed] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT a.*, e.populacao, CASE WHEN e.populacao<20000 THEN 1 WHEN e.populacao<100000 THEN 2 ELSE 3 END banda FROM acesso_financeiro_sc a JOIN entes_sc e ON e.cod_ibge=a.cod_ibge WHERE a.cod_ibge=$1 ORDER BY a.competencia DESC LIMIT 1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`WITH b AS (SELECT DISTINCT ON (a.cod_ibge) a.n_agencias, a.n_postos_coop, a.n_correspondentes, CASE WHEN e.populacao<20000 THEN 1 WHEN e.populacao<100000 THEN 2 ELSE 3 END banda FROM acesso_financeiro_sc a JOIN entes_sc e ON e.cod_ibge=a.cod_ibge WHERE e.tipo='M' AND e.populacao>0 ORDER BY a.cod_ibge, a.competencia DESC)
+      SELECT banda, percentile_cont(0.5) WITHIN GROUP (ORDER BY n_agencias) mag, percentile_cont(0.5) WITHIN GROUP (ORDER BY n_postos_coop) mcoop, percentile_cont(0.5) WITHIN GROUP (ORDER BY n_correspondentes) mcor FROM b GROUP BY banda`).catch(() => []),
+    query<Record<string, unknown>>(`WITH latest AS (SELECT DISTINCT ON (cod_ibge) cod_ibge, n_agencias, n_postos_coop, n_correspondentes FROM acesso_financeiro_sc ORDER BY cod_ibge, competencia DESC)
+      SELECT sum(n_agencias) ag, sum(n_postos_coop) coop, sum(n_correspondentes) corr, count(*) FILTER (WHERE n_agencias>0) comag, count(*) FILTER (WHERE n_agencias=0 AND n_postos_coop>0) socoop, count(*) tot FROM latest`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT ano_mes, vl_recebido, vl_recebido_pj, n_pes_receb_pj, atualizado FROM pix_municipio_sc WHERE cod_ibge=$1 ORDER BY vl_recebido DESC LIMIT 1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`WITH mun AS (SELECT cod_ibge, ${BANDA} banda FROM entes_sc WHERE tipo='M' AND populacao>0),
+      p AS (SELECT DISTINCT ON (cod_ibge) cod_ibge, vl_recebido FROM pix_municipio_sc ORDER BY cod_ibge, vl_recebido DESC)
+      SELECT m.banda, percentile_cont(0.5) WITHIN GROUP (ORDER BY p.vl_recebido) med FROM p JOIN mun m ON m.cod_ibge=p.cod_ibge GROUP BY m.banda`).catch(() => []),
+    query<Record<string, unknown>>(`SELECT ano_mes, vl_recebido, vl_recebido_pj FROM pix_municipio_sc WHERE cod_ibge=$1 ORDER BY ano_mes`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT ano_mes, credito, credito_rural, credito_agroind, credito_imob, poupanca, prazo, a_vista, ativo, atualizado FROM estban_sc WHERE cod_ibge=$1 ORDER BY ano_mes DESC LIMIT 1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT ano_mes, credito, poupanca FROM estban_sc WHERE cod_ibge=$1 ORDER BY ano_mes`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`WITH mun AS (SELECT cod_ibge, ${BANDA} banda FROM entes_sc WHERE tipo='M' AND populacao>0),
+      e AS (SELECT DISTINCT ON (cod_ibge) cod_ibge, credito, poupanca FROM estban_sc ORDER BY cod_ibge, ano_mes DESC)
+      SELECT m.banda, percentile_cont(0.5) WITHIN GROUP (ORDER BY e.credito) mc, percentile_cont(0.5) WITHIN GROUP (ORDER BY e.poupanca) mp FROM e JOIN mun m ON m.cod_ibge=e.cod_ibge GROUP BY m.banda`).catch(() => []),
+  ]);
+  const t = tgt[0]; if (!t) return null;
+  const bandaN = num(t.banda); const m = med.find((r) => num(r.banda) === bandaN) || {}; const s = sc[0] || {};
+  const agencias = num(t.n_agencias), postosCoop = num(t.n_postos_coop), correspondentes = num(t.n_correspondentes);
+  const perfil = agencias > 0 ? "agencia" : postosCoop > 0 ? "cooperativa" : "correspondente";
+  const px = pixT[0]; const pm = pixMed.find((r) => num(r.banda) === bandaN) || {};
+  const pix = px ? { mes: num(px.ano_mes), vlRecebido: num(px.vl_recebido), vlRecebidoPj: num(px.vl_recebido_pj), nPesPj: num(px.n_pes_receb_pj), medVlRecebido: Math.round(num(pm.med)), coletado: String(px.atualizado || ""), serie: pixSerie.map((r) => ({ mes: num(r.ano_mes), vl: num(r.vl_recebido), vlPj: num(r.vl_recebido_pj) })) } : null;
+  const et = estbanT[0]; const em = estbanMed.find((r) => num(r.banda) === bandaN) || {};
+  const estban = et ? { mes: num(et.ano_mes), credito: num(et.credito), rural: num(et.credito_rural), agroind: num(et.credito_agroind), imob: num(et.credito_imob), poupanca: num(et.poupanca), prazo: num(et.prazo), vista: num(et.a_vista), ativo: num(et.ativo), medCredito: Math.round(num(em.mc)), medPoupanca: Math.round(num(em.mp)), coletado: String(et.atualizado || ""), serie: estbanSerie.map((r) => ({ mes: num(r.ano_mes), credito: num(r.credito), poupanca: num(r.poupanca) })) } : null;
+  return {
+    agencias, bancos: num(t.n_bancos), postosBanco: num(t.n_postos_banco), postosCoop, cooperativas: num(t.n_cooperativas), postosOutros: num(t.n_postos_outros), correspondentes,
+    bancosLista: (t.bancos as string[]) || [], cooperativasLista: (t.cooperativas as string[]) || [], posicao: String(t.posicao || ""), competencia: String(t.competencia || ""), populacao: num(t.populacao),
+    perfil, temAgencia: agencias > 0, soCooperativa: agencias === 0 && postosCoop > 0,
+    medAgencias: Math.round(num(m.mag)), medPostosCoop: Math.round(num(m.mcoop)), medCorresp: Math.round(num(m.mcor)),
+    scAgencias: num(s.ag), scPostosCoop: num(s.coop), scCorresp: num(s.corr), scMunisComAgencia: num(s.comag), scMunisSoCoop: num(s.socoop), scTot: num(s.tot), coletado: String(t.atualizado || ""),
+    pix, estban,
+  };
+}
+
+// Painel FUNDEB — retrato neutro (7 indicadores) + 3 séries históricas por metodologia consistente + o "como chegamos"
+// (breakdown de ponderação, didático). Fontes: FNDE (fundeb_oficial/motor/vaat/vaar) · Censo (educacao_especial/escolas_hist) · STN.
+export type FundebSC = {
+  anoParam: number; anoReceita: number;
+  matriculas: number; integral: number; integralPct: number; especial: number; segmentosAtivos: number;
+  receita: number; vaaf: number; ponderadas: number; fatorMedio: number;
+  vaatOficial: number; recebeVaat: boolean; recebeVaar: boolean;
+  breakdown: { etapa: string; matriculas: number; fatorMedio: number; ponderadas: number }[];
+  serieEspecial: { ano: number; total: number; incluidos: number }[];
+  serieMunicipal: { ano: number; matriculas: number }[];
+  serieFundeb: { ano: number; total: number; integral: number; especial: number }[];
+  conferido: { consistente: boolean; scPct: number };
+} | null;
+export async function getFundebSC(cod: string): Promise<FundebSC> {
+  const [ofi, mot, vaat, vaar, esp, muni, rec, conf] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT ano, total, integral, especial, segmentos_ativos FROM fundeb_oficial_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT matriculas, ponderadas, receita, vaaf_calc, breakdown FROM fundeb_motor_sc WHERE cod_ibge=$1 AND ano=2025`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT vaat, recebe_vaat FROM vaat_fundeb_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT beneficiario FROM vaar_fundeb_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT ano, total, incluidos FROM educacao_especial_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT ano, sum(matriculas)::int mat FROM escolas_hist_sc WHERE cod_ibge=$1 AND dependencia=3 GROUP BY ano ORDER BY ano`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT sum(valor) v FROM transferencias_stn_sc WHERE cod_ibge=$1 AND item='FUNDEB' AND ano=2025`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT count(*) FILTER (WHERE mo.vaaf_calc <= vt.vaat) ok, count(*) tot FROM fundeb_motor_sc mo JOIN vaat_fundeb_sc vt ON vt.cod_ibge=mo.cod_ibge WHERE mo.ano=2025 AND mo.vaaf_calc>0 AND vt.vaat>0`).catch(() => []),
+  ]);
+  if (!ofi.length) return null;
+  const a = ofi[ofi.length - 1]; const m = mot[0] || {}; const total = num(a.total);
+  const ponderadas = num(m.ponderadas); const receita = num(m.receita) || num(rec[0]?.v);
+  return {
+    anoParam: num(a.ano), anoReceita: 2025,
+    matriculas: total, integral: num(a.integral), integralPct: total ? Math.round((num(a.integral) / total) * 100) : 0, especial: num(a.especial), segmentosAtivos: num(a.segmentos_ativos),
+    receita, vaaf: Math.round(num(m.vaaf_calc)), ponderadas, fatorMedio: num(m.matriculas) ? +(ponderadas / num(m.matriculas)).toFixed(3) : 0,
+    vaatOficial: num(vaat[0]?.vaat), recebeVaat: !!vaat[0]?.recebe_vaat, recebeVaar: !!vaar[0]?.beneficiario,
+    breakdown: ((m.breakdown as { etapa: string; matriculas: number; fator_medio: number; ponderadas: number }[]) || []).map((b) => ({ etapa: b.etapa, matriculas: num(b.matriculas), fatorMedio: num(b.fator_medio), ponderadas: num(b.ponderadas) })),
+    serieEspecial: esp.map((r) => ({ ano: num(r.ano), total: num(r.total), incluidos: num(r.incluidos) })),
+    serieMunicipal: muni.map((r) => ({ ano: num(r.ano), matriculas: num(r.mat) })),
+    serieFundeb: ofi.map((r) => ({ ano: num(r.ano), total: num(r.total), integral: num(r.integral), especial: num(r.especial) })),
+    conferido: { consistente: num(m.vaaf_calc) > 0 && num(vaat[0]?.vaat) > 0 ? num(m.vaaf_calc) <= num(vaat[0]?.vaat) : true, scPct: conf[0] && num(conf[0].tot) > 0 ? Math.round((num(conf[0].ok) / num(conf[0].tot)) * 100) : 0 },
+  };
+}
+
+// Indicadores INEP macro (rede municipal): AFD (formação docente adequada %), TDI (distorção idade-série %), ATU (alunos/turma).
+// Por etapa + medianas SC de contexto. Fonte: indicadores_inep_sc (INEP, download.inep.gov.br).
+export type IndicadoresInepSC = {
+  ano: number;
+  afd: { edInf: number | null; funAi: number | null; funAf: number | null };
+  tdi: { funAi: number | null; funAf: number | null };
+  atu: { edInf: number | null; funAi: number | null; funAf: number | null };
+  aprovacao: { funAi: number | null; funAf: number | null; medio: number | null };
+  abandono: { funAi: number | null; funAf: number | null; medio: number | null };
+  medSC: { afdAi: number; tdiAi: number; atuAi: number; aprovAi: number; abandAi: number };
+} | null;
+export async function getIndicadoresInepSC(cod: string): Promise<IndicadoresInepSC> {
+  const [rows, med] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT indicador, ano, ed_inf, fun_ai, fun_af, medio FROM indicadores_inep_sc WHERE cod_ibge=$1 AND ano=(SELECT max(ano) FROM indicadores_inep_sc WHERE cod_ibge=$1)`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT indicador, percentile_cont(0.5) WITHIN GROUP (ORDER BY fun_ai) m FROM indicadores_inep_sc WHERE ano=(SELECT max(ano) FROM indicadores_inep_sc) AND fun_ai IS NOT NULL GROUP BY indicador`).catch(() => []),
+  ]);
+  if (!rows.length) return null;
+  const g = (ind: string) => rows.find((r) => r.indicador === ind) || {};
+  const afd = g("AFD"), tdi = g("TDI"), atu = g("ATU"), apr = g("APROVACAO"), ab = g("ABANDONO");
+  const mv = (ind: string) => { const r = med.find((x) => x.indicador === ind); return r ? Math.round(num(r.m) * 10) / 10 : 0; };
+  const et = (o: Record<string, unknown>, k: string) => (o[k] != null ? num(o[k]) : null);
+  return {
+    ano: num(afd.ano) || num(tdi.ano) || num(atu.ano),
+    afd: { edInf: et(afd, "ed_inf"), funAi: et(afd, "fun_ai"), funAf: et(afd, "fun_af") },
+    tdi: { funAi: et(tdi, "fun_ai"), funAf: et(tdi, "fun_af") },
+    atu: { edInf: et(atu, "ed_inf"), funAi: et(atu, "fun_ai"), funAf: et(atu, "fun_af") },
+    aprovacao: { funAi: et(apr, "fun_ai"), funAf: et(apr, "fun_af"), medio: et(apr, "medio") },
+    abandono: { funAi: et(ab, "fun_ai"), funAf: et(ab, "fun_af"), medio: et(ab, "medio") },
+    medSC: { afdAi: mv("AFD"), tdiAi: mv("TDI"), atuAi: mv("ATU"), aprovAi: mv("APROVACAO"), abandAi: mv("ABANDONO") },
+  };
+}
+
+// Dívida do município — Dívida Consolidada Líquida (DCL) oficial do RGF/SICONFI. Série + limite legal (120% da RCL,
+// Res. SF 40/2001) + margem p/ novas operações de crédito + posição em SC. (O SCR/CADIP do BCB — operações de crédito
+// detalhadas — fica como fonte futura: API Olinda parametrizada bloqueada.) Aba Finanças.
+export type DividaSC = {
+  ano: number; dclValor: number; dclPct: number; rcl: number; limite: number; margem: number;
+  serie: { ano: number; valor: number; pct: number }[];
+  scMediana: number; posicao: number; scTotal: number;
+} | null;
+export async function getDividaSC(cod: string): Promise<DividaSC> {
+  const [atual, serie, sc] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT ano, dcl_valor, dcl_pct, rcl_ajustada FROM rgf_sc WHERE cod_ibge=$1 AND dcl_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT ano, dcl_valor, dcl_pct FROM rgf_sc WHERE cod_ibge=$1 AND dcl_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY ano`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`WITH latest AS (SELECT DISTINCT ON (r.cod_ibge) r.cod_ibge, r.dcl_pct FROM rgf_sc r JOIN entes_sc e ON e.cod_ibge=r.cod_ibge WHERE e.tipo='M' AND r.dcl_pct IS NOT NULL AND r.suspeito IS NOT TRUE ORDER BY r.cod_ibge, r.ano DESC)
+      SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY dcl_pct) med, count(*) tot, (SELECT count(*)+1 FROM latest l2 WHERE l2.dcl_pct > (SELECT dcl_pct FROM latest WHERE cod_ibge=$1)) pos FROM latest`, [cod]).catch(() => []),
+  ]);
+  const a = atual[0]; if (!a) return null;
+  const dclPct = num(a.dcl_pct), rcl = num(a.rcl_ajustada), limite = 120;
+  const s = sc[0] || {};
+  return {
+    ano: num(a.ano), dclValor: num(a.dcl_valor), dclPct, rcl, limite, margem: Math.max(0, ((limite - dclPct) / 100) * rcl),
+    serie: serie.map((r) => ({ ano: num(r.ano), valor: num(r.dcl_valor), pct: num(r.dcl_pct) })),
+    scMediana: Math.round(num(s.med) * 100) / 100, posicao: num(s.pos), scTotal: num(s.tot),
+  };
+}
+
+// === Novas fontes (eixos econômico / ambiental / social / saúde) — painéis por município ===
+// Cada fonte carrega `extraido` = data de coleta do dado oficial (coluna atualizado da tabela), p/ carimbo de proveniência.
+export type SerieAno = { ano: number; valor: number }[];
+const dExtr = (v: unknown): string | null => { if (!v) return null; const d = new Date(String(v)); return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10).split("-").reverse().join("/"); };
+
+export async function getBndesSC(cod: string): Promise<{ total: number; serie: SerieAno; ultimoAno: number; ultimoValor: number; topSetores: { setor: string; valor: number }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, desembolso, top_setores, atualizado FROM bndes_sc WHERE cod_ibge=$1 AND ano>=2010 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const ult = rows[rows.length - 1];
+  return { total: rows.reduce((s, r) => s + num(r.desembolso), 0), serie: rows.map((r) => ({ ano: num(r.ano), valor: num(r.desembolso) })), ultimoAno: num(ult.ano), ultimoValor: num(ult.desembolso), topSetores: (ult.top_setores as { setor: string; valor: number }[]) || [], extraido: dExtr(ult.atualizado) };
+}
+
+export async function getCfemSC(cod: string): Promise<{ total: number; serie: SerieAno; ultimoAno: number; topSubstancias: { substancia: string; valor: number }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, valor, top_substancias, atualizado FROM cfem_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const ult = rows[rows.length - 1];
+  return { total: rows.reduce((s, r) => s + num(r.valor), 0), serie: rows.map((r) => ({ ano: num(r.ano), valor: num(r.valor) })), ultimoAno: num(ult.ano), topSubstancias: (ult.top_substancias as { substancia: string; valor: number }[]) || [], extraido: dExtr(ult.atualizado) };
+}
+
+export async function getAnpSC(cod: string): Promise<{ ano: number; semestre: number; precos: { produto: string; preco: number }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, semestre, produto, preco_medio, atualizado FROM anp_precos_sc WHERE cod_ibge=$1 AND (ano,semestre)=(SELECT ano,semestre FROM anp_precos_sc WHERE cod_ibge=$1 ORDER BY ano DESC, semestre DESC LIMIT 1) ORDER BY produto`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  return { ano: num(rows[0].ano), semestre: num(rows[0].semestre), precos: rows.map((r) => ({ produto: String(r.produto), preco: num(r.preco_medio) })), extraido: dExtr(rows[0].atualizado) };
+}
+
+export async function getQueimadasSC(cod: string): Promise<{ serie: SerieAno; ultimoAno: number; ultimoFocos: number; bioma: string | null; totalFocos: number; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, sum(focos) focos, mode() WITHIN GROUP (ORDER BY bioma) bioma, max(atualizado) atualizado FROM queimadas_sc WHERE cod_ibge=$1 GROUP BY ano ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const ult = rows[rows.length - 1];
+  return { serie: rows.map((r) => ({ ano: num(r.ano), valor: num(r.focos) })), ultimoAno: num(ult.ano), ultimoFocos: num(ult.focos), bioma: ult.bioma ? String(ult.bioma) : null, totalFocos: rows.reduce((s, r) => s + num(r.focos), 0), extraido: dExtr(ult.atualizado) };
+}
+
+export async function getBolsaAtletaSC(cod: string): Promise<{ atletas: number; valor: number; ano: number; topModalidades: { modalidade: string; n: number }[]; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT ano, n_atletas, valor_pago, top_modalidades, atualizado FROM bolsa_atleta_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  if (!r) return null;
+  return { atletas: num(r.n_atletas), valor: num(r.valor_pago), ano: num(r.ano), topModalidades: (r.top_modalidades as { modalidade: string; n: number }[]) || [], extraido: dExtr(r.atualizado) };
+}
+
+export async function getVitaisSC(cod: string): Promise<{ nascidos: number; obitos: number; ano: number; serieNasc: SerieAno; serieObi: SerieAno; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, nascidos, obitos, atualizado FROM estatisticas_vitais_sc WHERE cod_ibge=$1 AND (nascidos IS NOT NULL OR obitos IS NOT NULL) ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const ult = rows[rows.length - 1];
+  return { nascidos: num(ult.nascidos), obitos: num(ult.obitos), ano: num(ult.ano), serieNasc: rows.map((r) => ({ ano: num(r.ano), valor: num(r.nascidos) })), serieObi: rows.map((r) => ({ ano: num(r.ano), valor: num(r.obitos) })), extraido: dExtr(ult.atualizado) };
+}
+
+// ANS — cobertura de planos de saúde por município. Indicador de PRESSÃO LATENTE sobre o SUS: quem tem plano privado e,
+// se perder, cai na rede pública. Beneficiários (ANS) ÷ população IBGE mais recente (casados por ano).
+export async function getAnsCoberturaSC(cod: string): Promise<{ ano: number; benefMedica: number; benefTotal: number; populacao: number; popAno: number; taxa: number; semPlano: number; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT ano, benef_medica, benef_total, populacao, pop_ano, taxa_cobertura, atualizado FROM ans_cobertura_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  if (!r) return null;
+  const pop = num(r.populacao), bmed = num(r.benef_medica);
+  return { ano: num(r.ano), benefMedica: bmed, benefTotal: num(r.benef_total), populacao: pop, popAno: num(r.pop_ano), taxa: num(r.taxa_cobertura), semPlano: Math.max(0, pop - bmed), extraido: dExtr(r.atualizado) };
+}
+
+// CAGED — saldo de empregos formais por município (admissões − desligamentos), série mensal. Complemento econômico do BNDES.
+export async function getCagedSC(cod: string): Promise<{ saldoAcum: number; admissoes: number; desligamentos: number; ultimoMes: string; serie: { periodo: string; saldo: number }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, mes, saldo, admissoes, desligamentos, atualizado FROM caged_sc WHERE cod_ibge=$1 ORDER BY ano, mes`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const ult = rows[rows.length - 1];
+  const per = (r: Record<string, unknown>) => `${String(num(r.mes)).padStart(2, "0")}/${num(r.ano)}`;
+  return {
+    saldoAcum: rows.reduce((s, r) => s + num(r.saldo), 0),
+    admissoes: rows.reduce((s, r) => s + num(r.admissoes), 0),
+    desligamentos: rows.reduce((s, r) => s + num(r.desligamentos), 0),
+    ultimoMes: per(ult), serie: rows.map((r) => ({ periodo: per(r), saldo: num(r.saldo) })), extraido: dExtr(ult.atualizado),
+  };
+}
+
+// Equipamentos esportivos públicos georreferenciados (OSM) — contagem por tipo; plotados no mapa (camada Esporte).
+export async function getEquipamentosEsporteSC(cod: string): Promise<{ total: number; porTipo: { tipo: string; n: number }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT tipo, count(*) n, max(atualizado) atualizado FROM equipamentos_esporte_sc WHERE cod_ibge=$1 GROUP BY tipo ORDER BY n DESC`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  return { total: rows.reduce((s, r) => s + num(r.n), 0), porTipo: rows.map((r) => ({ tipo: String(r.tipo), n: num(r.n) })), extraido: dExtr(rows[0].atualizado) };
 }
 
 // Radar de CRP (estadual) — todos os municípios com CRP, status atual e o valor federal "em jogo":
@@ -3181,26 +3405,32 @@ export async function getEquipamentosSuasSC(cod: string): Promise<EquipamentosSu
 }
 
 // Mapa unificado de equipamentos PÚBLICOS (saúde + educação + assistência) com coordenadas, por município.
-export type CatEquip = "saude" | "saude_filantropica" | "educacao" | "assistencia" | "prisional" | "socioeducativo" | "policia" | "guarda_municipal" | "bombeiros" | "defesa_civil";
-export type PontoEquip = { cat: CatEquip; nome: string; tipo: string; bairro: string | null; lat: number; lon: number; aprox?: boolean };
+export type CatEquip = "saude" | "saude_filantropica" | "educacao" | "assistencia" | "prisional" | "socioeducativo" | "policia" | "guarda_municipal" | "bombeiros" | "defesa_civil" | "esporte";
+export type PontoEquip = { cat: CatEquip; nome: string; tipo: string; bairro: string | null; lat: number; lon: number; aprox?: boolean; afd?: number | null; tdi?: number | null; atu?: number | null };
 export type MapaEquipamentosSC = { pontos: PontoEquip[]; porCat: Record<string, number>; center: [number, number]; assistOcultos: number } | null;
 export async function getMapaEquipamentosSC(cod: string): Promise<MapaEquipamentosSC> {
-  const [sau, fil, edu, ass, jus, ocultosR] = await Promise.all([
+  const [sau, fil, edu, ass, jus, ocultosR, esp] = await Promise.all([
     query<Record<string, unknown>>(`SELECT nome, tipo, bairro, latitude lat, longitude lon FROM estabelecimentos_saude_sc WHERE cod_ibge=$1 AND natureza_grupo='Público' AND latitude IS NOT NULL`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT nome, tipo, bairro, latitude lat, longitude lon FROM estabelecimentos_saude_sc WHERE cod_ibge=$1 AND natureza_grupo='Filantrópico' AND latitude IS NOT NULL`, [cod]).catch(() => []),
-    query<Record<string, unknown>>(`SELECT nome, dependencia, bairro, latitude lat, longitude lon FROM escolas_sc WHERE cod_ibge=$1 AND dependencia::text IN ('1','2','3') AND latitude IS NOT NULL`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT s.nome, s.dependencia, s.bairro, s.latitude lat, s.longitude lon,
+      (SELECT coalesce(fun_ai,fun_af,ed_inf) FROM indicadores_inep_escola_sc WHERE co_entidade=s.co_entidade AND indicador='AFD' ORDER BY ano DESC LIMIT 1) afd,
+      (SELECT coalesce(fun_ai,fun_af) FROM indicadores_inep_escola_sc WHERE co_entidade=s.co_entidade AND indicador='TDI' ORDER BY ano DESC LIMIT 1) tdi,
+      (SELECT coalesce(fun_ai,fun_af,ed_inf) FROM indicadores_inep_escola_sc WHERE co_entidade=s.co_entidade AND indicador='ATU' ORDER BY ano DESC LIMIT 1) atu
+      FROM escolas_sc s WHERE s.cod_ibge=$1 AND s.dependencia::text IN ('1','2','3') AND s.latitude IS NOT NULL`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT nome, tipo, latitude lat, longitude lon, geo_fonte FROM equipamentos_suas_sc WHERE cod_ibge=$1 AND latitude IS NOT NULL`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT cat, nome, tipo, latitude lat, longitude lon, aprox FROM equipamentos_justica_sc WHERE cod_ibge=$1 AND latitude IS NOT NULL`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT count(*) n FROM equipamentos_suas_sc WHERE cod_ibge=$1 AND latitude IS NULL`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT nome, tipo, latitude lat, longitude lon FROM equipamentos_esporte_sc WHERE cod_ibge=$1 AND latitude IS NOT NULL`, [cod]).catch(() => []),
   ]);
   const assistOcultos = num(ocultosR[0]?.n);
   const DEP: Record<string, string> = { "1": "Escola Federal", "2": "Escola Estadual", "3": "Escola Municipal" };
   const pontos: PontoEquip[] = [
     ...sau.map((r) => ({ cat: "saude" as const, nome: String(r.nome || ""), tipo: String(r.tipo || "Saúde"), bairro: r.bairro ? String(r.bairro) : null, lat: num(r.lat), lon: num(r.lon) })),
     ...fil.map((r) => ({ cat: "saude_filantropica" as const, nome: String(r.nome || ""), tipo: String(r.tipo || "Saúde filantrópica"), bairro: r.bairro ? String(r.bairro) : null, lat: num(r.lat), lon: num(r.lon) })),
-    ...edu.map((r) => ({ cat: "educacao" as const, nome: String(r.nome || ""), tipo: DEP[String(r.dependencia)] || "Escola pública", bairro: r.bairro ? String(r.bairro) : null, lat: num(r.lat), lon: num(r.lon) })),
+    ...edu.map((r) => ({ cat: "educacao" as const, nome: String(r.nome || ""), tipo: DEP[String(r.dependencia)] || "Escola pública", bairro: r.bairro ? String(r.bairro) : null, lat: num(r.lat), lon: num(r.lon), afd: r.afd != null ? num(r.afd) : null, tdi: r.tdi != null ? num(r.tdi) : null, atu: r.atu != null ? num(r.atu) : null })),
     ...ass.map((r) => ({ cat: "assistencia" as const, nome: String(r.nome || ""), tipo: String(r.tipo || "SUAS"), bairro: null, lat: num(r.lat), lon: num(r.lon), aprox: r.geo_fonte === "cep" })),
     ...jus.map((r) => ({ cat: String(r.cat) as CatEquip, nome: String(r.nome || ""), tipo: String(r.tipo || ""), bairro: null, lat: num(r.lat), lon: num(r.lon), aprox: r.aprox === true })),
+    ...esp.map((r) => ({ cat: "esporte" as const, nome: String(r.nome || ""), tipo: String(r.tipo || "Equipamento esportivo"), bairro: null, lat: num(r.lat), lon: num(r.lon) })),
   ].filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lon) && p.lat !== 0 && p.lat > -34 && p.lat < 6);
   if (!pontos.length) return null;
   const center: [number, number] = [pontos.reduce((s, p) => s + p.lat, 0) / pontos.length, pontos.reduce((s, p) => s + p.lon, 0) / pontos.length];

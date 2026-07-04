@@ -30,6 +30,7 @@ function EscolaItem({ e, media }: { e: Escola; media: number | null }) {
             <span>{e.docentes} prof.</span>
             {e.alunoPorDoc != null && <span className={sobrec ? "font-semibold text-rose-600" : ""}>{e.alunoPorDoc} alunos/prof.{sobrec ? " ⚠️" : ""}</span>}
             {e.zona === 2 && <span>· rural</span>}
+            {e.afd != null && <span className="text-emerald-600" title="Formação docente adequada (INEP)">· AFD {e.afd}%</span>}
           </span>
         </span>
       </button>
@@ -42,6 +43,14 @@ function EscolaItem({ e, media }: { e: Escola; media: number | null }) {
             <div className="rounded-lg border border-teal-200 bg-teal-50/50 p-2 text-center"><div className="text-base font-bold tabular-nums text-teal-700">{e.alunoPorTurma ?? "—"}</div><div className="text-[10px] text-slate-500">alunos/turma</div></div>
             <div className="rounded-lg border border-slate-200 bg-white p-2 text-center"><div className="text-base font-bold tabular-nums text-slate-800">{e.alunoPorDoc ?? "—"}</div><div className="text-[10px] text-slate-500">alunos/professor</div></div>
           </div>
+
+          {(e.afd != null || e.tdi != null || e.atu != null) && (
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50/40 p-2 text-center"><div className="text-base font-bold tabular-nums text-emerald-700">{e.afd != null ? `${e.afd}%` : "—"}</div><div className="text-[10px] text-slate-500">docente adequado (AFD)</div></div>
+              <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-2 text-center"><div className="text-base font-bold tabular-nums text-amber-700">{e.tdi != null ? `${e.tdi}%` : "—"}</div><div className="text-[10px] text-slate-500">distorção idade-série</div></div>
+              <div className="rounded-lg border border-slate-200 bg-white p-2 text-center"><div className="text-base font-bold tabular-nums text-slate-800">{e.atu ?? "—"}</div><div className="text-[10px] text-slate-500">alunos/turma (INEP)</div></div>
+            </div>
+          )}
 
           {e.series && e.series.length > 0 ? (
             <div>

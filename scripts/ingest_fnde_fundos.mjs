@@ -43,7 +43,7 @@ async function main() {
     await page.evaluate(({ ano, mun }) => { const s = (n, v) => { const el = document.querySelector(`[name="${n}"]`); if (el) el.value = v; }; s("p_ano", String(ano)); s("p_municipio", mun); s("p_tp_entidade", ""); s("p_programa", ""); s("p_cgc", ""); s("p_verifica", "sigef"); }, { ano, mun });
     await nav(() => page.evaluate(() => window.submete && window.submete()));
     await sleep(200);
-    return page.evaluate(() => { const map = new Map(); for (const tr of Array.from(document.querySelectorAll("tr"))) { const tds = Array.from(tr.querySelectorAll("td")).map((t) => t.innerText.trim()); const ci = tds.findIndex((t) => /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(t)); if (ci >= 0 && tds[ci + 1]) { const nome = tds[ci + 1]; if (/FUNDO|MUNICIPIO DE|FUNDEB|SECRETARIA (MUNICIPAL|DE EDUCA|DE ESTADO)/i.test(nome) && !/A\.?\s?P\.?\s?P|ESCOLA|ASSOCIA|CAIXA ESCOLAR|COLEGIO|CENTRO EDUC|CRECHE|E\.?E\.?B/i.test(nome)) map.set(tds[ci].replace(/\D/g, ""), nome); } } return [...map.keys()]; });
+    return page.evaluate(() => { const map = new Map(); for (const tr of Array.from(document.querySelectorAll("tr"))) { const tds = Array.from(tr.querySelectorAll("td")).map((t) => t.innerText.trim()); const ci = tds.findIndex((t) => /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(t)); if (ci >= 0 && tds[ci + 1]) { const nome = tds[ci + 1]; if (/FUNDO|MUNICIPIO DE|FUNDEB|SECRETARIA (MUNICIPAL|DE EDUCA)/i.test(nome) && !/A\.?\s?P\.?\s?P|ESCOLA|ASSOCIA|CAIXA ESCOLAR|COLEGIO|CENTRO EDUC|CRECHE|E\.?E\.?B|\bESTADO\b|ESTADUAL/i.test(nome)) map.set(tds[ci].replace(/\D/g, ""), nome); } } return [...map.keys()]; });
   };
   let proc = 0, totFundos = 0, totLib = 0;
   for (const e of entes) {

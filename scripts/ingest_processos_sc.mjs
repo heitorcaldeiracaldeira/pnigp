@@ -14,7 +14,7 @@ const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 const d10 = (s) => (s ? String(s).slice(0, 10) : null);
 
 async function pagina(mod, ano, pg_) {
-  for (let t = 0; t < 4; t++) {
+  for (let t = 0; t < 7; t++) {
     try {
       const r = await fetch(`${B}?dataInicial=${ano}0101&dataFinal=${ano}1231&uf=${SG_UF}&codigoModalidadeContratacao=${mod}&pagina=${pg_}&tamanhoPagina=50`, { signal: AbortSignal.timeout(40000) });
       if (r.status === 204 || r.status === 404) return { data: [], totalPaginas: 0 };
@@ -40,10 +40,11 @@ async function main() {
   for (const ano of ANOS) {
     for (const mod of MODALIDADES) {
       if (feitos.has(`${mod}-${ano}`)) continue;
-      let p = 1, totalPag = 1, n = 0;
+      let p = 1, totalPag = 1, n = 0, falhasSeq = 0, houveFalha = false;
       do {
         const j = await pagina(mod, ano, p);
-        if (j == null) { console.log(`  mod ${mod}/${ano} pág ${p}: falha — interrompe combo`); break; }
+        if (j == null) { houveFalha = true; falhasSeq++; console.log(`  mod ${mod}/${ano} pág ${p}: falha (${falhasSeq}) — pula a página e continua`); if (falhasSeq >= 10) { console.log(`  mod ${mod}/${ano}: 10 falhas seguidas — interrompe combo`); break; } p++; continue; }
+        falhasSeq = 0;
         totalPag = Number(j.totalPaginas) || 1;
         for (const x of (j.data || [])) {
           const ibge = String(x.unidadeOrgao?.codigoIbge || x.unidadeOrgao?.municipioIbge || "").replace(/\D/g, "");
@@ -58,8 +59,8 @@ async function main() {
         }
         p++;
         if (p % 50 === 0) console.log(`  mod ${mod}/${ano}: pág ${p}/${totalPag} (${n})`);
-      } while (p <= totalPag && p <= 2000);
-      if (p > totalPag) await q(`INSERT INTO processos_feitos (modalidade,ano,n) VALUES ($1,$2,$3) ON CONFLICT (modalidade,ano) DO UPDATE SET n=EXCLUDED.n, concluido_em=now()`, [mod, ano, n]);
+      } while (p <= totalPag && p <= 5000);
+      if (p > totalPag && !houveFalha) await q(`INSERT INTO processos_feitos (modalidade,ano,n) VALUES ($1,$2,$3) ON CONFLICT (modalidade,ano) DO UPDATE SET n=EXCLUDED.n, concluido_em=now()`, [mod, ano, n]);
       console.log(`mod ${mod}/${ano}: ${n} processos`);
     }
   }

@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { Database, MapPin, Search } from "lucide-react";
 import type { MapaEquipamentosSC, PontoEquip } from "@/lib/queries";
+import type { CorIndicador } from "./mapa-maplibre";
 
 const CAMADAS: { cat: PontoEquip["cat"]; label: string; cor: string }[] = [
   { cat: "saude", label: "Saúde", cor: "#e11d48" },
@@ -18,11 +19,12 @@ const CAMADAS: { cat: PontoEquip["cat"]; label: string; cor: string }[] = [
   { cat: "defesa_civil", label: "Defesa Civil", cor: "#ca8a04" },
   { cat: "prisional", label: "Prisional", cor: "#334155" },
   { cat: "socioeducativo", label: "Socioeducativo", cor: "#ea580c" },
+  { cat: "esporte", label: "Esporte", cor: "#9333ea" },
 ];
 const CORES = Object.fromEntries(CAMADAS.map((c) => [c.cat, c.cor]));
 const LABELS = Object.fromEntries(CAMADAS.map((c) => [c.cat, c.label]));
 
-const MapaLeaflet = dynamic(() => import("./mapa-leaflet"), {
+const MapaLeaflet = dynamic(() => import("./mapa-maplibre"), {
   ssr: false,
   loading: () => <div className="flex h-[540px] items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-sm text-slate-400">Carregando mapa…</div>,
 });
@@ -32,7 +34,9 @@ export function Geolocalizacao({ data, nome }: { data: NonNullable<MapaEquipamen
   const [tipoSel, setTipoSel] = useState("");
   const [precisao, setPrecisao] = useState("todos");
   const [busca, setBusca] = useState("");
+  const [corInd, setCorInd] = useState<CorIndicador>(null); // colorir escolas por indicador INEP (afd/tdi/atu)
   const toggle = (cat: string) => setOn((s) => ({ ...s, [cat]: !s[cat] }));
+  const IND_LABEL: Record<string, string> = { afd: "Formação docente adequada (%)", tdi: "Distorção idade-série (%)", atu: "Alunos por turma" };
 
   // pontos das camadas ativas → base p/ os selects (tipos disponíveis dependem das camadas ligadas)
   const pontosCamada = useMemo(() => data.pontos.filter((p) => on[p.cat]), [data, on]);
@@ -75,6 +79,14 @@ export function Geolocalizacao({ data, nome }: { data: NonNullable<MapaEquipamen
             {tiposDisp.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
         </label>
+        <label className="flex items-center gap-1.5 text-xs text-slate-500">colorir escolas
+          <select value={corInd ?? ""} onChange={(e) => setCorInd((e.target.value || null) as CorIndicador)} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
+            <option value="">por camada (padrão)</option>
+            <option value="afd">Formação docente (AFD)</option>
+            <option value="tdi">Distorção idade-série (TDI)</option>
+            <option value="atu">Alunos por turma (ATU)</option>
+          </select>
+        </label>
         {temAprox && (
           <label className="flex items-center gap-1.5 text-xs text-slate-500">precisão
             <select value={precisao} onChange={(e) => setPrecisao(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-700">
@@ -88,7 +100,17 @@ export function Geolocalizacao({ data, nome }: { data: NonNullable<MapaEquipamen
         )}
       </div>
 
-      <MapaLeaflet pontos={pontos} center={data.center} cores={CORES} labels={LABELS} />
+      <MapaLeaflet pontos={pontos} center={data.center} cores={CORES} labels={LABELS} corIndicador={corInd} />
+
+      {corInd && (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/60 p-2.5 text-[11px] text-slate-600">
+          <b className="text-slate-700">Escolas coloridas por {IND_LABEL[corInd]}</b>
+          <span className="ml-1 inline-flex items-center gap-1.5">pior
+            <span className="inline-block h-2.5 w-24 rounded" style={{ background: "linear-gradient(to right, #dc2626, #f59e0b, #84cc16, #16a34a)" }} />
+            melhor</span>
+          <span className="text-slate-400">· revela a desigualdade de qualidade no território. Só escolas com o indicador; demais camadas ocultas nesse modo.</span>
+        </div>
+      )}
 
       <p className="text-[11px] text-slate-500">
         <span className="mr-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700"><Database className="h-3 w-3" /> Dados oficiais</span>

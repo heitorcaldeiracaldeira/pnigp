@@ -31,14 +31,14 @@ async function descobrirCnpjs(codIbge) {
   const cnpjs = new Set();
   for (const ano of ANOS) {
     for (const mod of MODALIDADES_DESC) {
-      let pagina = 1, totalPaginas = 1;
+      let pagina = 1, totalPaginas = 1, falhas = 0;
       do {
         const j = await getJson(`${CONS}/contratacoes/publicacao?dataInicial=${ano}0101&dataFinal=${ano}1231&codigoModalidadeContratacao=${mod}&codigoMunicipioIbge=${codIbge}&pagina=${pagina}&tamanhoPagina=50`);
-        if (!j) break;
+        if (!j) { falhas++; if (falhas >= 6) break; pagina++; continue; }
         totalPaginas = j.totalPaginas || 0;
         for (const x of j.data || []) { const o = x.orgaoEntidade; if (o?.esferaId === "M" && o.cnpj) cnpjs.add(o.cnpj); }
         pagina++;
-      } while (pagina <= totalPaginas && pagina <= 6);
+      } while (pagina <= totalPaginas && pagina <= 20);
     }
   }
   return [...cnpjs];
@@ -47,11 +47,12 @@ async function descobrirCnpjs(codIbge) {
 // 2) puxar contratos assinados de um CNPJ de órgão
 async function contratosDoOrgao(cnpj) {
   const out = [];
+  let completo = true;
   for (const ano of ANOS) {
-  let pagina = 1, totalPaginas = 1;
+  let pagina = 1, totalPaginas = 1, falhas = 0;
   do {
     const j = await getJson(`${CONS}/contratos?dataInicial=${ano}0101&dataFinal=${ano}1231&cnpjOrgao=${cnpj}&pagina=${pagina}&tamanhoPagina=500`);
-    if (!j) break;
+    if (!j) { falhas++; completo = false; if (falhas >= 8) break; pagina++; continue; }
     totalPaginas = j.totalPaginas || 0;
     for (const x of j.data || []) {
       const compra = String(x.numeroControlePncpCompra || "");
@@ -77,7 +78,7 @@ async function contratosDoOrgao(cnpj) {
     pagina++;
   } while (pagina <= totalPaginas && pagina <= 40);
   }
-  return out;
+  return { out, completo };
 }
 
 async function pool(items, conc, fn) { let i = 0, done = 0; await Promise.all(Array.from({ length: conc }, async () => { while (i < items.length) { await fn(items[i++]); if (++done % 20 === 0) console.log(`  …${done}/${items.length}`); } })); }
@@ -100,7 +101,8 @@ async function main() {
   // modo APPEND: adiciona anos novos (ex.: 2026) sem apagar os já coletados (janelas de publicação distintas → sem duplicar)
   const APPEND = process.env.APPEND === "1";
   const FEITOS = APPEND ? "contratos_sc_feitos_inc" : "contratos_sc_feitos";
-  const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' ORDER BY cod_ibge`)).rows;
+  let entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' ORDER BY cod_ibge`)).rows;
+  if (process.env.COD) { const set = new Set(process.env.COD.split(",")); entes = entes.filter((e) => set.has(e.cod_ibge)); }
   // REFRESH=1: re-coleta todos os entes (não pula feitos) — atualiza o ano corrente; APPEND já deleta+reinsere por ano (idempotente)
   const feitos = process.env.REFRESH === "1" ? new Set() : new Set((await db.query(`SELECT cod_ibge FROM ${FEITOS}`)).rows.map((r) => r.cod_ibge));
   const pend = entes.filter((e) => !feitos.has(e.cod_ibge));
@@ -109,19 +111,26 @@ async function main() {
   const q = async (sql, params) => { for (let t = 0; t < 6; t++) { try { return await db.query(sql, params); } catch { await sleep(900 * (t + 1)); } } throw new Error("db indisponível"); };
   // descoberta de órgãos municipais COMPARTILHADA (grava p/ o ETL de PCA reaproveitar)
   const getOrgaos = async (cod) => {
-    if ((await db.query(`SELECT 1 FROM orgaos_sc_feitos WHERE cod_ibge=$1`, [cod]).catch(() => ({ rows: [] }))).rows.length)
-      return (await db.query(`SELECT cnpj FROM orgaos_municipais_sc WHERE cod_ibge=$1`, [cod])).rows.map((r) => r.cnpj);
+    // CNPJs de órgãos já vistos no histórico de contratos — recupera fundos/autarquias que a descoberta via
+    // CONTRATAÇÕES não pega (ex.: Fundo Municipal de Saúde tem contratos mas poucas contratações próprias).
+    const hist = (await db.query(`SELECT DISTINCT cnpj_compra c FROM contratos_sc WHERE cod_ibge=$1 AND cnpj_compra IS NOT NULL AND cnpj_compra<>''`, [cod]).catch(() => ({ rows: [] }))).rows.map((r) => r.c);
+    if (process.env.REDISCOVER !== "1" && (await db.query(`SELECT 1 FROM orgaos_sc_feitos WHERE cod_ibge=$1`, [cod]).catch(() => ({ rows: [] }))).rows.length)
+      return [...new Set([...(await db.query(`SELECT cnpj FROM orgaos_municipais_sc WHERE cod_ibge=$1`, [cod])).rows.map((r) => r.cnpj), ...hist])];
     const cnpjs = await descobrirCnpjs(cod);
     for (const c of cnpjs) await q(`INSERT INTO orgaos_municipais_sc (cod_ibge,cnpj) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [cod, c]);
     await q(`INSERT INTO orgaos_sc_feitos (cod_ibge) VALUES ($1) ON CONFLICT DO NOTHING`, [cod]);
-    return cnpjs;
+    return [...new Set([...cnpjs, ...hist])];
   };
   let comDados = 0;
   await pool(pend, 4, async (e) => {
    try {
     const cnpjs = await getOrgaos(e.cod_ibge);
-    let contratos = [];
-    for (const cnpj of cnpjs) { contratos = contratos.concat(await contratosDoOrgao(cnpj)); }
+    let contratos = [], completo = true;
+    for (const cnpj of cnpjs) { const r = await contratosDoOrgao(cnpj); contratos = contratos.concat(r.out); if (!r.completo) completo = false; }
+    // NÃO-DESTRUTIVO: só apaga+substitui se a coleta veio COMPLETA e não é vazio-suspeito.
+    // Com API instável, coleta incompleta NUNCA destrói o que já existe (evita a regressão tipo Floripa 1497→747).
+    const existente = Number((await q(`SELECT count(*) n FROM contratos_sc WHERE cod_ibge=$1${APPEND ? ` AND ano_compra = ANY($2)` : ""}`, APPEND ? [e.cod_ibge, ANOS] : [e.cod_ibge])).rows[0].n);
+    if (!completo || (contratos.length === 0 && existente > 0)) { console.log(`  ${e.cod_ibge}: coleta incompleta/vazia (API instável) — MANTÉM ${existente} existentes, pula`); if (contratos.length) comDados++; return; }
     // grava: APPEND remove só os anos-alvo (idempotente); padrão substitui o ente inteiro
     if (APPEND) await q(`DELETE FROM contratos_sc WHERE cod_ibge=$1 AND ano_compra = ANY($2)`, [e.cod_ibge, ANOS]);
     else await q(`DELETE FROM contratos_sc WHERE cod_ibge=$1`, [e.cod_ibge]);

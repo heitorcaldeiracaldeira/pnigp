@@ -82,7 +82,7 @@ export async function fetchTransferenciasPortal(cod: string): Promise<Transferen
       inicio: String(c.dataInicioVigencia ?? c.dataPublicacao ?? ""),
       fim: String(c.dataFinalVigencia ?? ""),
     };
-  });
+  }).filter((c) => !/estado de santa|secretaria de estado|governo do estado|\bestadual\b/i.test(c.convenente)); // SÓ municipal: o Portal por codigoIBGE traz o ESTADO (sede=capital) como recebedor — excluir (regra Estado×município separados)
 
   const valor_total = r2(norm.reduce((s, c) => s + c.valor, 0));
   const valor_liberado = r2(norm.reduce((s, c) => s + c.liberado, 0));

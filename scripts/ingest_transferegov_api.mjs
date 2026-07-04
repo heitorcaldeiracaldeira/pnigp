@@ -57,7 +57,7 @@ async function main() {
 
   // 2) CAPTAÇÃO de SC (planos de ação recebidos por municípios de SC)
   console.log(`Coletando planos de ação recebidos (UF=${UF})…`);
-  let nplan = 0;
+  let nplan = 0, estPulados = 0;
   for await (const arr of paginar("fundoafundo/plano_acao", `uf_ente_recebedor_plano_acao=eq.${UF}`)) {
     for (const p of arr) {
       const nomeRec = p.nome_ente_recebedor_plano_acao || "";
@@ -66,13 +66,14 @@ async function main() {
       const municipal = /\b(MUNIC[IÍ]P|PREFEITURA)/i.test(nomeRec);
       const esfera = municipal ? "municipal" : (nomeRec ? "estadual/outra" : "indefinida");
       const cod = municipal && p.codigo_ibge_municipio_ente_recebedor_plano_acao ? String(p.codigo_ibge_municipio_ente_recebedor_plano_acao) : null;
+      if (!municipal || !cod) { estPulados++; continue; } // NÃO ingerir recebedor estadual/outro — tabela é MUNICIPAL (regra Estado×município separados)
       await q(`INSERT INTO captacao_transferegov_sc (id_plano,cod_ibge,uf,id_programa,situacao,valor_total_repasse,valor_voluntario,valor_total,dt_inicio,dt_fim,orgao_repassador,nome_ente_recebedor,cnpj_ente_recebedor,esfera)
                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
                ON CONFLICT (id_plano) DO UPDATE SET cod_ibge=EXCLUDED.cod_ibge, situacao=EXCLUDED.situacao, valor_total_repasse=EXCLUDED.valor_total_repasse, valor_total=EXCLUDED.valor_total, nome_ente_recebedor=EXCLUDED.nome_ente_recebedor, cnpj_ente_recebedor=EXCLUDED.cnpj_ente_recebedor, esfera=EXCLUDED.esfera`,
         [String(p.id_plano_acao), cod, p.uf_ente_recebedor_plano_acao, p.id_programa != null ? String(p.id_programa) : null, p.situacao_plano_acao, num(p.valor_total_repasse_plano_acao), num(p.valor_repasse_voluntario_plano_acao), num(p.valor_total_plano_acao), dt(p.data_inicio_vigencia_plano_acao), dt(p.data_fim_vigencia_plano_acao), p.nome_orgao_repassador_plano_acao, nomeRec, p.cnpj_ente_recebedor_plano_acao || null, esfera]);
       nplan++;
     }
-    console.log(`  ...${nplan} planos`);
+    console.log(`  ...${nplan} planos municipais (${estPulados} estaduais/outros pulados)`);
   }
   const r1 = await db.query(`SELECT count(*) n, count(*) FILTER (WHERE dt_fim_vol >= CURRENT_DATE) abertos FROM programas_transferegov`);
   const r2 = await db.query(`SELECT count(distinct cod_ibge) e, count(*) n, round(sum(valor_total_repasse)/1e6) mi FROM captacao_transferegov_sc`);
