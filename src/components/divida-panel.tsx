@@ -1,6 +1,7 @@
 // Painel de Dívida do município — Dívida Consolidada Líquida (DCL) oficial do RGF/SICONFI: valor, % da RCL vs limite
 // legal (120%, Res. SF 40/2001), margem p/ novas operações de crédito, série e posição em SC. Aba Finanças. Server component.
 import type { DividaSC } from "@/lib/queries";
+import { BaixarCsv } from "./baixar-csv";
 import { Landmark, TrendingDown, Info } from "lucide-react";
 
 const brlMi = (v: number) => (v >= 1e9 ? `R$ ${(v / 1e9).toFixed(2)} bi` : `R$ ${(v / 1e6).toFixed(1)} mi`);
@@ -24,7 +25,10 @@ export function DividaPanel({ data, nome }: { data: NonNullable<DividaSC>; nome:
     <section className="rounded-2xl border border-slate-200 bg-white p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-1.5 font-semibold text-slate-800"><Landmark className="h-4 w-4 text-violet-600" /> Dívida de {nome} — Dívida Consolidada Líquida (DCL)</h3>
-        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] text-slate-500">RGF {d.ano}</span>
+        <div className="flex items-center gap-2">
+          <BaixarCsv nome={`divida-dcl-${nome}`} label="CSV" linhas={d.serie as unknown as Record<string, unknown>[]} colunas={[{ chave: "ano", rotulo: "Ano" }, { chave: "valor", rotulo: "DCL (R$)" }, { chave: "pct", rotulo: "DCL / RCL (%)" }]} />
+          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] text-slate-500">RGF {d.ano}</span>
+        </div>
       </div>
       <p className="mt-1 text-[12px] text-slate-500">A DCL é o endividamento líquido oficial do município. O limite legal é <b>120% da RCL</b> (Res. Senado 40/2001).</p>
 

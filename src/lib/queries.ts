@@ -2732,10 +2732,11 @@ export type FundebSC = {
   serieMunicipal: { ano: number; matriculas: number }[];
   serieFundeb: { ano: number; total: number; integral: number; especial: number }[];
   conferido: { consistente: boolean; scPct: number };
+  extraido: string | null;
 } | null;
 export async function getFundebSC(cod: string): Promise<FundebSC> {
   const [ofi, mot, vaat, vaar, esp, muni, rec, conf] = await Promise.all([
-    query<Record<string, unknown>>(`SELECT ano, total, integral, especial, segmentos_ativos FROM fundeb_oficial_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT ano, total, integral, especial, segmentos_ativos, atualizado FROM fundeb_oficial_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT matriculas, ponderadas, receita, vaaf_calc, breakdown FROM fundeb_motor_sc WHERE cod_ibge=$1 AND ano=2025`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT vaat, recebe_vaat FROM vaat_fundeb_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT beneficiario FROM vaar_fundeb_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []),
@@ -2756,6 +2757,7 @@ export async function getFundebSC(cod: string): Promise<FundebSC> {
     serieEspecial: esp.map((r) => ({ ano: num(r.ano), total: num(r.total), incluidos: num(r.incluidos) })),
     serieMunicipal: muni.map((r) => ({ ano: num(r.ano), matriculas: num(r.mat) })),
     serieFundeb: ofi.map((r) => ({ ano: num(r.ano), total: num(r.total), integral: num(r.integral), especial: num(r.especial) })),
+    extraido: dExtr(ofi[ofi.length - 1]?.atualizado),
     conferido: { consistente: num(m.vaaf_calc) > 0 && num(vaat[0]?.vaat) > 0 ? num(m.vaaf_calc) <= num(vaat[0]?.vaat) : true, scPct: conf[0] && num(conf[0].tot) > 0 ? Math.round((num(conf[0].ok) / num(conf[0].tot)) * 100) : 0 },
   };
 }
@@ -2770,10 +2772,11 @@ export type IndicadoresInepSC = {
   aprovacao: { funAi: number | null; funAf: number | null; medio: number | null };
   abandono: { funAi: number | null; funAf: number | null; medio: number | null };
   medSC: { afdAi: number; tdiAi: number; atuAi: number; aprovAi: number; abandAi: number };
+  extraido: string | null;
 } | null;
 export async function getIndicadoresInepSC(cod: string): Promise<IndicadoresInepSC> {
   const [rows, med] = await Promise.all([
-    query<Record<string, unknown>>(`SELECT indicador, ano, ed_inf, fun_ai, fun_af, medio FROM indicadores_inep_sc WHERE cod_ibge=$1 AND ano=(SELECT max(ano) FROM indicadores_inep_sc WHERE cod_ibge=$1)`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT indicador, ano, ed_inf, fun_ai, fun_af, medio, atualizado FROM indicadores_inep_sc WHERE cod_ibge=$1 AND ano=(SELECT max(ano) FROM indicadores_inep_sc WHERE cod_ibge=$1)`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`SELECT indicador, percentile_cont(0.5) WITHIN GROUP (ORDER BY fun_ai) m FROM indicadores_inep_sc WHERE ano=(SELECT max(ano) FROM indicadores_inep_sc) AND fun_ai IS NOT NULL GROUP BY indicador`).catch(() => []),
   ]);
   if (!rows.length) return null;
@@ -2789,6 +2792,7 @@ export async function getIndicadoresInepSC(cod: string): Promise<IndicadoresInep
     aprovacao: { funAi: et(apr, "fun_ai"), funAf: et(apr, "fun_af"), medio: et(apr, "medio") },
     abandono: { funAi: et(ab, "fun_ai"), funAf: et(ab, "fun_af"), medio: et(ab, "medio") },
     medSC: { afdAi: mv("AFD"), tdiAi: mv("TDI"), atuAi: mv("ATU"), aprovAi: mv("APROVACAO"), abandAi: mv("ABANDONO") },
+    extraido: dExtr(rows[0]?.atualizado),
   };
 }
 
@@ -2871,6 +2875,211 @@ export async function getAnsCoberturaSC(cod: string): Promise<{ ano: number; ben
   return { ano: num(r.ano), benefMedica: bmed, benefTotal: num(r.benef_total), populacao: pop, popAno: num(r.pop_ano), taxa: num(r.taxa_cobertura), semPlano: Math.max(0, pop - bmed), extraido: dExtr(r.atualizado) };
 }
 
+// ANA outorgas de uso da água por município — nº + superficial/subterrânea + finalidade + série. Fonte: ANA (dados abertos).
+export async function getAnaOutorgasSC(cod: string): Promise<{ nOutorgas: number; nSuperficial: number; nSubterranea: number; porFinalidade: { finalidade: string; n: number }[]; serie: SerieAno; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT n_outorgas, n_superficial, n_subterranea, por_finalidade, serie, atualizado FROM ana_outorgas_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.n_outorgas)) return null;
+  return { nOutorgas: num(r.n_outorgas), nSuperficial: num(r.n_superficial), nSubterranea: num(r.n_subterranea), porFinalidade: ((r.por_finalidade as { finalidade: string; n: number }[]) || []).slice(0, 5), serie: ((r.serie as { ano: number; valor: number }[]) || []).map((s) => ({ ano: s.ano, valor: s.valor })), extraido: dExtr(r.atualizado) };
+}
+
+// ICMBio/CNUC unidades de conservação por município — % do território protegido + área + nº UCs. Fonte: MMA CNUC (interseção PostGIS).
+export async function getIcmbioUcSC(cod: string): Promise<{ nUcs: number; areaHa: number; pctTerritorio: number; maiorUc: string | null; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT n_ucs, area_uc_ha, pct_territorio, maior_uc, atualizado FROM icmbio_uc_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.n_ucs)) return null;
+  return { nUcs: num(r.n_ucs), areaHa: num(r.area_uc_ha), pctTerritorio: num(r.pct_territorio), maiorUc: (r.maior_uc as string) || null, extraido: dExtr(r.atualizado) };
+}
+
+// MDS IGD-M — índice de gestão descentralizada (qualidade da gestão PBF/CadÚnico) por município. Fonte: MI Social/SAGI.
+export async function getIgdmSC(cod: string): Promise<{ anomes: string; igdm: number | null; freqEscolar: number | null; agendaSaude: number | null; atualCadastral: number | null; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT anomes, igdm, freq_escolar, agenda_saude, atual_cadastral, atualizado FROM igdm_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r) return null;
+  const nn = (v: unknown) => (v == null ? null : num(v));
+  return { anomes: String(r.anomes || ""), igdm: nn(r.igdm), freqEscolar: nn(r.freq_escolar), agendaSaude: nn(r.agenda_saude), atualCadastral: nn(r.atual_cadastral), extraido: dExtr(r.atualizado) };
+}
+
+// DATASUS SIH — internações hospitalares SUS por município (nº + valor + óbitos hospitalares), série. Fonte: DATASUS (FTP DBC).
+export async function getSihSC(cod: string): Promise<{ ano: number; internacoes: number; valorTotal: number; obitosHosp: number; serie: SerieAno; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, internacoes, valor_total, obitos_hosp, atualizado FROM sih_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const u = rows[rows.length - 1];
+  return { ano: num(u.ano), internacoes: num(u.internacoes), valorTotal: num(u.valor_total), obitosHosp: num(u.obitos_hosp), serie: rows.map((r) => ({ ano: num(r.ano), valor: num(r.internacoes) })), extraido: dExtr(u.atualizado) };
+}
+
+// DATASUS SINASC — nascidos vivos por município (baixo peso, prematuros, pré-natal, mãe adolescente), série. Fonte: DATASUS (FTP DBC).
+export async function getSinascSC(cod: string): Promise<{ ano: number; nascimentos: number; baixoPeso: number; prematuros: number; prenatal7: number; maeAdolescente: number; serie: SerieAno; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, nascimentos, baixo_peso, prematuros, prenatal_7mais, mae_adolescente, atualizado FROM sinasc_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const u = rows[rows.length - 1];
+  return { ano: num(u.ano), nascimentos: num(u.nascimentos), baixoPeso: num(u.baixo_peso), prematuros: num(u.prematuros), prenatal7: num(u.prenatal_7mais), maeAdolescente: num(u.mae_adolescente), serie: rows.map((r) => ({ ano: num(r.ano), valor: num(r.nascimentos) })), extraido: dExtr(u.atualizado) };
+}
+
+// DATASUS SIM — óbitos por município (total + causas + mortalidade infantil), série anual. Fonte: DATASUS (FTP DBC).
+export async function getSimSC(cod: string): Promise<{ ano: number; obitos: number; causasExternas: number; circulatorio: number; neoplasias: number; infantil: number; serie: SerieAno; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, obitos, causas_externas, circulatorio, neoplasias, infantil, atualizado FROM sim_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const u = rows[rows.length - 1];
+  return { ano: num(u.ano), obitos: num(u.obitos), causasExternas: num(u.causas_externas), circulatorio: num(u.circulatorio), neoplasias: num(u.neoplasias), infantil: num(u.infantil), serie: rows.map((r) => ({ ano: num(r.ano), valor: num(r.obitos) })), extraido: dExtr(u.atualizado) };
+}
+
+// RFB arrecadação federal por município — total arrecadado + série. Fonte: Receita Federal (dados abertos).
+export async function getRfbArrecadacaoSC(cod: string): Promise<{ ano: number; total: number; serie: SerieAno; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, total, atualizado FROM rfb_arrecadacao_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const u = rows[rows.length - 1];
+  return { ano: num(u.ano), total: num(u.total), serie: rows.map((r) => ({ ano: num(r.ano), valor: num(r.total) })), extraido: dExtr(u.atualizado) };
+}
+
+// ANP vendas de combustíveis por município — por produto (litros) + série. Fonte: dados abertos ANP.
+export async function getAnpVendasSC(cod: string): Promise<{ ano: number; produtos: { produto: string; litros: number }[]; serie: SerieAno; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, produto, vendas FROM anp_vendas_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const ult = Math.max(...rows.map((r) => num(r.ano)));
+  const rot: Record<string, string> = { diesel: "Óleo diesel", gasolina: "Gasolina", etanol: "Etanol", glp: "GLP (gás)" };
+  const produtos = rows.filter((r) => num(r.ano) === ult && num(r.vendas) > 0).map((r) => ({ produto: rot[String(r.produto)] || String(r.produto), litros: num(r.vendas) })).sort((a, b) => b.litros - a.litros);
+  const porAno = new Map<number, number>(); for (const r of rows) porAno.set(num(r.ano), (porAno.get(num(r.ano)) || 0) + num(r.vendas));
+  const atualizado = (await query<Record<string, unknown>>(`SELECT max(atualizado) a FROM anp_vendas_sc WHERE cod_ibge=$1`, [cod]))[0]?.a;
+  return { ano: ult, produtos, serie: [...porAno.entries()].sort((a, b) => a[0] - b[0]).map(([ano, v]) => ({ ano, valor: v })), extraido: dExtr(atualizado) };
+}
+
+// STN CAPAG — capacidade de pagamento (nota A/B/C/D + 3 indicadores) por município. Fonte: Tesouro Transparente.
+export async function getCapagSC(cod: string): Promise<{ nota: string; endividamento: number | null; endivNota: string; poupanca: number | null; poupNota: string; liquidez: number | null; liqNota: string; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT nota, endividamento, endiv_nota, poupanca, poup_nota, liquidez, liq_nota, atualizado FROM capag_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !r.nota) return null;
+  const nn = (v: unknown) => (v == null ? null : num(v));
+  return { nota: String(r.nota), endividamento: nn(r.endividamento), endivNota: String(r.endiv_nota || ""), poupanca: nn(r.poupanca), poupNota: String(r.poup_nota || ""), liquidez: nn(r.liquidez), liqNota: String(r.liq_nota || ""), extraido: dExtr(r.atualizado) };
+}
+
+// IBGE produção agropecuária (PAM/PPM) + empresas (CEMPRE) por município. Fonte: SIDRA.
+export async function getIbgeProducaoSC(cod: string): Promise<{ vbpAgricola: number; areaColhida: number; bovino: number; suino: number; aves: number; nEmpresas: number; pessoalOcupado: number; salarioSm: number; pamAno: number; ppmAno: number; cempreAno: number; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT vbp_agricola, area_colhida_ha, efetivo_bovino, efetivo_suino, efetivo_aves, n_empresas, pessoal_ocupado, salario_sm, pam_ano, ppm_ano, cempre_ano, atualizado FROM ibge_producao_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r) return null;
+  return { vbpAgricola: num(r.vbp_agricola), areaColhida: num(r.area_colhida_ha), bovino: num(r.efetivo_bovino), suino: num(r.efetivo_suino), aves: num(r.efetivo_aves), nEmpresas: num(r.n_empresas), pessoalOcupado: num(r.pessoal_ocupado), salarioSm: num(r.salario_sm), pamAno: num(r.pam_ano), ppmAno: num(r.ppm_ano), cempreAno: num(r.cempre_ano), extraido: dExtr(r.atualizado) };
+}
+
+// PRONAF crédito rural (agricultura familiar) por município — total + custeio/investimento + série. Fonte: BCB SICOR.
+export async function getPronafSC(cod: string): Promise<{ ano: number; total: number; custeio: number; investimento: number; serie: SerieAno; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, vl_total, vl_custeio, vl_investimento, atualizado FROM pronaf_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const u = rows[rows.length - 1];
+  return { ano: num(u.ano), total: num(u.vl_total), custeio: num(u.vl_custeio), investimento: num(u.vl_investimento), serie: rows.map((r) => ({ ano: num(r.ano), valor: num(r.vl_total) })), extraido: dExtr(u.atualizado) };
+}
+
+// INCRA assentamentos da reforma agrária por município — nº + famílias + área + série cumulativa. Fonte: INCRA/MDA (SIPRA).
+export async function getIncraAssentamentosSC(cod: string): Promise<{ nAssentamentos: number; familias: number; areaHa: number; serie: SerieAno; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT n_assentamentos, familias, area_ha, serie, atualizado FROM incra_assentamentos_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.n_assentamentos)) return null;
+  return { nAssentamentos: num(r.n_assentamentos), familias: num(r.familias), areaHa: num(r.area_ha), serie: ((r.serie as { ano: number; valor: number }[]) || []).map((s) => ({ ano: s.ano, valor: s.valor })), extraido: dExtr(r.atualizado) };
+}
+
+// SINESP/SENASP — vítimas de crimes violentos letais por município, série anual. Fonte: dados abertos Min. Justiça.
+export async function getSinespSC(cod: string): Promise<{ total: number; anoIni: number; anoFim: number; serie: SerieAno; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT vitimas_total, ano_ini, ano_fim, serie, atualizado FROM sinesp_vitimas_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r) return null;
+  return { total: num(r.vitimas_total), anoIni: num(r.ano_ini), anoFim: num(r.ano_fim), serie: ((r.serie as { ano: number; valor: number }[]) || []).map((s) => ({ ano: s.ano, valor: s.valor })), extraido: dExtr(r.atualizado) };
+}
+
+// IBAMA autos de infração ambiental por município — nº autos + valor multas + recentes + série. Fonte: dados abertos IBAMA.
+export async function getIbamaAutosSC(cod: string): Promise<{ nAutos: number; valorMi: number; nRecentes: number; serie: SerieAno; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT n_autos, valor_total, n_recentes, serie, atualizado FROM ibama_autos_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.n_autos)) return null;
+  return { nAutos: num(r.n_autos), valorMi: +(num(r.valor_total) / 1e6).toFixed(1), nRecentes: num(r.n_recentes), serie: ((r.serie as { ano: number; valor: number }[]) || []).map((s) => ({ ano: s.ano, valor: s.valor })), extraido: dExtr(r.atualizado) };
+}
+
+// SENATRAN Frota de veículos por município — total + automóvel + motocicleta + série anual. Fonte: Min. Transportes.
+export async function getFrotaSC(cod: string): Promise<{ ano: number; total: number; automovel: number; motocicleta: number; serie: SerieAno; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, total, automovel, motocicleta, atualizado FROM frota_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const u = rows[rows.length - 1];
+  return { ano: num(u.ano), total: num(u.total), automovel: num(u.automovel), motocicleta: num(u.motocicleta), serie: rows.map((r) => ({ ano: num(r.ano), valor: num(r.total) })), extraido: dExtr(u.atualizado) };
+}
+
+// ANATEL Banda Larga Fixa por município — acessos (assinaturas) + série anual. Fonte: dados abertos ANATEL.
+export async function getAnatelBlSC(cod: string): Promise<{ ano: number; acessos: number; serie: SerieAno; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT ano_atual, acessos, serie, atualizado FROM anatel_bl_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.acessos)) return null;
+  return { ano: num(r.ano_atual), acessos: num(r.acessos), serie: ((r.serie as { ano: number; valor: number }[]) || []).map((s) => ({ ano: s.ano, valor: s.valor })), extraido: dExtr(r.atualizado) };
+}
+
+// ANEEL Geração Distribuída por município — nº empreendimentos + potência (MW) + fontes + série acumulada. Fonte: dados abertos ANEEL.
+export async function getAneelGdSC(cod: string): Promise<{ nEmpreend: number; potenciaMw: number; topFontes: { fonte: string; n: number }[]; serie: SerieAno; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT n_empreendimentos, potencia_kw, top_fontes, serie, atualizado FROM aneel_gd_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.n_empreendimentos)) return null;
+  return { nEmpreend: num(r.n_empreendimentos), potenciaMw: +(num(r.potencia_kw) / 1000).toFixed(1), topFontes: (r.top_fontes as { fonte: string; n: number }[]) || [], serie: ((r.serie as { ano: number; valor: number }[]) || []).map((s) => ({ ano: s.ano, valor: s.valor })), extraido: dExtr(r.atualizado) };
+}
+
+// SINAN arboviroses (dengue+zika+chikungunya) por município — casos + série (dengue) + zika/chik. Fonte: InfoDengue (SINAN).
+export async function getArbovirosesSC(cod: string): Promise<{ dengueAno: number; dengueCasos: number; dengueIncidencia: number | null; dengueNivel: number; serie: SerieAno; zika: number; chik: number; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT doenca, ano, casos, incidencia_100k, nivel_max, atualizado FROM arboviroses_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const den = rows.filter((r) => r.doenca === "dengue");
+  const ultDen = den[den.length - 1];
+  const sumDis = (d: string) => rows.filter((r) => r.doenca === d).reduce((s, r) => s + num(r.casos), 0);
+  if (!ultDen && !sumDis("zika") && !sumDis("chikungunya")) return null;
+  return { dengueAno: num(ultDen?.ano), dengueCasos: num(ultDen?.casos), dengueIncidencia: ultDen?.incidencia_100k == null ? null : num(ultDen.incidencia_100k), dengueNivel: num(ultDen?.nivel_max), serie: den.map((r) => ({ ano: num(r.ano), valor: num(r.casos) })), zika: sumDis("zika"), chik: sumDis("chikungunya"), extraido: dExtr((ultDen || rows[rows.length - 1]).atualizado) };
+}
+
+// PRF DATATRAN acidentes em rodovias federais por município — nº + mortos + feridos + série. Fonte: PRF dados abertos.
+export async function getDatatranSC(cod: string): Promise<{ ano: number; nAcidentes: number; mortos: number; feridos: number; totalMortos: number; serie: SerieAno; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, n_acidentes, mortos, feridos, atualizado FROM datatran_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const u = rows[rows.length - 1];
+  return { ano: num(u.ano), nAcidentes: num(u.n_acidentes), mortos: num(u.mortos), feridos: num(u.feridos), totalMortos: rows.reduce((s, r) => s + num(r.mortos), 0), serie: rows.map((r) => ({ ano: num(r.ano), valor: num(r.n_acidentes) })), extraido: dExtr(u.atualizado) };
+}
+
+// SINAN arboviroses (dengue) por município — casos + incidência/100k + nível de alerta, série anual. Fonte: InfoDengue (SINAN).
+export async function getSinanDengueSC(cod: string): Promise<{ ano: number; casos: number; incidencia: number | null; nivelMax: number; serie: SerieAno; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, casos, incidencia_100k, nivel_max, atualizado FROM sinan_dengue_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const ult = rows[rows.length - 1];
+  return { ano: num(ult.ano), casos: num(ult.casos), incidencia: ult.incidencia_100k == null ? null : num(ult.incidencia_100k), nivelMax: num(ult.nivel_max), serie: rows.map((r) => ({ ano: num(r.ano), valor: num(r.casos) })), extraido: dExtr(ult.atualizado) };
+}
+
+// SINISA (sucessor do SNIS) — atendimento água/esgoto/resíduos por município, ref. 2024, com SÉRIE encadeada ao SNIS (2015-2022).
+export async function getSinisaSC(cod: string): Promise<{ ano: number; agua: number | null; esgoto: number | null; residuos: number | null; serieAgua: SerieAno; serieEsgoto: SerieAno; extraido: string | null } | null> {
+  const [cur, snis] = await Promise.all([
+    query<Record<string, unknown>>(`SELECT ano, agua_atend, esgoto_atend, residuos_atend, atualizado FROM sinisa_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT ano, max(atend_agua) ag, max(atend_esgoto) es FROM snis_sc WHERE cod_ibge=$1 AND ano>=2015 GROUP BY ano ORDER BY ano`, [cod]).catch(() => []),
+  ]);
+  const r = cur[0]; if (!r) return null;
+  const nn = (v: unknown) => (v == null ? null : num(v));
+  const agua = nn(r.agua_atend), esgoto = nn(r.esgoto_atend);
+  // série = SNIS (2015-2022) + o ponto SINISA 2024 (fontes encadeadas)
+  const serieAgua = [...snis.filter((s) => s.ag != null).map((s) => ({ ano: num(s.ano), valor: num(s.ag) })), ...(agua != null ? [{ ano: 2024, valor: agua }] : [])];
+  const serieEsgoto = [...snis.filter((s) => s.es != null).map((s) => ({ ano: num(s.ano), valor: num(s.es) })), ...(esgoto != null ? [{ ano: 2024, valor: esgoto }] : [])];
+  return { ano: num(r.ano), agua, esgoto, residuos: nn(r.residuos_atend), serieAgua, serieEsgoto, extraido: dExtr(r.atualizado) };
+}
+
+// Desastres (S2ID via Atlas Digital CEPED/UFSC + Sedec/MIDR) por município — registros 1991-2025, danos humanos, série anual.
+export async function getDesastresSC(cod: string): Promise<{ nDesastres: number; nRecentes: number; mortos: number; afetados: number; desalojados: number; anoUltimo: number; topTipos: { tipo: string; n: number }[]; serie: SerieAno; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT n_desastres, n_recentes, mortos, afetados, desalojados, ano_ultimo, top_tipos, serie, atualizado FROM desastres_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.n_desastres)) return null;
+  return { nDesastres: num(r.n_desastres), nRecentes: num(r.n_recentes), mortos: num(r.mortos), afetados: num(r.afetados), desalojados: num(r.desalojados), anoUltimo: num(r.ano_ultimo), topTipos: (r.top_tipos as { tipo: string; n: number }[]) || [], serie: ((r.serie as { ano: number; n: number }[]) || []).map((s) => ({ ano: s.ano, valor: s.n })), extraido: dExtr(r.atualizado) };
+}
+
+// Mapa ambiental (coroplético) — todos os municípios de SC com polígono + desmatamento e focos, p/ pintar por intensidade.
+export type FeatureAmbiental = { codIbge: string; nome: string; desmat: number; focos: number; atual: boolean; geom: unknown };
+export async function getMapaAmbientalSC(cod: string): Promise<{ features: FeatureAmbiental[]; atualDesmat: number; atualFocos: number; posDesmat: number; totalMunis: number; scDesmat: number; nome: string; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`
+    SELECT m.cod_ibge, e.nome, ST_AsGeoJSON(ST_Simplify(m.geom, 0.008)) geom,
+      round(coalesce((SELECT sum(area_km2) FROM prodes_sc WHERE cod_ibge=m.cod_ibge),0)::numeric,2) desmat,
+      coalesce((SELECT sum(focos) FROM queimadas_sc WHERE cod_ibge=m.cod_ibge),0) focos
+    FROM municipios_geo m JOIN entes_sc e ON e.cod_ibge=m.cod_ibge WHERE left(m.cod_ibge,2)='42'`).catch(() => []);
+  if (!rows.length) return null;
+  const feats = rows.map((r) => ({ codIbge: String(r.cod_ibge), nome: String(r.nome), desmat: num(r.desmat), focos: num(r.focos), atual: String(r.cod_ibge) === cod, geom: JSON.parse(String(r.geom || "null")) }));
+  const atual = feats.find((f) => f.atual);
+  const posDesmat = feats.filter((f) => f.desmat > (atual?.desmat ?? -1)).length + 1;
+  const ext = (await query<Record<string, unknown>>(`SELECT max(atualizado) a FROM prodes_sc`).catch(() => []))[0];
+  return { features: feats, atualDesmat: atual?.desmat ?? 0, atualFocos: atual?.focos ?? 0, posDesmat, totalMunis: feats.length, scDesmat: Math.round(feats.reduce((s, f) => s + f.desmat, 0)), nome: atual?.nome ?? "", extraido: dExtr(ext?.a) };
+}
+
+// PRODES — desmatamento (Mata Atlântica) por município, km²/ano. Interseção espacial PostGIS (polígonos INPE × malha IBGE).
+export async function getProdesSC(cod: string): Promise<{ total: number; serie: SerieAno; ultimoAno: number; ultimoArea: number; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, area_km2, atualizado FROM prodes_sc WHERE cod_ibge=$1 AND area_km2>0 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const ult = rows[rows.length - 1];
+  return { total: rows.reduce((s, r) => s + num(r.area_km2), 0), serie: rows.map((r) => ({ ano: num(r.ano), valor: num(r.area_km2) })), ultimoAno: num(ult.ano), ultimoArea: num(ult.area_km2), extraido: dExtr(ult.atualizado) };
+}
+
 // CAGED — saldo de empregos formais por município (admissões − desligamentos), série mensal. Complemento econômico do BNDES.
 export async function getCagedSC(cod: string): Promise<{ saldoAcum: number; admissoes: number; desligamentos: number; ultimoMes: string; serie: { periodo: string; saldo: number }[]; extraido: string | null } | null> {
   const rows = await query<Record<string, unknown>>(`SELECT ano, mes, saldo, admissoes, desligamentos, atualizado FROM caged_sc WHERE cod_ibge=$1 ORDER BY ano, mes`, [cod]).catch(() => []);
@@ -2883,6 +3092,25 @@ export async function getCagedSC(cod: string): Promise<{ saldoAcum: number; admi
     desligamentos: rows.reduce((s, r) => s + num(r.desligamentos), 0),
     ultimoMes: per(ult), serie: rows.map((r) => ({ periodo: per(r), saldo: num(r.saldo) })), extraido: dExtr(ult.atualizado),
   };
+}
+
+// RAIS — estoque de emprego formal por município (foto anual em 31/dez). Complementa o CAGED (fluxo).
+export async function getRaisSC(cod: string): Promise<{ ano: number; estoque: number; massaSalarial: number; remunMedia: number; estabelecimentos: number; porSetor: { setor: string; n: number }[]; porPorte: { porte: string; n: number }[]; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT ano, estoque, massa_salarial, remun_media, estabelecimentos, por_setor, por_porte, atualizado FROM rais_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  if (!r) return null;
+  return { ano: num(r.ano), estoque: num(r.estoque), massaSalarial: num(r.massa_salarial), remunMedia: num(r.remun_media), estabelecimentos: num(r.estabelecimentos), porSetor: (r.por_setor as { setor: string; n: number }[]) || [], porPorte: (r.por_porte as { porte: string; n: number }[]) || [], extraido: dExtr(r.atualizado) };
+}
+
+// Casamento estoque-fluxo HONESTO: estoque RAIS (foto dez) + saldo CAGED acumulado desde então = estoque estimado hoje.
+// Rótulo de ESTIMATIVA (não dado oficial), gap transparente. RAIS e CAGED têm escopos distintos → não fecham 100%.
+export async function getCasamentoEmpregoSC(cod: string): Promise<{ raisAno: number; estoqueRais: number; saldoCaged: number; estoqueEstimado: number; ateMes: string; meses: number; extraido: string | null } | null> {
+  const rais = (await query<Record<string, unknown>>(`SELECT ano, estoque, atualizado FROM rais_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  if (!rais) return null;
+  const anoRais = num(rais.ano);
+  const cg = (await query<Record<string, unknown>>(`SELECT coalesce(sum(saldo),0) saldo, count(*) n, max(ano*100+mes) ate, max(atualizado) atual FROM caged_sc WHERE cod_ibge=$1 AND ano>$2`, [cod, anoRais]).catch(() => []))[0];
+  const saldo = num(cg?.saldo), ate = num(cg?.ate);
+  const ateMes = ate ? `${String(ate % 100).padStart(2, "0")}/${Math.floor(ate / 100)}` : "—";
+  return { raisAno: anoRais, estoqueRais: num(rais.estoque), saldoCaged: saldo, estoqueEstimado: num(rais.estoque) + saldo, ateMes, meses: num(cg?.n), extraido: dExtr(cg?.atual || rais.atualizado) };
 }
 
 // Equipamentos esportivos públicos georreferenciados (OSM) — contagem por tipo; plotados no mapa (camada Esporte).

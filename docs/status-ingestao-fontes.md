@@ -17,6 +17,8 @@ Todas: coletor idempotente (UPSERT), state-agnostic (UF via env), registradas no
 | **ANS cobertura** | ANS | `ans_cobertura_sc` | `ingest_ans_cobertura_sc.mjs` | 2026 × pop IBGE 2025 | Saúde | 90d | `dadosabertos.ans.gov.br/.../taxa_de_cobertura-047/pda-047-taxa_cobertura.csv` |
 | **CAGED** saldo empregos | MTE/PDET | `caged_sc` | `ingest_caged_sc.mjs` | 2026 YTD (mensal) | Sistema Financeiro | 30d | FTP `ftp://ftp.mtps.gov.br/pdet/microdados/NOVO CAGED/` (.7z via 7zip-min) |
 | **Equipamentos esportivos** | OpenStreetMap | `equipamentos_esporte_sc` | `ingest_equipamentos_esporte_sc.mjs` | atual (3.078 pts) | Esporte + mapa | 90d | Overpass `leisure=pitch/sports_centre/stadium/track/fitness` |
+| **RAIS** estoque emprego | MTE/PDET | `rais_sc` | `ingest_rais_sc.mjs` | 2024 (2,86mi empregos SC) | Base Econômica (RAIS) | 180d | FTP `RAIS_VINC_PUB_SUL.7z`+`RAIS_ESTAB_PUB.7z` (.COMT, CSV vírgula+aspas, decimal ponto) |
+| **Casamento RAIS×CAGED** | derivado (MTE) | rais_sc + caged_sc | (query getCasamentoEmpregoSC) | estoque + fluxo | Base Econômica (Emprego) | — | estoque RAIS 2024 + Σ saldo CAGED 2025-26 = ESTIMATIVA rotulada (escopos diferentes → não fecha 100%) |
 
 Notas de fidelidade: CFEM distribuição pública encerra em 2020; ANP cobre só ~33 munis pesquisados; ANS = pressão latente sobre o SUS (beneficiários ÷ população IBGE, anos casados: ANS 2026 × estimativa IBGE 2025, a mais recente — 2026 do IBGE ainda não publicada); vitais substitui SIM/SINASC (DATASUS DBC/TabNet difícil), SINAN/agravos ainda falta.
 
@@ -26,7 +28,7 @@ Notas de fidelidade: CFEM distribuição pública encerra em 2020; ANP cobre só
 | ✅ | ESTBAN (crédito/poupança) | BCB | `estban_sc` | série 38 meses |
 | ✅ | Pix (transações PF/PJ) | BCB | `pix_municipio_sc` | série 24 meses |
 | ✅ | **BNDES desembolsos** | BNDES | `bndes_sc` | 1995-2026, R$97,6bi · aba Sistema Financeiro · CSV |
-| ❌ | **RAIS** (vínculos formais) | MTE | — | FTP/BigQuery |
+| ✅ | **RAIS** (estoque emprego formal) | MTE | `rais_sc` | 2024, 2,86mi empregos SC · Base Econômica · casado c/ CAGED |
 | ✅ | **Novo CAGED** (saldo empregos) | MTE | `caged_sc` | 2026 YTD, +60k empregos · aba Sistema Financeiro · CSV (FTP .7z) |
 | ❌ | **RFB CNPJ** (empresas/CNAE/MEI) | Receita | — | CSV ~20GB (frente dedicada) |
 | ❌ | **RFB Arrecadação** | Receita | — | XLSX |

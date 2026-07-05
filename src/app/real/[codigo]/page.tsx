@@ -66,10 +66,11 @@ import { EquipamentosSuasDrill } from "@/components/equipamentos-suas-drill";
 import { GeolocalizacaoLazy } from "@/components/geolocalizacao-lazy";
 import { InfraestruturaSC } from "@/components/infraestrutura-sc";
 import { AcessoFinanceiro } from "@/components/acesso-financeiro-sc";
-import { BndesPanel, VitaisPanel, AnpPanel, CfemPanel, QueimadasPanel, BolsaAtletaPanel, AnsCoberturaPanel, EquipamentosEsportePanel, CagedPanel } from "@/components/novas-fontes";
+import { BndesPanel, VitaisPanel, AnpPanel, CfemPanel, QueimadasPanel, BolsaAtletaPanel, AnsCoberturaPanel, EquipamentosEsportePanel, CagedPanel, RaisPanel, CasamentoEmpregoPanel, ProdesPanel, DesastresPanel, SinisaPanel, SinanDenguePanel, AneelGdPanel, AnatelBlPanel, FrotaPanel, IbamaAutosPanel, SinespPanel, IncraAssentamentosPanel, PronafPanel, IcmbioUcPanel, AnaOutorgasPanel, IbgeProducaoPanel, IbgeCemprePanel, ArbovirosesPanel, DatatranPanel, AnpVendasPanel, CapagPanel, RfbArrecadacaoPanel, SimPanel, SinascPanel, SihPanel, IgdmPanel } from "@/components/novas-fontes";
 import { FundebPainel } from "@/components/fundeb-painel";
 import { IndicadoresInep } from "@/components/indicadores-inep";
 import { DividaPanel } from "@/components/divida-panel";
+import { MapaAmbiental } from "@/components/mapa-ambiental";
 import { Agropecuaria } from "@/components/agropecuaria-sc";
 import { ViesPrevisao } from "@/components/vies-previsao";
 import { RepassesStn } from "@/components/repasses-stn";
@@ -98,7 +99,7 @@ import type { FuncaoSC, ReceitaSC } from "@/lib/queries";
 import { TransferenciasSCSection } from "@/components/transferencias-sc-section";
 import { PanelTabs } from "@/components/panel-tabs";
 import { RealSelector } from "@/components/real-selector";
-import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getAnaliseComprasItensSC, getSazonalidadePrecoSC, getFornecedoresSC, getComprasExtraSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getEmendasSC, getConveniosSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPerfilSaudeSC, getCensoTendenciaSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC, getComprasCategoriasSC, getPerfilNecessidadeSC, getProgramasFederaisSC, getRadarCrpSC, getCrpHistoricoSC, getAssistenciaSocialSC, getEquipamentosSuasSC, getPrecatoriosSC, getSaneamentoSC, getViesPrevisaoSC, getMacroindicadoresSC, getViesDespesaSC, getProjecaoReceitaSC, getTransferenciasStnSC, getPecaCompletaSC, getPpaProgramaSC, getAcompanhamentoSC, getAcompanhamentoFuncaoSC, getMscDespesaSC, getFornecedoresSancionadosSC, getSobreprecoSC, getVariacaoInternaSC, getMunicSC, getRedFlagsSC, getAlertasSC, getCatalogoProgramasSC, getSobreprecoMedicamentosSC, getAgropecuariaSC, getCaptacaoEmendasSC, getCadernoProgramasSC, getEmendasEstaduaisSC, getEmendasEstObjetosSC, getLacunaCaptacaoEducacaoSC, getLacunaCaptacaoSaudeSC, getLacunaCaptacaoAssistenciaSC, getCatalogoExtracao, getSiopsSerieSC, getConveniosRiscoSC, getNotificacaoResumoSC, getAcessoFinanceiroSC, getFundebSC, getIndicadoresInepSC, getDividaSC, getBndesSC, getVitaisSC, getAnpSC, getCfemSC, getQueimadasSC, getBolsaAtletaSC, getAnsCoberturaSC, getEquipamentosEsporteSC, getCagedSC } from "@/lib/queries";
+import { FONTE_SICONFI, getContratosResumoSC, getCruzamentosSC, getDiagnosticoEstadoSC, getDiagnosticoGestorSC, getEntesSC, getFinancasSC, getIndicadoresSetoriaisSC, getMetasFiscaisSC, getPcaResumoSC, getPibPerCapitaSC, getEducacaoSC, getRankingFiscalSC, getFnsSC, getFnsSerieSC, getRepassesSaudeFichaSC, getMacProducaoSC, getReceitasDetalheSC, getDespesaSubfuncaoSC, getPadroesComprasSC, getContratosComItensSC, getEconomicidadeSC, getAnaliseComprasItensSC, getSazonalidadePrecoSC, getFornecedoresSC, getComprasExtraSC, getContratosVencimentoSC, getAtasSC, getIdebSC, getCensoMatriculaSC, getEducacaoSerieSC, getIegmSC, getCaptacaoTransferegovSC, getEmendasSC, getConveniosSC, getFndeEducacaoSC, getOtimizadorReceitaSC, getEficienciaEducacaoSC, getEficienciaSaudeSC, getEscolasSC, getPerfilEducacaoSC, getEstabSaudeSC, getPerfilSaudeSC, getCensoTendenciaSC, getPrevineSC, getPrevineFichaSC, getRgfResumoSC, getSaudeSC, getSeriesIndicadoresSC, getComprasDestinosSC, getRppsSC, getCaucSC, getComprasCategoriasSC, getPerfilNecessidadeSC, getProgramasFederaisSC, getRadarCrpSC, getCrpHistoricoSC, getAssistenciaSocialSC, getEquipamentosSuasSC, getPrecatoriosSC, getSaneamentoSC, getViesPrevisaoSC, getMacroindicadoresSC, getViesDespesaSC, getProjecaoReceitaSC, getTransferenciasStnSC, getPecaCompletaSC, getPpaProgramaSC, getAcompanhamentoSC, getAcompanhamentoFuncaoSC, getMscDespesaSC, getFornecedoresSancionadosSC, getSobreprecoSC, getVariacaoInternaSC, getMunicSC, getRedFlagsSC, getAlertasSC, getCatalogoProgramasSC, getSobreprecoMedicamentosSC, getAgropecuariaSC, getCaptacaoEmendasSC, getCadernoProgramasSC, getEmendasEstaduaisSC, getEmendasEstObjetosSC, getLacunaCaptacaoEducacaoSC, getLacunaCaptacaoSaudeSC, getLacunaCaptacaoAssistenciaSC, getCatalogoExtracao, getSiopsSerieSC, getConveniosRiscoSC, getNotificacaoResumoSC, getAcessoFinanceiroSC, getFundebSC, getIndicadoresInepSC, getDividaSC, getBndesSC, getVitaisSC, getAnpSC, getCfemSC, getQueimadasSC, getBolsaAtletaSC, getAnsCoberturaSC, getEquipamentosEsporteSC, getCagedSC, getRaisSC, getCasamentoEmpregoSC, getProdesSC, getMapaAmbientalSC, getDesastresSC, getSinisaSC, getSinanDengueSC, getAneelGdSC, getAnatelBlSC, getFrotaSC, getIbamaAutosSC, getSinespSC, getIncraAssentamentosSC, getPronafSC, getIcmbioUcSC, getAnaOutorgasSC, getIbgeProducaoSC, getArbovirosesSC, getDatatranSC, getAnpVendasSC, getCapagSC, getRfbArrecadacaoSC, getSimSC, getSinascSC, getSihSC, getIgdmSC } from "@/lib/queries";
 import { PainelImpacto } from "@/components/painel-impacto";
 import { ResolverAlertas } from "@/components/resolver-alertas";
 import { BoletimGestao } from "@/components/boletim-gestao";
@@ -117,9 +118,9 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
   const [dados, entes, contratosResumo, pcaResumo, metasFiscais, rankingFiscal, pibPerCapita, indicadores, serieRenda, diagnostico, rgfResumo, saude, educacao, cruz, diagEstado, previne, fns, rpps, cauc, padroesCompras, contratosItens, economicidade, contratosVenc, atas, ideb, censoMatricula] = await Promise.all([getFinancasSC(codigo), getEntesSC(), getContratosResumoSC(codigo), getPcaResumoSC(codigo), getMetasFiscaisSC(codigo), getRankingFiscalSC(), getPibPerCapitaSC(codigo), getIndicadoresSetoriaisSC(codigo), getSeriesIndicadoresSC(codigo), getDiagnosticoGestorSC(codigo), getRgfResumoSC(codigo), getSaudeSC(codigo), getEducacaoSC(codigo), getCruzamentosSC(codigo), getDiagnosticoEstadoSC(codigo), getPrevineSC(codigo), getFnsSC(codigo), getRppsSC(codigo), getCaucSC(codigo), getPadroesComprasSC(codigo), getContratosComItensSC(codigo), getEconomicidadeSC(codigo), getContratosVencimentoSC(codigo), getAtasSC(codigo), getIdebSC(codigo), getCensoMatriculaSC(codigo)]);
   const [previneFicha, fnsSerie, repassesSaude, macProducao, receitasDetalhe, despSubfuncao, educacaoSerie, iegmDados, captacao, munic, emendas, convenios, fndeEdu, otimReceita, eficEdu, sobreMed, siopsSerie, conveniosRisco] = await Promise.all([
     getPrevineFichaSC(codigo), getFnsSerieSC(codigo), getRepassesSaudeFichaSC(codigo), getMacProducaoSC(codigo), getReceitasDetalheSC(codigo), getDespesaSubfuncaoSC(codigo), getEducacaoSerieSC(codigo), getIegmSC(codigo), getCaptacaoTransferegovSC(codigo), getMunicSC(codigo), getEmendasSC(codigo), getConveniosSC(codigo), getFndeEducacaoSC(codigo), getOtimizadorReceitaSC(codigo), getEficienciaEducacaoSC(codigo), getSobreprecoMedicamentosSC(codigo), getSiopsSerieSC(codigo), getConveniosRiscoSC(codigo)]);
-  const [eficSaude, escolas, analiseItens, comprasCategorias, necessidade, alertas, assistSocial, equipSuas, precatorios, saneamento, viesPrev, macroLDO, viesDesp, projReceita, notifResumo, acessoFinanceiro, fundebPainel, indicadoresInep, divida, bndes, vitais, anp, cfem, queimadas, bolsaAtleta, ansCobertura, equipEsporte, caged] = await Promise.all([
-    getEficienciaSaudeSC(codigo), getEscolasSC(codigo), getAnaliseComprasItensSC(codigo), getComprasCategoriasSC(codigo), getPerfilNecessidadeSC(codigo), getAlertasSC(codigo), getAssistenciaSocialSC(codigo), getEquipamentosSuasSC(codigo), getPrecatoriosSC(codigo), getSaneamentoSC(codigo), getViesPrevisaoSC(codigo), getMacroindicadoresSC(codigo), getViesDespesaSC(codigo), getProjecaoReceitaSC(codigo), getNotificacaoResumoSC(codigo), getAcessoFinanceiroSC(codigo), getFundebSC(codigo), getIndicadoresInepSC(codigo), getDividaSC(codigo), getBndesSC(codigo), getVitaisSC(codigo), getAnpSC(codigo), getCfemSC(codigo), getQueimadasSC(codigo), getBolsaAtletaSC(codigo), getAnsCoberturaSC(codigo), getEquipamentosEsporteSC(codigo), getCagedSC(codigo)]);
-  const [agropec, captacaoEmendas, cadernoProgramas, emendasEstaduais, emendasEstObjetos, lacunaEdu, lacunaSaude, lacunaAssist, extracao] = await Promise.all([getAgropecuariaSC(codigo), getCaptacaoEmendasSC(codigo), getCadernoProgramasSC(codigo), getEmendasEstaduaisSC(codigo), getEmendasEstObjetosSC(), getLacunaCaptacaoEducacaoSC(codigo), getLacunaCaptacaoSaudeSC(codigo), getLacunaCaptacaoAssistenciaSC(codigo), getCatalogoExtracao()]);
+  const [eficSaude, escolas, analiseItens, comprasCategorias, necessidade, alertas, assistSocial, equipSuas, precatorios, saneamento, viesPrev, macroLDO, viesDesp, projReceita, notifResumo, acessoFinanceiro, fundebPainel, indicadoresInep, divida, bndes, vitais, anp, cfem, queimadas, bolsaAtleta, ansCobertura, equipEsporte, caged, rais, casamento, prodes, mapaAmbiental, desastres, sinisa, arboviroses, anpVendas, aneelGd, anatelBl, frota, ibamaAutos, sinesp, icmbioUc, anaOutorgas, datatran, capag, rfbArrec, sim, sinasc, sih, igdm] = await Promise.all([
+    getEficienciaSaudeSC(codigo), getEscolasSC(codigo), getAnaliseComprasItensSC(codigo), getComprasCategoriasSC(codigo), getPerfilNecessidadeSC(codigo), getAlertasSC(codigo), getAssistenciaSocialSC(codigo), getEquipamentosSuasSC(codigo), getPrecatoriosSC(codigo), getSaneamentoSC(codigo), getViesPrevisaoSC(codigo), getMacroindicadoresSC(codigo), getViesDespesaSC(codigo), getProjecaoReceitaSC(codigo), getNotificacaoResumoSC(codigo), getAcessoFinanceiroSC(codigo), getFundebSC(codigo), getIndicadoresInepSC(codigo), getDividaSC(codigo), getBndesSC(codigo), getVitaisSC(codigo), getAnpSC(codigo), getCfemSC(codigo), getQueimadasSC(codigo), getBolsaAtletaSC(codigo), getAnsCoberturaSC(codigo), getEquipamentosEsporteSC(codigo), getCagedSC(codigo), getRaisSC(codigo), getCasamentoEmpregoSC(codigo), getProdesSC(codigo), getMapaAmbientalSC(codigo), getDesastresSC(codigo), getSinisaSC(codigo), getArbovirosesSC(codigo), getAnpVendasSC(codigo), getAneelGdSC(codigo), getAnatelBlSC(codigo), getFrotaSC(codigo), getIbamaAutosSC(codigo), getSinespSC(codigo), getIcmbioUcSC(codigo), getAnaOutorgasSC(codigo), getDatatranSC(codigo), getCapagSC(codigo), getRfbArrecadacaoSC(codigo), getSimSC(codigo), getSinascSC(codigo), getSihSC(codigo), getIgdmSC(codigo)]);
+  const [agropec, captacaoEmendas, cadernoProgramas, emendasEstaduais, emendasEstObjetos, lacunaEdu, lacunaSaude, lacunaAssist, extracao, incraAssent, pronaf, ibgeProducao] = await Promise.all([getAgropecuariaSC(codigo), getCaptacaoEmendasSC(codigo), getCadernoProgramasSC(codigo), getEmendasEstaduaisSC(codigo), getEmendasEstObjetosSC(), getLacunaCaptacaoEducacaoSC(codigo), getLacunaCaptacaoSaudeSC(codigo), getLacunaCaptacaoAssistenciaSC(codigo), getCatalogoExtracao(), getIncraAssentamentosSC(codigo), getPronafSC(codigo), getIbgeProducaoSC(codigo)]);
   const [repassesStn, pecaCompleta, ppaPrograma, mscDespesa, fornecSancionados, sobrepreco, variacaoInterna, redFlags, acompanhamento, acompFuncao, programasFederais, catalogoProgramas, sazPreco, fornec, comprasExtra] = await Promise.all([
     getTransferenciasStnSC(codigo), getPecaCompletaSC(codigo), getPpaProgramaSC(codigo), getMscDespesaSC(codigo), getFornecedoresSancionadosSC(codigo), getSobreprecoSC(codigo), getVariacaoInternaSC(codigo), getRedFlagsSC(codigo), getAcompanhamentoSC(codigo), getAcompanhamentoFuncaoSC(codigo), getProgramasFederaisSC(), getCatalogoProgramasSC(), getSazonalidadePrecoSC(), getFornecedoresSC(codigo), getComprasExtraSC(codigo)]);
   const estabSaude = await getEstabSaudeSC(codigo);
@@ -299,7 +300,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       label: "Finanças",
       content: (
         <>
-          {divida && <div className="mb-4"><DividaPanel data={divida} nome={ente.nome} /></div>}{cfem && <div className="mb-4"><CfemPanel d={cfem} /></div>}
+          {divida && <div className="mb-4"><DividaPanel data={divida} nome={ente.nome} /></div>}{capag && <div className="mb-4"><CapagPanel d={capag} /></div>}{cfem && <div className="mb-4"><CfemPanel d={cfem} /></div>}
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <Carimbo fonte="SICONFI · RREO (Tesouro Nacional)" competencia={`série ${dados.serie[0]?.ano}–${a.ano}`} extraido={extracao.financas} />
             <BaixarCsv nome={`serie-financeira-${ente.nome}`} label="Baixar série financeira (CSV)" linhas={dados.serie as unknown as Record<string, unknown>[]}
@@ -890,7 +891,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       <>
         <CabecalhoArea titulo="Saúde" intro="Como a saúde do município está hoje, o que a lei exige, o que fazer e onde aprofundar — da visão geral ao indicador." conformidade={saudeConf} indicadores={saudeInd} insights={insights.filter((i) => /sa[úu]de/i.test(i.area))} links={saudeLinks} /><CarimboFontes className="mb-3 mt-1" fontes={["SIOPS (DATASUS)", "CNES", "FNS", "Previne/SISAB"]} />
         {siopsSerie.length > 0 && <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><Carimbo fonte="SIOPS · Ministério da Saúde (DATASUS)" competencia={`aplicação em saúde (ASPS) · série ${siopsSerie[0]?.ano}–${siopsSerie[siopsSerie.length - 1]?.ano}`} extraido={extracao.siops} /><BaixarCsv nome={`siops-ficha-${ente.nome}`} label="Baixar ficha SIOPS (CSV)" colunas={[{ chave: "ano", rotulo: "Ano" }, { chave: "saudePct", rotulo: "Aplicado em saude (%)" }, { chave: "saudeMin", rotulo: "Minimo constitucional (%)" }, { chave: "saudeValor", rotulo: "Valor aplicado saude" }, { chave: "transfSaudeValor", rotulo: "Transferencias saude" }, { chave: "transfUniaoValor", rotulo: "Transferencias da Uniao" }]} linhas={siopsSerie as unknown as Record<string, unknown>[]} /></div>}
-        {vitais && <div className="mb-4"><VitaisPanel d={vitais} /></div>}{ansCobertura && <div className="mb-4"><AnsCoberturaPanel d={ansCobertura} /></div>}<div className="mb-4"><AnaliseSaude previne={previne} fns={fns} saude={saude} nome={ente.nome} /></div>
+        {vitais && <div className="mb-4"><VitaisPanel d={vitais} /></div>}{ansCobertura && <div className="mb-4"><AnsCoberturaPanel d={ansCobertura} /></div>}{arboviroses && <div className="mb-4"><ArbovirosesPanel d={arboviroses} /></div>}{sim && <div className="mb-4"><SimPanel d={sim} /></div>}{sinasc && <div className="mb-4"><SinascPanel d={sinasc} /></div>}{sih && <div className="mb-4"><SihPanel d={sih} /></div>}<div className="mb-4"><AnaliseSaude previne={previne} fns={fns} saude={saude} nome={ente.nome} /></div>
         <SaudeSC data={saude} previne={previne} fns={fns} />
         {eficSaude && <div className="mt-4"><EficienciaSaude dados={eficSaude} nome={ente.nome} /></div>}
         {sobreMed && <div className="mt-4"><SobreprecoMedicamentos data={sobreMed} nome={ente.nome} /></div>}
@@ -938,24 +939,26 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     tabs.push({ id: "assistencia", label: "Assistência — visão geral", content: <>
       <CabecalhoArea titulo="Assistência Social" intro={`A rede de proteção social de ${ente.nome}: cobertura (CRAS/CREAS), demanda (CadÚnico e pobreza), transferência de renda (Bolsa Família) e o cofinanciamento federal (FNAS) — da visão geral à série histórica.`} conformidade={assistConf} indicadores={assistInd} insights={insights.filter((i) => /assist/i.test(i.area))} links={[]} /><CarimboFontes className="mb-3 mt-1" fontes={["SUAS/MDS", "CadÚnico", "FNAS", "MI Social"]} />
       <AssistenciaSocialSC data={assistSocial} nome={ente.nome} />
+      {igdm && <div className="mt-4"><IgdmPanel d={igdm} /></div>}
       <div className="mt-4"><CatalogoBoasPraticas area="assistencia" /></div>
       <div className="mt-4"><BaseMetodologica area="assistencia" /></div>
     </> });
   }
   if (equipSuas) tabs.push({ id: "equipamentos-assistencia", label: "Equipamentos", content: <EquipamentosSuasDrill dados={equipSuas} nome={ente.nome} /> });
   tabs.push({ id: "geolocalizacao", label: "Geolocalização", content: <GeolocalizacaoLazy codigo={codigo} nome={ente.nome} /> });
-  if (saneamento) tabs.push({ id: "infraestrutura", label: "Saneamento", content: <><CarimboFontes className="mb-3" fontes={["IBGE Censo 2022", "SNIS (Min. Cidades)"]} /><InfraestruturaSC data={saneamento} nome={ente.nome} />{anp && <div className="mt-4"><AnpPanel d={anp} /></div>}</> });
-  if (queimadas) tabs.push({ id: "defesa_civil", label: "Defesa Civil", content: (
+  if (saneamento) tabs.push({ id: "infraestrutura", label: "Saneamento", content: <><CarimboFontes className="mb-3" fontes={["IBGE Censo 2022", "SNIS (Min. Cidades)"]} /><InfraestruturaSC data={saneamento} nome={ente.nome} />{sinisa && <div className="mt-4"><SinisaPanel d={sinisa} /></div>}{aneelGd && <div className="mt-4"><AneelGdPanel d={aneelGd} /></div>}{anatelBl && <div className="mt-4"><AnatelBlPanel d={anatelBl} /></div>}{frota && <div className="mt-4"><FrotaPanel d={frota} /></div>}{anp && <div className="mt-4"><AnpPanel d={anp} /></div>}{anpVendas && <div className="mt-4"><AnpVendasPanel d={anpVendas} /></div>}</> });
+  if (queimadas || prodes) tabs.push({ id: "meio_ambiente", label: "Meio Ambiente e Defesa Civil", content: (
     <div className="space-y-3">
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
-        <div className="text-sm font-semibold text-slate-800">Defesa Civil — monitoramento de risco</div>
-        <p className="mt-1 text-sm text-slate-600">Focos de calor (queimadas) por satélite — sinal de risco de incêndio e estiagem no território. Outras fontes de defesa civil (desastres S2ID) a integrar.</p>
+        <div className="text-sm font-semibold text-slate-800">Meio Ambiente e Defesa Civil — pressão sobre o território</div>
+        <p className="mt-1 text-sm text-slate-600">Focos de calor (queimadas, INPE) e desmatamento (PRODES, Mata Atlântica) por município — os dois sinais de pressão ambiental no território. Também usados como alerta de risco pela Defesa Civil.</p>
       </div>
-      <QueimadasPanel d={queimadas} />
+      {desastres && <DesastresPanel d={desastres} />}{queimadas && <QueimadasPanel d={queimadas} />}
+      {prodes && <ProdesPanel d={prodes} />}{ibamaAutos && <IbamaAutosPanel d={ibamaAutos} />}{icmbioUc && <IcmbioUcPanel d={icmbioUc} />}{anaOutorgas && <AnaOutorgasPanel d={anaOutorgas} />}{mapaAmbiental && <MapaAmbiental data={mapaAmbiental} nome={ente.nome} />}
     </div>
   ) });
-  if (acessoFinanceiro) tabs.push({ id: "financeiro", label: "Sistema Financeiro", content: (<><AcessoFinanceiro data={acessoFinanceiro} nome={ente.nome} />{bndes && <div className="mt-4"><BndesPanel d={bndes} /></div>}{caged && <div className="mt-4"><CagedPanel d={caged} /></div>}</>) });
-  if (agropec) tabs.push({ id: "agropecuaria", label: "Agropecuária", content: <><CarimboFontes className="mb-3" fontes={["Censo Agro 2017 (IBGE)", "CAF (MDA)", "CAR (SICAR)", "PRONAF (BCB)"]} /><Agropecuaria data={agropec} nome={ente.nome} /></> });
+  if (acessoFinanceiro) tabs.push({ id: "financeiro", label: "Sistema Financeiro", content: (<><AcessoFinanceiro data={acessoFinanceiro} nome={ente.nome} />{rfbArrec && <div className="mt-4"><RfbArrecadacaoPanel d={rfbArrec} /></div>}{bndes && <div className="mt-4"><BndesPanel d={bndes} /></div>}{caged && <div className="mt-4"><CagedPanel d={caged} /></div>}</>) });
+  if (agropec) tabs.push({ id: "agropecuaria", label: "Agropecuária", content: <><CarimboFontes className="mb-3" fontes={["Censo Agro 2017 (IBGE)", "CAF (MDA)", "CAR (SICAR)", "PRONAF (BCB)"]} /><Agropecuaria data={agropec} nome={ente.nome} />{ibgeProducao && <div className="mt-4"><IbgeProducaoPanel d={ibgeProducao} /></div>}{pronaf && <div className="mt-4"><PronafPanel d={pronaf} /></div>}{incraAssent && <div className="mt-4"><IncraAssentamentosPanel d={incraAssent} /></div>}</> });
   if (acompanhamento) tabs.push({ id: "acompanhamento", label: "Acompanhamento", content: <><Carimbo className="mb-3" fonte="SICONFI · RREO (Tesouro Nacional)" competencia="execução intra-anual — RREO do bimestre" extraido={extracao.financas} /><Acompanhamento data={acompanhamento} nome={ente.nome} />{acompFuncao && <div className="mt-3"><AcompanhamentoFuncao data={acompFuncao} nome={ente.nome} /></div>}</> });
   if (viesPrev || repassesStn) tabs.push({ id: "planejamento", label: "Planejamento", content: <>
     {repassesStn && <RepassesStn data={repassesStn} nome={ente.nome} />}
@@ -1012,6 +1015,8 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     <div className="mt-4"><EscolasDrill dados={escolas} nome={ente.nome} /></div>
   </> });
 
+  if (rais) tabs.push({ id: "rais", label: "RAIS — emprego formal", content: <div className="space-y-4"><RaisPanel d={rais} />{ibgeProducao && <IbgeCemprePanel d={ibgeProducao} />}</div> });
+  if (casamento) tabs.push({ id: "emprego", label: "Emprego (RAIS × CAGED)", content: <CasamentoEmpregoPanel d={casamento} /> });
   if (bolsaAtleta) tabs.push({ id: "esporte", label: "Esporte", content: (
     <div className="space-y-3">
       <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
@@ -1021,7 +1026,16 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       <BolsaAtletaPanel d={bolsaAtleta} />{equipEsporte && <EquipamentosEsportePanel d={equipEsporte} />}
     </div>
   ) });
-  // navegação temática (7 clusters): Resumo · Finanças · Compras & Contratos · Saúde · Educação · Equipamentos · Análise & Controle
+  if (sinesp) tabs.push({ id: "seguranca", label: "Segurança", content: (
+    <div className="space-y-3">
+      <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
+        <div className="text-sm font-semibold text-slate-800">Segurança pública</div>
+        <p className="mt-1 text-sm text-slate-600">Indicadores oficiais por município (dados abertos SINESP/MJSP). Exibição neutra, sem juízo de gestão. Espaço para crescer: acidentes de trânsito (RENAEST) e violência por causas externas (DATASUS).</p>
+      </div>
+      <SinespPanel d={sinesp} />{datatran && <DatatranPanel d={datatran} />}
+    </div>
+  ) });
+  // navegação temática: Resumo · Finanças · Compras · Saúde · Educação · ... · Segurança · Análise & Controle
   const GRUPOS: [string, string[]][] = [
     ["Resumo", ["placar", "visao", "panorama", "diagnostico", "geolocalizacao"]],
     ["Finanças", ["financas", "acompanhamento", "receitas", "despesas", "execucao", "planejamento", "captacao", "folha", "previdencia", "metas", "simulador"]],
@@ -1031,8 +1045,9 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     ["Educação", ["educacao", "educacao-cruz", "equipamentos", "indicadores"]],
     ["Assistência", ["assistencia", "equipamentos-assistencia"]],
     ["Esporte", ["esporte"]],
-    ["Infraestrutura", ["infraestrutura", "defesa_civil"]],
-    ["Base Econômica", ["financeiro", "agropecuaria"]],
+    ["Infraestrutura", ["infraestrutura", "meio_ambiente"]],
+    ["Base Econômica", ["financeiro", "rais", "emprego", "agropecuaria"]],
+    ["Segurança", ["seguranca"]],
     ["Análise & Controle", ["cruzamentos", "iegm", "ranking", "transferencias", "cauc", "auditoria"]],
   ];
   const ORDEM = GRUPOS.flatMap(([, ids]) => ids);

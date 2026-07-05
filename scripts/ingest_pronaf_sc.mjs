@@ -10,30 +10,20 @@ const CDESTADO = process.env.CDESTADO || "25"; // SC no código BCB do SICOR
 const PROG = "0001"; // PRONAF
 const ANOS = (process.env.ANOS || "2023,2024,2025").split(",");
 const ROOT = "https://olinda.bcb.gov.br/olinda/servico/SICOR/versao/v2/odata/";
-const PAGE = Number(process.env.PAGE || 500); // páginas pequenas respondem rápido (~0,4s); $top grande estoura no Olinda
+// IMPORTANTE: o SICOR do Olinda retorna 500 se a URL tiver $skip (mesmo $skip=0). NÃO paginar por skip.
+// O filtro por cdEstado deixa o resultado pequeno (~20k linhas/ano) → cabe num único $top alto.
+const PAGE = Number(process.env.PAGE || 200000);
 const numf = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
 const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-async function pagina(es, ano, skip) {
+async function coleta(es, ano, onRow) {
   const filt = `cdEstado eq '${CDESTADO}' and AnoEmissao eq '${ano}' and cdPrograma eq '${PROG}'`.replace(/ /g, "%20");
-  const url = `${ROOT}${es}?$top=${PAGE}&$format=json&$filter=${filt}&$skip=${skip}`;
+  const url = `${ROOT}${es}?$top=${PAGE}&$format=json&$filter=${filt}`; // SEM $skip (quebra o SICOR)
   for (let t = 0; t < 8; t++) {
-    try { const r = await fetch(url, { signal: AbortSignal.timeout(150000), headers: { "User-Agent": "Mozilla/5.0" } }); if (!r.ok) throw r.status; const j = await r.json(); return j.value || []; }
+    try { const r = await fetch(url, { signal: AbortSignal.timeout(150000), headers: { "User-Agent": "Mozilla/5.0" } }); if (!r.ok) throw r.status; const rows = (await r.json()).value || []; for (const row of rows) onRow(row); return rows.length; }
     catch { await new Promise((s) => setTimeout(s, 5000 * (t + 1))); }
   }
-  return null;
-}
-async function coleta(es, ano, onRow) {
-  let skip = 0, n = 0;
-  while (true) {
-    const batch = await pagina(es, ano, skip);
-    if (batch === null) { console.log(`    ! ${es} ${ano} skip=${skip} falhou após retries`); break; }
-    if (!batch.length) break;
-    for (const r of batch) onRow(r);
-    n += batch.length; skip += batch.length;
-    if (batch.length < PAGE) break;
-  }
-  return n;
+  console.log(`    ! ${es} ${ano} falhou após retries`); return 0;
 }
 
 async function main() {

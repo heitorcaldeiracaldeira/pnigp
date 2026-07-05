@@ -2,6 +2,7 @@
 // o servidor) + 3 séries históricas por metodologia consistente (com o aumento comprovado). A parte "como aumentar" é
 // roteada para soluções i10 (consultoria). Fontes: FNDE FUNDEB · Censo INEP · STN. Server component. Exibição neutra.
 import type { FundebSC } from "@/lib/queries";
+import { BaixarCsv } from "./baixar-csv";
 import { GraduationCap, Calculator, TrendingUp, Info, ArrowRight } from "lucide-react";
 
 const n0 = (v: number) => Math.round(v).toLocaleString("pt-BR");
@@ -47,7 +48,10 @@ export function FundebPainel({ data, nome }: { data: NonNullable<FundebSC>; nome
       <div className="rounded-2xl border border-slate-200 bg-white p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="flex items-center gap-1.5 font-semibold text-slate-800"><GraduationCap className="h-4 w-4 text-teal-600" /> FUNDEB de {nome} — retrato</h3>
-          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] text-slate-500">parâmetros {d.anoParam} · rede municipal</span>
+          <div className="flex items-center gap-2">
+            <BaixarCsv nome={`fundeb-${nome}`} label="CSV" linhas={d.serieFundeb as unknown as Record<string, unknown>[]} colunas={[{ chave: "ano", rotulo: "Ano" }, { chave: "total", rotulo: "Matrículas FUNDEB" }, { chave: "integral", rotulo: "Tempo integral" }, { chave: "especial", rotulo: "Educação especial" }]} />
+            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] text-slate-500">parâmetros {d.anoParam} · rede municipal</span>
+          </div>
         </div>
         <div className="mt-3 grid gap-2 sm:grid-cols-4">
           <div className="rounded-xl border border-teal-200 bg-teal-50/40 p-3"><div className="text-[11px] text-slate-500">Receita FUNDEB ({d.anoReceita})</div><div className="font-display text-xl font-bold tabular-nums text-teal-700">{brlMi(d.receita)}</div></div>
@@ -102,7 +106,7 @@ export function FundebPainel({ data, nome }: { data: NonNullable<FundebSC>; nome
         <a href="mailto:contato@institutoi10.org.br?subject=Estratégia FUNDEB — {nome}" className="mt-2 inline-flex items-center gap-1 rounded-lg bg-teal-600 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-teal-700">Falar com o i10 <ArrowRight className="h-3.5 w-3.5" /></a>
       </div>
 
-      <p className="text-[11px] text-slate-500"><span className="mr-1 inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 font-semibold text-teal-700"><Info aria-hidden className="h-3 w-3" /> Dado oficial</span>Fontes: <b>FNDE — FUNDEB {d.anoParam}</b> (matrículas, fatores de ponderação, VAAF/VAAT/VAAR) · <b>Censo Escolar/INEP</b> (séries) · <b>STN</b> (receita). Fatores: Resolução CIF nº 5/2024. Exibição neutra e metodológica; sem juízo de gestão.</p>
+      <p className="text-[11px] text-slate-500"><span className="mr-1 inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 font-semibold text-teal-700"><Info aria-hidden className="h-3 w-3" /> Dado oficial</span>Fontes: <b>FNDE — FUNDEB {d.anoParam}</b> (matrículas, fatores de ponderação, VAAF/VAAT/VAAR) · <b>Censo Escolar/INEP</b> (séries) · <b>STN</b> (receita). Fatores: Resolução CIF nº 5/2024. Exibição neutra e metodológica; sem juízo de gestão.{d.extraido && <> · extraído em {d.extraido}</>}</p>
     </section>
   );
 }
