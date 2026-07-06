@@ -1,8 +1,8 @@
 // Painéis das novas fontes (eixos econômico/ambiental/social/saúde). Server components, compactos.
 // Padrão: dado + série + carimbo de origem COM data de extração + CSV. (atende à diretriz de proveniência + exportação.)
-import type { getBndesSC, getCfemSC, getAnpSC, getQueimadasSC, getBolsaAtletaSC, getVitaisSC, getAnsCoberturaSC, getEquipamentosEsporteSC, getCagedSC, getRaisSC, getCasamentoEmpregoSC, getProdesSC, getDesastresSC, getSinisaSC, getSinanDengueSC, getAneelGdSC, getAnatelBlSC, getFrotaSC, getIbamaAutosSC, getSinespSC, getIncraAssentamentosSC, getPronafSC, getIcmbioUcSC, getAnaOutorgasSC, getIbgeProducaoSC, getArbovirosesSC, getDatatranSC, getAnpVendasSC, getCapagSC, getRfbArrecadacaoSC, getSimSC, getSinascSC, getSihSC, getIgdmSC } from "@/lib/queries";
+import type { getBndesSC, getCfemSC, getAnpSC, getQueimadasSC, getBolsaAtletaSC, getVitaisSC, getAnsCoberturaSC, getEquipamentosEsporteSC, getCagedSC, getRaisSC, getCasamentoEmpregoSC, getProdesSC, getDesastresSC, getSinisaSC, getSinanDengueSC, getAneelGdSC, getAnatelBlSC, getFrotaSC, getIbamaAutosSC, getSinespSC, getIncraAssentamentosSC, getPronafSC, getIcmbioUcSC, getAnaOutorgasSC, getIbgeProducaoSC, getArbovirosesSC, getDatatranSC, getAnpVendasSC, getCapagSC, getRfbArrecadacaoSC, getSimSC, getSinascSC, getSihSC, getIgdmSC, getIbamaEmbargosSC, getQuilombosSC, getSiaProducaoSC, getMedicamentosSC, getSinanAgravosSC, getProfissionaisSaudeSC, getApacSC, getRaasSaudeMentalSC, getCoberturaVacinalSC, getSisaguaSC, getMortalidadeInfantilSC, getFarmaciaPopularSC, getFinanciamentoApsSC } from "@/lib/queries";
 import { BaixarCsv } from "./baixar-csv";
-import { Landmark, Mountain, Fuel, Flame, Medal, HeartPulse, ShieldPlus, MapPin, Briefcase, Users, GitMerge, Trees, AlertTriangle, Droplets, Bug, Sun, Wifi, Car, Gavel, Shield, Sprout, TreePine, Waves, Wheat, Building2, TriangleAlert, Gauge, Activity, Baby, Database } from "lucide-react";
+import { Landmark, Mountain, Fuel, Flame, Medal, HeartPulse, ShieldPlus, MapPin, Briefcase, Users, GitMerge, Trees, AlertTriangle, Droplets, Bug, Sun, Wifi, Car, Gavel, Shield, Sprout, TreePine, Waves, Wheat, Building2, TriangleAlert, Gauge, Activity, Baby, Ban, Home, Pill, ShieldAlert, Stethoscope, Ribbon, Brain, Syringe, GlassWater, HeartCrack, Cross, Coins, Database } from "lucide-react";
 
 type Un<T> = NonNullable<Awaited<T>>;
 const brl = (v: number) => (v >= 1e9 ? `R$ ${(v / 1e9).toFixed(2)} bi` : v >= 1e6 ? `R$ ${(v / 1e6).toFixed(1)} mi` : v >= 1e3 ? `R$ ${(v / 1e3).toFixed(0)} mil` : `R$ ${v}`);
@@ -85,6 +85,32 @@ export function QueimadasPanel({ d }: { d: Un<ReturnType<typeof getQueimadasSC>>
   );
 }
 
+export function IbamaEmbargosPanel({ d }: { d: Un<ReturnType<typeof getIbamaEmbargosSC>> }) {
+  return (
+    <Card icon={<Ban className="h-4 w-4" />} titulo="Áreas embargadas (IBAMA)" cor="#b91c1c"
+      csv={<BaixarCsv nome="ibama-embargos" label="CSV" linhas={d.serie as unknown as Row[]} colunas={[{ chave: "ano", rotulo: "Ano" }, { chave: "valor", rotulo: "Embargos" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Áreas embargadas</div><div className="font-display text-2xl font-bold tabular-nums text-red-700">{n0(d.nEmbargos)}</div><div className="text-[10px] text-slate-400">{d.nRecentes} nos últimos 10 anos</div></div>
+        <div><div className="text-[11px] text-slate-500">Área embargada</div><div className="font-display text-lg font-bold tabular-nums text-slate-700">{n0(d.areaHa)} ha</div></div>
+        <div className="ml-auto w-44"><div className="text-[10px] text-slate-400">embargos por ano</div><Spark pts={d.serie.map((s) => s.valor)} cor="#b91c1c" /></div>
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>IBAMA</b> — áreas embargadas por desmatamento/infração ambiental (CSV oficial). Complementa os autos de infração.</Fonte>
+    </Card>
+  );
+}
+
+export function QuilombosPanel({ d }: { d: Un<ReturnType<typeof getQuilombosSC>> }) {
+  return (
+    <Card icon={<Home className="h-4 w-4" />} titulo="Comunidades quilombolas certificadas (Fundação Palmares)" cor="#92400e">
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Comunidades certificadas</div><div className="font-display text-2xl font-bold tabular-nums text-amber-800">{n0(d.nComunidades)}</div></div>
+      </div>
+      {d.comunidades.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5">{d.comunidades.map((c) => <span key={c} className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[11px] text-amber-800">{c}</span>)}</div>}
+      <Fonte extraido={d.extraido}>Fonte: <b>Fundação Cultural Palmares</b> — comunidades remanescentes de quilombos certificadas por município (dados abertos de cultura).</Fonte>
+    </Card>
+  );
+}
+
 export function IgdmPanel({ d }: { d: Un<ReturnType<typeof getIgdmSC>> }) {
   const pct = (v: number | null) => (v == null ? "—" : `${(v * 100).toFixed(0)}%`);
   const cor = d.igdm == null ? "#94a3b8" : d.igdm >= 0.55 ? "#16a34a" : d.igdm >= 0.3 ? "#f97316" : "#dc2626";
@@ -113,6 +139,208 @@ export function SihPanel({ d }: { d: Un<ReturnType<typeof getSihSC>> }) {
         {d.serie.length > 1 && <div className="ml-auto w-36"><Spark pts={d.serie.map((s) => s.valor)} cor="#0d9488" /></div>}
       </div>
       <Fonte extraido={d.extraido}>Fonte: <b>DATASUS / SIH-SUS</b> (Sistema de Informações Hospitalares) — internações pagas pelo SUS por município de residência. Descompactado do formato DBC oficial.</Fonte>
+    </Card>
+  );
+}
+
+export function FinanciamentoApsPanel({ d }: { d: Un<ReturnType<typeof getFinanciamentoApsSC>> }) {
+  return (
+    <Card icon={<Coins className="h-4 w-4" />} titulo="Financiamento da Atenção Primária (e-Gestor APS)" cor="#0d9488">
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Custeio APS por mês</div><div className="font-display text-2xl font-bold tabular-nums text-teal-700">{brl(d.custeioMensal)}</div><div className="text-[10px] text-slate-400">≈ {brl(d.custeioAnual)}/ano · competência {d.parcela}</div></div>
+        <div className="ml-auto max-w-sm rounded-lg border border-teal-200 bg-teal-50/50 p-2.5">
+          <div className="text-[11px] font-semibold text-teal-800">💡 Produção → verba</div>
+          <div className="text-[10px] text-slate-600">Este valor é composto por: eSF/eAP, eMulti, Saúde Bucal, ACS, per capita e <b>desempenho (Previne)</b>. Quanto mais e melhor a APS produz e cadastra, maior o repasse. É a verba que a equipe faz vir.</div>
+        </div>
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>Ministério da Saúde / SAPS</b> — e-Gestor Atenção Primária à Saúde (Relatório de Pagamento). Custeio efetivamente transferido ao município para a APS.</Fonte>
+    </Card>
+  );
+}
+
+export function FarmaciaPopularPanel({ d }: { d: Un<ReturnType<typeof getFarmaciaPopularSC>> }) {
+  const semNenhuma = d.nFarmacias === 0;
+  return (
+    <Card icon={<Cross className="h-4 w-4" />} titulo="Farmácia Popular — cobertura (Min. Saúde/SECTICS)" cor={semNenhuma ? "#dc2626" : "#16a34a"}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Farmácias credenciadas no município</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: semNenhuma ? "#dc2626" : "#16a34a" }}>{n0(d.nFarmacias)}</div></div>
+        {semNenhuma && <div className="max-w-xs rounded-lg border border-red-200 bg-red-50/60 p-2.5"><div className="text-[11px] font-semibold text-red-700">⚠️ Nenhuma Farmácia Popular</div><div className="text-[10px] text-slate-600">O município não tem acesso ao "Aqui Tem Farmácia Popular" (medicamento gratuito). Lacuna direta — pauta de credenciamento junto ao Min. Saúde/SECTICS.</div></div>}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Programa federal de acesso a medicamentos essenciais (hipertensão, diabetes, asma etc.) por farmácias privadas credenciadas.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>Ministério da Saúde / SECTICS</b> — Programa Farmácia Popular do Brasil (PFPB), via painel oficial (LocalizaSUS). Farmácias credenciadas por município.</Fonte>
+    </Card>
+  );
+}
+
+export function MortalidadeInfantilPanel({ d }: { d: Un<ReturnType<typeof getMortalidadeInfantilSC>> }) {
+  const acima = d.tmi != null && d.tmiSC != null && d.tmi > d.tmiSC;
+  const cor = d.tmi == null ? "#94a3b8" : d.tmi > 15 ? "#dc2626" : acima ? "#ea580c" : "#16a34a";
+  return (
+    <Card icon={<HeartCrack className="h-4 w-4" />} titulo="Mortalidade infantil (SIM + SINASC)" cor={cor}
+      csv={<BaixarCsv nome="mortalidade-infantil" label="CSV" linhas={d.serie as unknown as Row[]} colunas={[{ chave: "ano", rotulo: "Ano" }, { chave: "valor", rotulo: "TMI (por mil)" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Óbitos &lt;1 ano por mil nascidos</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: cor }}>{d.tmi ?? "—"}</div><div className="text-[10px] text-slate-400">{n0(d.obitos)} óbitos / {n0(d.nascimentos)} nascidos ({d.ano})</div></div>
+        <div><div className="text-[11px] text-slate-500">Média de SC</div><div className="font-display text-base font-bold tabular-nums text-slate-600">{d.tmiSC ?? "—"}</div></div>
+        <div className="ml-auto w-44"><div className="text-[10px] text-slate-400">TMI por ano</div><Spark pts={d.serie.map((s) => s.valor)} cor={cor} /></div>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Indicador-síntese da qualidade da atenção materno-infantil. {acima ? <b className="text-orange-600">Acima da média de SC</b> : "No/abaixo do patamar de SC"}. Referência: Brasil ~13/mil; SC é uma das menores do país.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>DATASUS SIM</b> (óbitos infantis) ÷ <b>SINASC</b> (nascidos vivos), por município de residência. Mesmo cálculo usado pela SVSA/Ministério da Saúde.</Fonte>
+    </Card>
+  );
+}
+
+export function SisaguaPanel({ d }: { d: Un<ReturnType<typeof getSisaguaSC>> }) {
+  const cor = d.pctFora >= 20 ? "#dc2626" : d.pctFora >= 5 ? "#ea580c" : "#16a34a";
+  return (
+    <Card icon={<GlassWater className="h-4 w-4" />} titulo="Qualidade da água potável (Min. Saúde · SISAGUA)" cor={cor}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Amostras fora do padrão de potabilidade</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: cor }}>{d.pctFora.toLocaleString("pt-BR")}%</div><div className="text-[10px] text-slate-400">{n0(d.foraPadrao)} de {n0(d.analisadas)} análises ({d.ano})</div></div>
+        <div className="ml-auto max-w-xs rounded-lg border border-sky-200 bg-sky-50/50 p-2.5">
+          <div className="text-[11px] font-semibold text-sky-800">💡 Para captar recurso</div>
+          <div className="text-[10px] text-slate-600">Este é o dado que o <b>Ministério da Saúde</b> (VIGIÁGUA) consulta ao liberar recursos de vigilância/tratamento da água. Para <b>infraestrutura</b> de saneamento, o Min. das Cidades usa o <b>SNIS</b> — bases distintas, use cada uma no ministério certo.</div>
+        </div>
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>Ministério da Saúde — SISAGUA</b> (Sistema de Informação de Vigilância da Qualidade da Água para Consumo Humano), via LocalizaSUS. % de amostras em desacordo com o padrão de potabilidade (Portaria GM/MS 888/2021).</Fonte>
+    </Card>
+  );
+}
+
+export function CoberturaVacinalPanel({ d }: { d: Un<ReturnType<typeof getCoberturaVacinalSC>> }) {
+  return (
+    <Card icon={<Syringe className="h-4 w-4" />} titulo="Cobertura vacinal por vacina (PNI)" cor={d.nAbaixoMeta > 0 ? "#dc2626" : "#16a34a"}
+      csv={<BaixarCsv nome="cobertura-vacinal" label="CSV" linhas={d.vacinas.flatMap((v) => v.serie.map((s) => ({ vacina: v.vacina, ano: s.ano, cobertura: s.valor }))) as unknown as Row[]} colunas={[{ chave: "vacina", rotulo: "Vacina" }, { chave: "ano", rotulo: "Ano" }, { chave: "cobertura", rotulo: "Cobertura (%)" }]} />}>
+      <div className="mt-1 text-[11px] text-slate-500">Meta do PNI: <b>95%</b> (a maioria das vacinas). Referência {d.ano}.</div>
+      <div className="mt-2 space-y-1.5">
+        {d.vacinas.map((v) => (
+          <div key={v.vacina} className="flex items-center gap-2 text-xs">
+            <span className="w-40 shrink-0 truncate text-slate-600" title={v.vacina}>{v.vacina}</span>
+            <div className="h-3.5 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-3.5 rounded" style={{ width: `${Math.min(v.cobertura, 100)}%`, backgroundColor: v.abaixoMeta ? "#dc2626" : "#16a34a" }} /></div>
+            <span className={`w-14 shrink-0 text-right font-bold tabular-nums ${v.abaixoMeta ? "text-red-600" : "text-emerald-700"}`}>{Math.round(v.cobertura)}%</span>
+            <span className="w-24 shrink-0"><Spark pts={v.serie.map((s) => s.valor)} cor={v.abaixoMeta ? "#dc2626" : "#16a34a"} /></span>
+          </div>
+        ))}
+      </div>
+      {d.nAbaixoMeta > 0 && <p className="mt-2 text-[11px] font-medium text-red-600">⚠️ {d.nAbaixoMeta} vacina(s) abaixo da meta de 95% — risco de reintrodução de doenças evitáveis.</p>}
+      <Fonte extraido={d.extraido}>Fonte: <b>Ministério da Saúde / SI-PNI</b> — Cobertura Vacinal do Calendário Nacional por município de residência (fonte RNDS). Medida oficial de cobertura do painel LocalizaSUS. Série completa <b>2015-2026</b> — o vale de 2020-2021 reflete a queda de cobertura na pandemia.</Fonte>
+    </Card>
+  );
+}
+
+export function RaasSaudeMentalPanel({ d }: { d: Un<ReturnType<typeof getRaasSaudeMentalSC>> }) {
+  return (
+    <Card icon={<Brain className="h-4 w-4" />} titulo="Saúde mental — rede psicossocial (CAPS / RAAS)" cor="#9333ea">
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Atendimentos psicossociais</div><div className="font-display text-2xl font-bold tabular-nums text-purple-700">{n0(d.atendimentos)}</div><div className="text-[10px] text-slate-400">{n0(d.registros)} registros (RAAS) · {d.periodo}</div></div>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Produção da rede de atenção psicossocial (CAPS) para os moradores do município. Municípios sem CAPS não aparecem — sinal de possível vazio assistencial em saúde mental.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>DATASUS / SIA-RAAS</b> (Registro das Ações Ambulatoriais — Psicossocial). Por município de residência. Descompactado do DBC.</Fonte>
+    </Card>
+  );
+}
+
+export function ApacPanel({ d }: { d: Un<ReturnType<typeof getApacSC>> }) {
+  return (
+    <Card icon={<Ribbon className="h-4 w-4" />} titulo="Alta complexidade — oncologia e diálise (APAC)" cor="#db2777"
+      csv={<BaixarCsv nome="apac-alta-complexidade" label="CSV" linhas={[{ tratamento: "Oncologia (quimio+radio)", apac: d.oncoApac, valor: d.oncoValor }, { tratamento: "Diálise (TRS)", apac: d.dialiseApac, valor: d.dialiseValor }] as unknown as Row[]} colunas={[{ chave: "tratamento", rotulo: "Tratamento" }, { chave: "apac", rotulo: "APAC" }, { chave: "valor", rotulo: "Valor (R$)" }]} />}>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <div className="rounded-lg border border-pink-200 bg-pink-50/40 p-2.5"><div className="text-[11px] text-slate-500">Oncologia (quimio + radioterapia)</div><div className="font-display text-xl font-bold tabular-nums text-pink-700">{brl(d.oncoValor)}</div><div className="text-[10px] text-slate-400">{n0(d.oncoApac)} autorizações (APAC) no período</div></div>
+        <div className="rounded-lg border border-cyan-200 bg-cyan-50/40 p-2.5"><div className="text-[11px] text-slate-500">Diálise (terapia renal substitutiva)</div><div className="font-display text-xl font-bold tabular-nums text-cyan-700">{brl(d.dialiseValor)}</div><div className="text-[10px] text-slate-400">{n0(d.dialiseApac)} autorizações (APAC) no período</div></div>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Cada APAC ≈ um paciente-mês em tratamento continuado. Revela a demanda de alta complexidade dos moradores do município (câncer e doença renal crônica).</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>DATASUS / SIA-APAC</b> (Autorização de Procedimentos de Alta Complexidade). Por município de residência, período {d.periodo}. Descompactado do DBC.</Fonte>
+    </Card>
+  );
+}
+
+export function ProfissionaisSaudePanel({ d }: { d: Un<ReturnType<typeof getProfissionaisSaudeSC>> }) {
+  const cel = (t: string, v: number, cor: string) => (
+    <div className="rounded-lg border p-2.5 text-center" style={{ borderColor: cor + "40", backgroundColor: cor + "0d" }}>
+      <div className="font-display text-lg font-bold tabular-nums" style={{ color: cor }}>{n0(v)}</div><div className="text-[10px] text-slate-500">{t}</div>
+    </div>
+  );
+  return (
+    <Card icon={<Stethoscope className="h-4 w-4" />} titulo="Força de trabalho em saúde (CNES)" cor="#0d9488"
+      csv={<BaixarCsv nome="profissionais-saude" label="CSV" linhas={[{ categoria: "Médicos", n: d.medicos }, { categoria: "Enfermeiros", n: d.enfermeiros }, { categoria: "Dentistas", n: d.dentistas }, { categoria: "Téc. enfermagem", n: d.tecEnf }, { categoria: "Agentes comunitários", n: d.acs }] as unknown as Row[]} colunas={[{ chave: "categoria", rotulo: "Categoria" }, { chave: "n", rotulo: "Profissionais" }]} />}>
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {cel("médicos", d.medicos, "#0d9488")}
+        {cel("enfermeiros", d.enfermeiros, "#0891b2")}
+        {cel("dentistas", d.dentistas, "#7c3aed")}
+        {cel("téc. enfermagem", d.tecEnf, "#ca8a04")}
+        {cel("ag. comunitários", d.acs, "#16a34a")}
+      </div>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Médicos por mil habitantes</div><div className="font-display text-xl font-bold tabular-nums text-teal-700">{d.medicosPorMil ?? "—"}</div><div className="text-[10px] text-slate-400">referência SUS: ~1,0/mil · ano {d.ano}</div></div>
+        <div className="ml-auto w-44"><div className="text-[10px] text-slate-400">médicos por ano</div><Spark pts={d.serieMedicos.map((s) => s.valor)} cor="#0d9488" /></div>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Profissionais distintos (por CPF) que atuam no município — inclui rede pública e privada. Um mesmo profissional pode atender em mais de um município.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>DATASUS / CNES</b> — cadastro de profissionais (arquivo PF). Categorias por CBO. Descompactado do DBC.</Fonte>
+    </Card>
+  );
+}
+
+export function SinanAgravosPanel({ d }: { d: Un<ReturnType<typeof getSinanAgravosSC>> }) {
+  return (
+    <Card icon={<ShieldAlert className="h-4 w-4" />} titulo="Agravos de notificação (SINAN)" cor="#be123c"
+      csv={<BaixarCsv nome="sinan-agravos" label="CSV" linhas={d.agravos.flatMap((a) => a.serie.map((s) => ({ agravo: a.nome, ano: s.ano, casos: s.valor }))) as unknown as Row[]} colunas={[{ chave: "agravo", rotulo: "Agravo" }, { chave: "ano", rotulo: "Ano" }, { chave: "casos", rotulo: "Casos" }]} />}>
+      <div className="mt-2 space-y-3">
+        {d.agravos.map((a) => (
+          <div key={a.agravo} className="flex flex-wrap items-end gap-3">
+            <div className="min-w-[9rem]"><div className="text-[11px] text-slate-500">{a.nome}</div><div className="font-display text-xl font-bold tabular-nums text-rose-700">{n0(a.ultimo)}</div><div className="text-[10px] text-slate-400">casos notificados ({a.ultimoAno})</div></div>
+            <div className="ml-auto w-44"><div className="text-[10px] text-slate-400">casos por ano</div><Spark pts={a.serie.map((s) => s.valor)} cor="#be123c" /></div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Casos por município de residência. Vigilância epidemiológica — subsidia ações de prevenção e proteção.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>DATASUS / SINAN</b> — Sistema de Informação de Agravos de Notificação. Descompactado do DBC.</Fonte>
+    </Card>
+  );
+}
+
+export function MedicamentosPanel({ d }: { d: Un<ReturnType<typeof getMedicamentosSC>> }) {
+  return (
+    <Card icon={<Pill className="h-4 w-4" />} titulo="Medicamentos de alto custo (SUS — CEAF)" cor="#7c3aed"
+      csv={<BaixarCsv nome="medicamentos-alto-custo" label="CSV" linhas={d.topMeds as unknown as Row[]} colunas={[{ chave: "nome", rotulo: "Medicamento" }, { chave: "valor", rotulo: "Valor (R$)" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Dispensado no período</div><div className="font-display text-2xl font-bold tabular-nums text-violet-700">{brl(d.valor)}</div><div className="text-[10px] text-slate-400">{n0(d.quantidade)} unidades ({d.periodo})</div></div>
+      </div>
+      {d.topMeds.length > 0 && <div className="mt-2"><div className="text-[11px] text-slate-500 mb-1">Principais medicamentos (por valor):</div><div className="flex flex-wrap gap-1.5">{d.topMeds.map((m) => <span key={m.nome} className="rounded-full bg-violet-50 px-2.5 py-0.5 text-[11px] text-violet-700">{m.nome.toLowerCase()}: <b>{brl(m.valor)}</b></span>)}</div></div>}
+      <Fonte extraido={d.extraido}>Fonte: <b>DATASUS / SIA-SUS</b> (Componente Especializado da Assistência Farmacêutica — CEAF) + <b>SIGTAP</b>. Medicamentos de alto custo dispensados aos moradores do município. Descompactado do DBC.</Fonte>
+    </Card>
+  );
+}
+
+export function SiaProducaoPanel({ d }: { d: Un<ReturnType<typeof getSiaProducaoSC>> }) {
+  const total = d.basicaVal + d.mediaVal + d.altaVal;
+  const linha = (t: string, q: number, v: number, cor: string) => (
+    <div className="rounded-lg border p-2.5" style={{ borderColor: cor + "40", backgroundColor: cor + "0d" }}>
+      <div className="text-[11px] text-slate-500">{t}</div><div className="font-display text-lg font-bold tabular-nums" style={{ color: cor }}>{brl(v)}</div><div className="text-[10px] text-slate-400">{n0(q)} procedimentos</div>
+    </div>
+  );
+  return (
+    <Card icon={<Activity className="h-4 w-4" />} titulo="Produção ambulatorial SUS por complexidade (SIA)" cor="#0891b2"
+      csv={<BaixarCsv nome="sia-producao" label="CSV" linhas={[{ complexidade: "Atenção básica", quantidade: d.basicaQtd, valor: d.basicaVal }, { complexidade: "Média complexidade", quantidade: d.mediaQtd, valor: d.mediaVal }, { complexidade: "Alta complexidade", quantidade: d.altaQtd, valor: d.altaVal }] as unknown as Row[]} colunas={[{ chave: "complexidade", rotulo: "Complexidade" }, { chave: "quantidade", rotulo: "Procedimentos" }, { chave: "valor", rotulo: "Valor (R$)" }]} />}>
+      <div className="mt-2 grid gap-2 sm:grid-cols-3">
+        <div className="rounded-lg border border-green-200 bg-green-50/40 p-2.5"><div className="text-[11px] text-slate-500">Atenção básica (equipes municipais)</div><div className="font-display text-lg font-bold tabular-nums text-green-700">{n0(d.basicaQtd)}</div><div className="text-[10px] text-slate-400">procedimentos · valor via capitação (PAB)</div></div>
+        {linha("Média complexidade", d.mediaQtd, d.mediaVal, "#ea580c")}
+        {linha("Alta complexidade", d.altaQtd, d.altaVal, "#dc2626")}
+      </div>
+      {d.macGrupos.length > 0 && (() => { const maxG = Math.max(1, ...d.macGrupos.map((g) => g.valor)); return (
+        <div className="mt-3">
+          <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">MAC por grupo de procedimento (SIGTAP)</div>
+          <div className="space-y-1">
+            {d.macGrupos.map((g) => (
+              <div key={g.grupo} className="flex items-center gap-2 text-xs">
+                <span className="w-40 shrink-0 truncate text-slate-600" title={g.grupo}>{g.grupo}</span>
+                <div className="h-3 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-3 rounded bg-cyan-500" style={{ width: `${(g.valor / maxG) * 100}%` }} /></div>
+                <span className="w-24 shrink-0 text-right tabular-nums text-slate-700">{brl(g.valor)}</span>
+                <span className="w-20 shrink-0 text-right tabular-nums text-slate-400">{n0(g.quantidade)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ); })()}
+      <p className="mt-2 text-[11px] text-slate-500">A <b>atenção básica</b> é a produção das equipes municipais (ESF/APS) — o valor aparece como R$0 porque é financiada por <b>capitação (PAB)</b>, não por procedimento (mensure pela quantidade). <b>Média+alta complexidade (MAC): {brl(total)}</b> no período.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>DATASUS / SIA-SUS</b> (produção ambulatorial) + <b>SIGTAP</b> (complexidade). Por município de residência, período {d.periodo}. Medicamentos (grupo 06, contados por comprimido) excluídos para refletir procedimentos. Descompactado do DBC.</Fonte>
     </Card>
   );
 }

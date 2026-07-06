@@ -32,6 +32,15 @@ export function EstabSaudeDrill({ dados, nome }: { dados: EstabSaudeSC; nome: st
         ))}
       </div>
 
+      {/* contador: equipes + equipamentos médicos + leitos (CNES EP/EQ/LT) */}
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
+        <div className="rounded-xl border border-teal-200 bg-teal-50/50 p-2.5 text-center"><div className="text-lg font-bold tabular-nums text-teal-700">{dados.equipes.esf}</div><div className="text-[11px] text-slate-600">equipes Saúde da Família</div></div>
+        <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-2.5 text-center"><div className="text-lg font-bold tabular-nums text-indigo-700">{dados.equipamentos.imagem}</div><div className="text-[11px] text-slate-600">equip. de imagem (TC/RX/US)</div></div>
+        <div className="rounded-xl border border-fuchsia-200 bg-fuchsia-50/50 p-2.5 text-center"><div className="text-lg font-bold tabular-nums text-fuchsia-700">{dados.equipamentos.vida}</div><div className="text-[11px] text-slate-600">equip. de suporte à vida</div></div>
+        <div className="rounded-xl border border-sky-200 bg-sky-50/50 p-2.5 text-center"><div className="text-lg font-bold tabular-nums text-sky-700">{dados.leitos.total.toLocaleString("pt-BR")}</div><div className="text-[11px] text-slate-600">leitos ({dados.leitos.sus.toLocaleString("pt-BR")} SUS)</div></div>
+        <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-2.5 text-center"><div className="text-lg font-bold tabular-nums text-rose-700">{dados.leitos.uti.toLocaleString("pt-BR")}</div><div className="text-[11px] text-slate-600">leitos de UTI</div></div>
+      </div>
+
       {/* por tipo */}
       <div className="mt-4">
         <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Por tipo de unidade</div>
@@ -63,6 +72,11 @@ export function EstabSaudeDrill({ dados, nome }: { dados: EstabSaudeSC; nome: st
               {e.hospitalar && <span className="rounded bg-rose-50 px-1 text-rose-600">internação</span>}
               {e.cirurgico && <span className="rounded bg-violet-50 px-1 text-violet-600">cirúrgico</span>}
               {e.obstetrico && <span className="rounded bg-pink-50 px-1 text-pink-600">obstétrico</span>}
+              {e.esf > 0 && <span className="rounded bg-teal-50 px-1 font-medium text-teal-700">{e.esf} ESF</span>}
+              {e.equipImagem > 0 && <span className="rounded bg-indigo-50 px-1 text-indigo-600">{e.equipImagem} imagem</span>}
+              {e.equipVida > 0 && <span className="rounded bg-fuchsia-50 px-1 text-fuchsia-700">{e.equipVida} suporte à vida</span>}
+              {e.leitos > 0 && <span className="rounded bg-sky-50 px-1 font-medium text-sky-700">{e.leitos} leitos{e.leitosUti > 0 ? ` (${e.leitosUti} UTI)` : ""}</span>}
+              {e.profissionais > 0 && <span className="rounded bg-slate-100 px-1 text-slate-600">{e.profissionais.toLocaleString("pt-BR")} profissionais</span>}
             </div>
           </div>
         ))}

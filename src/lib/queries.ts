@@ -2222,11 +2222,22 @@ export type EstabSaudeSC = {
   total: number; comGeo: number;
   natureza: { publico: number; privado: number; filantropico: number };
   capacidade: { hospitalar: number; cirurgico: number; obstetrico: number; sus: number };
+  equipes: { total: number; esf: number }; // CNES equipes (saúde da família)
+  equipamentos: { total: number; imagem: number; vida: number }; // equipamentos médicos (imagem/UTI)
+  leitos: { total: number; sus: number; uti: number }; // leitos hospitalares (CNES LT)
   porTipo: { tipo: string; n: number }[];
-  lista: { nome: string; tipo: string; tipoCodigo: number; natureza: string; gestao: string; esfera: string; sus: boolean; hospitalar: boolean; cirurgico: boolean; obstetrico: boolean; lat: number | null; lon: number | null; bairro: string }[];
+  lista: { nome: string; tipo: string; tipoCodigo: number; natureza: string; gestao: string; esfera: string; sus: boolean; hospitalar: boolean; cirurgico: boolean; obstetrico: boolean; lat: number | null; lon: number | null; bairro: string; equipes: number; esf: number; equipImagem: number; equipVida: number; leitos: number; leitosSus: number; leitosUti: number; profissionais: number }[];
 } | null;
 export async function getEstabSaudeSC(cod: string): Promise<EstabSaudeSC> {
-  const rows = await query<Record<string, unknown>>(`SELECT nome, tipo, tipo_codigo, natureza_grupo, gestao, esfera, sus_ambulatorial, hospitalar, centro_cirurgico, centro_obstetrico, latitude, longitude, bairro FROM estabelecimentos_saude_sc WHERE cod_ibge=$1 ORDER BY (natureza_grupo='Público') DESC, hospitalar DESC, nome`, [cod]).catch(() => []);
+  const rows = await query<Record<string, unknown>>(`SELECT e.nome, e.tipo, e.tipo_codigo, e.natureza_grupo, e.gestao, e.esfera, e.sus_ambulatorial, e.hospitalar, e.centro_cirurgico, e.centro_obstetrico, e.latitude, e.longitude, e.bairro,
+      COALESCE(eq.n_equipes,0) n_equipes, COALESCE(eq.n_esf,0) n_esf, COALESCE(em.total,0) eq_total, COALESCE(em.imagem,0) eq_imagem, COALESCE(em.vida,0) eq_vida,
+      COALESCE(lt.total,0) lt_total, COALESCE(lt.sus,0) lt_sus, COALESCE(lt.uti,0) lt_uti, COALESCE(pf.profissionais,0) pf_prof
+    FROM estabelecimentos_saude_sc e
+    LEFT JOIN cnes_equipes_estab eq ON LPAD(eq.codigo_cnes,7,'0')=LPAD(e.codigo_cnes,7,'0')
+    LEFT JOIN cnes_equipamentos_estab em ON LPAD(em.codigo_cnes,7,'0')=LPAD(e.codigo_cnes,7,'0')
+    LEFT JOIN cnes_leitos_estab lt ON LPAD(lt.codigo_cnes,7,'0')=LPAD(e.codigo_cnes,7,'0')
+    LEFT JOIN cnes_profissionais_estab pf ON LPAD(pf.codigo_cnes,7,'0')=LPAD(e.codigo_cnes,7,'0')
+    WHERE e.cod_ibge=$1 ORDER BY (e.natureza_grupo='Público') DESC, e.hospitalar DESC, e.nome`, [cod]).catch(() => []);
   if (!rows.length) return null;
   const b = (v: unknown) => v === true;
   const porTipoMap = new Map<string, number>();
@@ -2235,8 +2246,11 @@ export async function getEstabSaudeSC(cod: string): Promise<EstabSaudeSC> {
     total: rows.length, comGeo: rows.filter((r) => r.latitude != null).length,
     natureza: { publico: rows.filter((r) => r.natureza_grupo === "Público").length, privado: rows.filter((r) => r.natureza_grupo === "Privado").length, filantropico: rows.filter((r) => r.natureza_grupo === "Filantrópico").length },
     capacidade: { hospitalar: rows.filter((r) => b(r.hospitalar)).length, cirurgico: rows.filter((r) => b(r.centro_cirurgico)).length, obstetrico: rows.filter((r) => b(r.centro_obstetrico)).length, sus: rows.filter((r) => b(r.sus_ambulatorial)).length },
+    equipes: { total: rows.reduce((s, r) => s + num(r.n_equipes), 0), esf: rows.reduce((s, r) => s + num(r.n_esf), 0) },
+    equipamentos: { total: rows.reduce((s, r) => s + num(r.eq_total), 0), imagem: rows.reduce((s, r) => s + num(r.eq_imagem), 0), vida: rows.reduce((s, r) => s + num(r.eq_vida), 0) },
+    leitos: { total: rows.reduce((s, r) => s + num(r.lt_total), 0), sus: rows.reduce((s, r) => s + num(r.lt_sus), 0), uti: rows.reduce((s, r) => s + num(r.lt_uti), 0) },
     porTipo: [...porTipoMap.entries()].map(([tipo, n]) => ({ tipo, n })).sort((a, b2) => b2.n - a.n),
-    lista: rows.map((r) => ({ nome: String(r.nome || ""), tipo: String(r.tipo || ""), tipoCodigo: num(r.tipo_codigo), natureza: String(r.natureza_grupo || ""), gestao: String(r.gestao || ""), esfera: String(r.esfera || ""), sus: b(r.sus_ambulatorial), hospitalar: b(r.hospitalar), cirurgico: b(r.centro_cirurgico), obstetrico: b(r.centro_obstetrico), lat: r.latitude != null ? num(r.latitude) : null, lon: r.longitude != null ? num(r.longitude) : null, bairro: String(r.bairro || "") })),
+    lista: rows.map((r) => ({ nome: String(r.nome || ""), tipo: String(r.tipo || ""), tipoCodigo: num(r.tipo_codigo), natureza: String(r.natureza_grupo || ""), gestao: String(r.gestao || ""), esfera: String(r.esfera || ""), sus: b(r.sus_ambulatorial), hospitalar: b(r.hospitalar), cirurgico: b(r.centro_cirurgico), obstetrico: b(r.centro_obstetrico), lat: r.latitude != null ? num(r.latitude) : null, lon: r.longitude != null ? num(r.longitude) : null, bairro: String(r.bairro || ""), equipes: num(r.n_equipes), esf: num(r.n_esf), equipImagem: num(r.eq_imagem), equipVida: num(r.eq_vida), leitos: num(r.lt_total), leitosSus: num(r.lt_sus), leitosUti: num(r.lt_uti), profissionais: num(r.pf_prof) })),
   };
 }
 
@@ -2889,6 +2903,20 @@ export async function getIcmbioUcSC(cod: string): Promise<{ nUcs: number; areaHa
   return { nUcs: num(r.n_ucs), areaHa: num(r.area_uc_ha), pctTerritorio: num(r.pct_territorio), maiorUc: (r.maior_uc as string) || null, extraido: dExtr(r.atualizado) };
 }
 
+// IBAMA áreas embargadas por município — nº + área + série. Fonte: IBAMA (CSV direto).
+export async function getIbamaEmbargosSC(cod: string): Promise<{ nEmbargos: number; areaHa: number; nRecentes: number; serie: SerieAno; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT n_embargos, area_ha, n_recentes, serie, atualizado FROM ibama_embargos_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.n_embargos)) return null;
+  return { nEmbargos: num(r.n_embargos), areaHa: num(r.area_ha), nRecentes: num(r.n_recentes), serie: ((r.serie as { ano: number; valor: number }[]) || []).map((s) => ({ ano: s.ano, valor: s.valor })), extraido: dExtr(r.atualizado) };
+}
+
+// Comunidades quilombolas certificadas (Fundação Palmares) por município. Fonte: dados.cultura.gov.br.
+export async function getQuilombosSC(cod: string): Promise<{ nComunidades: number; comunidades: string[]; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT n_comunidades, comunidades, atualizado FROM quilombos_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.n_comunidades)) return null;
+  return { nComunidades: num(r.n_comunidades), comunidades: (r.comunidades as string[]) || [], extraido: dExtr(r.atualizado) };
+}
+
 // MDS IGD-M — índice de gestão descentralizada (qualidade da gestão PBF/CadÚnico) por município. Fonte: MI Social/SAGI.
 export async function getIgdmSC(cod: string): Promise<{ anomes: string; igdm: number | null; freqEscolar: number | null; agendaSaude: number | null; atualCadastral: number | null; extraido: string | null } | null> {
   const r = (await query<Record<string, unknown>>(`SELECT anomes, igdm, freq_escolar, agenda_saude, atual_cadastral, atualizado FROM igdm_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
@@ -2911,6 +2939,97 @@ export async function getSinascSC(cod: string): Promise<{ ano: number; nasciment
   if (!rows.length) return null;
   const u = rows[rows.length - 1];
   return { ano: num(u.ano), nascimentos: num(u.nascimentos), baixoPeso: num(u.baixo_peso), prematuros: num(u.prematuros), prenatal7: num(u.prenatal_7mais), maeAdolescente: num(u.mae_adolescente), serie: rows.map((r) => ({ ano: num(r.ano), valor: num(r.nascimentos) })), extraido: dExtr(u.atualizado) };
+}
+
+// Financiamento APS (e-Gestor) — custeio mensal transferido ao município para a Atenção Primária. Fonte: Min. Saúde/SAPS (e-Gestor APS).
+export async function getFinanciamentoApsSC(cod: string): Promise<{ custeioMensal: number; custeioAnual: number; parcela: string; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT custeio_mensal, parcela, atualizado FROM financiamento_aps_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.custeio_mensal)) return null;
+  return { custeioMensal: num(r.custeio_mensal), custeioAnual: num(r.custeio_mensal) * 12, parcela: String(r.parcela || ""), extraido: dExtr(r.atualizado) };
+}
+
+// Farmácia Popular (PFPB) — nº de farmácias credenciadas por município. Fonte: Min. Saúde/SECTICS via LocalizaSUS.
+export async function getFarmaciaPopularSC(cod: string): Promise<{ nFarmacias: number; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT n_farmacias, atualizado FROM farmacia_popular_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r) return null;
+  return { nFarmacias: num(r.n_farmacias), extraido: dExtr(r.atualizado) };
+}
+
+// Mortalidade infantil por município — óbitos <1 ano por mil nascidos vivos (SIM ÷ SINASC), série. Fonte: DATASUS SIM + SINASC.
+export async function getMortalidadeInfantilSC(cod: string): Promise<{ tmi: number | null; ano: number; obitos: number; nascimentos: number; tmiSC: number | null; serie: SerieAno; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT s.ano, s.infantil obitos, n.nascimentos nasc, s.atualizado FROM sim_sc s JOIN sinasc_sc n ON n.cod_ibge=s.cod_ibge AND n.ano=s.ano WHERE s.cod_ibge=$1 AND n.nascimentos>0 ORDER BY s.ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const serie = rows.map((r) => ({ ano: num(r.ano), valor: +(num(r.obitos) * 1000 / num(r.nasc)).toFixed(1) }));
+  const ult = rows[rows.length - 1];
+  const scRow = (await query<Record<string, unknown>>(`SELECT round(sum(s.infantil)::numeric*1000/nullif(sum(n.nascimentos),0),1) tmi FROM sim_sc s JOIN sinasc_sc n ON n.cod_ibge=s.cod_ibge AND n.ano=s.ano WHERE s.ano=$1`, [num(ult.ano)]).catch(() => []))[0];
+  return { tmi: serie[serie.length - 1]?.valor ?? null, ano: num(ult.ano), obitos: num(ult.obitos), nascimentos: num(ult.nasc), tmiSC: scRow ? num(scRow.tmi) : null, serie, extraido: dExtr(ult.atualizado) };
+}
+
+// SISAGUA (Min. Saúde) — qualidade da água potável por município: % de amostras fora do padrão. Fonte: SISAGUA/VIGIÁGUA via LocalizaSUS.
+export async function getSisaguaSC(cod: string): Promise<{ analisadas: number; foraPadrao: number; pctFora: number; ano: number; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT analisadas, fora_padrao, pct_fora, ano, atualizado FROM sisagua_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.analisadas)) return null;
+  return { analisadas: num(r.analisadas), foraPadrao: num(r.fora_padrao), pctFora: num(r.pct_fora), ano: num(r.ano) || 2026, extraido: dExtr(r.atualizado) };
+}
+
+// Cobertura vacinal por município e vacina (PNI) — cobertura + série + vacinas abaixo da meta. Fonte: DATASUS SI-PNI.
+export async function getCoberturaVacinalSC(cod: string): Promise<{ ano: number; vacinas: { vacina: string; cobertura: number; abaixoMeta: boolean; serie: SerieAno }[]; nAbaixoMeta: number; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, vacina, cobertura, atualizado FROM cobertura_vacinal_sc WHERE cod_ibge=$1 ORDER BY vacina, ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const anoMax = Math.max(...rows.map((r) => num(r.ano)));
+  const M = new Map<string, { ano: number; valor: number }[]>();
+  for (const r of rows) { const v = String(r.vacina); if (!M.has(v)) M.set(v, []); M.get(v)!.push({ ano: num(r.ano), valor: num(r.cobertura) }); }
+  const META = 95;
+  const vacinas = [...M.entries()].map(([vacina, serie]) => { const ult = serie[serie.length - 1]; return { vacina, cobertura: ult?.valor || 0, abaixoMeta: (ult?.valor || 0) < META, serie }; }).sort((a, b) => b.cobertura - a.cobertura);
+  return { ano: anoMax, vacinas, nAbaixoMeta: vacinas.filter((v) => v.abaixoMeta).length, extraido: dExtr(rows[0].atualizado) };
+}
+
+// Saúde mental (RAAS Psicossocial / CAPS) por município — atendimentos. Fonte: DATASUS SIA RAAS-PS.
+export async function getRaasSaudeMentalSC(cod: string): Promise<{ periodo: string; atendimentos: number; registros: number; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT periodo, atendimentos, registros, atualizado FROM raas_saude_mental_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.registros)) return null;
+  return { periodo: String(r.periodo || ""), atendimentos: num(r.atendimentos), registros: num(r.registros), extraido: dExtr(r.atualizado) };
+}
+
+// APAC alta complexidade por município — oncologia (quimio+radio) e diálise: valor + nº de APAC. Fonte: DATASUS SIA APAC.
+export async function getApacSC(cod: string): Promise<{ periodo: string; oncoApac: number; oncoValor: number; dialiseApac: number; dialiseValor: number; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT periodo, onco_apac, onco_valor, dialise_apac, dialise_valor, atualizado FROM apac_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || (!num(r.onco_valor) && !num(r.dialise_valor))) return null;
+  return { periodo: String(r.periodo || ""), oncoApac: num(r.onco_apac), oncoValor: num(r.onco_valor), dialiseApac: num(r.dialise_apac), dialiseValor: num(r.dialise_valor), extraido: dExtr(r.atualizado) };
+}
+
+// CNES profissionais de saúde por município — força de trabalho por categoria + médicos por mil hab + série. Fonte: DATASUS CNES (PF).
+export async function getProfissionaisSaudeSC(cod: string): Promise<{ ano: number; medicos: number; enfermeiros: number; dentistas: number; tecEnf: number; acs: number; medicosPorMil: number | null; serieMedicos: SerieAno; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, medicos, enfermeiros, dentistas, tec_enf, acs, atualizado FROM cnes_profissionais_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const ult = rows[rows.length - 1];
+  const pop = num((await query<Record<string, unknown>>(`SELECT populacao FROM entes_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0]?.populacao);
+  return { ano: num(ult.ano), medicos: num(ult.medicos), enfermeiros: num(ult.enfermeiros), dentistas: num(ult.dentistas), tecEnf: num(ult.tec_enf), acs: num(ult.acs), medicosPorMil: pop > 0 ? +(num(ult.medicos) / pop * 1000).toFixed(2) : null, serieMedicos: rows.map((r) => ({ ano: num(r.ano), valor: num(r.medicos) })), extraido: dExtr(ult.atualizado) };
+}
+
+// SINAN agravos de notificação por município — casos + série por agravo. Fonte: DATASUS SINAN.
+const SINAN_NOMES: Record<string, string> = { TUBE: "Tuberculose", HANS: "Hanseníase", VIOL: "Violência interpessoal/autoprovocada" };
+export async function getSinanAgravosSC(cod: string): Promise<{ agravos: { agravo: string; nome: string; ultimo: number; ultimoAno: number; serie: SerieAno }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT agravo, ano, casos, atualizado FROM sinan_agravos_sc WHERE cod_ibge=$1 ORDER BY agravo, ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const M = new Map<string, { ano: number; valor: number }[]>();
+  for (const r of rows) { const a = String(r.agravo); if (!M.has(a)) M.set(a, []); M.get(a)!.push({ ano: num(r.ano), valor: num(r.casos) }); }
+  const agravos = [...M.entries()].map(([agravo, serie]) => ({ agravo, nome: SINAN_NOMES[agravo] || agravo, ultimo: serie[serie.length - 1]?.valor || 0, ultimoAno: serie[serie.length - 1]?.ano || 0, serie }));
+  return { agravos, extraido: dExtr(rows[0].atualizado) };
+}
+
+// Medicamentos de alto custo (CEAF) por município — valor + quantidade + top medicamentos. Fonte: DATASUS SIA grupo 06 + SIGTAP.
+export async function getMedicamentosSC(cod: string): Promise<{ periodo: string; valor: number; quantidade: number; topMeds: { nome: string; valor: number }[]; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT periodo, valor, quantidade, top_meds, atualizado FROM medicamentos_alto_custo_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.valor)) return null;
+  return { periodo: String(r.periodo || ""), valor: num(r.valor), quantidade: num(r.quantidade), topMeds: (r.top_meds as { nome: string; valor: number }[]) || [], extraido: dExtr(r.atualizado) };
+}
+
+// SIA-SUS produção ambulatorial por município × complexidade (básica/média/alta). Fonte: DATASUS SIA (DBC) + SIGTAP.
+export async function getSiaProducaoSC(cod: string): Promise<{ periodo: string; basicaQtd: number; basicaVal: number; mediaQtd: number; mediaVal: number; altaQtd: number; altaVal: number; macGrupos: { grupo: string; quantidade: number; valor: number }[]; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT periodo, q_basica, v_basica, q_media, v_media, q_alta, v_alta, mac_grupos, atualizado FROM sia_producao_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r) return null;
+  return { periodo: String(r.periodo || ""), basicaQtd: num(r.q_basica), basicaVal: num(r.v_basica), mediaQtd: num(r.q_media), mediaVal: num(r.v_media), altaQtd: num(r.q_alta), altaVal: num(r.v_alta), macGrupos: (r.mac_grupos as { grupo: string; quantidade: number; valor: number }[]) || [], extraido: dExtr(r.atualizado) };
 }
 
 // DATASUS SIM — óbitos por município (total + causas + mortalidade infantil), série anual. Fonte: DATASUS (FTP DBC).
