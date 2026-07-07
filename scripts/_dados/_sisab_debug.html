@@ -1,0 +1,3115 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head id="j_idt2"><link type="text/css" rel="stylesheet" href="/javax.faces.resource/theme.css.xhtml?ln=primefaces-aristo" /><script type="text/javascript" src="/javax.faces.resource/jsf.js.xhtml?ln=javax.faces"></script><script type="text/javascript">if(window.PrimeFaces){PrimeFaces.settings.locale='en_US';}</script>
+
+	<meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport" />
+
+	<title>SISAB</title>
+
+	<!-- Bootstrap 3.3.4 -->
+	<link href="/resource/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+	<!-- Font Awesome Icons -->
+	<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+	<!-- Ionicons -->
+	<link href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css" rel="stylesheet" type="text/css" />
+	<!-- Theme style -->
+	<link href="/resource/css/AdminLTE.min.css" rel="stylesheet" type="text/css" />
+	<!-- AdminLTE Skins. We have chosen the skin-blue for this starter
+          page. However, you can choose any other skin. Make sure you
+          apply the skin class to the body tag so the changes take effect.
+    -->
+	<link href="/resource/css/alteraTemplate.css" rel="stylesheet" type="text/css" />
+	<link href="/resource/css/skins/skin-blue.css" rel="stylesheet" type="text/css" />
+	<link href="/resource/css/jquery.steps.css" rel="stylesheet" type="text/css" />
+	<link href="/resource/css/dataTables.bootstrap.min.css" rel="stylesheet" type="text/css" />
+	<link rel="stylesheet" type="text/css" href="/resource/css/loading-bar.css" media="all" />
+	<link href="/resource/css/multi-select/multi-select.css" rel="stylesheet" type="text/css" />
+	<link href="/resource/css/multi-select/bootstrap-multiselect.css" rel="stylesheet" type="text/css" />
+
+	<link href="/resource/js/plugins/datepicker/datepicker3.css" rel="stylesheet" type="text/css" />
+
+	<!--steps CSS-->
+	<link href="/resource/css/steps-wizzard.css" rel="stylesheet" type="text/css" />
+
+	<link href="/resource/css/fileinput.min.css" rel="stylesheet" type="text/css" />
+	
+	<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+	<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+	<!--[if lt IE 9]&gt;
+    &lt;script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"&gt;&lt;/script&gt;
+    &lt;script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"&gt;&lt;/script&gt;
+    &lt;![endif]-->
+
+	<!-- jQuery 2.1.4 -->
+	<script src="/resource/js/plugins/jQuery/jQuery-2.1.4.min.js"></script>
+	<!-- Bootstrap 3.3.2 JS -->
+	<script src="/resource/js/bootstrap.min.js" type="text/javascript"></script>
+	<script src="/resource/js/bootbox.min.js" type="text/javascript"></script>
+
+
+	<script src="/resource/js/fileinput/fileinput.min.js"></script>
+	<script src="/resource/js/fileinput/locales/pt-BR.js"></script>
+
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script src="https://www.googletagmanager.com/gtag/js?id=UA-29222573-3"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag() {
+			dataLayer.push(arguments);
+		}
+		gtag('js', new Date());
+
+		gtag('config', 'UA-29222573-3');
+	</script></head><body class="skin-blue sidebar-mini sidebar-collapse">
+	<!-- GOVERNO FEDERAL -->
+	<div id="barra-brasil">
+		<div id="wrapper-barra-brasil">
+			<div class="brasil-flag">
+				<a class="link-barra" href="http://brasil.gov.br">Brasil</a>
+			</div>
+			<span class="acesso-info"><a class="link-barra" href="http://brasil.gov.br/barra#acesso-informacao">Acesso à
+					informação</a></span> <span class="copa-counter"><a class="link-barra" href="http://www.copa2014.gov.br"><span id="counter-barra-brasil"></span></a></span>
+			<ul class="list">
+				<li class="list-item first"><a class="link-barra" href="http://brasil.gov.br/barra#participe">Participe</a></li>
+				<li class="list-item"><a class="link-barra" href="http://www.servicos.gov.br/">Serviços</a></li>
+				<li class="list-item"><a class="link-barra" href="http://www.planalto.gov.br/legislacao">Legislação</a></li>
+				<li class="list-item last last-item"><a class="link-barra" href="http://brasil.gov.br/barra#orgaos-atuacao-canais">Canais</a>
+				</li>
+			</ul>
+		</div>
+		<div style="background-color: #cff0fc; height: 100%;">
+			<img src="/resource/img/sisab-220630.png" />
+		</div>
+	</div>
+	<!-- GOVERNO FEDERAL -->
+	<div class="wrapper">
+		<!-- Main Header -->
+		<header class="main-header">
+
+			<!-- Logo -->
+			<a href="/index.xhtml" class="logo" id="link-logo"> <!-- mini logo for sidebar mini 50x50 pixels -->
+				<span class="logo-mini"><b>SISAB</b></span> <!-- logo for regular state and mobile devices -->
+				<span class="logo-lg"><b>SISAB</b></span>
+			</a>
+
+			<!-- Header Navbar -->
+			<nav class="navbar navbar-static-top" role="navigation">
+				<div id="div-sidebar-toggle">
+				<!-- Sidebar toggle button-->
+				<a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button"> <span class="sr-only">Alternar navegação</span>
+				</a>
+				</div>
+				<!-- Navbar Right Menu -->
+				<div class="navbar-custom-menu">
+					<ul class="nav navbar-nav">
+						<!-- 							Menu com os dados do usu&aacute;rio logado -->
+						<!-- 							Menu com o form para logar  -->
+							<!-- 							User Account Menu -->
+							<li class="dropdown user user-menu">
+								<!--                         Menu Toggle Button --> <a href="http://acesso-egestoraps.saude.gov.br/login"> <i class="fa fa-key"></i> <span class="hidden-xs">Acesso
+										Restrito</span>
+							</a>
+							</li>
+					</ul>
+				</div>
+			</nav>
+		</header>
+<form id="j_idt17" name="j_idt17" method="post" action="/paginas/acessoRestrito/relatorio/federal/envio/RelValidacao.xhtml" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="j_idt17" value="j_idt17" />
+
+			<!-- Left side column. contains the logo and sidebar -->
+			<aside class="main-sidebar">
+
+				<!-- sidebar: style can be found in sidebar.less -->
+				<section class="sidebar">
+
+					<!-- Sidebar Menu -->
+					<ul class="sidebar-menu">
+						<li class="header">NAVEGAÇÃO</li>
+						<!-- Optionally, you can add icons to the links -->
+						<li id="painelMenu"><a href="/index.xhtml"><i class="fa fa-gear"></i> <span>Início</span></a></li>
+						<li id="painelMenu"><a href="/paginas/acessoRestrito/relatorio/federal/envio/RelValidacao.xhtml"><i class="fa fa-share"></i> <span>Relatório de
+									Validação</span></a></li>
+
+						<li id="" class="treeview active"><a href="/#" id=""> <i class="fa fa-heartbeat"></i> <span>Saúde</span> <i class="fa fa-angle-left pull-right"></i>
+						</a>
+							<ul class="treeview-menu menu-open" style="display: block;">
+								<li><a href="/paginas/acessoRestrito/relatorio/federal/saude/RelSauProducao.xhtml" id=""><i class="fa fa-check-square-o"></i>Produção</a></li>
+								<li><a href="/paginas/acessoRestrito/relatorio/federal/saude/RelSauAtivColetiva.xhtml" id=""><i class="fa fa-check-square-o"></i>Atividade
+										Coletiva</a></li>
+							</ul></li>
+							<li id="painelIndicadores"><a href="/paginas/acessoRestrito/relatorio/federal/indicadores/indicadorPainel.xhtml"><i class="fa fa-signal"></i> <span>Indicadores de
+										Desempenho</span></a></li>
+							<li id="painelCadastros"><a href="/paginas/acessoRestrito/relatorio/federal/indicadores/indicadorCadastro.xhtml"><i class="fa fa-users"></i> <span>Painel de Cadastro</span></a></li>
+
+						<li id="painelMenu"><a href="/paginas/acessoPublico/relatorio/indicadores/IndicadorPrenatal.xhtml"><i class="fa fa-plus-circle"></i> <span>Indicadores Pré-natal</span></a></li>
+							<li id="painelMenu"><a href="/paginas/acessoPublico/relatorio/envio/RelPubEnvStatusEnvio.xhtml"><i class="fa  fa-thumbs-o-up"></i> <span>Envio</span></a></li>
+
+						<li id="painelMenu"><a href="/paginas/acessoPublico/documentos/IndexDocumentos.xhtml"><i class="fa fa-file-text"></i> <span>Materiais de Apoio</span></a></li>
+						<li id="painelMenu"><a href="/paginas/acessoPublico/faq/IndexFaq.xhtml"><i class="fa fa-comments"></i> <span>Perguntas Frequentes</span></a></li>
+
+						<li id="" class="treeview "><a href="/#" id=""> <i class="fa fa-envelope"></i> <span>Fale Conosco</span> <i class="fa fa-angle-left pull-right"></i>
+						</a>
+							<ul class="treeview-menu menu-open" style="display: block;">
+								<li><a href="https://esusaps.freshdesk.com/support/login" target="_blanck" id=""><i class="fa fa-check-square-o"></i>E-sus AB</a></li>
+								<li><a href="https://webatendimento.saude.gov.br/faq/saps" target="_blanck" id=""><i class="fa fa-check-square-o"></i>Sisab</a></li>
+							</ul></li>
+
+					</ul>
+					<!-- /.sidebar-menu -->
+				</section>
+				<!-- /.sidebar -->
+			</aside><input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="3448688058273692086:-3115532900903900638" autocomplete="off" />
+</form>
+		<div class="content-wrapper">
+			<section class="content-header">
+		<h1>Relatório de Validação</h1>
+		<span class="bg-blue badge" style="font-size: 13px;"><a href="/resource/file/relatorio_validacao_2_2021_nota.pdf" style="color: white" target="_blank"><i class="fa fa-fw fa-file-pdf-o"></i>Nota Técnica </a></span>
+			</section>
+
+			<section class="content">
+
+		<style type="text/css">
+label {
+	padding-right: 10px;
+}
+
+table.dataTable thead .sorting:after, table.dataTable thead .sorting:before,
+	table.dataTable thead .sorting_asc:after, table.dataTable thead .sorting_asc:before,
+	table.dataTable thead .sorting_asc_disabled:after, table.dataTable thead .sorting_asc_disabled:before,
+	table.dataTable thead .sorting_desc:after, table.dataTable thead .sorting_desc:before,
+	table.dataTable thead .sorting_desc_disabled:after, table.dataTable thead .sorting_desc_disabled:before
+	{
+	bottom: .5em;
+}
+</style>
+
+
+		<script>
+			$(document).ready(function() {
+				if ($(".pre-loader").length > 0) {
+					$(".pre-loader").fadeOut("slow");
+				}
+			});
+
+			function mostrarPreLoad() {
+				$(".pre-loader").fadeIn("fast");
+			}
+			
+		</script>
+		<div class="pre-loader">
+			<div class="spinner">
+				<div class="rect1"></div>
+				<div class="rect2"></div>
+				<div class="rect3"></div>
+				<div class="rect4"></div>
+				<div class="rect5"></div>
+			</div>
+		</div>
+		
+		<script type="text/javascript">
+			$(document).ready(function () {
+				$('#dtBasicExample').DataTable({
+				"paging": true,				
+				"oLanguage" : {
+					"sProcessing" : "Aguarde enquanto os dados são carregados ...",
+					"sLengthMenu" : "Mostrar _MENU_ registros por pagina",
+					"sZeroRecords" : "Nenhum registro correspondente ao criterio encontrado",
+					"sInfoEmtpy" : "Exibindo 0 a 0 de 0 registros",
+					"sInfo" : "Exibindo de _START_ a _END_ de _TOTAL_ registros",
+					"sInfoFiltered" : "",
+					"sSearch" : "Procurar: ",
+					"oPaginate" : {
+						"sFirst" : "Primeiro",
+						"sPrevious" : "Anterior",
+						"sNext" : "Próximo",
+						"sLast" : "Último"
+					}
+				}
+				});
+				$('.dataTables_length').addClass('bs-select');
+				});
+			
+			function infoModal(info){
+				if (info == "opcoes-coluna") {
+					document.getElementById('titulo-modal').innerHTML = "<b>OPÇÕES DE COLUNA NO RELATÓRIO</b>";
+					document.getElementById('info-modal').innerHTML = 
+						"<p>Nesta opção é possível selecionar o detalhamento da informação que deseja apresentar. Podendo o usuário selecionar quais opções desejar, lembrando que quanto menos opções forem selecionadas mais agregado será os dados. </p>"+ 
+						"<p><b>Detalhamento Demográfico:</b> Região, UF, IBGE, Município </p>"+ 
+						"<p><b>Detalhamento de informações da Unidade de Saúde:</b> CNES, INE, CNS do Profissional, CBO do Profissional e Aplicação utilizada (envio por PEC, CDS ou Terceiros) </p>"+ 
+						"<p><b>Detalhamento de Informações do Registro:</b> Tipo de Ficha (Atendimento individual, Procedimento, Vacinação), Envio no Prazo (envio até 10º dia útil do mês posterior), Validação¹ e Total de Fichas¹</p>"+ 
+						"<p><b>Detalhamento de Data:</b> Data do Atendimento, Data do Envio (ao ministério) e Data de Fechamento limite para envio do dado)</p>"+ 
+						"<p></p>"+ 
+						"<p>¹Apresentação obrigatória no relatório, por isso não existe a opção no campo de seleção.</p>";
+				}
+				if (info == "periodo") {
+					document.getElementById('titulo-modal').innerHTML = "<b>PERÍODO</b>";
+					document.getElementById('info-modal').innerHTML = 
+						"<p>Nesta opção selecione o período desejado, essa informação se refere a:</p>"+ 
+						"<p>Competência de envio (mês do envio da produção para o Ministério)</p>"+ 
+						"<p>Competência de produção (mês da data de realização da consulta)</p>";
+
+				}
+				if (info == "filtro") {
+					document.getElementById('titulo-modal').innerHTML = "<b>OPÇÕES DE FILTRO</b>";
+					document.getElementById('info-modal').innerHTML = "<p>Nestes filtros selecione uma ou mais opções  dentro dos detalhamentos específicos disponíveis. É possível  selecionar  nenhum até todas as opções, sendo que na ausência da marcação todas as opções serão apresentadas. </p>";
+				}
+				if (info == "envio-prazo") {
+					document.getElementById('titulo-modal').innerHTML = "<b>CONSIDERAR APENAS FICHAS ENVIADAS NO PRAZO:</b>";
+					document.getElementById('info-modal').innerHTML = "<p>Dados enviados até 10º dia útil do mês subsequente ao registro.</p>";
+				}
+				
+				if (info == "validacao") {
+					document.getElementById('titulo-modal').innerHTML = "<b>VALIDAÇÃO</b>";
+					document.getElementById('info-modal').innerHTML = 
+						"<p>Nestes filtros selecione o tipo de validação identificada no registro, cada registro só apresenta um tipo de validação, que podem ser do tipo: </p> "+
+						"<p><b>Duplicado</b> – Registro já identificado no sistema; </p> "+
+						"<p><b>Data Inválida</b> – Data de atendimento posterior a data de envio; </p> "+
+						"<p><b>Reprovado</b> – Foi encontrado algum erro do tipo validação CNES, pode ser detalhado com a marcação do motivo da reprovação no filtro ao lado; </p> "+
+						"<p><b>Aprovado</b> – não foi encontrado nenhum erro de validação; </p> "+
+						"<p><b>Não aplicado:</b> Não se aplica validação para essa ficha – caso de fichas de vacina que não sofrem validação do tipo CNES </p> "+
+						"<p></p> "+
+						"<p>Não apresentamos neste relatório dados de invalidação de fichas enviadas após o prazo de 4 competências posteriores ao registro. </p> ";
+
+				}
+				
+				if (info == "motivo-reprovacao") {
+					document.getElementById('titulo-modal').innerHTML = "<b>DETALHAR REPROVAÇÃO:</b> ";
+					document.getElementById('info-modal').innerHTML = 
+						"<b>Ao selecionar qualquer variável deste filtro, serão apresentado apenas as fichas reprovadas.</b>"+
+						"<p><b>CNES inválido (CNES):</b> O número de CNES informado não existe na base do SCNES na competência analisada, diverge do município informado ou não se refere a um tipo de unidade da APS.</p> "+
+						"<p><b>INE inválido (INE):</b> O número de INE informado não existe ou não está ativo na base do SCNES na competência.</p> "+
+						"<p><b>Profissional inválido (PROF):</b> O CNS e/ou CBO do profissional informado não está cadastrado no SCNES, diverge dos dados cadastrados no SCNES ou não é vinculado a tipos de unidades da APS.</p> "+
+						"<p><b>CBO incompatível (CBO):</b> O CBO informado não está apto a preencher a ficha, de acordo com suas atribuições.</p> "+
+						"<p>Uma ficha pode apresentar mais de uma invalidação.</p> ";
+						
+				}
+				
+				
+			}
+		</script>
+		
+		<div class="modal fade" id="ds-opcoes-colunas">
+			<div class="modal-dialog modal-lg" style="max-height: 85%; margin-top: 50px; margin-bottom: 50px;">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">×</span>
+						</button>
+						<h4 class="modal-title" id="titulo-modal"></h4>
+					</div>
+					<div class="modal-body">
+						<div class="form-group" id="info-modal"></div>
+						<button type="button" class="btn btn-primary" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">Ok</span>
+						</button>
+					</div>
+				</div>
+			</div>
+		</div><span id="panelGeral">
+<form id="j_idt44" name="j_idt44" method="post" action="/paginas/acessoRestrito/relatorio/federal/envio/RelValidacao.xhtml" enctype="application/x-www-form-urlencoded">
+<input type="hidden" name="j_idt44" value="j_idt44" />
+
+
+				<div class="row">
+					<div class="col-md-12">
+						<div class="box box-primary">
+							<div class="box-header with-border">Selecione as opções
+								para gerar o relatório:</div>
+							<div class="box-body">
+
+								<div class="col-md-12">
+								</div>
+								<div class="row">
+		<div class="col-md-6">
+			<div class="box box-primary">
+				<div class="box-header with-border">
+					<h4 style="margin-top: 5px;!important" class="text-blue">
+						<strong>Unidade Geográfica:</strong>
+					</h4>
+				</div>
+				<div class="box-body"><select id="unidGeo" name="unidGeo" class="form-control select2 select2-hidden-accessible" size="1" onchange="jsf.util.chain(this,event,'mojarra.ab(this,event,\'valueChange\',0,\'regioes script\')','mojarra.ab(this,event,\'valueChange\',0,0)')">	<option value="brasil">Brasil</option>
+	<option value="regiao">Região</option>
+	<option value="estado">Estado</option>
+	<option value="municipio" selected="selected">Municípios</option>
+</select>
+
+					<br />
+					<!--Regioes --><span id="regioes">
+						<!--Estados -->
+
+						<!--Municipio --><label>Estado:</label><select id="estadoMunicipio" name="estadoMunicipio" class="form-control select2 select2-hidden-accessible" size="1" style="margin-bottom: 20px;" onchange="mojarra.ab(this,event,'valueChange',0,'regioes script')">	<option value="">Selecione</option>
+	<option value="12">AC</option>
+	<option value="27">AL</option>
+	<option value="13">AM</option>
+	<option value="16">AP</option>
+	<option value="29">BA</option>
+	<option value="23">CE</option>
+	<option value="53">DF</option>
+	<option value="32">ES</option>
+	<option value="52">GO</option>
+	<option value="21">MA</option>
+	<option value="31">MG</option>
+	<option value="50">MS</option>
+	<option value="51">MT</option>
+	<option value="15">PA</option>
+	<option value="25">PB</option>
+	<option value="26">PE</option>
+	<option value="22">PI</option>
+	<option value="41">PR</option>
+	<option value="33">RJ</option>
+	<option value="24">RN</option>
+	<option value="11">RO</option>
+	<option value="14">RR</option>
+	<option value="43">RS</option>
+	<option value="42" selected="selected">SC</option>
+	<option value="28">SE</option>
+	<option value="35">SP</option>
+	<option value="17">TO</option>
+</select><label>Necessário escolher ao menos um município</label><select id="municipios" name="municipios" class="form-control offAll-multiple-selected" multiple="multiple" size="10">	<option value="420005">ABDON BATISTA</option>
+	<option value="420010">ABELARDO LUZ</option>
+	<option value="420020">AGROLÂNDIA</option>
+	<option value="420030">AGRONÔMICA</option>
+	<option value="420040">ÁGUA DOCE</option>
+	<option value="420050">ÁGUAS DE CHAPECÓ</option>
+	<option value="420055">ÁGUAS FRIAS</option>
+	<option value="420060">ÁGUAS MORNAS</option>
+	<option value="420070">ALFREDO WAGNER</option>
+	<option value="420075">ALTO BELA VISTA</option>
+	<option value="420080">ANCHIETA</option>
+	<option value="420090">ANGELINA</option>
+	<option value="420100">ANITA GARIBALDI</option>
+	<option value="420110">ANITÁPOLIS</option>
+	<option value="420120">ANTÔNIO CARLOS</option>
+	<option value="420125">APIÚNA</option>
+	<option value="420127">ARABUTÃ</option>
+	<option value="420130">ARAQUARI</option>
+	<option value="420140">ARARANGUÁ</option>
+	<option value="420150">ARMAZÉM</option>
+	<option value="420160">ARROIO TRINTA</option>
+	<option value="420165">ARVOREDO</option>
+	<option value="420170">ASCURRA</option>
+	<option value="420180">ATALANTA</option>
+	<option value="420190">AURORA</option>
+	<option value="420195">BALNEÁRIO ARROIO DO SILVA</option>
+	<option value="420205">BALNEÁRIO BARRA DO SUL</option>
+	<option value="420200">BALNEÁRIO CAMBORIÚ</option>
+	<option value="420207">BALNEÁRIO GAIVOTA</option>
+	<option value="421280">BALNEÁRIO PIÇARRAS</option>
+	<option value="422000">BALNEÁRIO RINCÃO</option>
+	<option value="420208">BANDEIRANTE</option>
+	<option value="420209">BARRA BONITA</option>
+	<option value="420210">BARRA VELHA</option>
+	<option value="420213">BELA VISTA DO TOLDO</option>
+	<option value="420215">BELMONTE</option>
+	<option value="420220">BENEDITO NOVO</option>
+	<option value="420230">BIGUAÇU</option>
+	<option value="420240">BLUMENAU</option>
+	<option value="420243">BOCAINA DO SUL</option>
+	<option value="420250">BOM JARDIM DA SERRA</option>
+	<option value="420253">BOM JESUS</option>
+	<option value="420257">BOM JESUS DO OESTE</option>
+	<option value="420260">BOM RETIRO</option>
+	<option value="420245">BOMBINHAS</option>
+	<option value="420270">BOTUVERÁ</option>
+	<option value="420280">BRAÇO DO NORTE</option>
+	<option value="420285">BRAÇO DO TROMBUDO</option>
+	<option value="420287">BRUNÓPOLIS</option>
+	<option value="420290">BRUSQUE</option>
+	<option value="420300">CAÇADOR</option>
+	<option value="420310">CAIBI</option>
+	<option value="420315">CALMON</option>
+	<option value="420320">CAMBORIÚ</option>
+	<option value="420330">CAMPO ALEGRE</option>
+	<option value="420340">CAMPO BELO DO SUL</option>
+	<option value="420350">CAMPO ERÊ</option>
+	<option value="420360">CAMPOS NOVOS</option>
+	<option value="420370">CANELINHA</option>
+	<option value="420380">CANOINHAS</option>
+	<option value="420325">CAPÃO ALTO</option>
+	<option value="420390">CAPINZAL</option>
+	<option value="420395">CAPIVARI DE BAIXO</option>
+	<option value="420400">CATANDUVAS</option>
+	<option value="420410">CAXAMBU DO SUL</option>
+	<option value="420415">CELSO RAMOS</option>
+	<option value="420417">CERRO NEGRO</option>
+	<option value="420419">CHAPADÃO DO LAGEADO</option>
+	<option value="420420">CHAPECÓ</option>
+	<option value="420425">COCAL DO SUL</option>
+	<option value="420430">CONCÓRDIA</option>
+	<option value="420435">CORDILHEIRA ALTA</option>
+	<option value="420440">CORONEL FREITAS</option>
+	<option value="420445">CORONEL MARTINS</option>
+	<option value="420455">CORREIA PINTO</option>
+	<option value="420450">CORUPÁ</option>
+	<option value="420460">CRICIÚMA</option>
+	<option value="420470">CUNHA PORÃ</option>
+	<option value="420475">CUNHATAÍ</option>
+	<option value="420480">CURITIBANOS</option>
+	<option value="420490">DESCANSO</option>
+	<option value="420500">DIONÍSIO CERQUEIRA</option>
+	<option value="420510">DONA EMMA</option>
+	<option value="420515">DOUTOR PEDRINHO</option>
+	<option value="420517">ENTRE RIOS</option>
+	<option value="420519">ERMO</option>
+	<option value="420520">ERVAL VELHO</option>
+	<option value="420530">FAXINAL DOS GUEDES</option>
+	<option value="420535">FLOR DO SERTÃO</option>
+	<option value="420540" selected="selected">FLORIANÓPOLIS</option>
+	<option value="420543">FORMOSA DO SUL</option>
+	<option value="420545">FORQUILHINHA</option>
+	<option value="420550">FRAIBURGO</option>
+	<option value="420555">FREI ROGÉRIO</option>
+	<option value="420560">GALVÃO</option>
+	<option value="420570">GAROPABA</option>
+	<option value="420580">GARUVA</option>
+	<option value="420590">GASPAR</option>
+	<option value="420600">GOVERNADOR CELSO RAMOS</option>
+	<option value="420610">GRÃO-PARÁ</option>
+	<option value="420620">GRAVATAL</option>
+	<option value="420630">GUABIRUBA</option>
+	<option value="420640">GUARACIABA</option>
+	<option value="420650">GUARAMIRIM</option>
+	<option value="420660">GUARUJÁ DO SUL</option>
+	<option value="420665">GUATAMBÚ</option>
+	<option value="420670">HERVAL D'OESTE</option>
+	<option value="420675">IBIAM</option>
+	<option value="420680">IBICARÉ</option>
+	<option value="420690">IBIRAMA</option>
+	<option value="420700">IÇARA</option>
+	<option value="420710">ILHOTA</option>
+	<option value="420720">IMARUÍ</option>
+	<option value="420730">IMBITUBA</option>
+	<option value="420740">IMBUIA</option>
+	<option value="420750">INDAIAL</option>
+	<option value="420757">IOMERÊ</option>
+	<option value="420760">IPIRA</option>
+	<option value="420765">IPORÃ DO OESTE</option>
+	<option value="420768">IPUAÇU</option>
+	<option value="420770">IPUMIRIM</option>
+	<option value="420775">IRACEMINHA</option>
+	<option value="420780">IRANI</option>
+	<option value="420785">IRATI</option>
+	<option value="420790">IRINEÓPOLIS</option>
+	<option value="420800">ITÁ</option>
+	<option value="420810">ITAIÓPOLIS</option>
+	<option value="420820">ITAJAÍ</option>
+	<option value="420830">ITAPEMA</option>
+	<option value="420840">ITAPIRANGA</option>
+	<option value="420845">ITAPOÁ</option>
+	<option value="420850">ITUPORANGA</option>
+	<option value="420860">JABORÁ</option>
+	<option value="420870">JACINTO MACHADO</option>
+	<option value="420880">JAGUARUNA</option>
+	<option value="420890">JARAGUÁ DO SUL</option>
+	<option value="420895">JARDINÓPOLIS</option>
+	<option value="420900">JOAÇABA</option>
+	<option value="420910">JOINVILLE</option>
+	<option value="420915">JOSÉ BOITEUX</option>
+	<option value="420917">JUPIÁ</option>
+	<option value="420920">LACERDÓPOLIS</option>
+	<option value="420930">LAGES</option>
+	<option value="420940">LAGUNA</option>
+	<option value="420945">LAJEADO GRANDE</option>
+	<option value="420950">LAURENTINO</option>
+	<option value="420960">LAURO MULLER</option>
+	<option value="420970">LEBON RÉGIS</option>
+	<option value="420980">LEOBERTO LEAL</option>
+	<option value="420985">LINDÓIA DO SUL</option>
+	<option value="420990">LONTRAS</option>
+	<option value="421000">LUIZ ALVES</option>
+	<option value="421003">LUZERNA</option>
+	<option value="421005">MACIEIRA</option>
+	<option value="421010">MAFRA</option>
+	<option value="421020">MAJOR GERCINO</option>
+	<option value="421030">MAJOR VIEIRA</option>
+	<option value="421040">MARACAJÁ</option>
+	<option value="421050">MARAVILHA</option>
+	<option value="421055">MAREMA</option>
+	<option value="421060">MASSARANDUBA</option>
+	<option value="421070">MATOS COSTA</option>
+	<option value="421080">MELEIRO</option>
+	<option value="421085">MIRIM DOCE</option>
+	<option value="421090">MODELO</option>
+	<option value="421100">MONDAÍ</option>
+	<option value="421105">MONTE CARLO</option>
+	<option value="421110">MONTE CASTELO</option>
+	<option value="421120">MORRO DA FUMAÇA</option>
+	<option value="421125">MORRO GRANDE</option>
+	<option value="421130">NAVEGANTES</option>
+	<option value="421140">NOVA ERECHIM</option>
+	<option value="421145">NOVA ITABERABA</option>
+	<option value="421150">NOVA TRENTO</option>
+	<option value="421160">NOVA VENEZA</option>
+	<option value="421165">NOVO HORIZONTE</option>
+	<option value="421170">ORLEANS</option>
+	<option value="421175">OTACÍLIO COSTA</option>
+	<option value="421180">OURO</option>
+	<option value="421185">OURO VERDE</option>
+	<option value="421187">PAIAL</option>
+	<option value="421189">PAINEL</option>
+	<option value="421190">PALHOÇA</option>
+	<option value="421200">PALMA SOLA</option>
+	<option value="421205">PALMEIRA</option>
+	<option value="421210">PALMITOS</option>
+	<option value="421220">PAPANDUVA</option>
+	<option value="421223">PARAÍSO</option>
+	<option value="421225">PASSO DE TORRES</option>
+	<option value="421227">PASSOS MAIA</option>
+	<option value="421230">PAULO LOPES</option>
+	<option value="421240">PEDRAS GRANDES</option>
+	<option value="421250">PENHA</option>
+	<option value="421260">PERITIBA</option>
+	<option value="421265">PESCARIA BRAVA</option>
+	<option value="421270">PETROLÂNDIA</option>
+	<option value="421290">PINHALZINHO</option>
+	<option value="421300">PINHEIRO PRETO</option>
+	<option value="421310">PIRATUBA</option>
+	<option value="421315">PLANALTO ALEGRE</option>
+	<option value="421320">POMERODE</option>
+	<option value="421330">PONTE ALTA</option>
+	<option value="421335">PONTE ALTA DO NORTE</option>
+	<option value="421340">PONTE SERRADA</option>
+	<option value="421350">PORTO BELO</option>
+	<option value="421360">PORTO UNIÃO</option>
+	<option value="421370">POUSO REDONDO</option>
+	<option value="421380">PRAIA GRANDE</option>
+	<option value="421390">PRESIDENTE CASTELLO BRANCO</option>
+	<option value="421400">PRESIDENTE GETÚLIO</option>
+	<option value="421410">PRESIDENTE NEREU</option>
+	<option value="421415">PRINCESA</option>
+	<option value="421420">QUILOMBO</option>
+	<option value="421430">RANCHO QUEIMADO</option>
+	<option value="421440">RIO DAS ANTAS</option>
+	<option value="421450">RIO DO CAMPO</option>
+	<option value="421460">RIO DO OESTE</option>
+	<option value="421480">RIO DO SUL</option>
+	<option value="421470">RIO DOS CEDROS</option>
+	<option value="421490">RIO FORTUNA</option>
+	<option value="421500">RIO NEGRINHO</option>
+	<option value="421505">RIO RUFINO</option>
+	<option value="421507">RIQUEZA</option>
+	<option value="421510">RODEIO</option>
+	<option value="421520">ROMELÂNDIA</option>
+	<option value="421530">SALETE</option>
+	<option value="421535">SALTINHO</option>
+	<option value="421540">SALTO VELOSO</option>
+	<option value="421545">SANGÃO</option>
+	<option value="421550">SANTA CECÍLIA</option>
+	<option value="421555">SANTA HELENA</option>
+	<option value="421560">SANTA ROSA DE LIMA</option>
+	<option value="421565">SANTA ROSA DO SUL</option>
+	<option value="421567">SANTA TEREZINHA</option>
+	<option value="421568">SANTA TEREZINHA DO PROGRESSO</option>
+	<option value="421569">SANTIAGO DO SUL</option>
+	<option value="421570">SANTO AMARO DA IMPERATRIZ</option>
+	<option value="421580">SÃO BENTO DO SUL</option>
+	<option value="421575">SÃO BERNARDINO</option>
+	<option value="421590">SÃO BONIFÁCIO</option>
+	<option value="421600">SÃO CARLOS</option>
+	<option value="421605">SÃO CRISTOVÃO DO SUL</option>
+	<option value="421610">SÃO DOMINGOS</option>
+	<option value="421620">SÃO FRANCISCO DO SUL</option>
+	<option value="421630">SÃO JOÃO BATISTA</option>
+	<option value="421635">SÃO JOÃO DO ITAPERIÚ</option>
+	<option value="421625">SÃO JOÃO DO OESTE</option>
+	<option value="421640">SÃO JOÃO DO SUL</option>
+	<option value="421650">SÃO JOAQUIM</option>
+	<option value="421660">SÃO JOSÉ</option>
+	<option value="421670">SÃO JOSÉ DO CEDRO</option>
+	<option value="421680">SÃO JOSÉ DO CERRITO</option>
+	<option value="421690">SÃO LOURENÇO DO OESTE</option>
+	<option value="421700">SÃO LUDGERO</option>
+	<option value="421710">SÃO MARTINHO</option>
+	<option value="421715">SÃO MIGUEL DA BOA VISTA</option>
+	<option value="421720">SÃO MIGUEL DO OESTE</option>
+	<option value="421725">SÃO PEDRO DE ALCÂNTARA</option>
+	<option value="421730">SAUDADES</option>
+	<option value="421740">SCHROEDER</option>
+	<option value="421750">SEARA</option>
+	<option value="421755">SERRA ALTA</option>
+	<option value="421760">SIDERÓPOLIS</option>
+	<option value="421770">SOMBRIO</option>
+	<option value="421775">SUL BRASIL</option>
+	<option value="421780">TAIÓ</option>
+	<option value="421790">TANGARÁ</option>
+	<option value="421795">TIGRINHOS</option>
+	<option value="421800">TIJUCAS</option>
+	<option value="421810">TIMBÉ DO SUL</option>
+	<option value="421820">TIMBÓ</option>
+	<option value="421825">TIMBÓ GRANDE</option>
+	<option value="421830">TRÊS BARRAS</option>
+	<option value="421835">TREVISO</option>
+	<option value="421840">TREZE DE MAIO</option>
+	<option value="421850">TREZE TÍLIAS</option>
+	<option value="421860">TROMBUDO CENTRAL</option>
+	<option value="421870">TUBARÃO</option>
+	<option value="421875">TUNÁPOLIS</option>
+	<option value="421880">TURVO</option>
+	<option value="421885">UNIÃO DO OESTE</option>
+	<option value="421890">URUBICI</option>
+	<option value="421895">URUPEMA</option>
+	<option value="421900">URUSSANGA</option>
+	<option value="421910">VARGEÃO</option>
+	<option value="421915">VARGEM</option>
+	<option value="421917">VARGEM BONITA</option>
+	<option value="421920">VIDAL RAMOS</option>
+	<option value="421930">VIDEIRA</option>
+	<option value="421935">VITOR MEIRELES</option>
+	<option value="421940">WITMARSUM</option>
+	<option value="421950">XANXERÊ</option>
+	<option value="421960">XAVANTINA</option>
+	<option value="421970">XAXIM</option>
+	<option value="421985">ZORTÉA</option>
+</select></span>
+
+				</div>
+			</div>
+		</div>
+
+									<div class="col-md-6">
+										<div class="box box-primary box-solid">
+											<div class="box-header with-border">
+												<h4 style="margin-top: 5px;!important">
+													<strong>Período*:
+														<button type="button" class="bg-blue badge" id="info-opcoes-colunas" data-toggle="modal" onclick="infoModal('periodo')" data-target="#ds-opcoes-colunas">
+															<SAMP class="fa fa-question-circle"></SAMP>
+														</button>
+													</strong><table id="periodo">
+	<tr>
+<td>
+<input type="radio" checked="checked" name="periodo" id="periodo:0" value="producao" /><label for="periodo:0"> Produção</label></td>
+<td>
+<input type="radio" name="periodo" id="periodo:1" value="envio" /><label for="periodo:1"> Envio</label></td>
+	</tr>
+</table>
+												</h4>
+											</div>
+											<div class="box-body"><span id="competencia"><select name="j_idt70" class="form-control select2 select2-hidden-accessible" size="1">	<option value="202606">06/2026</option>
+	<option value="202605">05/2026</option>
+	<option value="202604">04/2026</option>
+	<option value="202603">03/2026</option>
+	<option value="202602">02/2026</option>
+	<option value="202601">01/2026</option>
+	<option value="202512" selected="selected">12/2025</option>
+	<option value="202511">11/2025</option>
+	<option value="202510">10/2025</option>
+	<option value="202509">09/2025</option>
+	<option value="202508">08/2025</option>
+	<option value="202507">07/2025</option>
+	<option value="202506">06/2025</option>
+	<option value="202505">05/2025</option>
+	<option value="202504">04/2025</option>
+	<option value="202503">03/2025</option>
+	<option value="202502">02/2025</option>
+	<option value="202501">01/2025</option>
+	<option value="202412">12/2024</option>
+	<option value="202411">11/2024</option>
+	<option value="202410">10/2024</option>
+	<option value="202409">09/2024</option>
+	<option value="202408">08/2024</option>
+	<option value="202407">07/2024</option>
+	<option value="202406">06/2024</option>
+	<option value="202405">05/2024</option>
+	<option value="202404">04/2024</option>
+	<option value="202403">03/2024</option>
+	<option value="202402">02/2024</option>
+	<option value="202401">01/2024</option>
+	<option value="202312">12/2023</option>
+	<option value="202311">11/2023</option>
+	<option value="202310">10/2023</option>
+	<option value="202309">09/2023</option>
+	<option value="202308">08/2023</option>
+	<option value="202307">07/2023</option>
+	<option value="202306">06/2023</option>
+	<option value="202305">05/2023</option>
+	<option value="202304">04/2023</option>
+	<option value="202303">03/2023</option>
+	<option value="202302">02/2023</option>
+	<option value="202301">01/2023</option>
+	<option value="202212">12/2022</option>
+	<option value="202211">11/2022</option>
+	<option value="202210">10/2022</option>
+	<option value="202209">09/2022</option>
+	<option value="202208">08/2022</option>
+	<option value="202207">07/2022</option>
+	<option value="202206">06/2022</option>
+	<option value="202205">05/2022</option>
+	<option value="202204">04/2022</option>
+	<option value="202203">03/2022</option>
+	<option value="202202">02/2022</option>
+	<option value="202201">01/2022</option>
+	<option value="202112">12/2021</option>
+	<option value="202111">11/2021</option>
+	<option value="202110">10/2021</option>
+	<option value="202109">09/2021</option>
+	<option value="202108">08/2021</option>
+	<option value="202107">07/2021</option>
+	<option value="202106">06/2021</option>
+	<option value="202105">05/2021</option>
+	<option value="202104">04/2021</option>
+	<option value="202103">03/2021</option>
+	<option value="202102">02/2021</option>
+	<option value="202101">01/2021</option>
+</select></span>
+											</div>
+										</div>
+									</div>
+
+									<div class="col-md-12">
+										<div class="box box-primary box-solid">
+											<div class="box-header with-border ">
+												<h4 style="margin-top: 5px;!important">
+													<strong>Opções de Colunas no Relatório</strong>
+													<button type="button" class="bg-blue badge" id="info-opcoes-colunas" data-toggle="modal" onclick="infoModal('opcoes-coluna')" data-target="#ds-opcoes-colunas">
+														<SAMP class="fa fa-question-circle"></SAMP>
+													</button>
+												</h4>
+											</div>
+											<div class="box-body"><span id="filtrosLinhaColunaRelatorio"><select id="colunas" name="colunas" class="form-control example-multiple-selected " multiple="multiple" size="8">	<option value="regiao">Região</option>
+	<option value="uf">Uf</option>
+	<option value="ibge">IBGE</option>
+	<option value="municipio" selected="selected">Municipio</option>
+	<option value="cnes" selected="selected">CNES</option>
+	<option value="tp_unidade">Tipo Unidade</option>
+	<option value="ine" selected="selected">INE</option>
+	<option value="tp_equipe">Tipo Equipe</option>
+</select></span>
+												<br />
+											</div>
+										</div>
+									</div>
+
+
+									<div class="col-md-12">
+										<div class="box box-primary">
+											<div class="box-header with-border">
+												<h4 style="margin-top: 5px;!important" class="text-blue">
+													<strong>Filtros:
+														<button type="button" class="bg-blue badge" id="info-opcoes-colunas" data-toggle="modal" onclick="infoModal('filtro')" data-target="#ds-opcoes-colunas">
+															<SAMP class="fa fa-question-circle"></SAMP>
+														</button>
+													</strong>
+												</h4>
+											</div>
+											<div class="box-body">
+												<div class="col-md-6">
+													<div class="well">
+														<div class="row">
+															<div class="col-md-6"><span id="validacao"><label class="negrito">Validação:</label>
+																	<button type="button" class="bg-blue badge" id="info-validacao" data-toggle="modal" onclick="infoModal('validacao')" data-target="#ds-opcoes-colunas">
+																		<SAMP class="fa fa-question-circle"></SAMP>
+																	</button>
+																	<br /><select name="j_idt77" class="form-control offAll-multiple-selected " multiple="multiple" size="5">	<option value="2%">Duplicado</option>
+	<option value="3%">Data inválida</option>
+	<option value="4%">Reprovado</option>
+	<option value="1%">Aprovado</option>
+	<option value="N/A">Não Aplicado</option>
+</select></span>
+															</div>
+															<div class="col-md-6"><span id="motivo-reprovado"><label class="negrito">Detalhar Reprovação:</label>
+																	<button type="button" class="bg-blue badge" id="info-motivo-reprovado" data-toggle="modal" onclick="infoModal('motivo-reprovacao')" data-target="#ds-opcoes-colunas">
+																		<SAMP class="fa fa-question-circle"></SAMP>
+																	</button>
+																	<br /><select name="j_idt82" class="form-control offAll-multiple-selected " multiple="multiple" size="4">	<option value="%(0%">CNES</option>
+	<option value="%(_0%">INE</option>
+	<option value="%(__0%">PROF</option>
+	<option value="5(%">CBO</option>
+</select></span>
+															</div>
+														</div>
+													</div>
+												</div>
+												<div class="col-md-3">
+													<div class="well"><span id="ficha"><label class="negrito">Ficha:</label>
+															<br /><select name="j_idt87" class="form-control offAll-multiple-selected " multiple="multiple" size="11">	<option value="2">Cadastro Individual</option>
+	<option value="3">Cadastro Domiciliar</option>
+	<option value="4" selected="selected">Atendimento Individual</option>
+	<option value="5">Atendimento Odontológico</option>
+	<option value="6">Atividade Coletiva</option>
+	<option value="7">Procedimentos</option>
+	<option value="8">Visita Domiciliar</option>
+	<option value="10">Atendimento Domiciliar</option>
+	<option value="11">Avaliação de Elegibilidade</option>
+	<option value="12">Consumo Alimentar</option>
+	<option value="14">Vacinação</option>
+</select></span>
+													</div>
+												</div>
+												<div class="col-md-3">
+													<div class="well"><span id="tipo-origem"><label class="negrito">Aplicação Utilizada:</label>
+															<br /><select name="j_idt92" class="form-control offAll-multiple-selected " multiple="multiple" size="6">	<option value="0">CDS Offline</option>
+	<option value="1">CDS Online</option>
+	<option value="2">PEC</option>
+	<option value="3">Sistema Próprio</option>
+	<option value="4">Android - ACS</option>
+	<option value="5">Android - AC</option>
+</select></span>
+													</div>
+												</div>
+											</div>
+											<div class="checkbox">
+												<label class="form-check-label" for="envioPrazo"><input id="envioPrazo" type="checkbox" name="envioPrazo" class="form-check-input" /> Considerar
+													apenas produção enviada no prazo.
+												</label>
+												<button type="button" class="bg-blue badge" id="info-envio-prazo" data-toggle="modal" onclick="infoModal('envio-prazo')" data-target="#ds-opcoes-colunas">
+													<SAMP class="fa fa-question-circle"></SAMP>
+												</button>
+											</div>
+										</div>
+									</div>
+
+									<div class="col-md-12">
+										<div class="form-group">
+
+											<label class="negrito">Como deseja visualizar?</label> <br />
+
+											<div class="row">
+												<div class="col-md-1"><label for="verTela" class="showSingle btn btn-app">
+														<i class="fa fa-table"></i>Ver em tela</label><input id="verTela" type="submit" name="verTela" value="Ver em tela" class="hidden" onclick="mostrarPreLoad()" />
+												</div>
+												<div class="col-md-1">
+													<button class=" btn btn-app" type="button" data-toggle="dropdown">
+														<i class="fa fa-download"></i>Download
+													</button>
+													<ul class="dropdown-menu">
+														<li><a href="#" onclick="mojarra.jsfcljs(document.getElementById('j_idt44'),{'j_idt99':'j_idt99'},'');return false">Excel</a></li>
+														<li><a href="#" onclick="mojarra.jsfcljs(document.getElementById('j_idt44'),{'j_idt102':'j_idt102'},'');return false">Csv</a></li>
+														<li><a href="#" onclick="mojarra.jsfcljs(document.getElementById('j_idt44'),{'j_idt105':'j_idt105'},'');return false">Ods</a></li>
+													</ul>
+												</div>
+												<div class="col-md-1"><label for="limpaTela" class="showSingle btn btn-app">
+														<i class="fa fa-filter"></i>Limpar Filtros</label><input id="limpaTela" type="submit" name="limpaTela" value="Limpar tela" class="hidden" />
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-12">
+						<div id="div1" class="targetDiv">
+							<div class="box">
+								<div class="box-body"><b>Secretaria de Atenção Primária à Saúde - SAPS/MS <br />Dados sujeitos à alteração <br />---Descrição dos Filtros Utilizados---<br /></b><b>Produção</b>: 12/2025<br /><b>Município</b>: FLORIANÓPOLIS.<br /><b>Ficha</b>: Atendimento Individual.<br />
+								</div>
+							</div>
+						</div>
+							<div id="divTabela" class="targetDiv">
+								<div class="box">
+									<div class="box-body">
+										<p class="text-center" style="margin-bottom: -10px; text-decoration: underline;">
+											<strong>Relatório de Validação</strong>
+										</p>
+										<table id="tabela" class="table table-striped table-bordered table-hover dataTable dtPagina" role="grid" aria-describedby="example2_info">
+											<thead>
+												<tr role="row">
+															<td>Municipio</td>
+															<td>CNES</td>
+															<td>INE</td>
+															<td>Validação</td>
+															<td>Total</td>
+												</tr>
+											</thead>
+											<tbody>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019399</td>
+															<td>0000405388</td>
+															<td>Aprovado</td>
+															<td>530</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>3186717</td>
+															<td>0000406473</td>
+															<td>Aprovado</td>
+															<td>612</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2997460</td>
+															<td>0002276887</td>
+															<td>Aprovado</td>
+															<td>1.192</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019712</td>
+															<td>0000405671</td>
+															<td>Aprovado</td>
+															<td>544</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692120</td>
+															<td>0000406147</td>
+															<td>Aprovado</td>
+															<td>574</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2997460</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>266</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019585</td>
+															<td>0000405574</td>
+															<td>Aprovado</td>
+															<td>309</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020087</td>
+															<td>0002197235</td>
+															<td>Aprovado</td>
+															<td>210</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019739</td>
+															<td>0002197243</td>
+															<td>Aprovado</td>
+															<td>403</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020036</td>
+															<td>0000405922</td>
+															<td>Aprovado</td>
+															<td>372</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2622726</td>
+															<td>0000405981</td>
+															<td>Aprovado</td>
+															<td>470</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020028</td>
+															<td>0000405884</td>
+															<td>Aprovado</td>
+															<td>462</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2997460</td>
+															<td>0002276925</td>
+															<td>Aprovado</td>
+															<td>636</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692546</td>
+															<td>0000406384</td>
+															<td>Aprovado</td>
+															<td>506</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6359981</td>
+															<td>0002458608</td>
+															<td>Aprovado</td>
+															<td>296</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692104</td>
+															<td>0000406031</td>
+															<td>Aprovado</td>
+															<td>436</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019275</td>
+															<td>0000405248</td>
+															<td>Aprovado</td>
+															<td>298</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692538</td>
+															<td>0002222809</td>
+															<td>Aprovado</td>
+															<td>8</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019712</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>54</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692511</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>21</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019658</td>
+															<td>0002222949</td>
+															<td>Aprovado</td>
+															<td>2</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019550</td>
+															<td>0002222590</td>
+															<td>Aprovado</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692570</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019542</td>
+															<td>0000405515</td>
+															<td>Aprovado</td>
+															<td>428</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692511</td>
+															<td>0000406260</td>
+															<td>Aprovado</td>
+															<td>572</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692546</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>43</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692120</td>
+															<td>0000406139</td>
+															<td>Aprovado</td>
+															<td>500</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692570</td>
+															<td>0000406449</td>
+															<td>Aprovado</td>
+															<td>487</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019496</td>
+															<td>0000405477</td>
+															<td>Aprovado</td>
+															<td>351</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020028</td>
+															<td>0000405906</td>
+															<td>Aprovado</td>
+															<td>516</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019763</td>
+															<td>0000405752</td>
+															<td>Aprovado</td>
+															<td>732</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692554</td>
+															<td>0000406406</td>
+															<td>Aprovado</td>
+															<td>888</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692511</td>
+															<td>0002222604</td>
+															<td>Aprovado</td>
+															<td>149</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692120</td>
+															<td>0000406104</td>
+															<td>Aprovado</td>
+															<td>484</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020087</td>
+															<td>0002222353</td>
+															<td>Aprovado</td>
+															<td>141</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692120</td>
+															<td>0000406120</td>
+															<td>Aprovado</td>
+															<td>561</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019348</td>
+															<td>0000405329</td>
+															<td>Aprovado</td>
+															<td>444</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019615</td>
+															<td>0000405582</td>
+															<td>Aprovado</td>
+															<td>480</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692546</td>
+															<td>0000406376</td>
+															<td>Aprovado</td>
+															<td>695</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019542</td>
+															<td>0000405523</td>
+															<td>Aprovado</td>
+															<td>611</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6359981</td>
+															<td>0002458616</td>
+															<td>Aprovado</td>
+															<td>275</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019275</td>
+															<td>0000405213</td>
+															<td>Aprovado</td>
+															<td>429</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6359981</td>
+															<td>0000406597</td>
+															<td>Aprovado</td>
+															<td>197</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019739</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>83</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692112</td>
+															<td>0001532154</td>
+															<td>Aprovado</td>
+															<td>350</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019801</td>
+															<td>0002143089</td>
+															<td>Aprovado</td>
+															<td>163</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692546</td>
+															<td>0001570692</td>
+															<td>Aprovado</td>
+															<td>315</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020036</td>
+															<td>0000405914</td>
+															<td>Aprovado</td>
+															<td>536</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692481</td>
+															<td>0001682822</td>
+															<td>Aprovado</td>
+															<td>365</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019259</td>
+															<td>0001605054</td>
+															<td>Aprovado</td>
+															<td>6</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019364</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>3</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692511</td>
+															<td>0000405701</td>
+															<td>Aprovado</td>
+															<td>8</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>3186717</td>
+															<td>0002222639</td>
+															<td>Aprovado</td>
+															<td>4</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692570</td>
+															<td>0000406430</td>
+															<td>Aprovado</td>
+															<td>258</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019550</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>9</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019275</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>17</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020087</td>
+															<td>0000406430</td>
+															<td>Aprovado</td>
+															<td>4</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020087</td>
+															<td>0002252260</td>
+															<td>Aprovado</td>
+															<td>407</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019496</td>
+															<td>0001570676</td>
+															<td>Aprovado</td>
+															<td>364</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020036</td>
+															<td>0000405930</td>
+															<td>Aprovado</td>
+															<td>525</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019712</td>
+															<td>0002198290</td>
+															<td>Aprovado</td>
+															<td>441</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692147</td>
+															<td>0001970046</td>
+															<td>Aprovado</td>
+															<td>494</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019801</td>
+															<td>0002222639</td>
+															<td>Aprovado</td>
+															<td>282</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019585</td>
+															<td>0000405566</td>
+															<td>Aprovado</td>
+															<td>473</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019348</td>
+															<td>0000405310</td>
+															<td>Aprovado</td>
+															<td>539</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019615</td>
+															<td>0002222906</td>
+															<td>Aprovado</td>
+															<td>249</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019550</td>
+															<td>0001517414</td>
+															<td>Aprovado</td>
+															<td>444</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6477267</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>35</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692082</td>
+															<td>0002198606</td>
+															<td>Aprovado</td>
+															<td>438</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692139</td>
+															<td>0000406163</td>
+															<td>Aprovado</td>
+															<td>299</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019658</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>488</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019739</td>
+															<td>0000405647</td>
+															<td>Aprovado</td>
+															<td>9</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6359981</td>
+															<td>0002198576</td>
+															<td>Aprovado</td>
+															<td>467</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692120</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>68</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692090</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>59</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2997460</td>
+															<td>0002276895</td>
+															<td>Aprovado</td>
+															<td>430</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692538</td>
+															<td>0000406333</td>
+															<td>Aprovado</td>
+															<td>474</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692538</td>
+															<td>0000406341</td>
+															<td>Reprovado(PROF)</td>
+															<td>99</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6359981</td>
+															<td>0002198568</td>
+															<td>Aprovado</td>
+															<td>327</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019488</td>
+															<td>0000405426</td>
+															<td>Aprovado</td>
+															<td>309</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692503</td>
+															<td>0000406252</td>
+															<td>Aprovado</td>
+															<td>370</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019453</td>
+															<td>0002197855</td>
+															<td>Aprovado</td>
+															<td>1.029</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019801</td>
+															<td>0000405787</td>
+															<td>Aprovado</td>
+															<td>824</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692570</td>
+															<td>0000406457</td>
+															<td>Aprovado</td>
+															<td>510</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019801</td>
+															<td>0000405809</td>
+															<td>Aprovado</td>
+															<td>609</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692554</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>69</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2622726</td>
+															<td>0001607316</td>
+															<td>Aprovado</td>
+															<td>574</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>3186717</td>
+															<td>0000405469</td>
+															<td>Aprovado</td>
+															<td>17</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019585</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>8</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692112</td>
+															<td>0000406066</td>
+															<td>Aprovado</td>
+															<td>633</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692104</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>2</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019690</td>
+															<td>0000405655</td>
+															<td>Reprovado(PROF)</td>
+															<td>3</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692562</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>11</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019585</td>
+															<td>0002222787</td>
+															<td>Aprovado</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019364</td>
+															<td>0000405337</td>
+															<td>Aprovado</td>
+															<td>546</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019690</td>
+															<td>0002545187</td>
+															<td>Aprovado</td>
+															<td>443</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692538</td>
+															<td>0002222787</td>
+															<td>Aprovado</td>
+															<td>225</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019348</td>
+															<td>0002222981</td>
+															<td>Aprovado</td>
+															<td>45</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692538</td>
+															<td>0000406325</td>
+															<td>Aprovado</td>
+															<td>269</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019399</td>
+															<td>0000405361</td>
+															<td>Aprovado</td>
+															<td>406</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019739</td>
+															<td>0000405728</td>
+															<td>Aprovado</td>
+															<td>315</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692104</td>
+															<td>0001570498</td>
+															<td>Aprovado</td>
+															<td>329</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019801</td>
+															<td>0000405604</td>
+															<td>Aprovado</td>
+															<td>228</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019739</td>
+															<td>0000405736</td>
+															<td>Aprovado</td>
+															<td>161</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019496</td>
+															<td>0002222477</td>
+															<td>Aprovado</td>
+															<td>220</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692112</td>
+															<td>0000406074</td>
+															<td>Aprovado</td>
+															<td>645</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019690</td>
+															<td>0001682814</td>
+															<td>Aprovado</td>
+															<td>447</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692538</td>
+															<td>0001586998</td>
+															<td>Aprovado</td>
+															<td>266</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692473</td>
+															<td>0001605062</td>
+															<td>Aprovado</td>
+															<td>437</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019496</td>
+															<td>0000405450</td>
+															<td>Aprovado</td>
+															<td>736</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019518</td>
+															<td>0002198312</td>
+															<td>Aprovado</td>
+															<td>428</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019364</td>
+															<td>0001687743</td>
+															<td>Aprovado</td>
+															<td>677</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692112</td>
+															<td>0001587013</td>
+															<td>Aprovado</td>
+															<td>702</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692546</td>
+															<td>0000406392</td>
+															<td>Aprovado</td>
+															<td>576</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692120</td>
+															<td>0001682369</td>
+															<td>Aprovado</td>
+															<td>417</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692473</td>
+															<td>0000406228</td>
+															<td>Aprovado</td>
+															<td>617</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>3186717</td>
+															<td>0000406481</td>
+															<td>Aprovado</td>
+															<td>486</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019615</td>
+															<td>0002459086</td>
+															<td>Aprovado</td>
+															<td>122</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2997460</td>
+															<td>0002276917</td>
+															<td>Aprovado</td>
+															<td>447</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2997460</td>
+															<td>0002197367</td>
+															<td>Aprovado</td>
+															<td>170</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2622726</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>48</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019801</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>20</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019852</td>
+															<td>0002168774</td>
+															<td>Aprovado</td>
+															<td>489</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019658</td>
+															<td>0001682601</td>
+															<td>Aprovado</td>
+															<td>134</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019348</td>
+															<td>0002222590</td>
+															<td>Aprovado</td>
+															<td>22</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>3186717</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>20</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6935257</td>
+															<td>0002198339</td>
+															<td>Aprovado</td>
+															<td>390</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692538</td>
+															<td>0000406325</td>
+															<td>Reprovado(PROF)</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>3186717</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>3</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692082</td>
+															<td>0002197367</td>
+															<td>Aprovado</td>
+															<td>34</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692112</td>
+															<td>0002222949</td>
+															<td>Aprovado</td>
+															<td>17</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019542</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>5</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692546</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>7</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692503</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019542</td>
+															<td>0002198347</td>
+															<td>Aprovado</td>
+															<td>12</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019763</td>
+															<td>0001682547</td>
+															<td>Aprovado</td>
+															<td>3</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019518</td>
+															<td>0000405485</td>
+															<td>Aprovado</td>
+															<td>574</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019550</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>119</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019364</td>
+															<td>0000405345</td>
+															<td>Aprovado</td>
+															<td>696</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019585</td>
+															<td>0001585517</td>
+															<td>Aprovado</td>
+															<td>554</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692511</td>
+															<td>0000406287</td>
+															<td>Aprovado</td>
+															<td>776</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>3186717</td>
+															<td>0002222574</td>
+															<td>Aprovado</td>
+															<td>316</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692511</td>
+															<td>0001517430</td>
+															<td>Aprovado</td>
+															<td>693</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692473</td>
+															<td>0000406201</td>
+															<td>Aprovado</td>
+															<td>579</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019275</td>
+															<td>0001681990</td>
+															<td>Aprovado</td>
+															<td>405</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019275</td>
+															<td>0002249863</td>
+															<td>Aprovado</td>
+															<td>499</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020087</td>
+															<td>0000405949</td>
+															<td>Aprovado</td>
+															<td>356</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019542</td>
+															<td>0002222590</td>
+															<td>Aprovado</td>
+															<td>157</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019488</td>
+															<td>0000405434</td>
+															<td>Aprovado</td>
+															<td>435</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019801</td>
+															<td>0000405825</td>
+															<td>Aprovado</td>
+															<td>491</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019496</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>6</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692546</td>
+															<td>0001570315</td>
+															<td>Aprovado</td>
+															<td>540</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692147</td>
+															<td>0000406171</td>
+															<td>Aprovado</td>
+															<td>505</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019658</td>
+															<td>0000405612</td>
+															<td>Aprovado</td>
+															<td>399</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692511</td>
+															<td>0002197847</td>
+															<td>Aprovado</td>
+															<td>627</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692538</td>
+															<td>0000406309</td>
+															<td>Aprovado</td>
+															<td>731</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692481</td>
+															<td>0000406244</td>
+															<td>Aprovado</td>
+															<td>314</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019852</td>
+															<td>0000405833</td>
+															<td>Aprovado</td>
+															<td>352</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020036</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019615</td>
+															<td>0001570498</td>
+															<td>Aprovado</td>
+															<td>17</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019801</td>
+															<td>0000405795</td>
+															<td>Aprovado</td>
+															<td>492</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019801</td>
+															<td>0001570323</td>
+															<td>Aprovado</td>
+															<td>648</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692562</td>
+															<td>0000406422</td>
+															<td>Aprovado</td>
+															<td>620</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692120</td>
+															<td>0000406090</td>
+															<td>Aprovado</td>
+															<td>88</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019399</td>
+															<td>0002198363</td>
+															<td>Aprovado</td>
+															<td>294</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692155</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>4</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019518</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>7</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692104</td>
+															<td>0002222906</td>
+															<td>Aprovado</td>
+															<td>4</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692082</td>
+															<td>0000406341</td>
+															<td>Aprovado</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020087</td>
+															<td>0002222353</td>
+															<td>Reprovado(PROF)</td>
+															<td>9</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019488</td>
+															<td>0000405442</td>
+															<td>Reprovado(PROF)</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692503</td>
+															<td>0002222590</td>
+															<td>Aprovado</td>
+															<td>3</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019658</td>
+															<td>0000405620</td>
+															<td>Aprovado</td>
+															<td>793</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6935257</td>
+															<td>0002198347</td>
+															<td>Aprovado</td>
+															<td>445</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019275</td>
+															<td>0000405221</td>
+															<td>Aprovado</td>
+															<td>553</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020028</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>116</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019364</td>
+															<td>0000405353</td>
+															<td>Aprovado</td>
+															<td>733</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692570</td>
+															<td>0002148676</td>
+															<td>Aprovado</td>
+															<td>381</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6477267</td>
+															<td>0000406627</td>
+															<td>Aprovado</td>
+															<td>602</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019690</td>
+															<td>0000405655</td>
+															<td>Aprovado</td>
+															<td>445</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019496</td>
+															<td>0000405469</td>
+															<td>Aprovado</td>
+															<td>408</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692155</td>
+															<td>0002197367</td>
+															<td>Aprovado</td>
+															<td>151</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019763</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>310</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019488</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>51</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692090</td>
+															<td>0000406023</td>
+															<td>Aprovado</td>
+															<td>599</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019615</td>
+															<td>0001682547</td>
+															<td>Aprovado</td>
+															<td>514</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019690</td>
+															<td>0001682814</td>
+															<td>Reprovado(PROF)</td>
+															<td>2</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019801</td>
+															<td>0000405817</td>
+															<td>Aprovado</td>
+															<td>464</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019585</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>26</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019666</td>
+															<td>0001570471</td>
+															<td>Aprovado</td>
+															<td>462</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2622726</td>
+															<td>0000405965</td>
+															<td>Aprovado</td>
+															<td>412</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2622726</td>
+															<td>0002473852</td>
+															<td>Aprovado</td>
+															<td>283</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019658</td>
+															<td>0000405639</td>
+															<td>Aprovado</td>
+															<td>701</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2997460</td>
+															<td>0002554968</td>
+															<td>Aprovado</td>
+															<td>166</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019658</td>
+															<td>0002222981</td>
+															<td>Aprovado</td>
+															<td>71</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2622726</td>
+															<td>0002198592</td>
+															<td>Aprovado</td>
+															<td>510</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6477267</td>
+															<td>0000406635</td>
+															<td>Aprovado</td>
+															<td>681</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019348</td>
+															<td>0002222949</td>
+															<td>Aprovado</td>
+															<td>51</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>3186717</td>
+															<td>0002198533</td>
+															<td>Aprovado</td>
+															<td>186</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019666</td>
+															<td>0000405647</td>
+															<td>Aprovado</td>
+															<td>678</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019348</td>
+															<td>0001663232</td>
+															<td>Aprovado</td>
+															<td>343</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6359981</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>804</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692538</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>347</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6935257</td>
+															<td>0002198363</td>
+															<td>Aprovado</td>
+															<td>153</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019496</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>21</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020028</td>
+															<td>0000405876</td>
+															<td>Aprovado</td>
+															<td>367</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692562</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>8</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019763</td>
+															<td>0001570331</td>
+															<td>Aprovado</td>
+															<td>91</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020036</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6935257</td>
+															<td>0000405523</td>
+															<td>Aprovado</td>
+															<td>7</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6935257</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692503</td>
+															<td>0000406430</td>
+															<td>Aprovado</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6359981</td>
+															<td>0002022117</td>
+															<td>Aprovado</td>
+															<td>2</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692554</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2997460</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692120</td>
+															<td>0002222485</td>
+															<td>Aprovado</td>
+															<td>182</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692104</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>4</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019658</td>
+															<td>0001570501</td>
+															<td>Aprovado</td>
+															<td>454</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019739</td>
+															<td>0000405701</td>
+															<td>Aprovado</td>
+															<td>524</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2997460</td>
+															<td>0002276909</td>
+															<td>Aprovado</td>
+															<td>381</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019348</td>
+															<td>0002478781</td>
+															<td>Aprovado</td>
+															<td>445</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019771</td>
+															<td>0000405779</td>
+															<td>Aprovado</td>
+															<td>532</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>3186717</td>
+															<td>0001605054</td>
+															<td>Aprovado</td>
+															<td>329</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>3186717</td>
+															<td>0000406465</td>
+															<td>Aprovado</td>
+															<td>612</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019690</td>
+															<td>0000405663</td>
+															<td>Aprovado</td>
+															<td>376</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2622726</td>
+															<td>0002197278</td>
+															<td>Aprovado</td>
+															<td>347</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692112</td>
+															<td>0001681125</td>
+															<td>Aprovado</td>
+															<td>621</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019542</td>
+															<td>0000405507</td>
+															<td>Aprovado</td>
+															<td>578</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692538</td>
+															<td>0000406341</td>
+															<td>Aprovado</td>
+															<td>741</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692481</td>
+															<td>0000406236</td>
+															<td>Aprovado</td>
+															<td>488</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019275</td>
+															<td>0000405256</td>
+															<td>Aprovado</td>
+															<td>365</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692538</td>
+															<td>0000406368</td>
+															<td>Aprovado</td>
+															<td>401</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6359981</td>
+															<td>0001692682</td>
+															<td>Aprovado</td>
+															<td>336</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692554</td>
+															<td>0000406414</td>
+															<td>Aprovado</td>
+															<td>526</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019550</td>
+															<td>0000405531</td>
+															<td>Aprovado</td>
+															<td>565</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6477267</td>
+															<td>0000406317</td>
+															<td>Aprovado</td>
+															<td>526</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020036</td>
+															<td>0002449986</td>
+															<td>Aprovado</td>
+															<td>411</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019712</td>
+															<td>0000405671</td>
+															<td>Reprovado(PROF)</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692082</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>43</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692082</td>
+															<td>0002198452</td>
+															<td>Aprovado</td>
+															<td>298</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2622726</td>
+															<td>0002197928</td>
+															<td>Aprovado</td>
+															<td>368</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019348</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>61</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019690</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>67</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>6359981</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>15</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692511</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>19</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019399</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>5</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019453</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>9</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019496</td>
+															<td>0002222477</td>
+															<td>Reprovado(PROF)</td>
+															<td>22</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019364</td>
+															<td>0002222590</td>
+															<td>Aprovado</td>
+															<td>4</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019577</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>1</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692155</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>28</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019453</td>
+															<td>0000405418</td>
+															<td>Aprovado</td>
+															<td>479</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692139</td>
+															<td>0002198614</td>
+															<td>Aprovado</td>
+															<td>421</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692139</td>
+															<td>0000406155</td>
+															<td>Aprovado</td>
+															<td>471</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692112</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>192</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692562</td>
+															<td>0002198479</td>
+															<td>Aprovado</td>
+															<td>554</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692104</td>
+															<td>0001605127</td>
+															<td>Aprovado</td>
+															<td>573</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019577</td>
+															<td>0002197359</td>
+															<td>Aprovado</td>
+															<td>706</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019488</td>
+															<td>0000405442</td>
+															<td>Aprovado</td>
+															<td>415</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2997460</td>
+															<td>0002306662</td>
+															<td>Aprovado</td>
+															<td>526</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019550</td>
+															<td>0001517422</td>
+															<td>Aprovado</td>
+															<td>284</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020028</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>84</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692104</td>
+															<td>0000406058</td>
+															<td>Aprovado</td>
+															<td>461</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019771</td>
+															<td>0000405760</td>
+															<td>Aprovado</td>
+															<td>444</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692538</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>110</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020087</td>
+															<td>0002198428</td>
+															<td>Aprovado</td>
+															<td>330</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019801</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>267</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019658</td>
+															<td>0000405604</td>
+															<td>Aprovado</td>
+															<td>259</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019739</td>
+															<td>0000405698</td>
+															<td>Aprovado</td>
+															<td>382</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019615</td>
+															<td>0000471828</td>
+															<td>Aprovado</td>
+															<td>545</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019852</td>
+															<td>0000405841</td>
+															<td>Aprovado</td>
+															<td>362</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692112</td>
+															<td>0000406082</td>
+															<td>Aprovado</td>
+															<td>816</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019615</td>
+															<td>0002197871</td>
+															<td>Aprovado</td>
+															<td>378</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692112</td>
+															<td>0002222809</td>
+															<td>Aprovado</td>
+															<td>56</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019801</td>
+															<td>0000406244</td>
+															<td>Aprovado</td>
+															<td>6</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692538</td>
+															<td>0000406295</td>
+															<td>Aprovado</td>
+															<td>607</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>3186717</td>
+															<td>0002198541</td>
+															<td>Aprovado</td>
+															<td>329</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019712</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>11</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019658</td>
+															<td>0000405612</td>
+															<td>Reprovado(PROF)</td>
+															<td>107</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019976</td>
+															<td>0002311690</td>
+															<td>Aprovado</td>
+															<td>348</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692120</td>
+															<td>0000406112</td>
+															<td>Aprovado</td>
+															<td>316</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019747</td>
+															<td>0000405744</td>
+															<td>Aprovado</td>
+															<td>167</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019747</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>2</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020087</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>10</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019739</td>
+															<td>0002495309</td>
+															<td>Aprovado</td>
+															<td>99</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0019739</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>17</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>0020087</td>
+															<td></td>
+															<td>Reprovado(PROF)</td>
+															<td>7</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2692481</td>
+															<td></td>
+															<td>Aprovado</td>
+															<td>23</td>
+													</tr>
+													<tr role="row" class="odd">
+															<td>FLORIANÓPOLIS</td>
+															<td>2997460</td>
+															<td>0002198592</td>
+															<td>Aprovado</td>
+															<td>1</td>
+													</tr>
+											</tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+
+					</div>
+				</div><span id="script">
+					<script type="text/javascript">
+						$('.example-multiple-selected').multiselect({
+							includeSelectAllOption : true,
+							maxHeight : 200,
+							selectAllText : 'Selecionar Todos',
+							allSelectedText : 'Selecionados',
+							nonSelectedText : 'Nenhum item selecionado'
+						});
+					</script>
+					<script type="text/javascript">
+						$('.offAll-multiple-selected').multiselect({
+							maxHeight : 200,
+							selectAllText : 'Selecionar Todos',
+							allSelectedText : 'Selecionados',
+							nonSelectedText : 'Nenhum item selecionado'
+						});
+					</script></span><input type="hidden" name="javax.faces.ViewState" id="javax.faces.ViewState" value="3448688058273692086:-3115532900903900638" autocomplete="off" />
+</form>
+			<script type="text/javascript">
+				TIPORELATORIO = 'AtendimentoVisita';
+			</script></span>
+		<script src="/resource/js/rel-saude/bloqueio-dinamico-relsaude.js"></script>
+			</section>
+
+			<div class="control-sidebar-bg"></div>
+		</div>
+
+
+		<footer class="main-footer">
+
+			<div class="pull-right hidden-xs">Versão 2.1.260703.cc</div>
+			<strong> Ministério da Saúde 2023: <a href="http://dab.saude.gov.br" target="_blank">Secretaria de Atenção Primária à Saúde (SAPS/MS)</a></strong>
+			<!-- REQUIRED JS SCRIPTS -->
+
+			<!-- AdminLTE App -->
+			<script src="/resource/js/app.min.js" type="text/javascript"></script>
+			<!-- Datatables -->
+			<script src="/resource/js/plugins/datatables/jquery.dataTables.min.js" type="text/javascript"></script>
+			<script src="/resource/js/plugins/datatables/dataTables.bootstrap.min.js" type="text/javascript"></script>
+			<!-- Datatables -->
+			<script src="/resource/js/highcharts/highcharts.js" type="text/javascript"></script>
+			<script src="/resource/js/highcharts/exporting.js" type="text/javascript"></script>
+			<script src="/resource/js/jquery-ui.js"></script>
+
+			<script src="/resource/js/multi-select/jquery.multi-select.js"></script>
+			<script src="/resource/js/multi-select/bootstrap-multiselect.js"></script>
+
+			<script src="/resource/js/plugins/datepicker/bootstrap-datepicker.js"></script>
+			<script src="/resource/js/plugins/datepicker/datepicker-pt-BR.js"></script>
+
+
+			<script src="/resource/js/plugins/input-mask/jquery.inputmask.js"></script>
+			<script src="/resource/js/plugins/input-mask/jquery.inputmask.extensions.js"></script>
+			<script src="/resource/js/plugins/input-mask/jquery.inputmask.date.extensions.js"></script>
+
+
+			<link href="/resource/css/font-awesome-4.6.3/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+
+			<link href="/resource/css/ionicons-2.0.1/css/ionicons.min.css" rel="stylesheet" type="text/css" />
+
+
+
+			<script type="text/javascript">
+				bootbox.setDefaults({
+					locale : "br"
+				});
+
+				$('.dtPagina')
+						.dataTable(
+								{
+									"oLanguage" : {
+										"sProcessing" : "Aguarde enquanto os dados são carregados ...",
+										"sLengthMenu" : "Mostrar _MENU_ registros por página",
+										"sZeroRecords" : "Nenhum registro correspondente ao criterio encontrado",
+										"sInfoEmtpy" : "Exibindo 0 a 0 de 0 registros",
+										"sInfo" : "Exibindo de _START_ a _END_ de _TOTAL_ registros",
+										"sInfoFiltered" : "",
+										"sSearch" : "Procurar: ",
+										"oPaginate" : {
+											"sFirst" : "Primeiro",
+											"sPrevious" : "Anterior",
+											"sNext" : "Próximo",
+											"sLast" : "Último"
+										}
+									},
+
+									"sScrollX" : '100%'
+
+								});
+			</script>
+
+			<script type="text/javascript">
+				$(function() {
+					if ($('input[name="tipoConsulta"]').is(':checked') == true) {
+						$("html, body").animate({
+							scrollTop : $(document).height()
+						}, 1000);
+					}
+					$('#showall').click(function() {
+						$('.targetDiv').show();
+					});
+
+					$('.showSingle').click(function() {
+						$id = 'collapse' + $(this).attr('target');
+						$('.targetDiv').each(function() {
+							if ($(this).attr('id') == $id) {
+								if ($(this).css('display') == 'none') {
+									$(this).show();
+								} else {
+									$(this).hide();
+								}
+							} else {
+								$(this).hide();
+							}
+						});
+
+					});
+
+					$(".tpConsolidado").click(function() {
+						if ($(this).val() == 1) {
+							$("#divConsolidado").show('fast');
+						} else {
+							$("#divConsolidado").hide('fast');
+						}
+					});
+
+					$('.example-multiple-selected').multiselect({
+						includeSelectAllOption : true,
+						maxHeight : 200,
+						selectAllText : 'Selecionar Todos',
+						allSelectedText : 'Selecionados',
+						nonSelectedText : 'Nenhum item selecionado'
+					});
+					$('.offAll-multiple-selected').multiselect({
+						maxHeight : 200,
+						selectAllText : 'Selecionar Todos',
+						allSelectedText : 'Selecionados',
+						nonSelectedText : 'Nenhum item selecionado'
+					});
+					
+					$('.multiple-selected-tpProducao-ceo').multiselect({
+						includeSelectAllOption : true,
+						maxHeight : 200,
+						selectAllText : 'Todos os procedimentos',
+						allSelectedText : 'Selecionados',
+						nonSelectedText : 'Nenhum item selecionado'
+					});
+
+					//TEXTOS DE RELATÓRIO CAT MASTER					 
+					if (typeof TIPORELATORIO != 'undefined') {
+						$('.callout').html(desc_relatorio(TIPORELATORIO));
+					}
+				});
+			</script>
+
+			<!--scripts dos sistema -->
+
+			<!-- filtros  -->
+			<script src="/resource/js/rel-saude/atendimento.js"></script>
+
+			<!--Gr&aacute;ficos-->
+			<script src="/resource/js/graficos/avaliacaoExterna.js"></script>
+
+			<!--textos-->
+			<script src="/resource/js/textos_relatorio.js"></script>
+				
+
+		</footer>
+	</div></body>
+
+</html>

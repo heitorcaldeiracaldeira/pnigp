@@ -1,8 +1,9 @@
 // Painéis das novas fontes (eixos econômico/ambiental/social/saúde). Server components, compactos.
 // Padrão: dado + série + carimbo de origem COM data de extração + CSV. (atende à diretriz de proveniência + exportação.)
-import type { getBndesSC, getCfemSC, getAnpSC, getQueimadasSC, getBolsaAtletaSC, getVitaisSC, getAnsCoberturaSC, getEquipamentosEsporteSC, getCagedSC, getRaisSC, getCasamentoEmpregoSC, getProdesSC, getDesastresSC, getSinisaSC, getSinanDengueSC, getAneelGdSC, getAnatelBlSC, getFrotaSC, getIbamaAutosSC, getSinespSC, getIncraAssentamentosSC, getPronafSC, getIcmbioUcSC, getAnaOutorgasSC, getIbgeProducaoSC, getArbovirosesSC, getDatatranSC, getAnpVendasSC, getCapagSC, getRfbArrecadacaoSC, getSimSC, getSinascSC, getSihSC, getIgdmSC, getIbamaEmbargosSC, getQuilombosSC, getSiaProducaoSC, getMedicamentosSC, getSinanAgravosSC, getProfissionaisSaudeSC, getApacSC, getRaasSaudeMentalSC, getCoberturaVacinalSC, getSisaguaSC, getMortalidadeInfantilSC, getFarmaciaPopularSC, getFinanciamentoApsSC } from "@/lib/queries";
+import type { getBndesSC, getCfemSC, getAnpSC, getQueimadasSC, getBolsaAtletaSC, getVitaisSC, getAnsCoberturaSC, getEquipamentosEsporteSC, getCagedSC, getRaisSC, getCasamentoEmpregoSC, getProdesSC, getDesastresSC, getSinisaSC, getSinanDengueSC, getAneelGdSC, getAnatelBlSC, getFrotaSC, getIbamaAutosSC, getSinespSC, getIncraAssentamentosSC, getPronafSC, getIcmbioUcSC, getAnaOutorgasSC, getIbgeProducaoSC, getArbovirosesSC, getDatatranSC, getAnpVendasSC, getCapagSC, getRfbArrecadacaoSC, getSimSC, getSinascSC, getSihSC, getIgdmSC, getIbamaEmbargosSC, getQuilombosSC, getSiaProducaoSC, getMedicamentosSC, getSinanAgravosSC, getProfissionaisSaudeSC, getApacSC, getRaasSaudeMentalSC, getCoberturaVacinalSC, getSisaguaSC, getMortalidadeInfantilSC, getFarmaciaPopularSC, getFinanciamentoApsSC, getCoberturaApsSC, getProducaoApsSC, getIndicadoresApsSC, getDinheiroMesaApsSC, getQualidadeIndicadoresApsSC, getVinculoApsSC, getSuasSaldoSC, getPddeSaldoSC, getPnaeAgriSC, getBarragensSC, getPaaSC, getLpgSC, getSalicSC, getNovoPacSC, getCensoCorRacaSC, getPopulacaoFaixaSC, getPibMunicipalSC, getIdhmSC, getCemadenSC, getDomiciliosSC, getAlfabetizacaoSC, getSetoresSC, getMuseusSC } from "@/lib/queries";
 import { BaixarCsv } from "./baixar-csv";
-import { Landmark, Mountain, Fuel, Flame, Medal, HeartPulse, ShieldPlus, MapPin, Briefcase, Users, GitMerge, Trees, AlertTriangle, Droplets, Bug, Sun, Wifi, Car, Gavel, Shield, Sprout, TreePine, Waves, Wheat, Building2, TriangleAlert, Gauge, Activity, Baby, Ban, Home, Pill, ShieldAlert, Stethoscope, Ribbon, Brain, Syringe, GlassWater, HeartCrack, Cross, Coins, Database } from "lucide-react";
+import MapaSetoresWrap from "./mapa-setores-wrap";
+import { Landmark, Mountain, Fuel, Flame, Medal, HeartPulse, ShieldPlus, MapPin, Briefcase, Users, GitMerge, Trees, AlertTriangle, Droplets, Bug, Sun, Wifi, Car, Gavel, Shield, Sprout, TreePine, Waves, Wheat, Building2, TriangleAlert, Gauge, Activity, Baby, Ban, Home, Pill, ShieldAlert, Stethoscope, Ribbon, Brain, Syringe, GlassWater, HeartCrack, Cross, Coins, Network, ClipboardList, Target, Banknote, Award, Wallet, Clapperboard, Palette, PersonStanding, TrendingUp, Database } from "lucide-react";
 
 type Un<T> = NonNullable<Awaited<T>>;
 const brl = (v: number) => (v >= 1e9 ? `R$ ${(v / 1e9).toFixed(2)} bi` : v >= 1e6 ? `R$ ${(v / 1e6).toFixed(1)} mi` : v >= 1e3 ? `R$ ${(v / 1e3).toFixed(0)} mil` : `R$ ${v}`);
@@ -143,17 +144,561 @@ export function SihPanel({ d }: { d: Un<ReturnType<typeof getSihSC>> }) {
   );
 }
 
-export function FinanciamentoApsPanel({ d }: { d: Un<ReturnType<typeof getFinanciamentoApsSC>> }) {
+export function VinculoApsPanel({ d }: { d: Un<ReturnType<typeof getVinculoApsSC>> }) {
+  const CORF: Record<string, string> = { "Ótimo": "#2563eb", "Bom": "#16a34a", "Suficiente": "#ea580c", "Regular": "#dc2626" };
+  const cor = d.pctBomMais >= 50 ? "#16a34a" : d.pctBomMais >= 25 ? "#ea580c" : "#dc2626";
+  const maxT = 100;
   return (
-    <Card icon={<Coins className="h-4 w-4" />} titulo="Financiamento da Atenção Primária (e-Gestor APS)" cor="#0d9488">
+    <Card icon={<MapPin className="h-4 w-4" />} titulo="Vínculo e Acompanhamento Territorial (CVAT) — novo modelo (SIAPS)" cor={cor}
+      csv={<BaixarCsv nome="vinculo-cvat-siaps" label="CSV" linhas={[...d.distrib.map((f) => ({ faixa: f.faixa, equipes: f.qtd })), { faixa: "% Bom+", equipes: d.pctBomMais }] as unknown as Row[]} colunas={[{ chave: "faixa", rotulo: "Faixa" }, { chave: "equipes", rotulo: "eSF" }]} />}>
       <div className="mt-2 flex flex-wrap items-end gap-4">
-        <div><div className="text-[11px] text-slate-500">Custeio APS por mês</div><div className="font-display text-2xl font-bold tabular-nums text-teal-700">{brl(d.custeioMensal)}</div><div className="text-[10px] text-slate-400">≈ {brl(d.custeioAnual)}/ano · competência {d.parcela}</div></div>
-        <div className="ml-auto max-w-sm rounded-lg border border-teal-200 bg-teal-50/50 p-2.5">
-          <div className="text-[11px] font-semibold text-teal-800">💡 Produção → verba</div>
-          <div className="text-[10px] text-slate-600">Este valor é composto por: eSF/eAP, eMulti, Saúde Bucal, ACS, per capita e <b>desempenho (Previne)</b>. Quanto mais e melhor a APS produz e cadastra, maior o repasse. É a verba que a equipe faz vir.</div>
+        <div><div className="text-[11px] text-slate-500">eSF em Bom ou Ótimo no Vínculo</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: cor }}>{d.pctBomMais}%</div><div className="text-[10px] text-slate-400">{n0(d.esfTotal)} eSF avaliadas · {d.quad}</div></div>
+        <div className="ml-auto max-w-xs rounded-lg border border-slate-200 bg-slate-50/60 p-2.5">
+          <div className="text-[11px] font-semibold text-slate-700">O 2º componente do custeio</div>
+          <div className="text-[10px] text-slate-600">Além da Qualidade, o novo cofinanciamento (Port. 3.493/2024) avalia o <b>Vínculo</b> — cadastro da população e acompanhamento do território. É outra parte do repasse por equipe.</div>
         </div>
       </div>
+      <div className="mt-3">
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Como estão as {n0(d.esfTotal)} eSF no Vínculo</div>
+        <div className="mt-1 flex h-6 w-full overflow-hidden rounded">
+          {d.distrib.filter((f) => f.qtd > 0).map((f) => (<div key={f.faixa} className="flex items-center justify-center text-[9px] font-semibold text-white" style={{ width: `${(f.qtd / d.esfTotal) * 100}%`, background: CORF[f.faixa] }} title={`${f.faixa}: ${f.qtd}`}>{f.qtd}</div>))}
+        </div>
+        <div className="mt-1 flex flex-wrap gap-3 text-[10px] text-slate-500">{d.distrib.map((f) => (<span key={f.faixa}><span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: CORF[f.faixa] }} />{f.faixa}: <b>{f.qtd}</b></span>))}</div>
+      </div>
+      {d.trajetoria.length > 1 && (
+        <div className="mt-3">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Trajetória (% Bom+)</div>
+          <div className="mt-1 flex items-end gap-2" style={{ height: 38 }}>
+            {d.trajetoria.map((t) => (<div key={t.quad} className="flex flex-1 flex-col items-center justify-end gap-0.5"><div className="w-full rounded-t" style={{ height: `${Math.max(2, (t.pctBomMais / maxT) * 28)}px`, background: cor }} title={`${t.quad}: ${t.pctBomMais}%`} /><span className="text-[8px] text-slate-400">{t.quad}</span></div>))}
+          </div>
+        </div>
+      )}
+      <Fonte extraido={d.extraido}>Fonte: <b>Ministério da Saúde / SAPS</b> — SIAPS, Avaliação do Quadrimestre, componente Vínculo e Acompanhamento Territorial (Portaria GM/MS 3.493/2024). Classificação das eSF por faixa. Quadrimestre {d.quad}.</Fonte>
+    </Card>
+  );
+}
+
+export function QualidadeIndicadoresApsPanel({ d }: { d: Un<ReturnType<typeof getQualidadeIndicadoresApsSC>> }) {
+  const CORES: Record<string, string> = { azul: "#2563eb", verde: "#16a34a", laranja: "#ea580c", vermelho: "#dc2626" };
+  const CORF: Record<string, string> = { otimo: "#2563eb", bom: "#16a34a", suficiente: "#ea580c", regular: "#dc2626" };
+  const linhasCsv = d.grupos.flatMap((g) => g.indicadores.map((i) => ({ grupo: g.categoria, indicador: i.nome, equipes: i.total, otimo: i.otimo, bom: i.bom, suficiente: i.suficiente, regular: i.regular, pct_bom_mais: i.pctBomMais, media_sc: i.benchmarkSC ?? "", nota_0a10: i.nota })));
+  return (
+    <Card icon={<Award className="h-4 w-4" />} titulo="Indicadores de Qualidade da APS — novo modelo (SIAPS)" cor="#7c3aed"
+      csv={<BaixarCsv nome="indicadores-qualidade-siaps" label="CSV" linhas={linhasCsv as unknown as Row[]} colunas={[{ chave: "grupo", rotulo: "Grupo" }, { chave: "indicador", rotulo: "Indicador" }, { chave: "equipes", rotulo: "Equipes" }, { chave: "otimo", rotulo: "Ótimo" }, { chave: "bom", rotulo: "Bom" }, { chave: "suficiente", rotulo: "Suficiente" }, { chave: "regular", rotulo: "Regular" }, { chave: "pct_bom_mais", rotulo: "% Bom+" }, { chave: "media_sc", rotulo: "Média SC %" }, { chave: "nota_0a10", rotulo: "Nota" }]} />}>
+      <p className="mt-1 text-[11px] text-slate-500">Indicadores do Componente de Qualidade (Port. 3.493/2024), por grupo de equipe · {d.quad}. Barra = distribuição das equipes nas faixas; <b>%</b> = equipes em Bom+; <b>SC%</b> = média do estado (verde = acima da média, vermelho = abaixo); <b>▲▼</b> = variação vs quadrimestre anterior.</p>
+      {d.grupos.map((g) => (
+        <div key={g.categoria} className="mt-3">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-violet-500">{g.categoria}</div>
+          <div className="mt-1 space-y-1.5">
+            {g.indicadores.map((i) => (
+              <div key={i.nome} className="flex items-center gap-2 text-xs">
+                <span className="min-w-0 flex-1 truncate text-slate-600" title={i.nome}>{i.nome}</span>
+                <div className="flex h-3 w-28 shrink-0 overflow-hidden rounded bg-slate-100">
+                  {(["otimo", "bom", "suficiente", "regular"] as const).map((f) => { const qtd = i[f]; return qtd > 0 ? <div key={f} style={{ width: `${(qtd / i.total) * 100}%`, background: CORF[f] }} title={`${f}: ${qtd}`} /> : null; })}
+                </div>
+                <span className="w-10 shrink-0 text-right tabular-nums font-semibold" style={{ color: CORES[i.semaforo] }}>{i.pctBomMais}%</span>
+                <span className="w-14 shrink-0 text-right text-[10px] tabular-nums" title="média de SC (% das equipes em Bom+)" style={{ color: i.benchmarkSC == null ? "#cbd5e1" : i.pctBomMais >= i.benchmarkSC ? "#16a34a" : "#dc2626" }}>{i.benchmarkSC == null ? "" : `SC ${i.benchmarkSC}%`}</span>
+                <span className="w-7 shrink-0 text-right text-[10px] tabular-nums" style={{ color: i.tendencia == null ? "#cbd5e1" : i.tendencia > 0 ? "#16a34a" : i.tendencia < 0 ? "#dc2626" : "#94a3b8" }} title={i.tendencia == null ? "sem quadrimestre anterior" : `${i.tendencia > 0 ? "+" : ""}${i.tendencia} p.p. vs quadrimestre anterior`}>{i.tendencia == null ? "–" : i.tendencia > 0 ? `▲${i.tendencia}` : i.tendencia < 0 ? `▼${Math.abs(i.tendencia)}` : "="}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+      <div className="mt-2 flex flex-wrap gap-3 text-[10px] text-slate-500">
+        <span><span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: CORF.otimo }} />Ótimo</span>
+        <span><span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: CORF.bom }} />Bom</span>
+        <span><span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: CORF.suficiente }} />Suficiente</span>
+        <span><span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: CORF.regular }} />Regular</span>
+      </div>
+      <div className="mt-2 rounded-lg border border-violet-200 bg-violet-50/50 p-2.5">
+        <div className="text-[11px] font-semibold text-violet-800">Onde agir</div>
+        <div className="text-[10px] text-slate-600">Os indicadores com % baixo (mais laranja/vermelho) são a maior alavanca de qualidade — e de receita, já que definem a faixa de cada equipe. O <b>Instituto i10</b> prioriza o plano por indicador.</div>
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>Ministério da Saúde / SAPS</b> — SIAPS, Avaliação do Quadrimestre, conceito por indicador de qualidade (Portaria GM/MS 3.493/2024). Distribuição das equipes por faixa em cada indicador. Quadrimestre {d.quad}.</Fonte>
+    </Card>
+  );
+}
+
+export function DinheiroMesaApsPanel({ d }: { d: Un<ReturnType<typeof getDinheiroMesaApsSC>> }) {
+  const CORF: Record<string, string> = { "Ótimo": "#2563eb", "Bom": "#16a34a", "Suficiente": "#ea580c", "Regular": "#dc2626" };
+  const maxTraj = Math.max(...d.trajetoria.map((t) => t.naMesaAno), 1);
+  return (
+    <Card icon={<Banknote className="h-4 w-4" />} titulo="Dinheiro na mesa — Componente de Qualidade (classificação oficial SIAPS)" cor="#0d9488"
+      csv={<BaixarCsv nome="dinheiro-na-mesa-qualidade" label="CSV" linhas={[...d.distrib.map((f) => ({ item: `eSF ${f.faixa}`, qtd_equipes: f.qtd, valor_mes: f.qtd * f.valor })), { item: "Qualidade eSF hoje (mês)", qtd_equipes: d.esfTotal, valor_mes: d.qualidadeAtualMes }, { item: "Teto se todas Ótimo (mês)", qtd_equipes: d.esfTotal, valor_mes: d.tetoMes }, { item: "Dinheiro na mesa (ano)", qtd_equipes: "", valor_mes: d.naMesaAno }] as unknown as Row[]} colunas={[{ chave: "item", rotulo: "Item" }, { chave: "qtd_equipes", rotulo: "Equipes" }, { chave: "valor_mes", rotulo: "R$" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Dinheiro na mesa por ano (eSF · {d.quad})</div><div className="font-display text-2xl font-bold tabular-nums text-teal-700">{brl(d.naMesaAno)}</div><div className="text-[10px] text-slate-400">se as {n0(d.esfTotal)} eSF subissem todas para Ótimo</div></div>
+        <div><div className="text-[11px] text-slate-500">Qualidade eSF hoje</div><div className="font-display text-lg font-bold tabular-nums text-slate-700">{brl(d.qualidadeAtualMes)}<span className="text-xs text-slate-400">/mês</span></div><div className="text-[10px] text-slate-400">teto {brl(d.tetoMes)}/mês</div></div>
+        <div className="ml-auto max-w-[16rem] rounded-lg border border-teal-200 bg-teal-50/50 p-2.5">
+          <div className="text-[11px] font-semibold text-teal-800">💰 Classificação REAL</div>
+          <div className="text-[10px] text-slate-600">Cada eSF recebe por faixa: Ótimo {brl(8000)} · Bom {brl(6000)} · Suficiente {brl(4000)} · Regular {brl(2000)}/mês (Port. 3.493/2024). Subir de faixa = custeio recorrente a mais.</div>
+        </div>
+      </div>
+      {/* distribuição de faixas das eSF */}
+      <div className="mt-3">
+        <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Como estão as {n0(d.esfTotal)} eSF hoje</div>
+        <div className="mt-1 flex h-6 w-full overflow-hidden rounded">
+          {d.distrib.filter((f) => f.qtd > 0).map((f) => (
+            <div key={f.faixa} className="flex items-center justify-center text-[9px] font-semibold text-white" style={{ width: `${(f.qtd / d.esfTotal) * 100}%`, background: CORF[f.faixa] }} title={`${f.faixa}: ${f.qtd} eSF`}>{f.qtd}</div>
+          ))}
+        </div>
+        <div className="mt-1 flex flex-wrap gap-3 text-[10px] text-slate-500">{d.distrib.map((f) => (<span key={f.faixa}><span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: CORF[f.faixa] }} />{f.faixa}: <b>{f.qtd}</b></span>))}</div>
+      </div>
+      {/* trajetória do dinheiro na mesa */}
+      {d.trajetoria.length > 1 && (
+        <div className="mt-3">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Dinheiro na mesa por quadrimestre</div>
+          <div className="mt-1 flex items-end gap-2" style={{ height: 40 }}>
+            {d.trajetoria.map((t) => (
+              <div key={t.quad} className="flex flex-1 flex-col items-center justify-end gap-0.5">
+                <div className="w-full rounded-t bg-teal-500/70" style={{ height: `${Math.max(2, (t.naMesaAno / maxTraj) * 28)}px` }} title={`${t.quad}: ${brl(t.naMesaAno)}/ano na mesa`} />
+                <span className="text-[8px] text-slate-400">{t.quad}</span>
+              </div>
+            ))}
+          </div>
+          <div className="text-[10px] text-slate-400">Quanto menor a barra, mais perto do teto (melhor).</div>
+        </div>
+      )}
+      {d.outrasEquipes.length > 0 && (
+        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/50 p-2">
+          <div className="flex items-center justify-between text-[11px]"><span className="font-semibold text-slate-600">+ Outras equipes (estimativa por subtipo)</span><span className="text-slate-400">na mesa/ano</span></div>
+          {d.outrasEquipes.filter((e) => e.total > 0).map((e) => (
+            <div key={e.equipe} className="mt-0.5 flex items-center justify-between text-[11px]"><span className="text-slate-600">{e.equipe} <span className="text-slate-400">({e.total})</span></span><span className="tabular-nums text-slate-700">{brl(e.naMesaAno)}</span></div>
+          ))}
+          <div className="mt-1 flex items-center justify-between border-t border-slate-200 pt-1 text-xs font-semibold"><span className="text-slate-700">Total (todas as equipes)</span><span className="tabular-nums text-teal-700">{brl(d.totalNaMesaAno)}/ano</span></div>
+          <div className="mt-0.5 text-[9px] text-slate-400">eSF é exato (tabela limpa 8/6/4/2 mil); eAP/eSB/eMulti usam o subtipo representativo (eAP 30h, eSB I, eMulti Ampliada) — estimativa.</div>
+        </div>
+      )}
+      <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50/50 p-2.5">
+        <div className="text-[11px] font-semibold text-sky-800">Plano de evolução</div>
+        <div className="text-[10px] text-slate-600">Migrar equipes de Regular/Suficiente para Bom/Ótimo é receita recorrente. O <b>Instituto i10</b> monta o plano por indicador e equipe para capturar esse valor.</div>
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>Ministério da Saúde / SAPS</b> — SIAPS, Avaliação do Quadrimestre, Componente de Qualidade (Portaria GM/MS 3.493/2024). Classificação oficial das equipes por faixa; valores da tabela por equipe. Quadrimestre {d.quad}.</Fonte>
+    </Card>
+  );
+}
+
+export function IndicadoresApsPanel({ d }: { d: Un<ReturnType<typeof getIndicadoresApsSC>> }) {
+  const CORES: Record<string, string> = { azul: "#2563eb", verde: "#16a34a", laranja: "#ea580c", vermelho: "#dc2626" };
+  const faixa = d.isf >= 8 ? "Ótimo" : d.isf >= 6 ? "Bom" : d.isf >= 4 ? "Suficiente" : "Regular";
+  const faixaCor = d.isf >= 8 ? "#2563eb" : d.isf >= 6 ? "#16a34a" : d.isf >= 4 ? "#ea580c" : "#dc2626";
+  return (
+    <Card icon={<Target className="h-4 w-4" />} titulo="Indicadores de desempenho da APS — Previne Brasil" cor={faixaCor}
+      csv={<BaixarCsv nome="indicadores-previne" label="CSV" linhas={[...d.indicadores.map((i) => ({ indicador: i.nome, resultado: i.resultado, meta: i.meta, peso: i.peso, nota: i.nota })), { indicador: "ISF (Indicador Sintético Final)", resultado: d.isf, meta: 10, peso: "", nota: "" }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "resultado", rotulo: "Resultado %" }, { chave: "meta", rotulo: "Meta %" }, { chave: "peso", rotulo: "Peso" }, { chave: "nota", rotulo: "Nota (0-10)" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">ISF — Indicador Sintético Final</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: faixaCor }}>{d.isf.toLocaleString("pt-BR")}<span className="text-sm text-slate-400"> / 10</span></div><div className="text-[10px] font-semibold" style={{ color: faixaCor }}>{faixa} · {d.quadrimestre}</div></div>
+        <div className="text-[10px] text-slate-500 max-w-xs">Retrato neutro dos 7 indicadores que definiam o pagamento por desempenho. Cor = alcance da meta: <span style={{ color: CORES.azul }}>●</span> ≥100% · <span style={{ color: CORES.verde }}>●</span> 70-99% · <span style={{ color: CORES.laranja }}>●</span> 40-69% · <span style={{ color: CORES.vermelho }}>●</span> &lt;40%.</div>
+      </div>
+      {d.isfSerie.length > 1 && (() => { const mx = 10; return (
+        <div className="mt-3">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Trajetória do ISF (quadrimestral)</div>
+          <div className="mt-1 flex items-end gap-1" style={{ height: 46 }}>
+            {d.isfSerie.map((s) => { const cor = s.isf >= 8 ? "#2563eb" : s.isf >= 6 ? "#16a34a" : s.isf >= 4 ? "#ea580c" : "#dc2626"; return (
+              <div key={s.quad} className="flex flex-1 flex-col items-center justify-end gap-0.5">
+                <div className="w-full rounded-t" style={{ height: `${Math.max(2, (s.isf / mx) * 34)}px`, background: cor }} title={`${s.quad}: ISF ${s.isf}`} />
+                <span className="text-[8px] text-slate-400">{s.quad}</span>
+              </div>
+            ); })}
+          </div>
+        </div>
+      ); })()}
+      <div className="mt-3 space-y-1.5">
+        {d.indicadores.map((i) => (
+          <div key={i.nome} className="flex items-center gap-2 text-xs">
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: CORES[i.semaforo] }} />
+            <span className="min-w-0 flex-1 truncate text-slate-600" title={i.nome}>{i.nome}</span>
+            <span className="w-14 shrink-0 text-right tabular-nums font-semibold" style={{ color: CORES[i.semaforo] }}>{i.resultado.toLocaleString("pt-BR")}%</span>
+            <span className="w-16 shrink-0 text-right text-[10px] text-slate-400">meta {i.meta}%</span>
+            <span className="w-10 shrink-0 text-right text-[10px] text-slate-400">×{i.peso}</span>
+          </div>
+        ))}
+      </div>
+      <details className="mt-2 rounded-lg border border-slate-200 bg-slate-50/60 p-2">
+        <summary className="cursor-pointer text-[11px] font-semibold text-slate-600">Como o ISF é calculado (metodologia)</summary>
+        <div className="mt-1.5 space-y-1 text-[10px] leading-relaxed text-slate-600">
+          <p>Cada indicador recebe uma <b>nota de 0 a 10</b> = (resultado ÷ meta) × 10, com teto em 10. A nota é multiplicada pelo <b>peso</b> (1 ou 2; soma dos pesos = 10). O <b>ISF = soma das notas ponderadas ÷ 10</b> — de 0 a 10.</p>
+          <p>No Previne Brasil (Port. GM/MS 3.222/2019, ajustada pela 102/2022) o ISF equivalia ao <b>% do teto do pagamento por desempenho</b> que a equipe recebia. Apuração quadrimestral. <i>Nota: em 2024 o modelo migrou para o novo cofinanciamento (Port. 3.493/2024) com 15 indicadores e faixas Ótimo/Bom/Suficiente/Regular — esta é a base histórica Previne.</i></p>
+        </div>
+      </details>
+      <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50/50 p-2.5">
+        <div className="text-[11px] font-semibold text-sky-800">Como melhorar</div>
+        <div className="text-[10px] text-slate-600">Os indicadores em <span style={{ color: CORES.laranja }}>laranja</span>/<span style={{ color: CORES.vermelho }}>vermelho</span> são a maior alavanca — priorizar busca ativa e registro correto no e-SUS eleva a nota e o repasse. O <b>Instituto i10</b> apoia o plano de ação por indicador.</div>
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>Ministério da Saúde / SAPS</b> — SISAB, Relatório de Indicadores de Desempenho (indicadorPainel), quadrimestre {d.quadrimestre}. ISF calculado pela metodologia oficial (pesos/metas da NT 3/2022-DESF/SAPS/MS).</Fonte>
+    </Card>
+  );
+}
+
+export function ProducaoApsPanel({ d }: { d: Un<ReturnType<typeof getProducaoApsSC>> }) {
+  return (
+    <Card icon={<ClipboardList className="h-4 w-4" />} titulo="Produção da Atenção Primária (SISAB / e-SUS APS)" cor="#0d9488"
+      csv={<BaixarCsv nome="producao-aps-sisab" label="CSV" linhas={[{ indicador: "Fichas de produção aprovadas", valor: d.aprovadas }, { indicador: "Fichas enviadas (total)", valor: d.total }, { indicador: "Equipes de Saúde da Família", valor: d.esf }, { indicador: "Fichas aprovadas por equipe", valor: d.porEquipe ?? "" }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Fichas de produção aprovadas</div><div className="font-display text-2xl font-bold tabular-nums text-teal-700">{n0(d.aprovadas)}</div><div className="text-[10px] text-slate-400">de {n0(d.total)} enviadas · competência {d.competencia}</div></div>
+        {d.porEquipe != null && <div><div className="text-[11px] text-slate-500">Por equipe (ESF)</div><div className="font-display text-xl font-bold tabular-nums text-slate-700">{n0(d.porEquipe)}</div><div className="text-[10px] text-slate-400">{n0(d.esf)} equipes</div></div>}
+        <div className="ml-auto max-w-xs rounded-lg border border-teal-200 bg-teal-50/50 p-2.5">
+          <div className="text-[11px] font-semibold text-teal-800">💡 Produção → verba</div>
+          <div className="text-[10px] text-slate-600">São os atendimentos, visitas, procedimentos e cadastros que as equipes registraram e o SISAB validou. Essa produção alimenta os indicadores do <b>Previne</b> (desempenho) e o custeio.</div>
+        </div>
+      </div>
+      {d.serieAnual.length > 1 && (() => { const mx = Math.max(...d.serieAnual.map((s) => s.valor)); return (
+        <div className="mt-3">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Produção aprovada por ano (fichas)</div>
+          <div className="mt-1 flex items-end gap-1.5" style={{ height: 56 }}>
+            {d.serieAnual.map((s) => (
+              <div key={s.ano} className="flex flex-1 flex-col items-center justify-end gap-0.5">
+                <div className="w-full rounded-t bg-teal-500/80" style={{ height: `${Math.max(2, (s.valor / mx) * 44)}px` }} title={`${s.ano}: ${n0(s.valor)}`} />
+                <span className="text-[9px] text-slate-400">{String(s.ano).slice(2)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="text-[10px] text-slate-400">Série mensal 2021–2026 (soma anual). O último ano pode estar parcial.</div>
+        </div>
+      ); })()}
+      <p className="mt-2 text-[11px] text-slate-500">Total de fichas (atendimento individual, odontológico, visita domiciliar, atividade coletiva, procedimentos e cadastros) registradas pelas equipes e aprovadas na validação do SISAB.</p>
+      <details className="mt-2 rounded-lg border border-slate-200 bg-slate-50/60 p-2">
+        <summary className="cursor-pointer text-[11px] font-semibold text-slate-600">Nota metodológica — como ler este número (e seus limites)</summary>
+        <div className="mt-1.5 space-y-1 text-[10px] leading-relaxed text-slate-600">
+          <p>O número é a <b>produção informatizada e validada</b> no SISAB — não é necessariamente toda a produção assistencial. Base legal: SISAB (Port. GM/MS 1.412/2013), Previne Brasil (Port. 2.979/2019) e a Nota Técnica de Validação do MS. Ele <b>subestima</b> a produção real por:</p>
+          <p>• <b>Sistema próprio:</b> municípios que usam prontuário próprio (integração via Thrift) podem subnotificar se o cadastro CNES/INE divergir — produção baixa aqui pode ser problema de integração, não de assistência.</p>
+          <p>• <b>Só "Aprovado" conta:</b> fichas Reprovadas (CNES/INE/profissional/CBO inválido), Duplicadas ou fora do prazo de 120 dias saem da base — muitas vezes por erro cadastral, não assistencial.</p>
+          <p>• <b>Meses recentes são preliminares e retroativos:</b> uma competência pode receber fichas por até ~4 meses depois; o mês corrente está sempre incompleto.</p>
+          <p>• <b>Tipos de ficha misturam</b> atendimento, procedimento, cadastro (capitação) e visita; a vacinação é validada no SIPNI. 1 ficha pode agrupar vários atendimentos.</p>
+        </div>
+      </details>
+      <Fonte extraido={d.extraido}>Fonte: <b>Ministério da Saúde / SAPS</b> — SISAB (Sistema de Informação em Saúde para a Atenção Básica), Relatório de Validação da produção (e-SUS APS), raspado por competência (2021–2026). Fichas aprovadas por município; último mês {d.competencia}.</Fonte>
+    </Card>
+  );
+}
+
+export function CoberturaApsPanel({ d }: { d: Un<ReturnType<typeof getCoberturaApsSC>> }) {
+  const gap = d.cobertura < 100;
+  const cor = d.cobertura < 70 ? "#dc2626" : gap ? "#ea580c" : "#16a34a";
+  return (
+    <Card icon={<Network className="h-4 w-4" />} titulo="Cobertura da Atenção Primária (e-Gestor APS)" cor={cor}
+      csv={<BaixarCsv nome="cobertura-aps" label="CSV" linhas={[{ indicador: "Cobertura potencial APS (%)", valor: d.cobertura }, { indicador: "População", valor: d.populacao }, { indicador: "Equipes de Saúde da Família", valor: d.esf }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Cobertura potencial da APS</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: cor }}>{d.cobertura.toLocaleString("pt-BR")}%</div><div className="text-[10px] text-slate-400">{n0(d.esf)} equipes ESF · {n0(d.populacao)} hab · comp. {d.competencia}</div></div>
+        {gap && <div className="max-w-xs rounded-lg border border-orange-200 bg-orange-50/60 p-2.5"><div className="text-[11px] font-semibold text-orange-700">⚠️ Abaixo de 100%</div><div className="text-[10px] text-slate-600">A capacidade instalada da APS não cobre toda a população — lacuna de equipes. Ampliar ESF aumenta cobertura E o custeio (Previne).</div></div>}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Estimativa de quantas pessoas as equipes podem atender pela capacidade instalada. Acima de 100% = folga; abaixo = déficit de equipes.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>Ministério da Saúde / SAPS</b> — e-Gestor APS, Cobertura Potencial da APS. Por município de residência, competência CNES {d.competencia}.</Fonte>
+    </Card>
+  );
+}
+
+export function FinanciamentoApsPanel({ d }: { d: Un<ReturnType<typeof getFinanciamentoApsSC>> }) {
+  return (
+    <Card icon={<Coins className="h-4 w-4" />} titulo="Financiamento da Atenção Primária (e-Gestor APS)" cor="#0d9488"
+      csv={<BaixarCsv nome="financiamento-aps" label="CSV" linhas={[{ item: "Custeio total/mês", valor: d.custeioMensal }, ...d.componentes.map((c) => ({ item: c.nome, valor: c.valor }))] as unknown as Row[]} colunas={[{ chave: "item", rotulo: "Componente" }, { chave: "valor", rotulo: "Valor (R$)" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Custeio APS por mês</div><div className="font-display text-2xl font-bold tabular-nums text-teal-700">{brl(d.custeioMensal)}</div><div className="text-[10px] text-slate-400">≈ {brl(d.custeioAnual)}/ano · competência {d.parcela}</div></div>
+        <div className="ml-auto max-w-xs rounded-lg border border-teal-200 bg-teal-50/50 p-2.5">
+          <div className="text-[11px] font-semibold text-teal-800">💡 Produção → verba</div>
+          <div className="text-[10px] text-slate-600">Cada componente é uma verba que a equipe faz vir produzindo e cadastrando. O <b>desempenho (Previne)</b> paga pelos indicadores atingidos.</div>
+        </div>
+      </div>
+      {d.componentes.length > 0 && (() => { const maxC = Math.max(...d.componentes.map((c) => c.valor)); return (
+        <div className="mt-3 space-y-1">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Composição da verba (por componente)</div>
+          {d.componentes.map((c) => (
+            <div key={c.nome} className="flex items-center gap-2 text-xs">
+              <span className="w-56 shrink-0 truncate text-slate-600" title={c.nome}>{c.nome}</span>
+              <div className="h-3 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-3 rounded bg-teal-500" style={{ width: `${(c.valor / maxC) * 100}%` }} /></div>
+              <span className="w-24 shrink-0 text-right tabular-nums text-slate-700">{brl(c.valor)}</span>
+            </div>
+          ))}
+        </div>
+      ); })()}
       <Fonte extraido={d.extraido}>Fonte: <b>Ministério da Saúde / SAPS</b> — e-Gestor Atenção Primária à Saúde (Relatório de Pagamento). Custeio efetivamente transferido ao município para a APS.</Fonte>
+    </Card>
+  );
+}
+
+export function IdhmPanel({ d }: { d: Un<ReturnType<typeof getIdhmSC>> }) {
+  const cor = d.idhm >= 0.8 ? "#2563eb" : d.idhm >= 0.7 ? "#16a34a" : d.idhm >= 0.6 ? "#ea580c" : "#dc2626";
+  const sub = [{ n: "Renda", v: d.renda }, { n: "Longevidade", v: d.long }, { n: "Educação", v: d.educ }];
+  return (
+    <Card icon={<Medal className="h-4 w-4" />} titulo="IDHM — Índice de Desenvolvimento Humano Municipal" cor={cor}
+      csv={<BaixarCsv nome="idhm" label="CSV" linhas={[{ indicador: "IDHM", valor: d.idhm }, { indicador: "IDHM Renda", valor: d.renda }, { indicador: "IDHM Longevidade", valor: d.long }, { indicador: "IDHM Educação", valor: d.educ }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">IDHM ({d.ano})</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: cor }}>{d.idhm.toLocaleString("pt-BR")}</div><div className="text-[10px] font-semibold" style={{ color: cor }}>{d.faixa}</div></div>
+        <div className="flex-1 space-y-1">
+          {sub.map((s) => (
+            <div key={s.n} className="flex items-center gap-2 text-xs">
+              <span className="w-20 shrink-0 text-slate-500">{s.n}</span>
+              <div className="h-2.5 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-2.5 rounded" style={{ width: `${s.v * 100}%`, background: cor }} /></div>
+              <span className="w-10 shrink-0 text-right tabular-nums text-slate-600">{s.v.toLocaleString("pt-BR")}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <p className="mt-2 text-[11px] text-amber-600">⚠️ O IDHM oficial por município é calculado nos censos; <b>{d.ano}</b> é o último disponível (o IDHM do Censo 2022 ainda não foi publicado pelo PNUD).</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>Atlas do Desenvolvimento Humano no Brasil</b> (PNUD, IPEA, FJP). IDHM e subíndices renda/longevidade/educação, Censo {d.ano}.</Fonte>
+    </Card>
+  );
+}
+
+export function PibMunicipalPanel({ d }: { d: Un<ReturnType<typeof getPibMunicipalSC>> }) {
+  return (
+    <Card icon={<TrendingUp className="h-4 w-4" />} titulo="PIB do município (IBGE)" cor="#0d9488"
+      csv={<BaixarCsv nome="pib-municipal" label="CSV" linhas={[{ indicador: "PIB (preços correntes)", valor: d.pib }, { indicador: "PIB per capita", valor: d.pibPerCapita ?? "" }, { indicador: "Posição no estado", valor: `${d.posicaoUf}º de ${d.totalMunis}` }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">PIB (preços correntes)</div><div className="font-display text-2xl font-bold tabular-nums text-teal-700">{brl(d.pib)}</div><div className="text-[10px] text-slate-400">{d.posicaoUf}º maior de {d.totalMunis} no estado · {d.ano}</div></div>
+        {d.pibPerCapita != null && <div><div className="text-[11px] text-slate-500">PIB per capita</div><div className="font-display text-xl font-bold tabular-nums text-slate-700">{brl(d.pibPerCapita)}</div><div className="text-[10px] text-slate-400">por habitante/ano</div></div>}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Riqueza gerada no município em um ano. Base para dimensionar economia local, arrecadação potencial e comparação regional.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>IBGE</b> — Produto Interno Bruto dos Municípios, preços correntes (tabela SIDRA 5938). PIB per capita = PIB ÷ população do Censo 2022.</Fonte>
+    </Card>
+  );
+}
+
+export function PopulacaoFaixaPanel({ d }: { d: Un<ReturnType<typeof getPopulacaoFaixaSC>> }) {
+  const mx = Math.max(...d.bandas.map((b) => b.qtd), 1);
+  const CORB: Record<string, string> = { "0-14": "#0ea5e9", "15-29": "#14b8a6", "30-44": "#16a34a", "45-59": "#65a30d", "60-74": "#ea580c", "75+": "#dc2626" };
+  return (
+    <Card icon={<PersonStanding className="h-4 w-4" />} titulo="Estrutura etária da população (IBGE Censo 2022)" cor="#0d9488"
+      csv={<BaixarCsv nome="populacao-faixa-etaria" label="CSV" linhas={[...d.bandas.map((b) => ({ faixa: b.nome, populacao: b.qtd, percentual: b.pct })), { faixa: "% idosos 60+", populacao: d.pop60, percentual: d.pctIdosos }, { faixa: "Razão de dependência", populacao: "", percentual: d.razaoDependencia }, { faixa: "Índice de envelhecimento", populacao: "", percentual: d.indiceEnvelhecimento }] as unknown as Row[]} colunas={[{ chave: "faixa", rotulo: "Faixa" }, { chave: "populacao", rotulo: "População" }, { chave: "percentual", rotulo: "%" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Idosos (60+) <span className="text-slate-400">· saúde/RPPS</span></div><div className="font-display text-xl font-bold tabular-nums text-orange-600">{d.pctIdosos.toLocaleString("pt-BR")}%</div><div className="text-[10px] text-slate-400">{n0(d.pop60)} pessoas · {n0(d.pop80)} com 80+</div></div>
+        <div><div className="text-[11px] text-slate-500">Crianças (0-14) <span className="text-slate-400">· educação</span></div><div className="font-display text-xl font-bold tabular-nums text-sky-600">{d.pct014.toLocaleString("pt-BR")}%</div></div>
+        <div><div className="text-[11px] text-slate-500">Razão de dependência</div><div className="font-display text-xl font-bold tabular-nums text-slate-700">{d.razaoDependencia.toLocaleString("pt-BR")}</div><div className="text-[10px] text-slate-400">dependentes / 100 ativos</div></div>
+        <div><div className="text-[11px] text-slate-500">Índice de envelhecimento</div><div className="font-display text-xl font-bold tabular-nums text-slate-700">{d.indiceEnvelhecimento.toLocaleString("pt-BR")}</div><div className="text-[10px] text-slate-400">idosos / 100 crianças</div></div>
+      </div>
+      <div className="mt-3 space-y-1">
+        {d.bandas.map((b) => (
+          <div key={b.nome} className="flex items-center gap-2 text-xs">
+            <span className="w-12 shrink-0 text-slate-500">{b.nome}</span>
+            <div className="h-3.5 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-3.5 rounded" style={{ width: `${(b.qtd / mx) * 100}%`, background: CORB[b.nome] }} /></div>
+            <span className="w-20 shrink-0 text-right tabular-nums text-slate-600">{n0(b.qtd)}</span>
+            <span className="w-10 shrink-0 text-right tabular-nums text-slate-400">{b.pct}%</span>
+          </div>
+        ))}
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>IBGE</b> — Censo Demográfico 2022, população residente por grupos de idade (tabela SIDRA 9514). Base para planejamento de saúde (idosos) e educação (idade escolar).</Fonte>
+    </Card>
+  );
+}
+
+export function CensoCorRacaPanel({ d }: { d: Un<ReturnType<typeof getCensoCorRacaSC>> }) {
+  const CORF: Record<string, string> = { Branca: "#94a3b8", Parda: "#d97706", Preta: "#78350f", Amarela: "#eab308", Indígena: "#16a34a" };
+  return (
+    <Card icon={<Users className="h-4 w-4" />} titulo="População por cor ou raça (IBGE Censo 2022)" cor="#0d9488"
+      csv={<BaixarCsv nome="censo-cor-raca" label="CSV" linhas={d.comp.map((c) => ({ cor_raca: c.nome, populacao: c.qtd, percentual: c.pct })) as unknown as Row[]} colunas={[{ chave: "cor_raca", rotulo: "Cor/raça" }, { chave: "populacao", rotulo: "População" }, { chave: "percentual", rotulo: "%" }]} />}>
+      <div className="mt-2 text-[11px] text-slate-500">População residente: <b className="text-slate-700">{n0(d.total)}</b> (Censo 2022)</div>
+      <div className="mt-2 flex h-6 w-full overflow-hidden rounded">
+        {d.comp.map((c) => (<div key={c.nome} className="flex items-center justify-center text-[9px] font-semibold text-white" style={{ width: `${c.pct}%`, background: CORF[c.nome] }} title={`${c.nome}: ${c.pct}%`}>{c.pct >= 8 ? `${c.pct}%` : ""}</div>))}
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-slate-600">{d.comp.map((c) => (<span key={c.nome}><span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: CORF[c.nome] }} />{c.nome}: <b>{c.pct}%</b> ({n0(c.qtd)})</span>))}</div>
+      <Fonte extraido={d.extraido}>Fonte: <b>IBGE</b> — Censo Demográfico 2022, população residente por cor ou raça (tabela SIDRA 9605).</Fonte>
+    </Card>
+  );
+}
+
+export function NovoPacPanel({ d }: { d: Un<ReturnType<typeof getNovoPacSC>> }) {
+  return (
+    <Card icon={<Building2 className="h-4 w-4" />} titulo="Novo PAC — obras do município (ObrasGov)" cor="#0369a1"
+      csv={<BaixarCsv nome="novo-pac-obras" label="CSV" linhas={[{ indicador: "Obras/empreendimentos", valor: d.projetos }, { indicador: "Investimento previsto", valor: d.valorPrevisto }, { indicador: "Em andamento/execução", valor: d.emAndamento }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Investimento federal previsto (obras do município)</div><div className="font-display text-2xl font-bold tabular-nums text-sky-800">{brl(d.valorPrevisto)}</div><div className="text-[10px] text-slate-400">{n0(d.projetos)} empreendimentos · {n0(d.emAndamento)} em andamento</div></div>
+        <div className="ml-auto max-w-xs rounded-lg border border-sky-200 bg-sky-50/50 p-2.5"><div className="text-[11px] font-semibold text-sky-800">🏗️ Investimento na ponta</div><div className="text-[10px] text-slate-600">Empreendimentos do Novo PAC executados pelo município (obras cadastradas na plataforma ObrasGov). Acompanhar situação e execução evita atraso/perda de recurso.</div></div>
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>Casa Civil / ObrasGov</b> — empreendimentos do Novo PAC com o município como executor. Nº de obras, investimento previsto (todas as fontes) e situação.</Fonte>
+    </Card>
+  );
+}
+
+export function LpgPanel({ d }: { d: Un<ReturnType<typeof getLpgSC>> }) {
+  const risco = d.pctUtilizado < 90 && d.saldo > 0;
+  const cor = risco ? "#dc2626" : "#7c3aed";
+  return (
+    <Card icon={<Clapperboard className="h-4 w-4" />} titulo="Lei Paulo Gustavo — execução (cultura)" cor={cor}
+      csv={<BaixarCsv nome="lei-paulo-gustavo" label="CSV" linhas={[{ indicador: "Valor transferido", valor: d.transferido }, { indicador: "Saldo em conta (risco devolução)", valor: d.saldo }, { indicador: "% utilizado", valor: d.pctUtilizado }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Transferido (LPG)</div><div className="font-display text-xl font-bold tabular-nums text-violet-700">{brl(d.transferido)}</div></div>
+        <div><div className="text-[11px] text-slate-500">Saldo em conta</div><div className="font-display text-xl font-bold tabular-nums" style={{ color: d.saldo > 0 ? "#ea580c" : "#16a34a" }}>{brl(d.saldo)}</div></div>
+        <div><div className="text-[11px] text-slate-500">% utilizado</div><div className="font-display text-xl font-bold tabular-nums" style={{ color: cor }}>{d.pctUtilizado.toLocaleString("pt-BR")}%</div></div>
+        {risco && <div className="ml-auto max-w-xs rounded-lg border border-red-200 bg-red-50/60 p-2.5"><div className="text-[11px] font-semibold text-red-700">⚠️ Saldo com baixa execução</div><div className="text-[10px] text-slate-600">Recurso da Lei Paulo Gustavo ainda em conta e execução abaixo de 90% — risco de devolução ao FNC.</div></div>}
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>Ministério da Cultura</b> — execução financeira da Lei Paulo Gustavo (LC 195/2022) por município (dados.cultura.gov.br). Saldo em conta e % utilizado.</Fonte>
+    </Card>
+  );
+}
+
+export function SalicPanel({ d }: { d: Un<ReturnType<typeof getSalicSC>> }) {
+  return (
+    <Card icon={<Palette className="h-4 w-4" />} titulo="Lei Rouanet (SALIC) — captação de cultura" cor="#7c3aed"
+      csv={<BaixarCsv nome="rouanet-salic" label="CSV" linhas={[{ indicador: "Projetos", valor: d.projetos }, { indicador: "Valor aprovado", valor: d.aprovado }, { indicador: "Valor captado", valor: d.captado }, { indicador: "Gap (aprovado não captado)", valor: d.gap }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Ainda a captar (aprovado − captado)</div><div className="font-display text-2xl font-bold tabular-nums text-violet-700">{brl(d.gap)}</div><div className="text-[10px] text-slate-400">{n0(d.projetos)} projetos · captado {brl(d.captado)} de {brl(d.aprovado)}</div></div>
+        <div className="ml-auto max-w-xs rounded-lg border border-violet-200 bg-violet-50/50 p-2.5"><div className="text-[11px] font-semibold text-violet-800">🎭 Incentivo na mesa</div><div className="text-[10px] text-slate-600">Projetos culturais do município já aprovados na Lei Rouanet mas ainda sem patrocínio captado — potencial de recurso via incentivo fiscal a mobilizar.</div></div>
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>Ministério da Cultura</b> — API SALIC (Lei Rouanet). Projetos por município: valor aprovado vs captado; gap = incentivo a captar.</Fonte>
+    </Card>
+  );
+}
+
+export function MuseusPanel({ d }: { d: Un<ReturnType<typeof getMuseusSC>> }) {
+  return (
+    <Card icon={<Landmark className="h-4 w-4" />} titulo="Museus do município (IBRAM / MuseusBr)" cor="#0d9488"
+      csv={<BaixarCsv nome="museus" label="CSV" linhas={[{ indicador: "Museus cadastrados", valor: d.museus }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2"><div className="text-[11px] text-slate-500">Museus cadastrados</div><div className="font-display text-2xl font-bold tabular-nums text-teal-700">{n0(d.museus)}</div><div className="text-[10px] text-slate-400">equipamentos culturais — base para captação (LPG, Rouanet, editais de cultura)</div></div>
+      <Fonte extraido={d.extraido}>Fonte: <b>IBRAM</b> — Cadastro Nacional de Museus (MuseusBr). Museus cadastrados no município.</Fonte>
+    </Card>
+  );
+}
+
+export function SetoresPanel({ d, codigo }: { d: Un<ReturnType<typeof getSetoresSC>>; codigo: string }) {
+  const mxTop = Math.max(...d.topBairros.map((b) => b.pop), 1);
+  return (
+    <Card icon={<MapPin className="h-4 w-4" />} titulo="Perfil intraurbano — setores censitários (IBGE Censo 2022)" cor="#7c3aed"
+      csv={<BaixarCsv nome="setores-intraurbano" label="CSV" linhas={[{ item: "Setores censitários", valor: d.setores }, { item: "Bairros", valor: d.bairros }, { item: "Densidade mediana (hab/km²)", valor: d.densMediana }, { item: "Densidade máxima (hab/km²)", valor: d.densMax }, ...d.topBairros.map((b) => ({ item: `Bairro: ${b.bairro}`, valor: b.pop }))] as unknown as Row[]} colunas={[{ chave: "item", rotulo: "Item" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Setores censitários</div><div className="font-display text-2xl font-bold tabular-nums text-violet-700">{n0(d.setores)}</div><div className="text-[10px] text-slate-400">{n0(d.bairros)} bairros</div></div>
+        <div><div className="text-[11px] text-slate-500">Densidade populacional (hab/km²)</div><div className="font-display text-lg font-bold tabular-nums text-slate-700">{n0(d.densMediana)} <span className="text-[11px] font-normal text-slate-400">mediana</span> · {n0(d.densMax)} <span className="text-[11px] font-normal text-slate-400">máx</span></div><div className="text-[10px] text-slate-400">disparidade entre setores do município</div></div>
+      </div>
+      <div className="mt-3"><div className="mb-1 text-[11px] font-semibold text-slate-600">Mapa de calor — densidade por setor (clique para detalhar)</div><MapaSetoresWrap codigo={codigo} /></div>
+      {d.topBairros.length > 0 && (
+        <div className="mt-3">
+          <div className="text-[11px] font-semibold text-slate-600">Bairros mais populosos</div>
+          <div className="mt-1 space-y-1">
+            {d.topBairros.map((b) => (
+              <div key={b.bairro} className="flex items-center gap-2 text-xs">
+                <span className="w-32 shrink-0 truncate text-slate-500">{b.bairro}</span>
+                <div className="h-3 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-3 rounded bg-violet-500" style={{ width: `${(b.pop / mxTop) * 100}%` }} /></div>
+                <span className="w-16 shrink-0 text-right tabular-nums text-slate-600">{n0(b.pop)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <p className="mt-2 text-[11px] text-slate-500">A menor unidade do Censo. Revela a desigualdade <b>dentro</b> do município — onde concentrar UBS, escola, saneamento e transporte.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>IBGE</b> — Censo 2022, Agregados por Setores Censitários (16,7 mil setores em SC). Densidade = população ÷ área do setor.</Fonte>
+    </Card>
+  );
+}
+
+export function AlfabetizacaoPanel({ d }: { d: Un<ReturnType<typeof getAlfabetizacaoSC>> }) {
+  const acima = d.taxa >= d.mediaSc;
+  return (
+    <Card icon={<Baby className="h-4 w-4" />} titulo="Taxa de alfabetização — 15 anos ou mais (IBGE Censo 2022)" cor="#0d9488"
+      csv={<BaixarCsv nome="alfabetizacao-censo" label="CSV" linhas={[{ indicador: "Taxa de alfabetização (15+)", valor: d.taxa }, { indicador: "Taxa de analfabetismo", valor: d.analfabetos }, { indicador: "Média SC", valor: d.mediaSc }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "%" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Alfabetização (15+)</div><div className="font-display text-2xl font-bold tabular-nums text-teal-700">{d.taxa.toLocaleString("pt-BR")}%</div><div className="text-[10px] text-slate-400">média SC {d.mediaSc.toLocaleString("pt-BR")}% · {acima ? "acima" : "abaixo"} da média</div></div>
+        <div><div className="text-[11px] text-slate-500">Analfabetismo (15+)</div><div className="font-display text-xl font-bold tabular-nums text-slate-700">{d.analfabetos.toLocaleString("pt-BR")}%</div><div className="text-[10px] text-slate-400">público de EJA / alfabetização de adultos</div></div>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">O percentual de analfabetos dimensiona a demanda por Educação de Jovens e Adultos (EJA) e programas de alfabetização.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>IBGE</b> — Censo Demográfico 2022, taxa de alfabetização das pessoas de 15 anos ou mais (tabela SIDRA 9543).</Fonte>
+    </Card>
+  );
+}
+
+export function DomiciliosPanel({ d }: { d: Un<ReturnType<typeof getDomiciliosSC>> }) {
+  return (
+    <Card icon={<Home className="h-4 w-4" />} titulo="Domicílios e densidade domiciliar (IBGE Censo 2022)" cor="#0d9488"
+      csv={<BaixarCsv nome="domicilios-censo" label="CSV" linhas={[{ indicador: "Domicílios ocupados", valor: d.domicilios }, { indicador: "Moradores", valor: d.moradores }, { indicador: "Média de moradores/domicílio", valor: d.densidade }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Domicílios particulares ocupados</div><div className="font-display text-2xl font-bold tabular-nums text-teal-700">{n0(d.domicilios)}</div><div className="text-[10px] text-slate-400">{n0(d.moradores)} moradores</div></div>
+        <div><div className="text-[11px] text-slate-500">Densidade domiciliar</div><div className="font-display text-xl font-bold tabular-nums text-slate-700">{d.densidade.toLocaleString("pt-BR")}</div><div className="text-[10px] text-slate-400">moradores por domicílio {d.densidade >= 3 ? "· acima da média SC (2,74)" : ""}</div></div>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Base para dimensionar demanda por moradia, coleta, água e serviços. Densidade alta pode indicar adensamento/déficit habitacional.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>IBGE</b> — Censo Demográfico 2022, domicílios particulares permanentes ocupados e média de moradores (tabela SIDRA 4712, universo).</Fonte>
+    </Card>
+  );
+}
+
+export function CemadenPanel({ d }: { d: Un<ReturnType<typeof getCemadenSC>> }) {
+  const semMonitoramento = d.estacoes === 0;
+  return (
+    <Card icon={<Droplets className="h-4 w-4" />} titulo="Monitoramento de risco de chuva (CEMADEN)" cor={semMonitoramento ? "#dc2626" : "#0d9488"}
+      csv={<BaixarCsv nome="cemaden-estacoes" label="CSV" linhas={[{ indicador: "Estações CEMADEN", valor: d.estacoes }, { indicador: "Estações ativas (24h)", valor: d.ativas }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Estações de monitoramento (pluviômetros)</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: semMonitoramento ? "#dc2626" : "#0d9488" }}>{n0(d.estacoes)}</div><div className="text-[10px] text-slate-400">{n0(d.ativas)} ativas nas últimas 24h</div></div>
+        {semMonitoramento
+          ? <div className="ml-auto max-w-xs rounded-lg border border-red-200 bg-red-50/60 p-2.5"><div className="text-[11px] font-semibold text-red-700">⚠️ Ponto cego de alerta</div><div className="text-[10px] text-slate-600">O município não tem estação do CEMADEN — sem alerta antecipado de chuva intensa. Vale pleitear a instalação (rede nacional de monitoramento).</div></div>
+          : <div className="ml-auto max-w-xs rounded-lg border border-teal-200 bg-teal-50/50 p-2.5"><div className="text-[11px] font-semibold text-teal-800">🌧️ Alerta antecipado</div><div className="text-[10px] text-slate-600">Rede do CEMADEN monitora chuva em tempo real para alerta de desastres. Integra o plano de contingência da Defesa Civil.</div></div>}
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>CEMADEN</b> — Centro Nacional de Monitoramento e Alertas de Desastres Naturais. Estações pluviométricas por município.</Fonte>
+    </Card>
+  );
+}
+
+export function BarragensPanel({ d }: { d: Un<ReturnType<typeof getBarragensSC>> }) {
+  const cor = d.danoAlto > 0 ? "#dc2626" : "#0d9488";
+  return (
+    <Card icon={<Waves className="h-4 w-4" />} titulo="Barragens no município (ANA / SNISB)" cor={cor}
+      csv={<BaixarCsv nome="barragens-snisb" label="CSV" linhas={[{ indicador: "Barragens cadastradas", valor: d.total }, { indicador: "Dano potencial ALTO", valor: d.danoAlto }, { indicador: "Categoria de risco ALTA", valor: d.riscoAlto }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Barragens cadastradas</div><div className="font-display text-2xl font-bold tabular-nums text-slate-700">{n0(d.total)}</div></div>
+        <div><div className="text-[11px] text-slate-500">Dano potencial alto</div><div className="font-display text-xl font-bold tabular-nums" style={{ color: d.danoAlto > 0 ? "#dc2626" : "#16a34a" }}>{n0(d.danoAlto)}</div></div>
+        <div><div className="text-[11px] text-slate-500">Categoria de risco alta</div><div className="font-display text-xl font-bold tabular-nums" style={{ color: d.riscoAlto > 0 ? "#ea580c" : "#16a34a" }}>{n0(d.riscoAlto)}</div></div>
+        {d.danoAlto > 0 && <div className="ml-auto max-w-xs rounded-lg border border-red-200 bg-red-50/60 p-2.5"><div className="text-[11px] font-semibold text-red-700">⚠️ Dano potencial alto</div><div className="text-[10px] text-slate-600">Barragens cujo rompimento causaria dano relevante — exigem plano de contingência da Defesa Civil e monitoramento.</div></div>}
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>ANA — Agência Nacional de Águas / SNISB</b> (Sistema Nacional de Informações sobre Segurança de Barragens). Barragens por município com dano potencial e categoria de risco.</Fonte>
+    </Card>
+  );
+}
+
+export function PaaPanel({ d }: { d: Un<ReturnType<typeof getPaaSC>> }) {
+  return (
+    <Card icon={<Sprout className="h-4 w-4" />} titulo="PAA — compras da agricultura familiar (Conab)" cor="#16a34a"
+      csv={<BaixarCsv nome="paa-agricultura-familiar" label="CSV" linhas={[{ indicador: "Valor executado (histórico)", valor: d.executado }, { indicador: "Valor formalizado", valor: d.formalizado }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Comprado da agricultura familiar (PAA, acumulado)</div><div className="font-display text-2xl font-bold tabular-nums text-green-700">{brl(d.executado)}</div><div className="text-[10px] text-slate-400">formalizado {brl(d.formalizado)} · até {d.ultimoAno}</div></div>
+        <div className="ml-auto max-w-xs rounded-lg border border-green-200 bg-green-50/50 p-2.5"><div className="text-[11px] font-semibold text-green-800">🌱 Economia local</div><div className="text-[10px] text-slate-600">Programa de Aquisição de Alimentos: compra da agricultura familiar para doação/abastecimento. Fortalece a renda rural e a segurança alimentar do município.</div></div>
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>Conab</b> — Programa de Aquisição de Alimentos (PAA), valor executado em compras da agricultura familiar por município (acumulado, propostas formalizadas). Até {d.ultimoAno}.</Fonte>
+    </Card>
+  );
+}
+
+export function PnaeAgriPanel({ d }: { d: Un<ReturnType<typeof getPnaeAgriSC>> }) {
+  const cor = d.cumpre ? "#16a34a" : "#dc2626";
+  return (
+    <Card icon={<Wheat className="h-4 w-4" />} titulo="PNAE — compra da agricultura familiar (mínimo legal 30%)" cor={cor}
+      csv={<BaixarCsv nome="pnae-agricultura-familiar" label="CSV" linhas={[{ indicador: "% agricultura familiar", valor: d.percentual }, { indicador: "Valor transferido PNAE", valor: d.valorTransferido }, { indicador: "Valor em agricultura familiar", valor: d.valorAgri }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">% da merenda comprada da agricultura familiar</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: cor }}>{d.percentual.toLocaleString("pt-BR")}%</div><div className="text-[10px] text-slate-400">mínimo legal 30% · exercício {d.ano}</div></div>
+        <div className="ml-auto max-w-xs rounded-lg border p-2.5" style={{ borderColor: d.cumpre ? "#bbf7d0" : "#fecaca", background: d.cumpre ? "#f0fdf4" : "#fef2f2" }}>
+          <div className="text-[11px] font-semibold" style={{ color: cor }}>{d.cumpre ? "✓ Cumpre a Lei 11.947/2009" : "⚠️ Abaixo do mínimo legal"}</div>
+          <div className="text-[10px] text-slate-600">{d.cumpre ? "O município aplica ao menos 30% do PNAE na agricultura familiar — fortalece a economia local e cumpre a lei." : "Menos de 30% do PNAE foi comprado da agricultura familiar — descumprimento da lei, risco de apontamento e economia local subaproveitada."}</div>
+        </div>
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>FNDE</b> — dados da agricultura familiar no PNAE. Percentual do valor transferido aplicado em compras da agricultura familiar (mínimo legal 30%, Lei 11.947/2009). Exercício {d.ano} (preliminar).</Fonte>
+    </Card>
+  );
+}
+
+export function PddeSaldoPanel({ d }: { d: Un<ReturnType<typeof getPddeSaldoSC>> }) {
+  return (
+    <Card icon={<Wallet className="h-4 w-4" />} titulo="Recurso na mesa — verba escolar parada (PDDE/FNDE)" cor="#ea580c"
+      csv={<BaixarCsv nome="pdde-saldo-na-mesa" label="CSV" linhas={[{ indicador: "Saldo PDDE acumulado (não executado)", valor: d.saldo }, { indicador: "Escolas/UEx com saldo", valor: d.escolas }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Saldo do PDDE parado nas escolas</div><div className="font-display text-2xl font-bold tabular-nums text-orange-600">{brl(d.saldo)}</div><div className="text-[10px] text-slate-400">{n0(d.escolas)} escolas/UEx · exercício {d.ano}</div></div>
+        <div className="ml-auto max-w-xs rounded-lg border border-orange-200 bg-orange-50/60 p-2.5">
+          <div className="text-[11px] font-semibold text-orange-700">💰 Verba na conta da escola</div>
+          <div className="text-[10px] text-slate-600">É dinheiro do Programa Dinheiro Direto na Escola já transferido e <b>não gasto</b>. Saldo acumulado alto = subutilização + risco de pendência na prestação de contas.</div>
+        </div>
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>FNDE</b> — Plataforma Antonieta de Barros, saldo acumulado das Unidades Executoras (UEx) do PDDE por escola, agregado por município. Exercício {d.ano}.</Fonte>
+    </Card>
+  );
+}
+
+export function SuasSaldoPanel({ d }: { d: Un<ReturnType<typeof getSuasSaldoSC>> }) {
+  const alto = d.mesesParado != null && d.mesesParado >= 3;
+  const cor = alto ? "#dc2626" : d.saldo > 0 ? "#ea580c" : "#16a34a";
+  return (
+    <Card icon={<Wallet className="h-4 w-4" />} titulo="Recurso na mesa — saldo do SUAS (MDS/FNAS)" cor={cor}
+      csv={<BaixarCsv nome="suas-saldo-na-mesa" label="CSV" linhas={[{ indicador: "Saldo em conta (não usado)", valor: d.saldo }, { indicador: "Repasse do mês", valor: d.repasseMes }, { indicador: "Meses de repasse parados", valor: d.mesesParado ?? "" }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Saldo do SUAS parado em conta</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: cor }}>{brl(d.saldo)}</div><div className="text-[10px] text-slate-400">competência {d.competencia} · repasse/mês {brl(d.repasseMes)}</div></div>
+        {d.mesesParado != null && <div><div className="text-[11px] text-slate-500">Equivale a</div><div className="font-display text-xl font-bold tabular-nums" style={{ color: cor }}>{d.mesesParado.toLocaleString("pt-BR")} meses</div><div className="text-[10px] text-slate-400">de repasse acumulado</div></div>}
+        <div className="ml-auto max-w-xs rounded-lg border p-2.5" style={{ borderColor: alto ? "#fecaca" : "#fed7aa", background: alto ? "#fef2f2" : "#fff7ed" }}>
+          <div className="text-[11px] font-semibold" style={{ color: cor }}>{alto ? "⚠️ Saldo alto parado" : "💰 Recurso disponível"}</div>
+          <div className="text-[10px] text-slate-600">É cofinanciamento federal do SUAS já transferido e <b>não executado</b>. Saldo alto acumulado sinaliza risco de bloqueio de novas parcelas e subutilização dos serviços socioassistenciais.</div>
+        </div>
+      </div>
+      <Fonte extraido={d.extraido}>Fonte: <b>Ministério do Desenvolvimento e Assistência Social (MDS) / SAGI</b> — repasses e saldo do cofinanciamento SUAS por município (base MI Social). Saldo = recurso transferido ainda em conta.</Fonte>
     </Card>
   );
 }
@@ -161,7 +706,8 @@ export function FinanciamentoApsPanel({ d }: { d: Un<ReturnType<typeof getFinanc
 export function FarmaciaPopularPanel({ d }: { d: Un<ReturnType<typeof getFarmaciaPopularSC>> }) {
   const semNenhuma = d.nFarmacias === 0;
   return (
-    <Card icon={<Cross className="h-4 w-4" />} titulo="Farmácia Popular — cobertura (Min. Saúde/SECTICS)" cor={semNenhuma ? "#dc2626" : "#16a34a"}>
+    <Card icon={<Cross className="h-4 w-4" />} titulo="Farmácia Popular — cobertura (Min. Saúde/SECTICS)" cor={semNenhuma ? "#dc2626" : "#16a34a"}
+      csv={<BaixarCsv nome="farmacia-popular" label="CSV" linhas={[{ indicador: "Farmácias credenciadas", valor: d.nFarmacias }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
       <div className="mt-2 flex flex-wrap items-end gap-4">
         <div><div className="text-[11px] text-slate-500">Farmácias credenciadas no município</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: semNenhuma ? "#dc2626" : "#16a34a" }}>{n0(d.nFarmacias)}</div></div>
         {semNenhuma && <div className="max-w-xs rounded-lg border border-red-200 bg-red-50/60 p-2.5"><div className="text-[11px] font-semibold text-red-700">⚠️ Nenhuma Farmácia Popular</div><div className="text-[10px] text-slate-600">O município não tem acesso ao "Aqui Tem Farmácia Popular" (medicamento gratuito). Lacuna direta — pauta de credenciamento junto ao Min. Saúde/SECTICS.</div></div>}
@@ -192,7 +738,8 @@ export function MortalidadeInfantilPanel({ d }: { d: Un<ReturnType<typeof getMor
 export function SisaguaPanel({ d }: { d: Un<ReturnType<typeof getSisaguaSC>> }) {
   const cor = d.pctFora >= 20 ? "#dc2626" : d.pctFora >= 5 ? "#ea580c" : "#16a34a";
   return (
-    <Card icon={<GlassWater className="h-4 w-4" />} titulo="Qualidade da água potável (Min. Saúde · SISAGUA)" cor={cor}>
+    <Card icon={<GlassWater className="h-4 w-4" />} titulo="Qualidade da água potável (Min. Saúde · SISAGUA)" cor={cor}
+      csv={<BaixarCsv nome="sisagua-agua" label="CSV" linhas={[{ indicador: "Amostras fora do padrão (%)", valor: d.pctFora }, { indicador: "Amostras fora do padrão (nº)", valor: d.foraPadrao }, { indicador: "Amostras analisadas", valor: d.analisadas }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
       <div className="mt-2 flex flex-wrap items-end gap-4">
         <div><div className="text-[11px] text-slate-500">Amostras fora do padrão de potabilidade</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: cor }}>{d.pctFora.toLocaleString("pt-BR")}%</div><div className="text-[10px] text-slate-400">{n0(d.foraPadrao)} de {n0(d.analisadas)} análises ({d.ano})</div></div>
         <div className="ml-auto max-w-xs rounded-lg border border-sky-200 bg-sky-50/50 p-2.5">

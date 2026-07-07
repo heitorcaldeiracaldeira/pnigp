@@ -2941,11 +2941,307 @@ export async function getSinascSC(cod: string): Promise<{ ano: number; nasciment
   return { ano: num(u.ano), nascimentos: num(u.nascimentos), baixoPeso: num(u.baixo_peso), prematuros: num(u.prematuros), prenatal7: num(u.prenatal_7mais), maeAdolescente: num(u.mae_adolescente), serie: rows.map((r) => ({ ano: num(r.ano), valor: num(r.nascimentos) })), extraido: dExtr(u.atualizado) };
 }
 
+// Dinheiro na mesa — Componente de Qualidade do novo cofinanciamento APS (Port. GM/MS 3.493/2024). Valor por equipe varia pela faixa (Ótimo/Bom/Suficiente/Regular).
+// Tabela oficial (R$/mês por equipe) — verificada na NT conjunta SAPS/CONASEMS/CONASS.
+// Componente Vínculo e Acompanhamento Territorial (CVAT) — novo modelo, Port. 3.493/2024. Classificação das eSF por faixa. Fonte: SIAPS.
+export async function getVinculoApsSC(cod: string): Promise<{ quad: string; esfTotal: number; distrib: { faixa: string; qtd: number }[]; pctBomMais: number; trajetoria: { quad: string; pctBomMais: number }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT quadrimestre, otimo, bom, suficiente, regular, total, atualizado FROM cvat_aps_sc WHERE cod_ibge=$1 AND equipe='eSF' ORDER BY quadrimestre`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const q2 = (q: string) => /^\d{4}Q\d$/.test(q) ? `${q.slice(2, 4)}Q${q.slice(5)}` : q;
+  const pct = (r: Record<string, unknown>) => { const t = num(r.total); return t ? Math.round(((num(r.otimo) + num(r.bom)) / t) * 100) : 0; };
+  const u = rows[rows.length - 1];
+  const esfTotal = num(u.total);
+  const distrib = [
+    { faixa: "Ótimo", qtd: num(u.otimo) }, { faixa: "Bom", qtd: num(u.bom) },
+    { faixa: "Suficiente", qtd: num(u.suficiente) }, { faixa: "Regular", qtd: num(u.regular) },
+  ];
+  const trajetoria = rows.map((r) => ({ quad: q2(String(r.quadrimestre)), pctBomMais: pct(r) }));
+  const uq = String(u.quadrimestre);
+  return { quad: /^\d{4}Q\d$/.test(uq) ? `${uq.slice(0, 4)} Q${uq.slice(5)}` : uq, esfTotal, distrib, pctBomMais: pct(u), trajetoria, extraido: dExtr(u.atualizado) };
+}
+
+// Retrato dos indicadores do Componente de Qualidade (novo modelo, Port. 3.493/2024) por município. Fonte: SIAPS.
+export async function getQualidadeIndicadoresApsSC(cod: string): Promise<{ quad: string; grupos: { categoria: string; indicadores: { nome: string; total: number; otimo: number; bom: number; suficiente: number; regular: number; pctBomMais: number; semaforo: string; tendencia: number | null; nota: number; benchmarkSC: number | null }[] }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT quadrimestre, co_indicador, nome, categoria, otimo, bom, suficiente, regular, atualizado FROM qualidade_indicadores_sc WHERE cod_ibge=$1 ORDER BY quadrimestre DESC, co_indicador`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const quadsOrd = [...new Set(rows.map((r) => String(r.quadrimestre)))].sort();
+  const ultimo = quadsOrd[quadsOrd.length - 1];
+  const anterior = quadsOrd.length > 1 ? quadsOrd[quadsOrd.length - 2] : null;
+  // benchmark SC: %Bom+ agrupado (pooled) por indicador no último quadrimestre
+  const bench = await query<Record<string, unknown>>(`SELECT co_indicador, sum(otimo+bom)::float/NULLIF(sum(otimo+bom+suficiente+regular),0) pct FROM qualidade_indicadores_sc WHERE quadrimestre=$1 GROUP BY co_indicador`, [ultimo]).catch(() => []);
+  const benchMap = new Map<number, number>(bench.map((b) => [num(b.co_indicador), Math.round(num(b.pct) * 100)]));
+  const pctDe = (co: number, q: string | null): number | null => { if (!q) return null; const r = rows.find((x) => String(x.quadrimestre) === q && num(x.co_indicador) === co); if (!r) return null; const t = num(r.otimo) + num(r.bom) + num(r.suficiente) + num(r.regular); return t ? Math.round(((num(r.otimo) + num(r.bom)) / t) * 100) : null; };
+  const doQuad = rows.filter((r) => String(r.quadrimestre) === ultimo);
+  const grupoMap = new Map<string, { nome: string; total: number; otimo: number; bom: number; suficiente: number; regular: number; pctBomMais: number; semaforo: string; tendencia: number | null; nota: number; benchmarkSC: number | null }[]>();
+  for (const r of doQuad) {
+    const total = num(r.otimo) + num(r.bom) + num(r.suficiente) + num(r.regular);
+    if (!total) continue;
+    const bomMais = num(r.otimo) + num(r.bom);
+    const pct = Math.round((bomMais / total) * 100);
+    const semaforo = pct >= 80 ? "azul" : pct >= 50 ? "verde" : pct >= 25 ? "laranja" : "vermelho";
+    const ant = pctDe(num(r.co_indicador), anterior);
+    const tendencia = ant == null ? null : pct - ant;
+    const nota = Math.round(((num(r.otimo) * 10 + num(r.bom) * 7.5 + num(r.suficiente) * 5 + num(r.regular) * 2.5) / total) * 10) / 10;
+    const benchmarkSC = benchMap.get(num(r.co_indicador)) ?? null;
+    const cat = String(r.categoria);
+    if (!grupoMap.has(cat)) grupoMap.set(cat, []);
+    grupoMap.get(cat)!.push({ nome: String(r.nome), total, otimo: num(r.otimo), bom: num(r.bom), suficiente: num(r.suficiente), regular: num(r.regular), pctBomMais: pct, semaforo, tendencia, nota, benchmarkSC });
+  }
+  const ORDEM = ["eSF e eAP", "Saúde Bucal (eSB)", "eMulti", "eCR", "eAPP", "eSFR"];
+  const grupos = [...grupoMap.entries()].map(([categoria, indicadores]) => ({ categoria, indicadores })).sort((a, b) => ORDEM.indexOf(a.categoria) - ORDEM.indexOf(b.categoria));
+  const quad = /^\d{4}Q\d$/.test(ultimo) ? `${ultimo.slice(0, 4)} Q${ultimo.slice(5)}` : ultimo;
+  return { quad, grupos, extraido: dExtr(rows[0].atualizado) };
+}
+
+const QUALIDADE_ESF = { Ótimo: 8000, Bom: 6000, Suficiente: 4000, Regular: 2000 };
+// Tabelas por faixa (R$/mês) — eSF exato; eAP 30h, eSB I Comum, eMulti Ampliada como subtipo REPRESENTATIVO (estimativa).
+const VAL_EQUIPE: Record<string, { o: number; b: number; s: number; r: number }> = {
+  eSF: { o: 8000, b: 6000, s: 4000, r: 2000 },
+  eAP: { o: 4000, b: 3000, s: 2000, r: 1000 },
+  eSB: { o: 2449, b: 1836.75, s: 1224.5, r: 612.25 },
+  eMulti: { o: 9000, b: 6750, s: 4500, r: 2250 },
+};
+const qFmt = (q: string) => /^\d{4}Q\d$/.test(q) ? `${q.slice(0, 4)} Q${q.slice(5)}` : q;
+export async function getDinheiroMesaApsSC(cod: string): Promise<{ quad: string; esfTotal: number; distrib: { faixa: string; qtd: number; valor: number }[]; qualidadeAtualMes: number; tetoMes: number; naMesaAno: number; trajetoria: { quad: string; naMesaAno: number }[]; outrasEquipes: { equipe: string; total: number; otimo: number; bom: number; suficiente: number; regular: number; naMesaAno: number; estimado: boolean }[]; totalNaMesaAno: number; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT quadrimestre, equipe, otimo, bom, suficiente, regular, total, atualizado FROM qualidade_aps_sc WHERE cod_ibge=$1 ORDER BY quadrimestre`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const quads = [...new Set(rows.map((r) => String(r.quadrimestre)))].sort();
+  const ultimo = quads[quads.length - 1];
+  const val = (r: Record<string, unknown>) => num(r.otimo) * QUALIDADE_ESF.Ótimo + num(r.bom) * QUALIDADE_ESF.Bom + num(r.suficiente) * QUALIDADE_ESF.Suficiente + num(r.regular) * QUALIDADE_ESF.Regular;
+  // eSF do último quadrimestre = base do cálculo de dinheiro (tabela limpa)
+  const esfU = rows.find((r) => String(r.quadrimestre) === ultimo && r.equipe === "eSF");
+  if (!esfU) return null;
+  const esfTotal = num(esfU.total);
+  const qualidadeAtualMes = val(esfU);
+  const tetoMes = esfTotal * QUALIDADE_ESF.Ótimo;
+  const distrib = [
+    { faixa: "Ótimo", qtd: num(esfU.otimo), valor: QUALIDADE_ESF.Ótimo },
+    { faixa: "Bom", qtd: num(esfU.bom), valor: QUALIDADE_ESF.Bom },
+    { faixa: "Suficiente", qtd: num(esfU.suficiente), valor: QUALIDADE_ESF.Suficiente },
+    { faixa: "Regular", qtd: num(esfU.regular), valor: QUALIDADE_ESF.Regular },
+  ];
+  const trajetoria = quads.map((q) => { const e = rows.find((r) => String(r.quadrimestre) === q && r.equipe === "eSF"); return { quad: qFmt(q), naMesaAno: e ? (num(e.total) * QUALIDADE_ESF.Ótimo - val(e)) * 12 : 0 }; });
+  const naMesaEq = (eq: string, r: Record<string, unknown>): number => { const v = VAL_EQUIPE[eq]; if (!v) return 0; const atual = num(r.otimo) * v.o + num(r.bom) * v.b + num(r.suficiente) * v.s + num(r.regular) * v.r; const teto = num(r.total) * v.o; return (teto - atual) * 12; };
+  const outrasEquipes = rows.filter((r) => String(r.quadrimestre) === ultimo && r.equipe !== "eSF").map((r) => ({ equipe: String(r.equipe), total: num(r.total), otimo: num(r.otimo), bom: num(r.bom), suficiente: num(r.suficiente), regular: num(r.regular), naMesaAno: naMesaEq(String(r.equipe), r), estimado: true }));
+  const naMesaEsf = (tetoMes - qualidadeAtualMes) * 12;
+  const totalNaMesaAno = naMesaEsf + outrasEquipes.reduce((s, e) => s + e.naMesaAno, 0);
+  return { quad: qFmt(ultimo), esfTotal, distrib, qualidadeAtualMes, tetoMes, naMesaAno: naMesaEsf, trajetoria, outrasEquipes, totalNaMesaAno, extraido: dExtr(esfU.atualizado) };
+}
+
+// Indicadores de desempenho da APS (Previne Brasil) + ISF, por município. Fonte: Min. Saúde/SAPS — SISAB (indicadorPainel), quadrimestral.
+const PREVINE_META = [
+  { nome: "Gestantes com 6+ consultas de pré-natal (1ª até 12ª sem.)", area: "Pré-natal", meta: 45, peso: 1 },
+  { nome: "Gestantes com exames de sífilis e HIV", area: "Pré-natal", meta: 60, peso: 1 },
+  { nome: "Gestantes com atendimento odontológico", area: "Pré-natal", meta: 60, peso: 2 },
+  { nome: "Mulheres com coleta de citopatológico (colo do útero)", area: "Saúde da mulher", meta: 40, peso: 1 },
+  { nome: "Crianças de 1 ano vacinadas (Poliomielite + Pentavalente)", area: "Saúde da criança", meta: 95, peso: 2 },
+  { nome: "Hipertensos com consulta e pressão aferida no semestre", area: "Doenças crônicas", meta: 50, peso: 2 },
+  { nome: "Diabéticos com consulta e hemoglobina glicada solicitada", area: "Doenças crônicas", meta: 50, peso: 1 },
+];
+export async function getIndicadoresApsSC(cod: string): Promise<{ isf: number; quadrimestre: string; indicadores: { nome: string; area: string; resultado: number; meta: number; peso: number; nota: number; semaforo: string }[]; isfSerie: { quad: string; isf: number }[]; extraido: string | null } | null> {
+  const todos = await query<Record<string, unknown>>(`SELECT quadrimestre, ind1, ind2, ind3, ind4, ind5, ind6, ind7, isf, atualizado FROM indicadores_aps_sc WHERE cod_ibge=$1 ORDER BY quadrimestre`, [cod]).catch(() => []);
+  if (!todos.length) return null;
+  const r = todos[todos.length - 1];
+  const isfSerie = todos.map((t) => { const q = String(t.quadrimestre); return { quad: /^\d{6}$/.test(q) ? `${q.slice(2, 4)}Q${({ "04": 1, "08": 2, "12": 3 } as Record<string, number>)[q.slice(4)] || ""}` : q, isf: Math.round(num(t.isf) * 100) / 100 }; });
+  const vals = [num(r.ind1), num(r.ind2), num(r.ind3), num(r.ind4), num(r.ind5), num(r.ind6), num(r.ind7)];
+  const indicadores = PREVINE_META.map((m, i) => {
+    const resultado = vals[i]; const rel = resultado / m.meta;
+    const nota = Math.min(10, rel * 10);
+    const semaforo = rel >= 1 ? "azul" : rel >= 0.7 ? "verde" : rel >= 0.4 ? "laranja" : "vermelho";
+    return { nome: m.nome, area: m.area, resultado, meta: m.meta, peso: m.peso, nota: Math.round(nota * 10) / 10, semaforo };
+  });
+  const q = String(r.quadrimestre || "");
+  const quadFmt = /^\d{6}$/.test(q) ? `${q.slice(0, 4)} Q${{ "04": 1, "08": 2, "12": 3 }[q.slice(4)] || q.slice(4)}` : q;
+  return { isf: Math.round(num(r.isf) * 100) / 100, quadrimestre: quadFmt, indicadores, isfSerie, extraido: dExtr(r.atualizado) };
+}
+
+// Produção da APS (SISAB) — fichas registradas/aprovadas pelas equipes, série mensal 2021-2026, por município. Fonte: Min. Saúde/SAPS (SISAB, e-SUS APS).
+export async function getProducaoApsSC(cod: string): Promise<{ aprovadas: number; total: number; porEquipe: number | null; esf: number; competencia: string; serieAnual: SerieAno; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT competencia, aprovadas, total, atualizado FROM producao_aps_serie_sc WHERE cod_ibge=$1 ORDER BY competencia`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const esf = num((await query<Record<string, unknown>>(`SELECT esf FROM cobertura_aps_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0]?.esf);
+  // último mês CONSOLIDADO (ignora o mês corrente parcial: pega o penúltimo se o último for muito menor — heurística simples: usa o maior mês com valor)
+  const comps = rows.map((r) => String(r.competencia));
+  const ultimo = rows[rows.length - 1];
+  // série anual (soma aprovadas por ano)
+  const porAno = new Map<number, number>();
+  for (const r of rows) { const ano = Number(String(r.competencia).slice(0, 4)); porAno.set(ano, (porAno.get(ano) || 0) + num(r.aprovadas)); }
+  const serieAnual: SerieAno = [...porAno.entries()].map(([ano, valor]) => ({ ano, valor })).sort((a, b) => a.ano - b.ano);
+  const comp = comps[comps.length - 1];
+  const compFmt = /^\d{6}$/.test(comp) ? `${comp.slice(4)}/${comp.slice(0, 4)}` : comp;
+  const aprov = num(ultimo.aprovadas);
+  return { aprovadas: aprov, total: num(ultimo.total), porEquipe: esf > 0 ? Math.round(aprov / esf) : null, esf, competencia: compFmt, serieAnual, extraido: dExtr(ultimo.atualizado) };
+}
+
+// Cobertura APS (e-Gestor) — % de cobertura potencial da APS + nº ESF + população, por município. Fonte: Min. Saúde/SAPS.
+export async function getCoberturaApsSC(cod: string): Promise<{ cobertura: number; populacao: number; esf: number; competencia: string; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT cobertura, populacao, esf, competencia, atualizado FROM cobertura_aps_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.populacao)) return null;
+  return { cobertura: num(r.cobertura), populacao: num(r.populacao), esf: num(r.esf), competencia: String(r.competencia || ""), extraido: dExtr(r.atualizado) };
+}
+
 // Financiamento APS (e-Gestor) — custeio mensal transferido ao município para a Atenção Primária. Fonte: Min. Saúde/SAPS (e-Gestor APS).
-export async function getFinanciamentoApsSC(cod: string): Promise<{ custeioMensal: number; custeioAnual: number; parcela: string; extraido: string | null } | null> {
-  const r = (await query<Record<string, unknown>>(`SELECT custeio_mensal, parcela, atualizado FROM financiamento_aps_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+export async function getFinanciamentoApsSC(cod: string): Promise<{ custeioMensal: number; custeioAnual: number; parcela: string; componentes: { nome: string; valor: number }[]; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT custeio_mensal, parcela, esf, emulti, bucal, acs, desempenho, atualizado FROM financiamento_aps_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
   if (!r || !num(r.custeio_mensal)) return null;
-  return { custeioMensal: num(r.custeio_mensal), custeioAnual: num(r.custeio_mensal) * 12, parcela: String(r.parcela || ""), extraido: dExtr(r.atualizado) };
+  const componentes = [
+    { nome: "Equipes Saúde da Família (eSF/eAP)", valor: num(r.esf) },
+    { nome: "Agentes Comunitários (ACS)", valor: num(r.acs) },
+    { nome: "Saúde Bucal", valor: num(r.bucal) },
+    { nome: "Equipes Multiprofissionais (eMulti)", valor: num(r.emulti) },
+    { nome: "Desempenho (Previne)", valor: num(r.desempenho) },
+  ].filter((c) => c.valor > 0).sort((a, b) => b.valor - a.valor);
+  return { custeioMensal: num(r.custeio_mensal), custeioAnual: num(r.custeio_mensal) * 12, parcela: String(r.parcela || ""), componentes, extraido: dExtr(r.atualizado) };
+}
+
+// IDHM municipal (Atlas Brasil/PNUD) — IDHM + subíndices renda/longevidade/educação. Último oficial: Censo 2010. Fonte: Atlas Brasil.
+export async function getIdhmSC(cod: string): Promise<{ idhm: number; renda: number; long: number; educ: number; faixa: string; ano: string; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT ano, idhm, idhm_renda, idhm_long, idhm_educ, atualizado FROM idhm_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.idhm)) return null;
+  const v = num(r.idhm);
+  const faixa = v >= 0.8 ? "Muito alto" : v >= 0.7 ? "Alto" : v >= 0.6 ? "Médio" : v >= 0.5 ? "Baixo" : "Muito baixo";
+  return { idhm: v, renda: num(r.idhm_renda), long: num(r.idhm_long), educ: num(r.idhm_educ), faixa, ano: String(r.ano || ""), extraido: dExtr(r.atualizado) };
+}
+
+// PIB municipal (preços correntes) + PIB per capita + posição no estado. Fonte: IBGE tabela 5938.
+export async function getPibMunicipalSC(cod: string): Promise<{ pib: number; pibPerCapita: number | null; ano: string; posicaoUf: number; totalMunis: number; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT ano, pib, pib_per_capita, atualizado, (SELECT count(*) FROM pib_municipal_sc) tot, (SELECT count(*) FROM pib_municipal_sc b WHERE b.pib > a.pib) acima FROM pib_municipal_sc a WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.pib)) return null;
+  return { pib: num(r.pib), pibPerCapita: r.pib_per_capita != null ? num(r.pib_per_capita) : null, ano: String(r.ano || ""), posicaoUf: num(r.acima) + 1, totalMunis: num(r.tot), extraido: dExtr(r.atualizado) };
+}
+
+// IBGE Censo 2022 — população por faixa etária (pirâmide) + indicadores (idosos, dependência, envelhecimento). Fonte: IBGE tabela 9514.
+export async function getPopulacaoFaixaSC(cod: string): Promise<{ total: number; pctIdosos: number; pop60: number; pop80: number; pct014: number; razaoDependencia: number; indiceEnvelhecimento: number; bandas: { nome: string; qtd: number; pct: number }[]; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT total, pop_0_14, pop_15_59, pop_60, pop_80, pct_idosos, razao_dependencia, indice_envelhecimento, faixas, atualizado FROM populacao_faixa_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.total)) return null;
+  const t = num(r.total); const f = (r.faixas || {}) as Record<string, number>;
+  const somaB = (ks: string[]) => ks.reduce((s, k) => s + (num(f[k]) || 0), 0);
+  const bandasDef: [string, string[]][] = [["0-14", ["0-4", "5-9", "10-14"]], ["15-29", ["15-19", "20-24", "25-29"]], ["30-44", ["30-34", "35-39", "40-44"]], ["45-59", ["45-49", "50-54", "55-59"]], ["60-74", ["60-64", "65-69", "70-74"]], ["75+", ["75-79", "80-84", "85-89", "90-94", "95-99", "100+"]]];
+  const bandas = bandasDef.map(([nome, ks]) => { const qtd = somaB(ks); return { nome, qtd, pct: Math.round((qtd / t) * 1000) / 10 }; });
+  return { total: t, pctIdosos: num(r.pct_idosos), pop60: num(r.pop_60), pop80: num(r.pop_80), pct014: Math.round((num(r.pop_0_14) / t) * 1000) / 10, razaoDependencia: num(r.razao_dependencia), indiceEnvelhecimento: num(r.indice_envelhecimento), bandas, extraido: dExtr(r.atualizado) };
+}
+
+// IBGE Censo 2022 — composição da população por cor/raça por município. Fonte: IBGE (tabela 9605).
+export async function getCensoCorRacaSC(cod: string): Promise<{ total: number; comp: { nome: string; qtd: number; pct: number }[]; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT total, branca, preta, amarela, parda, indigena, atualizado FROM censo_corraca_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.total)) return null;
+  const t = num(r.total);
+  const comp = [
+    { nome: "Branca", qtd: num(r.branca) }, { nome: "Parda", qtd: num(r.parda) }, { nome: "Preta", qtd: num(r.preta) },
+    { nome: "Amarela", qtd: num(r.amarela) }, { nome: "Indígena", qtd: num(r.indigena) },
+  ].map((c) => ({ ...c, pct: Math.round((c.qtd / t) * 1000) / 10 })).filter((c) => c.qtd > 0).sort((a, b) => b.qtd - a.qtd);
+  return { total: t, comp, extraido: dExtr(r.atualizado) };
+}
+
+// Novo PAC / ObrasGov — empreendimentos federais por município: nº obras, investimento previsto, em andamento. Fonte: ObrasGov/Casa Civil.
+export async function getNovoPacSC(cod: string): Promise<{ projetos: number; valorPrevisto: number; emAndamento: number; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT projetos, valor_previsto, em_andamento, atualizado FROM novopac_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.projetos)) return null;
+  return { projetos: num(r.projetos), valorPrevisto: num(r.valor_previsto), emAndamento: num(r.em_andamento), extraido: dExtr(r.atualizado) };
+}
+
+// Lei Paulo Gustavo (LPG) — cultura: transferido, saldo em conta (risco devolução), % utilizado. Fonte: MinC.
+export async function getLpgSC(cod: string): Promise<{ transferido: number; saldo: number; pctUtilizado: number; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT transferido, saldo, pct_utilizado, atualizado FROM lpg_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.transferido)) return null;
+  return { transferido: num(r.transferido), saldo: num(r.saldo), pctUtilizado: num(r.pct_utilizado), extraido: dExtr(r.atualizado) };
+}
+
+// SALIC / Lei Rouanet — projetos culturais: aprovado vs captado (gap = captação na mesa). Fonte: MinC.
+export async function getSalicSC(cod: string): Promise<{ projetos: number; aprovado: number; captado: number; gap: number; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT projetos, aprovado, captado, gap, atualizado FROM salic_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.projetos)) return null;
+  return { projetos: num(r.projetos), aprovado: num(r.aprovado), captado: num(r.captado), gap: num(r.gap), extraido: dExtr(r.atualizado) };
+}
+
+// IBRAM MuseusBr — museus por município. Fonte: IBRAM (cadastro.museus.gov.br).
+export async function getMuseusSC(cod: string): Promise<{ museus: number; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT museus, atualizado FROM museus_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.museus)) return null;
+  return { museus: num(r.museus), extraido: dExtr(r.atualizado) };
+}
+
+// IBGE Censo 2022 — SETORES CENSITÁRIOS (intraurbano): disparidade de densidade + bairros mais populosos. Fonte: IBGE Agregados por Setores.
+export async function getSetoresSC(cod: string): Promise<{ setores: number; bairros: number; densMediana: number; densMax: number; topBairros: { bairro: string; pop: number }[]; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT count(*) setores, count(DISTINCT NULLIF(bairro,'')) bairros, round(percentile_cont(0.5) WITHIN GROUP (ORDER BY populacao/NULLIF(area_km2,0))) dens_mediana, round(max(populacao/NULLIF(area_km2,0))) dens_max, max(atualizado) atualizado FROM setores_censitarios_sc WHERE cod_ibge=$1 AND area_km2>0`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.setores)) return null;
+  const top = await query<Record<string, unknown>>(`SELECT bairro, sum(populacao) pop FROM setores_censitarios_sc WHERE cod_ibge=$1 AND bairro IS NOT NULL AND bairro<>'' GROUP BY bairro ORDER BY pop DESC LIMIT 5`, [cod]).catch(() => []);
+  return { setores: num(r.setores), bairros: num(r.bairros), densMediana: num(r.dens_mediana), densMax: num(r.dens_max), topBairros: top.map((b) => ({ bairro: String(b.bairro), pop: num(b.pop) })), extraido: dExtr(r.atualizado) };
+}
+
+// Malha (polígonos) dos setores censitários do município → GeoJSON para o mapa choropleth intraurbano. Fonte: IBGE (GPKG malha com atributos).
+export async function getSetoresGeoSC(cod: string): Promise<{ geojson: unknown; maxDens: number; centro: [number, number] } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT geojson FROM setores_geo_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !r.geojson) return null;
+  const fc = (typeof r.geojson === "string" ? JSON.parse(r.geojson) : r.geojson) as { features: { properties: { densPop: number }; geometry: { coordinates: unknown } }[] };
+  let maxDens = 1, minX = 180, maxX = -180, minY = 90, maxY = -90;
+  const scan = (c: unknown): void => { if (typeof c === "number") return; if (Array.isArray(c) && typeof c[0] === "number") { const [x, y] = c as number[]; if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; return; } if (Array.isArray(c)) c.forEach(scan); };
+  for (const f of fc.features) { if (f.properties.densPop > maxDens) maxDens = f.properties.densPop; scan(f.geometry.coordinates); }
+  return { geojson: fc, maxDens, centro: [(minX + maxX) / 2, (minY + maxY) / 2] };
+}
+
+// IBGE Censo 2022 — taxa de alfabetização (15+) por município. Fonte: IBGE tabela 9543.
+export async function getAlfabetizacaoSC(cod: string): Promise<{ taxa: number; analfabetos: number; mediaSc: number; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT taxa, atualizado, (SELECT round(avg(taxa),2) FROM alfabetizacao_sc) media FROM alfabetizacao_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || r.taxa == null) return null;
+  const t = Number(r.taxa);
+  return { taxa: t, analfabetos: Math.round((100 - t) * 10) / 10, mediaSc: Number(r.media) || 0, extraido: dExtr(r.atualizado) };
+}
+
+// IBGE Censo 2022 — domicílios + densidade domiciliar (moradores/domicílio) por município. Fonte: IBGE tabela 4712.
+export async function getDomiciliosSC(cod: string): Promise<{ domicilios: number; moradores: number; densidade: number; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT domicilios, moradores, densidade, atualizado FROM domicilios_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.domicilios)) return null;
+  return { domicilios: num(r.domicilios), moradores: num(r.moradores), densidade: Number(r.densidade) || 0, extraido: dExtr(r.atualizado) };
+}
+
+// CEMADEN — estações de monitoramento de risco (chuva) por município. Fonte: CEMADEN. Casa com Defesa Civil.
+export async function getCemadenSC(cod: string): Promise<{ estacoes: number; ativas: number; extraido: string | null } | null> {
+  // tabela só tem quem TEM estação; se a base existe mas o município não está lá, é ponto cego (0 estações)
+  const existe = (await query<Record<string, unknown>>(`SELECT 1 FROM cemaden_sc LIMIT 1`).catch(() => []))[0];
+  if (!existe) return null;
+  const r = (await query<Record<string, unknown>>(`SELECT estacoes, ativas, atualizado FROM cemaden_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r) return { estacoes: 0, ativas: 0, extraido: null };
+  return { estacoes: num(r.estacoes), ativas: num(r.ativas), extraido: dExtr(r.atualizado) };
+}
+
+// ANA/SNISB — barragens por município: total + dano potencial alto + risco alto. Fonte: ANA/SNISB. Casa com Defesa Civil.
+export async function getBarragensSC(cod: string): Promise<{ total: number; danoAlto: number; riscoAlto: number; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT total, dano_alto, risco_alto, atualizado FROM barragens_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.total)) return null;
+  return { total: num(r.total), danoAlto: num(r.dano_alto), riscoAlto: num(r.risco_alto), extraido: dExtr(r.atualizado) };
+}
+
+// Conab PAA — compras da agricultura familiar (valor executado, histórico). Fonte: Conab.
+export async function getPaaSC(cod: string): Promise<{ executado: number; formalizado: number; ultimoAno: string; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT executado, formalizado, ultimo_ano, atualizado FROM paa_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.executado)) return null;
+  return { executado: num(r.executado), formalizado: num(r.formalizado), ultimoAno: String(r.ultimo_ano || ""), extraido: dExtr(r.atualizado) };
+}
+
+// PNAE — % de compra da agricultura familiar (mínimo legal 30%, Lei 11.947/2009). Fonte: FNDE.
+export async function getPnaeAgriSC(cod: string): Promise<{ percentual: number; valorTransferido: number; valorAgri: number; ano: string; cumpre: boolean; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT percentual, valor_transferido, valor_agri, ano, atualizado FROM pnae_agri_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.valor_transferido)) return null;
+  const pct = num(r.percentual);
+  return { percentual: pct, valorTransferido: num(r.valor_transferido), valorAgri: num(r.valor_agri), ano: String(r.ano || ""), cumpre: pct >= 30, extraido: dExtr(r.atualizado) };
+}
+
+// PDDE — saldo acumulado das UEx (verba escolar PARADA/não executada). Fonte: FNDE. Recurso na mesa.
+export async function getPddeSaldoSC(cod: string): Promise<{ saldo: number; escolas: number; ano: string; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT saldo, escolas, ano, atualizado FROM pdde_saldo_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.saldo)) return null;
+  return { saldo: num(r.saldo), escolas: num(r.escolas), ano: String(r.ano || ""), extraido: dExtr(r.atualizado) };
+}
+
+// SUAS — repasse do FNAS + SALDO em conta (recurso na mesa, risco de bloqueio/devolução). Fonte: MDS/SAGI.
+export async function getSuasSaldoSC(cod: string): Promise<{ saldo: number; repasseMes: number; mesesParado: number | null; competencia: string; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT saldo, repasse_mes, competencia, atualizado FROM suas_saldo_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  if (!r) return null;
+  const saldo = num(r.saldo), rep = num(r.repasse_mes);
+  const comp = String(r.competencia || "");
+  const compFmt = /^\d{6}$/.test(comp) ? `${comp.slice(4)}/${comp.slice(0, 4)}` : comp;
+  return { saldo, repasseMes: rep, mesesParado: rep > 0 ? Math.round((saldo / rep) * 10) / 10 : null, competencia: compFmt, extraido: dExtr(r.atualizado) };
 }
 
 // Farmácia Popular (PFPB) — nº de farmácias credenciadas por município. Fonte: Min. Saúde/SECTICS via LocalizaSUS.
