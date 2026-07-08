@@ -1,9 +1,10 @@
 // Painéis das novas fontes (eixos econômico/ambiental/social/saúde). Server components, compactos.
 // Padrão: dado + série + carimbo de origem COM data de extração + CSV. (atende à diretriz de proveniência + exportação.)
-import type { getBndesSC, getCfemSC, getAnpSC, getQueimadasSC, getBolsaAtletaSC, getVitaisSC, getAnsCoberturaSC, getEquipamentosEsporteSC, getCagedSC, getRaisSC, getCasamentoEmpregoSC, getProdesSC, getDesastresSC, getSinisaSC, getSinanDengueSC, getAneelGdSC, getAnatelBlSC, getFrotaSC, getIbamaAutosSC, getSinespSC, getIncraAssentamentosSC, getPronafSC, getIcmbioUcSC, getAnaOutorgasSC, getIbgeProducaoSC, getArbovirosesSC, getDatatranSC, getAnpVendasSC, getCapagSC, getRfbArrecadacaoSC, getSimSC, getSinascSC, getSihSC, getIgdmSC, getIbamaEmbargosSC, getQuilombosSC, getSiaProducaoSC, getMedicamentosSC, getSinanAgravosSC, getProfissionaisSaudeSC, getApacSC, getRaasSaudeMentalSC, getCoberturaVacinalSC, getSisaguaSC, getMortalidadeInfantilSC, getFarmaciaPopularSC, getFinanciamentoApsSC, getCoberturaApsSC, getProducaoApsSC, getIndicadoresApsSC, getDinheiroMesaApsSC, getQualidadeIndicadoresApsSC, getVinculoApsSC, getSuasSaldoSC, getPddeSaldoSC, getPnaeAgriSC, getBarragensSC, getPaaSC, getLpgSC, getSalicSC, getNovoPacSC, getCensoCorRacaSC, getPopulacaoFaixaSC, getPibMunicipalSC, getIdhmSC, getCemadenSC, getDomiciliosSC, getAlfabetizacaoSC, getSetoresSC, getMuseusSC } from "@/lib/queries";
+import type { getBndesSC, getCfemSC, getAnpSC, getQueimadasSC, getBolsaAtletaSC, getVitaisSC, getAnsCoberturaSC, getEquipamentosEsporteSC, getCagedSC, getRaisSC, getCasamentoEmpregoSC, getProdesSC, getDesastresSC, getSinisaSC, getSinanDengueSC, getAneelGdSC, getAnatelBlSC, getFrotaSC, getIbamaAutosSC, getSinespSC, getIncraAssentamentosSC, getPronafSC, getIcmbioUcSC, getAnaOutorgasSC, getIbgeProducaoSC, getArbovirosesSC, getDatatranSC, getAnpVendasSC, getCapagSC, getRfbArrecadacaoSC, getSimSC, getSinascSC, getSihSC, getIgdmSC, getIbamaEmbargosSC, getQuilombosSC, getSiaProducaoSC, getMedicamentosSC, getSinanAgravosSC, getProfissionaisSaudeSC, getApacSC, getRaasSaudeMentalSC, getCoberturaVacinalSC, getSisaguaSC, getMortalidadeInfantilSC, getFarmaciaPopularSC, getFinanciamentoApsSC, getCoberturaApsSC, getProducaoApsSC, getIndicadoresApsSC, getDinheiroMesaApsSC, getQualidadeIndicadoresApsSC, getVinculoApsSC, getSuasSaldoSC, getPddeSaldoSC, getPnaeAgriSC, getBarragensSC, getPaaSC, getLpgSC, getSalicSC, getNovoPacSC, getCensoCorRacaSC, getPopulacaoFaixaSC, getPibMunicipalSC, getIdhmSC, getCemadenSC, getDomiciliosSC, getAlfabetizacaoSC, getSetoresSC, getMuseusSC, getReceitaComposicaoSC, getDespesaFuncaoSerieSC, getTransferenciasSerieSC, getFolhaSerieSC, getInvestimentoSerieSC, getDespesaNaturezaSerieSC, getRankingTesouroSC, getRankingDetalheSC, getEscolaTurmasSC, getEtiDiagnosticoSC, getEvasaoEscolarSC, getFundebGanhoEtiSC, getEscolasEtiSC, getDiagnosticoEducacaoPneSC, getValorizacaoMagisterioSC, getEducacaoTrajetoriaSC, getTransferenciasCguSC } from "@/lib/queries";
+import { PNE_ACOES, PRAZO_LABEL, LEVANTAMENTO_INTERNO } from "@/lib/pne-acoes";
 import { BaixarCsv } from "./baixar-csv";
 import MapaSetoresWrap from "./mapa-setores-wrap";
-import { Landmark, Mountain, Fuel, Flame, Medal, HeartPulse, ShieldPlus, MapPin, Briefcase, Users, GitMerge, Trees, AlertTriangle, Droplets, Bug, Sun, Wifi, Car, Gavel, Shield, Sprout, TreePine, Waves, Wheat, Building2, TriangleAlert, Gauge, Activity, Baby, Ban, Home, Pill, ShieldAlert, Stethoscope, Ribbon, Brain, Syringe, GlassWater, HeartCrack, Cross, Coins, Network, ClipboardList, Target, Banknote, Award, Wallet, Clapperboard, Palette, PersonStanding, TrendingUp, Database } from "lucide-react";
+import { Landmark, Mountain, Fuel, Flame, Medal, HeartPulse, ShieldPlus, MapPin, Briefcase, Users, GitMerge, Trees, AlertTriangle, Droplets, Bug, Sun, Wifi, Car, Gavel, Shield, Sprout, TreePine, Waves, Wheat, Building2, TriangleAlert, Gauge, Activity, Baby, Ban, Home, Pill, ShieldAlert, Stethoscope, Ribbon, Brain, Syringe, GlassWater, HeartCrack, Cross, Coins, Network, ClipboardList, Target, Banknote, Award, Wallet, Clapperboard, Palette, PersonStanding, TrendingUp, GraduationCap, Database } from "lucide-react";
 
 type Un<T> = NonNullable<Awaited<T>>;
 const brl = (v: number) => (v >= 1e9 ? `R$ ${(v / 1e9).toFixed(2)} bi` : v >= 1e6 ? `R$ ${(v / 1e6).toFixed(1)} mi` : v >= 1e3 ? `R$ ${(v / 1e3).toFixed(0)} mil` : `R$ ${v}`);
@@ -438,16 +439,737 @@ export function IdhmPanel({ d }: { d: Un<ReturnType<typeof getIdhmSC>> }) {
   );
 }
 
+export function EscolasEtiPanel({ d }: { d: Un<ReturnType<typeof getEscolasEtiSC>> }) {
+  return (
+    <Card icon={<Building2 className="h-4 w-4" />} titulo="Quais escolas priorizar na expansão da ETI (prontidão de infraestrutura)" cor="#2563eb"
+      csv={<BaixarCsv nome="eti-escolas-candidatas" label="CSV" linhas={d.candidatas.map((e, i) => ({ ordem: i + 1, escola: e.nome, bairro: e.bairro, matriculas: e.matriculas, turmas: e.turmas, prontidao: e.score })) as unknown as Row[]} colunas={[{ chave: "ordem", rotulo: "#" }, { chave: "escola", rotulo: "Escola" }, { chave: "bairro", rotulo: "Bairro" }, { chave: "matriculas", rotulo: "Matrículas" }, { chave: "prontidao", rotulo: "Prontidão" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Escolas prontas para o tempo integral</div><div className="font-display text-2xl font-bold tabular-nums text-emerald-700">{n0(d.nProntas)} <span className="text-[13px] font-normal text-slate-400">de {n0(d.total)}</span></div><div className="text-[10px] text-slate-400">têm refeitório, quadra, biblioteca e saneamento</div></div>
+        <div><div className="text-[11px] text-slate-500">Precisam de adequação</div><div className="font-display text-xl font-bold tabular-nums text-amber-600">{n0(d.nAdequar)}</div><div className="text-[10px] text-slate-400">falta algum espaço essencial (reforma/ampliação)</div></div>
+      </div>
+      <div className="mt-3 overflow-x-auto">
+        <div className="text-[11px] font-semibold text-slate-600">Começar por estas (infra pronta, ordenadas por porte):</div>
+        <table className="mt-1 w-full text-[11px]">
+          <thead><tr className="text-slate-400"><th className="text-left font-medium">#</th><th className="text-left font-medium">Escola</th><th className="text-left font-medium">Bairro</th><th className="text-right font-medium">Matrículas</th><th className="text-right font-medium">Turmas</th></tr></thead>
+          <tbody>{d.candidatas.map((e, i) => (<tr key={e.nome} className="border-t border-slate-100"><td className="py-0.5 tabular-nums text-slate-400">{i + 1}</td><td className="font-semibold text-slate-700">{e.nome}</td><td className="text-slate-500">{e.bairro || "—"}</td><td className="text-right tabular-nums text-slate-600">{n0(e.matriculas)}</td><td className="text-right tabular-nums text-slate-500">{n0(e.turmas)}</td></tr>))}</tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">A implantação do tempo integral começa pelas escolas <b>já preparadas</b> (refeitório para as refeições, quadra e biblioteca para as atividades) — menor custo e resultado mais rápido. As {n0(d.nAdequar)} restantes entram num plano de adequação de espaços.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>INEP</b> — Censo Escolar (infraestrutura por escola, rede municipal). Prontidão = presença de refeitório, quadra, biblioteca, água, esgoto e energia.</Fonte>
+    </Card>
+  );
+}
+
+export function FundebGanhoEtiPanel({ d }: { d: Un<ReturnType<typeof getFundebGanhoEtiSC>> }) {
+  return (
+    <Card icon={<Coins className="h-4 w-4" />} titulo="Ganho de FUNDEB ao expandir a Educação em Tempo Integral" cor="#059669"
+      csv={<BaixarCsv nome="fundeb-ganho-eti" label="CSV" linhas={[{ item: "Valor-aluno FUNDEB (derivado)", valor: d.valorAluno }, ...d.metas.map((m) => ({ item: `Meta ${m.alvo}% (+${m.novas} matrículas)`, valor: m.ganhoAnual }))] as unknown as Row[]} colunas={[{ chave: "item", rotulo: "Item" }, { chave: "valor", rotulo: "Valor (R$/ano)" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">FUNDEB hoje (antes)</div><div className="font-display text-2xl font-bold tabular-nums text-slate-700">{brl(d.fundebAtual)}</div><div className="text-[10px] text-slate-400">valor-aluno {brl(d.valorAluno)}</div></div>
+      </div>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full text-[11px]">
+          <thead><tr className="text-slate-400"><th className="text-left font-medium">Cenário</th><th className="text-right font-medium">FUNDEB / ano</th><th className="text-right font-medium">Aumento</th><th className="text-right font-medium">%</th></tr></thead>
+          <tbody>
+            <tr className="border-t border-slate-100"><td className="py-1 font-semibold text-slate-600">Hoje ({n0(0)} novas)</td><td className="text-right tabular-nums text-slate-700">{brl(d.fundebAtual)}</td><td className="text-right text-slate-300">—</td><td className="text-right text-slate-300">—</td></tr>
+            {d.metas.map((m) => { const depois = d.fundebAtual + m.ganhoAnual; const pct = d.fundebAtual > 0 ? Math.round((m.ganhoAnual / d.fundebAtual) * 1000) / 10 : 0; return (
+              <tr key={m.alvo} className="border-t border-slate-100"><td className="py-1 font-semibold text-emerald-700">Meta {m.alvo}% <span className="font-normal text-slate-400">(+{n0(m.novas)})</span></td><td className="text-right font-bold tabular-nums text-emerald-700">{brl(depois)}</td><td className="text-right tabular-nums text-emerald-600">+{brl(m.ganhoAnual)}</td><td className="text-right font-bold tabular-nums text-emerald-600">+{pct}%</td></tr>
+            ); })}
+          </tbody>
+        </table>
+      </div>
+      {d.metas[0] && (() => { const mx = d.fundebAtual + (d.metas[d.metas.length - 1]?.ganhoAnual || 0); return (
+        <div className="mt-3 space-y-1.5">
+          <div className="flex items-center gap-2 text-[11px]"><span className="w-24 shrink-0 text-slate-500">Hoje</span><div className="h-4 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-4 rounded bg-slate-400" style={{ width: `${(d.fundebAtual / mx) * 100}%` }} /></div></div>
+          {d.metas.map((m) => (<div key={m.alvo} className="flex items-center gap-2 text-[11px]"><span className="w-24 shrink-0 text-emerald-700">Meta {m.alvo}%</span><div className="h-4 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-4 rounded" style={{ width: `${((d.fundebAtual + m.ganhoAnual) / mx) * 100}%`, background: "#059669" }} /></div></div>))}
+        </div>
+      ); })()}
+      <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50/60 p-2.5">
+        <div className="text-[11px] font-semibold text-slate-600">🧮 Como é calculado</div>
+        <ol className="mt-1 list-decimal space-y-0.5 pl-4 text-[10px] text-slate-600">
+          <li><b>Valor-aluno</b> = FUNDEB recebido ÷ matrículas ponderadas do município (= {brl(d.valorAluno)}). Não usamos um valor genérico — sai do próprio repasse do município.</li>
+          <li><b>Matrícula ponderada</b>: cada matrícula × seu fator (padrão = 1,00; integral: fund/pré 1,50 · médio 1,52 · creche 1,55 — Resolução MEC 05/2024).</li>
+          <li><b>Ganho</b> = (novas matrículas integrais × incremento do fator da etapa) × valor-aluno. Ex.: 1 aluno de anos iniciais que passa a integral rende +0,50 × {brl(d.valorAluno)} = <b>{brl(Math.round(0.5 * d.valorAluno))}/ano</b>.</li>
+        </ol>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Este é o retorno financeiro <b>recorrente</b> da expansão da ETI, que se soma ao incentivo do Programa Escola em Tempo Integral.</p>
+      <Fonte extraido={d.extraido}>Fonte: fatores de ponderação <b>FUNDEB/VAAF 2025</b> (Resolução MEC 05/2024) aplicados às matrículas do município. Estimativa orientativa (assume conversão de matrículas parciais em integrais; a distribuição do fundo é intra-estadual).</Fonte>
+    </Card>
+  );
+}
+
+const PNE_COR: Record<string, string> = { atingida: "#059669", evolucao: "#f59e0b", distante: "#dc2626", sd: "#94a3b8" };
+const PNE_LBL: Record<string, string> = { atingida: "Atingida", evolucao: "Em evolução", distante: "Distante", sd: "Sem dado" };
+
+export function DiagnosticoPnePanel({ d }: { d: Un<ReturnType<typeof getDiagnosticoEducacaoPneSC>> }) {
+  const linhas = d.eixos.flatMap((e) => e.metas.map((m) => ({ eixo: e.n, meta: m.meta, indicador: m.titulo, valor: m.valor, unidade: m.unidade, referencia: m.referencia, situacao: PNE_LBL[m.situacao] })));
+  return (
+    <Card icon={<ClipboardList className="h-4 w-4" />} titulo="Diagnóstico da Educação Municipal — alinhado ao PNE" cor="#7c3aed"
+      csv={<BaixarCsv nome="diagnostico-pne" label="CSV" linhas={linhas as unknown as Row[]} colunas={[{ chave: "eixo", rotulo: "Eixo" }, { chave: "meta", rotulo: "Meta PNE" }, { chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }, { chave: "referencia", rotulo: "Referência" }, { chave: "situacao", rotulo: "Situação" }]} />}>
+      <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+        {(["atingida", "evolucao", "distante"] as const).map((s) => (<span key={s} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold" style={{ background: PNE_COR[s] + "22", color: PNE_COR[s] }}>{d.resumo[s]} {PNE_LBL[s].toLowerCase()}</span>))}
+      </div>
+      <div className="mt-3 space-y-3">
+        {d.eixos.map((e) => (
+          <div key={e.n}>
+            <div className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Eixo {e.n} · {e.titulo}</div>
+            <div className="mt-1 space-y-1">
+              {e.metas.map((m, i) => (
+                <div key={i} className="flex items-start gap-2 rounded-lg border border-slate-100 bg-slate-50/40 px-2.5 py-1.5">
+                  <span className="mt-0.5 shrink-0 rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-700">{m.meta}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-slate-700">{m.titulo} {m.aprox && <span className="text-[9px] text-amber-500">(aprox.)</span>}</div>
+                    {m.nota && <div className="text-[10px] leading-tight text-slate-400">{m.nota}</div>}
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="text-xs font-bold tabular-nums" style={{ color: PNE_COR[m.situacao] }}>{m.valor != null ? m.valor.toLocaleString("pt-BR") + m.unidade : (m.nota && m.situacao !== "sd" ? (m.situacao === "atingida" ? "sim" : "não") : "—")}</div>
+                    <div className="text-[9px] text-slate-400">{m.referencia}</div>
+                  </div>
+                  <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full" style={{ background: PNE_COR[m.situacao] }} title={PNE_LBL[m.situacao]} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <Fonte extraido={d.extraido}>Base: <b>Diagnóstico da Educação Nacional / PNE</b> (MEC, 2025). Indicadores municipais: INEP (Censo Escolar, IDEB, rendimento), IBGE (população, alfabetização, MUNIC), FUNDEB, SICONFI. Situação = comparação com a referência do PNE (exibição neutra; a decisão é da gestão).</Fonte>
+    </Card>
+  );
+}
+
+export function PmeRoteiroPanel({ temPme }: { temPme: boolean | null }) {
+  const FASES = [
+    { n: 1, t: "Mobilização e organização", d: "Instituir por ato oficial a Comissão Coordenadora e a Equipe Técnica; envolver Secretaria de Educação, Conselho Municipal de Educação, escolas, professores e sociedade civil." },
+    { n: 2, t: "Diagnóstico da realidade educacional", d: "Levantar a situação de cada dimensão (acesso, fluxo, qualidade, gestão, valorização docente, financiamento).", pronto: true },
+    { n: 3, t: "Metas e estratégias locais", d: "Adequar as 20 metas do PNE à realidade do município, definindo indicadores, responsáveis e prazos — o PME é decenal (10 anos)." },
+    { n: 4, t: "Consulta pública e audiências", d: "Submeter a minuta à participação da comunidade escolar e da sociedade; sistematizar as contribuições (gestão democrática)." },
+    { n: 5, t: "Aprovação em lei", d: "Encaminhar o projeto de lei à Câmara Municipal e sancionar a Lei do Plano Municipal de Educação." },
+    { n: 6, t: "Monitoramento e avaliação", d: "Constituir comissão de monitoramento; realizar avaliações periódicas (no mínimo a cada 2 anos) e revisões das metas." },
+  ];
+  return (
+    <Card icon={<Target className="h-4 w-4" />} titulo="Como o município elabora o Plano Municipal de Educação (PME)" cor="#7c3aed">
+      <div className="mt-1 rounded-lg px-3 py-2 text-[12px]" style={{ background: temPme ? "#ecfdf5" : "#fef2f2", color: temPme ? "#047857" : "#b91c1c" }}>
+        {temPme === null ? "Situação do PME não informada no IBGE MUNIC." : temPme ? "✔ O município POSSUI Plano Municipal de Educação vigente — o foco passa a ser MONITORAR e REVISAR (Fase 6), usando este diagnóstico." : "⚠ O município NÃO tem PME vigente — a prioridade é ELABORAR o plano, começando pela mobilização (Fase 1)."}
+      </div>
+      <ol className="mt-3 space-y-2">
+        {FASES.map((f) => (
+          <li key={f.n} className="flex gap-2.5">
+            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-bold text-violet-700">{f.n}</span>
+            <div><div className="text-xs font-semibold text-slate-700">Fase {f.n} — {f.t} {f.pronto && <span className="ml-1 rounded bg-emerald-100 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700">✓ o sistema já entrega</span>}</div><div className="text-[11px] leading-tight text-slate-500">{f.d}</div></div>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-2 text-[11px] text-slate-500">Fundamentos: PNE (Lei nº 13.005/2014 e o novo PNE), art. 8º — os municípios elaboram/adequam seus planos em consonância com o Plano Nacional. O <b>diagnóstico acima é a Fase 2 pronta</b>; o Instituto i10 apoia as demais fases.</p>
+    </Card>
+  );
+}
+
+const PRAZO_COR: Record<string, string> = { curto: "#dc2626", "médio": "#f59e0b", longo: "#2563eb", "contínuo": "#64748b" };
+
+export function TransferenciasCguPanel({ d }: { d: Un<ReturnType<typeof getTransferenciasCguSC>> }) {
+  const mxO = Math.max(...d.porOrgao.map((o) => o.valor), 1);
+  const mxF = Math.max(...d.porFuncao.map((f) => f.valor), 1);
+  return (
+    <Card icon={<Landmark className="h-4 w-4" />} titulo={`Transferências federais recebidas pela prefeitura (${d.ano})`} cor="#0891b2"
+      csv={<BaixarCsv nome="transferencias-federais-cgu" label="CSV" linhas={[...d.porOrgao.map((o) => ({ dimensao: "Órgão", item: o.orgao, valor: o.valor })), ...d.porFuncao.map((f) => ({ dimensao: "Função", item: f.funcao, valor: f.valor }))] as unknown as Row[]} colunas={[{ chave: "dimensao", rotulo: "Dimensão" }, { chave: "item", rotulo: "Item" }, { chave: "valor", rotulo: "Valor (R$)" }]} />}>
+      <div className="mt-2"><div className="text-[11px] text-slate-500">Total recebido do governo federal em {d.ano}</div><div className="font-display text-2xl font-bold tabular-nums text-cyan-700">{brl(d.total)}</div></div>
+      <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+        {d.porTipo.map((t) => (<span key={t.tipo} className="rounded-lg border border-slate-200 px-2.5 py-1"><span className="text-slate-500">{t.tipo === "Constitucionais e Royalties" ? "Constitucionais" : "Voluntárias/legais"}: </span><b className="text-slate-700">{brl(t.valor)}</b></span>))}
+      </div>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div>
+          <div className="text-[11px] font-semibold text-slate-600">Por órgão (de onde vem)</div>
+          <div className="mt-1 space-y-1">{d.porOrgao.map((o) => (<div key={o.orgao} className="text-[11px]"><div className="flex justify-between"><span className="truncate text-slate-600" title={o.orgao}>{o.orgao}</span><span className="ml-2 shrink-0 font-semibold tabular-nums text-slate-700">{brl(o.valor)}</span></div><div className="h-1 rounded bg-slate-100"><div className="h-1 rounded bg-cyan-500" style={{ width: `${(o.valor / mxO) * 100}%` }} /></div></div>))}</div>
+        </div>
+        <div>
+          <div className="text-[11px] font-semibold text-slate-600">Por função (para quê)</div>
+          <div className="mt-1 space-y-1">{d.porFuncao.map((f) => (<div key={f.funcao} className="text-[11px]"><div className="flex justify-between"><span className="truncate text-slate-600">{f.funcao}</span><span className="ml-2 shrink-0 font-semibold tabular-nums text-slate-700">{brl(f.valor)}</span></div><div className="h-1 rounded bg-slate-100"><div className="h-1 rounded bg-teal-500" style={{ width: `${(f.valor / mxF) * 100}%` }} /></div></div>))}</div>
+        </div>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Consolida <b>todo o dinheiro federal</b> que chegou à prefeitura — constitucionais (FPM, FUNDEB, cota-partes) e voluntárias/legais (convênios, emendas, fundo a fundo) — por ministério e por área. Apenas o governo municipal (exclui repasses a estado, empresas e ONGs no município).</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>CGU — Portal da Transparência</b> (Transferências de Recursos, download em massa; favorecido = Administração Pública Municipal). Contorna a API restrita.</Fonte>
+    </Card>
+  );
+}
+
+export function TrajetoriaEducacaoPanel({ d }: { d: Un<ReturnType<typeof getEducacaoTrajetoriaSC>> }) {
+  const TEND: Record<string, { lbl: string; cor: string }> = { melhorando: { lbl: "melhorando ↑", cor: "#059669" }, piorando: { lbl: "piorando ↓", cor: "#dc2626" }, "estável": { lbl: "estável →", cor: "#f59e0b" }, sd: { lbl: "sem série", cor: "#94a3b8" } };
+  const aiPts = d.ideb.map((x) => x.ai).filter((v): v is number => v != null);
+  const afPts = d.ideb.map((x) => x.af).filter((v): v is number => v != null);
+  const mdePts = d.mde.map((x) => x.pct);
+  const anosIdeb = d.ideb.filter((x) => x.ai != null || x.af != null);
+  const badge = (t: string) => <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: TEND[t].cor + "22", color: TEND[t].cor }}>{TEND[t].lbl}</span>;
+  return (
+    <Card icon={<TrendingUp className="h-4 w-4" />} titulo="Estamos melhorando? — trajetória das metas" cor="#0d9488"
+      csv={<BaixarCsv nome="educacao-trajetoria" label="CSV" linhas={[...d.ideb.map((x) => ({ serie: "IDEB", ano: x.ano, anos_iniciais: x.ai, anos_finais: x.af })), ...d.mde.map((x) => ({ serie: "Aplicação MDE %", ano: x.ano, valor: x.pct }))] as unknown as Row[]} colunas={[{ chave: "serie", rotulo: "Série" }, { chave: "ano", rotulo: "Ano" }, { chave: "anos_iniciais", rotulo: "IDEB AI" }, { chave: "anos_finais", rotulo: "IDEB AF" }, { chave: "valor", rotulo: "MDE %" }]} />}>
+      <div className="mt-2 grid gap-3 sm:grid-cols-2">
+        {anosIdeb.length >= 2 && (
+          <div className="rounded-xl border border-slate-200 p-3">
+            <div className="flex items-center justify-between"><span className="text-xs font-semibold text-slate-700">IDEB (M7) {anosIdeb[0].ano}–{anosIdeb[anosIdeb.length - 1].ano}</span>{badge(d.tendIdeb)}</div>
+            <div className="mt-1"><Spark pts={aiPts} cor="#0d9488" /></div>
+            <div className="mt-1 flex justify-between text-[11px] text-slate-500"><span>Anos iniciais: <b className="text-slate-700">{aiPts[0]} → {aiPts[aiPts.length - 1]}</b></span>{afPts.length >= 2 && <span>Finais: <b className="text-slate-700">{afPts[0]} → {afPts[afPts.length - 1]}</b></span>}</div>
+          </div>
+        )}
+        {mdePts.length >= 2 && (
+          <div className="rounded-xl border border-slate-200 p-3">
+            <div className="flex items-center justify-between"><span className="text-xs font-semibold text-slate-700">Aplicação em MDE (M20) {d.mde[0].ano}–{d.mde[d.mde.length - 1].ano}</span>{badge(d.tendMde)}</div>
+            <div className="mt-1"><Spark pts={mdePts} cor="#0d9488" /></div>
+            <div className="mt-1 text-[11px] text-slate-500">De <b className="text-slate-700">{mdePts[0]}%</b> para <b className="text-slate-700">{mdePts[mdePts.length - 1]}%</b> (mínimo 25%)</div>
+          </div>
+        )}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Responde <b>“estamos melhorando?”</b>: a trajetória do IDEB (bianual) e da aplicação em educação ao longo dos anos. Tendência = comparação entre o primeiro e o último ponto da série.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>INEP</b> (IDEB/SAEB, série 2005+) e <b>SICONFI/RREO</b> (aplicação em MDE). Séries oficiais.</Fonte>
+    </Card>
+  );
+}
+
+export function ValorizacaoMagisterioPanel({ d }: { d: Un<ReturnType<typeof getValorizacaoMagisterioSC>> }) {
+  const tem = d.temPlanoDocente;
+  const COND = [
+    { t: "Piso salarial nacional atualizado", base: "Lei nº 11.738/2008", txt: "O vencimento inicial da carreira NÃO pode ser inferior ao Piso Salarial Profissional Nacional do Magistério, reajustado todo ano. Conferir se a tabela do município acompanha o piso vigente." },
+    { t: "1/3 da jornada para hora-atividade", base: "Lei nº 11.738/2008, art. 2º, §4º", txt: "No máximo 2/3 da carga horária em atividades com os alunos; NO MÍNIMO 1/3 destinado a planejamento, formação e correção (hora-atividade)." },
+    { t: "Progressão na carreira", base: "PNE — Meta 18 / LDB", txt: "Progressão HORIZONTAL (por titulação/qualificação) e VERTICAL (por tempo de serviço e avaliação de desempenho), com critérios objetivos." },
+  ];
+  return (
+    <Card icon={<Award className="h-4 w-4" />} titulo="Valorização do Magistério — condicionantes do Plano de Carreira" cor="#7c3aed">
+      <div className="mt-2 flex flex-wrap gap-3 text-[11px]">
+        <div className="rounded-lg border border-slate-200 px-3 py-1.5"><div className="text-slate-500">Plano de Carreira do Magistério</div><div className="font-bold" style={{ color: tem ? "#059669" : "#dc2626" }}>{tem === null ? "sem informação" : tem ? "✔ o município possui" : "✘ não possui — criar (Meta 18)"}</div></div>
+        <div className="rounded-lg border border-slate-200 px-3 py-1.5"><div className="text-slate-500">Plano dos não-docentes</div><div className="font-bold" style={{ color: d.temPlanoNaoDocente ? "#059669" : "#94a3b8" }}>{d.temPlanoNaoDocente === null ? "—" : d.temPlanoNaoDocente ? "possui" : "não possui"}</div></div>
+        {d.formacaoAI != null && <div className="rounded-lg border border-slate-200 px-3 py-1.5"><div className="text-slate-500">Formação adequada (M15)</div><div className="font-bold text-slate-700">{d.formacaoAI}% iniciais · {d.formacaoAF ?? "—"}% finais</div></div>}
+        {d.superiorAI != null && <div className="rounded-lg border border-slate-200 px-3 py-1.5"><div className="text-slate-500">Docentes com curso superior</div><div className="font-bold text-slate-700">{d.superiorAI}% iniciais · {d.superiorAF ?? "—"}% finais</div></div>}
+      </div>
+      <div className="mt-1.5 text-[10px] text-slate-400">Pós-graduação docente (Meta 16) não está disponível em dado aberto por município (o INEP removeu o arquivo de docentes dos microdados pós-LGPD; acessível só via serviço restrito).</div>
+      <div className="mt-3 rounded-lg bg-amber-50 px-3 py-1.5 text-[12px] font-semibold text-amber-800">⚠ O Plano de Carreira {tem ? "vigente deve ser revisado para garantir" : "a ser criado precisa garantir"} obrigatoriamente as 3 condicionantes:</div>
+      <div className="mt-2 grid gap-2 sm:grid-cols-3">
+        {COND.map((c, i) => (
+          <div key={i} className="rounded-xl border-2 border-violet-200 bg-violet-50/40 p-3">
+            <div className="flex items-center gap-1.5"><span className="flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-[11px] font-bold text-white">{i + 1}</span><span className="text-[13px] font-bold text-violet-800">{c.t}</span></div>
+            <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-violet-500">{c.base}</div>
+            <div className="mt-1 text-[11px] leading-tight text-slate-600">{c.txt}</div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Estas 3 condicionantes são <b>obrigatórias por lei</b> — a ausência de qualquer uma pode gerar questionamento no TCE e no Ministério Público. Use o botão <b>“Plano de Carreira do Magistério”</b> (nos artefatos, acima) para gerar a minuta já com elas. Formação: AFD/INEP. Situação do plano: IBGE MUNIC.</p>
+      <Fonte extraido={d.extraido}>Fonte: IBGE MUNIC (existência dos planos) + INEP (formação docente). Condicionantes: CF art. 206, LDB, Lei 11.738/2008 e Meta 18 do PNE.</Fonte>
+    </Card>
+  );
+}
+
+export function PrioridadesMetasPanel({ d }: { d: Un<ReturnType<typeof getDiagnosticoEducacaoPneSC>> }) {
+  const flat = d.eixos.flatMap((e) => e.metas.map((m) => ({ ...m, eixo: e.n })));
+  const ord: Record<string, number> = { distante: 0, evolucao: 1 };
+  const pend = flat.filter((m) => m.situacao === "distante" || m.situacao === "evolucao").sort((a, b) => ord[a.situacao] - ord[b.situacao]);
+  const nDist = pend.filter((m) => m.situacao === "distante").length;
+  const acao1 = (code: string) => PNE_ACOES[code]?.acoes[0];
+  if (!pend.length) return (
+    <Card icon={<Target className="h-4 w-4" />} titulo="Pontos a trabalhar nas metas" cor="#059669"><p className="mt-2 text-xs text-emerald-700">✔ Todas as metas medidas estão atingidas. Foco em manter os resultados e monitorar.</p></Card>
+  );
+  return (
+    <Card icon={<Target className="h-4 w-4" />} titulo="Pontos a trabalhar nas metas — onde focar" cor="#dc2626"
+      csv={<BaixarCsv nome="pme-pontos-trabalhar" label="CSV" linhas={pend.map((m) => ({ meta: m.meta, ponto: m.titulo, situacao: PNE_LBL[m.situacao], atual: m.valor, referencia: m.referencia, primeira_acao: acao1(m.meta)?.acao || "" })) as unknown as Row[]} colunas={[{ chave: "meta", rotulo: "Meta" }, { chave: "ponto", rotulo: "Ponto" }, { chave: "situacao", rotulo: "Situação" }, { chave: "atual", rotulo: "Atual" }, { chave: "referencia", rotulo: "Meta" }, { chave: "primeira_acao", rotulo: "1ª ação" }]} />}>
+      <div className="mt-1 text-[12px] text-slate-600"><b className="text-red-600">{pend.length} pontos</b> a trabalhar{nDist > 0 && <> — <b className="text-red-600">{nDist} prioritário{nDist > 1 ? "s" : ""}</b> (distante da meta)</>}. Comece pelos vermelhos.</div>
+      <div className="mt-2 space-y-1.5">
+        {pend.map((m, i) => { const a = acao1(m.meta); return (
+          <div key={i} className="flex items-start gap-2 rounded-lg border-l-4 bg-slate-50/50 py-1.5 pl-2.5 pr-2" style={{ borderColor: PNE_COR[m.situacao] }}>
+            <span className="mt-0.5 shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-600">{m.meta}</span>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-semibold text-slate-700">{m.titulo}</div>
+              {a && <div className="text-[11px] text-slate-500">→ {a.acao} <span className="rounded px-1 py-0.5 text-[9px] font-semibold" style={{ background: PRAZO_COR[a.prazo] + "1e", color: PRAZO_COR[a.prazo] }}>{PRAZO_LABEL[a.prazo]}</span></div>}
+            </div>
+            <div className="shrink-0 text-right">
+              <div className="text-xs font-bold tabular-nums" style={{ color: PNE_COR[m.situacao] }}>{m.valor != null ? m.valor.toLocaleString("pt-BR") + m.unidade : (m.situacao === "distante" ? "não" : "—")}</div>
+              <div className="text-[9px] text-slate-400">meta {m.referencia}</div>
+            </div>
+          </div>
+        ); })}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Pontos onde o município está <b style={{ color: PNE_COR.distante }}>distante</b> ou <b style={{ color: PNE_COR.evolucao }}>em evolução</b> face à meta do PNE, com a primeira ação sugerida e o prazo. As metas já <b style={{ color: PNE_COR.atingida }}>atingidas</b> saem do foco (aparecem no diagnóstico completo). A priorização final é da gestão.</p>
+      <Fonte extraido={d.extraido}>Base: diagnóstico municipal × metas do PNE. Ordenado por criticidade (distante antes de em evolução).</Fonte>
+    </Card>
+  );
+}
+
+export function PmeAcoesPanel({ d }: { d: Un<ReturnType<typeof getDiagnosticoEducacaoPneSC>> }) {
+  const flat = d.eixos.flatMap((e) => e.metas);
+  const codes = [...new Set(flat.map((m) => m.meta))].filter((c) => PNE_ACOES[c]);
+  const csv = codes.flatMap((c) => PNE_ACOES[c].acoes.map((a) => ({ meta: c, estrutura: PNE_ACOES[c].estrutura, acao: a.acao, prazo: PRAZO_LABEL[a.prazo] })));
+  return (
+    <Card icon={<ClipboardList className="h-4 w-4" />} titulo="Metas, estratégias e prazos — como o município eleva cada meta (Fase 3)" cor="#7c3aed"
+      csv={<BaixarCsv nome="pme-metas-acoes" label="CSV" linhas={csv as unknown as Row[]} colunas={[{ chave: "meta", rotulo: "Meta" }, { chave: "estrutura", rotulo: "Estrutura" }, { chave: "acao", rotulo: "Ação/estratégia" }, { chave: "prazo", rotulo: "Prazo" }]} />}>
+      <div className="mt-2 space-y-3">
+        {codes.map((c) => {
+          const ac = PNE_ACOES[c]; const rel = flat.filter((m) => m.meta === c);
+          const pior = rel.reduce((w, m) => { const ord = { distante: 3, evolucao: 2, atingida: 1, sd: 0 } as Record<string, number>; return ord[m.situacao] > ord[w.situacao] ? m : w; }, rel[0]);
+          const cor = PNE_COR[pior.situacao];
+          return (
+            <div key={c} className="rounded-xl border border-slate-200 p-3">
+              <div className="flex items-center gap-2">
+                <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold text-violet-700">{c}</span>
+                <span className="text-sm font-semibold text-slate-800">{ac.estrutura}</span>
+                <span className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: cor + "22", color: cor }}>{PNE_LBL[pior.situacao]}</span>
+              </div>
+              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-slate-500">
+                {rel.map((m, i) => (<span key={i}><b className="text-slate-600">{m.titulo.split("—")[0].trim()}:</b> {m.valor != null ? m.valor.toLocaleString("pt-BR") + m.unidade : (m.situacao === "atingida" ? "sim" : "não")} <span className="text-slate-400">→ {m.referencia}</span></span>))}
+              </div>
+              <div className="mt-2 rounded-lg bg-violet-50/50 px-2.5 py-1.5 text-[11px] text-slate-600"><b className="text-violet-700">Como elevar:</b> {ac.comoAumentar}</div>
+              <ul className="mt-2 space-y-1">
+                {ac.acoes.map((a, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[11px]">
+                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" />
+                    <span className="flex-1 text-slate-600">{a.acao}</span>
+                    <span className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold" style={{ background: PRAZO_COR[a.prazo] + "1e", color: PRAZO_COR[a.prazo] }}>{PRAZO_LABEL[a.prazo]}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Cada estrutura parte da <b>situação atual do município</b> (diagnóstico) rumo à meta do PNE, com estratégias e prazos. As ações derivam das <b>estratégias oficiais do PNE</b> (Lei nº 13.005/2014) e de <b>boas práticas de gestão educacional reconhecidas</b>; os prazos são sugestões dentro da vigência decenal — a Comissão do PME valida e prioriza.</p>
+      <Fonte extraido={d.extraido}>Base: estratégias do <b>Plano Nacional de Educação</b> (Lei 13.005/2014) e boas práticas técnicas de redes com bons resultados de aprendizagem, aplicadas à situação do município. Exibição neutra e técnica; a decisão sobre metas e prazos é da gestão.</Fonte>
+    </Card>
+  );
+}
+
+export function LevantamentoInternoPanel() {
+  return (
+    <Card icon={<ClipboardList className="h-4 w-4" />} titulo="Pontos a levantar pelas equipes internas da Secretaria" cor="#0891b2"
+      csv={<BaixarCsv nome="pme-levantamento-interno" label="CSV" linhas={LEVANTAMENTO_INTERNO.map((l) => ({ meta: l.meta, ponto: l.ponto, como_levantar: l.comoLevantar, fonte: l.fonte, responsavel: l.responsavel })) as unknown as Row[]} colunas={[{ chave: "meta", rotulo: "Meta" }, { chave: "ponto", rotulo: "Ponto" }, { chave: "como_levantar", rotulo: "Como levantar" }, { chave: "fonte", rotulo: "Fonte" }, { chave: "responsavel", rotulo: "Responsável" }]} />}>
+      <p className="mt-1 text-[12px] text-slate-600">Estes indicadores <b>não estão em dado aberto</b> por município — devem ser coletados <b>internamente</b> pela Secretaria para completar o diagnóstico do PME. Para cada um, o roteiro de coleta:</p>
+      <div className="mt-2 space-y-2">
+        {LEVANTAMENTO_INTERNO.map((l, i) => (
+          <div key={i} className="rounded-xl border border-slate-200 p-2.5">
+            <div className="flex items-center gap-2"><span className="rounded bg-cyan-100 px-1.5 py-0.5 text-[10px] font-bold text-cyan-700">{l.meta}</span><span className="text-xs font-semibold text-slate-800">{l.ponto}</span><span className="ml-auto text-[10px] text-slate-400">{l.responsavel}</span></div>
+            <div className="mt-1 text-[11px] text-slate-600"><b className="text-cyan-700">Como levantar:</b> {l.comoLevantar}</div>
+            <div className="text-[10px] text-slate-400">Fonte interna: {l.fonte}</div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Ao consolidar estes pontos, a Secretaria fecha o diagnóstico do PME (Fase 2) com o que o dado aberto não alcança — sem depender de terceiros. O Instituto i10 apoia a estruturação da coleta.</p>
+    </Card>
+  );
+}
+
+export function CicloPmePanel({ temPme }: { temPme: boolean | null }) {
+  const ST: Record<string, { lbl: string; cor: string }> = { sistema: { lbl: "o sistema gera", cor: "#059669" }, modelo: { lbl: "modelo disponível", cor: "#2563eb" }, secretaria: { lbl: "a Secretaria produz", cor: "#f59e0b" }, externo: { lbl: "fora do sistema", cor: "#94a3b8" } };
+  const ETAPAS = [
+    { n: 1, nome: "Criação", desc: "Mobilizar, diagnosticar e redigir a minuta de metas.", art: [["Portaria de instituição da Comissão", "modelo"], ["Diagnóstico da realidade educacional", "sistema"], ["Minuta de metas, estratégias e prazos (× PNE)", "sistema"]] },
+    { n: 2, nome: "Consolidação", desc: "Consulta pública, contribuições e minuta final.", art: [["Roteiro de consulta pública / audiências", "modelo"], ["Sistematização das contribuições", "secretaria"], ["Minuta consolidada do PME", "secretaria"]] },
+    { n: 3, nome: "Aprovação", desc: "Projeto de lei, tramitação e sanção.", art: [["Minuta do Projeto de Lei + exposição de motivos", "sistema"], ["Tramitação na Câmara Municipal", "externo"], ["Sanção da Lei do PME (decenal)", "externo"]] },
+    { n: 4, nome: "Implementação", desc: "Executar, alinhar orçamento e monitorar.", art: [["Linha de base e painel de monitoramento", "sistema"], ["Alinhamento PPA/LDO/LOA às metas", "sistema"], ["Cronograma de revisão bienal", "modelo"], ["Relatório de monitoramento periódico", "secretaria"]] },
+  ] as const;
+  const pos = temPme ? 4 : 1;
+  return (
+    <Card icon={<Network className="h-4 w-4" />} titulo="Ciclo de vida do Plano Municipal de Educação" cor="#7c3aed">
+      <div className="mt-1 text-[11px] text-slate-500">{temPme ? "O município já tem PME — está na etapa de Implementação (monitorar e revisar)." : "O município ainda não tem PME — está na etapa de Criação."}</div>
+      <div className="mt-2 flex items-center gap-1">
+        {ETAPAS.map((e, i) => (<div key={e.n} className="flex flex-1 items-center gap-1">
+          <div className="flex-1 rounded-lg px-2 py-1.5 text-center text-[11px] font-bold" style={{ background: e.n === pos ? "#7c3aed" : e.n < pos ? "#ede9fe" : "#f1f5f9", color: e.n === pos ? "#fff" : e.n < pos ? "#6d28d9" : "#94a3b8" }}>{e.n}. {e.nome}{e.n < pos && " ✓"}</div>
+          {i < 3 && <span className="text-slate-300">›</span>}
+        </div>))}
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        {ETAPAS.map((e) => (<div key={e.n} className="rounded-lg border border-slate-100 bg-slate-50/40 p-2.5">
+          <div className="text-xs font-bold text-violet-700">{e.n}. {e.nome}</div>
+          <div className="text-[10px] text-slate-500">{e.desc}</div>
+          <ul className="mt-1.5 space-y-1">{e.art.map(([t, s]) => (<li key={t} className="flex items-center gap-1.5 text-[11px] text-slate-600"><span className="h-2 w-2 shrink-0 rounded-full" style={{ background: ST[s].cor }} /><span className="flex-1">{t}</span><span className="shrink-0 text-[9px]" style={{ color: ST[s].cor }}>{ST[s].lbl}</span></li>))}</ul>
+        </div>))}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2 text-[10px]">{Object.values(ST).map((s) => (<span key={s.lbl} className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: s.cor }} />{s.lbl}</span>))}</div>
+      <p className="mt-2 text-[11px] text-slate-500">Os artefatos marcados como <b style={{ color: "#059669" }}>o sistema gera</b> e <b style={{ color: "#2563eb" }}>modelo disponível</b> saem prontos daqui (botões acima). Os demais são conduzidos pela Secretaria — o Instituto i10 apoia em todas as etapas.</p>
+    </Card>
+  );
+}
+
+export function EvasaoPanel({ d }: { d: Un<ReturnType<typeof getEvasaoEscolarSC>> }) {
+  const COR: Record<string, string> = { baixo: "#059669", medio: "#f59e0b", alto: "#dc2626" };
+  const mx = Math.max(...d.etapas.map((e) => e.evasao), 5);
+  return (
+    <Card icon={<GraduationCap className="h-4 w-4" />} titulo="Taxa de evasão escolar por etapa (INEP — Fluxo/Transição)" cor="#dc2626"
+      csv={<BaixarCsv nome="evasao-escolar" label="CSV" linhas={d.etapas.map((e) => ({ etapa: e.nome, evasao_pct: e.evasao, periodo: d.periodo })) as unknown as Row[]} colunas={[{ chave: "etapa", rotulo: "Etapa" }, { chave: "evasao_pct", rotulo: "Evasão (%)" }, { chave: "periodo", rotulo: "Período" }]} />}>
+      {d.pior && <div className="mt-2 text-[11px] text-slate-500">Maior evasão: <b style={{ color: COR[d.etapas.find((e) => e.nome === d.pior!.nome)?.nivel || "medio"] }}>{d.pior.nome} — {d.pior.evasao.toLocaleString("pt-BR")}%</b> <span className="text-slate-400">({d.periodo})</span></div>}
+      <div className="mt-2 space-y-1.5">
+        {d.etapas.map((e) => (
+          <div key={e.nome} className="flex items-center gap-2 text-xs">
+            <span className="w-32 shrink-0 text-slate-500">{e.nome}</span>
+            <div className="h-3.5 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-3.5 rounded" style={{ width: `${Math.min(100, (e.evasao / mx) * 100)}%`, background: COR[e.nivel] || "#94a3b8" }} /></div>
+            <span className="w-14 shrink-0 text-right font-bold tabular-nums" style={{ color: COR[e.nivel] || "#334155" }}>{e.evasao.toLocaleString("pt-BR")}%</span>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500"><b>Evasão</b> = estudantes que deixaram a escola e <b>não retornaram</b> no ano seguinte (diferente de abandono, que é dentro do ano). É o sinal mais grave de trajetória interrompida. O ensino médio costuma ser rede estadual; anos iniciais/finais, municipal.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>INEP</b> — Indicadores de Fluxo Escolar / Taxas de Transição ({d.periodo}), taxa de evasão por município e etapa (rede total).</Fonte>
+    </Card>
+  );
+}
+
+export function EtiDiagnosticoPanel({ d }: { d: Un<ReturnType<typeof getEtiDiagnosticoSC>> }) {
+  const atingiu = d.cobertura >= d.metaPne;
+  const mxTot = Math.max(...d.etapas.map((e) => e.total), 1);
+  return (
+    <Card icon={<GraduationCap className="h-4 w-4" />} titulo="Diagnóstico para o Plano de Expansão da Educação em Tempo Integral (ETI)" cor="#2563eb"
+      csv={<BaixarCsv nome="eti-diagnostico" label="CSV" linhas={[{ etapa: "TOTAL", integral: d.integral, matriculas: d.total, cobertura_pct: d.cobertura }, ...d.etapas.map((e) => ({ etapa: e.nome, integral: e.integral, matriculas: e.total, cobertura_pct: e.cobertura }))] as unknown as Row[]} colunas={[{ chave: "etapa", rotulo: "Etapa" }, { chave: "integral", rotulo: "Matrículas integral" }, { chave: "matriculas", rotulo: "Matrículas total" }, { chave: "cobertura_pct", rotulo: "Cobertura ETI (%)" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Cobertura em tempo integral ({d.ano})</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: atingiu ? "#059669" : "#ea580c" }}>{d.cobertura.toLocaleString("pt-BR")}%</div><div className="text-[10px] text-slate-400">{n0(d.integral)} de {n0(d.total)} matrículas</div></div>
+        <div className="rounded-lg border p-2 text-center" style={{ borderColor: atingiu ? "#a7f3d0" : "#fed7aa", background: atingiu ? "#ecfdf5" : "#fff7ed" }}><div className="text-[10px] text-slate-500">Meta PNE</div><div className="font-display text-lg font-bold" style={{ color: atingiu ? "#047857" : "#c2410c" }}>{d.metaPne}%</div><div className="text-[9px]" style={{ color: atingiu ? "#047857" : "#c2410c" }}>{atingiu ? "✓ atingida" : "abaixo"}</div></div>
+        <div><div className="text-[11px] text-slate-500">Potencial de expansão</div><div className="font-display text-xl font-bold tabular-nums text-slate-700">{n0(d.gap)}</div><div className="text-[10px] text-slate-400">matrículas que podem virar ETI</div></div>
+      </div>
+      <div className="mt-3">
+        <div className="text-[11px] font-semibold text-slate-600">Cobertura ETI por etapa (integral / total)</div>
+        <div className="mt-1 space-y-1">
+          {d.etapas.map((e) => (
+            <div key={e.nome} className="flex items-center gap-2 text-xs">
+              <span className="w-32 shrink-0 text-slate-500">{e.nome}</span>
+              <div className="relative h-3.5 flex-1 overflow-hidden rounded bg-slate-100" style={{ maxWidth: `${(e.total / mxTot) * 100}%` }}><div className="h-3.5 rounded bg-blue-500" style={{ width: `${e.cobertura}%` }} /></div>
+              <span className="w-24 shrink-0 text-right tabular-nums text-slate-600">{n0(e.integral)}/{n0(e.total)} <b className="text-blue-700">{e.cobertura}%</b></span>
+            </div>
+          ))}
+        </div>
+        <p className="mt-1 text-[10px] text-slate-400">Barra = matrículas da etapa (largura) preenchida pela cobertura integral. Etapas com barra pouco preenchida = onde há mais espaço para expandir.</p>
+      </div>
+      <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50/50 p-2.5">
+        <div className="text-[11px] font-semibold text-blue-800">💰 Financiamento para expandir (dinheiro na mesa)</div>
+        <ul className="mt-1 space-y-0.5 text-[10px] text-slate-600">
+          <li>• <b>Programa Escola em Tempo Integral</b> (Lei 14.640/2023) — incentivo federal por nova matrícula em tempo integral</li>
+          <li>• <b>Complementação do FUNDEB</b> (EC 135/2024 + Portaria MEC 605/2025) — R$ 3,05 bi redistribuídos por matrícula ETI por rede</li>
+          <li>• <b>Mínimo 4% do FUNDEB</b> vinculado à criação de matrículas em tempo integral</li>
+        </ul>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Este é o <b>Diagnóstico (Etapa 1)</b> que o Plano de Expansão da ETI exige (Guia MEC). O município usa esta base para definir metas de criação de matrículas por etapa e acessar o financiamento federal.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>INEP/FNDE</b> — matrículas em tempo integral por etapa (Censo Escolar / FUNDEB). Meta PNE 6: 25% dos alunos em tempo integral.</Fonte>
+    </Card>
+  );
+}
+
+export function EtiPlanoPanel({ d, evasao }: { d: Un<ReturnType<typeof getEtiDiagnosticoSC>>; evasao?: Un<ReturnType<typeof getEvasaoEscolarSC>> | null }) {
+  const permInd = evasao?.pior
+    ? `abandono, evasão e aprovação (INEP, no sistema) — evasão maior em ${evasao.pior.nome}: ${evasao.pior.evasao.toLocaleString("pt-BR")}% · frequência (sistema da rede)`
+    : "abandono e aprovação (INEP, no sistema) · frequência e evasão (sistema da rede)";
+  const MONIT: { grupo: string; ind: string; fonte: string; temos: "auto" | "parcial" | "rede" }[] = [
+    { grupo: "Expansão das matrículas", ind: "nº criadas · % em tempo integral · distribuição por etapa/território", fonte: "Censo Escolar / sistema de matrícula", temos: "auto" },
+    { grupo: "Equidade no acesso", ind: "distribuição por raça/cor, gênero, deficiência, território", fonte: "Censo Escolar · CadÚnico", temos: "parcial" },
+    { grupo: "Permanência e trajetória", ind: permInd, fonte: "INEP Taxas de Rendimento e de Transição · sistema de matrícula da rede", temos: evasao?.pior ? "auto" : "parcial" },
+  ];
+  const TAG = { auto: { t: "✓ automático no sistema", c: "bg-emerald-100 text-emerald-700" }, parcial: { t: "parcial (temos a base)", c: "bg-amber-100 text-amber-700" }, rede: { t: "coleta interna da rede", c: "bg-slate-100 text-slate-600" } };
+  return (
+    <Card icon={<Target className="h-4 w-4" />} titulo="Plano de Expansão da ETI — metas e monitoramento (Guia MEC)" cor="#2563eb"
+      csv={<BaixarCsv nome="eti-metas" label="CSV" linhas={d.metas.map((m) => ({ meta_pct: m.alvo, novas_matriculas: m.novas, projecao_pct: m.projecao })) as unknown as Row[]} colunas={[{ chave: "meta_pct", rotulo: "Meta (%)" }, { chave: "novas_matriculas", rotulo: "Novas matrículas ETI" }, { chave: "projecao_pct", rotulo: "Projeção (%)" }]} />}>
+      <div className="text-[11px] font-semibold text-slate-700">Etapa 2 — Metas de criação de matrículas</div>
+      {d.metas.length > 0 ? (
+        <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+          {d.metas.map((m) => (
+            <div key={m.alvo} className="rounded-lg border border-blue-200 bg-blue-50/40 p-2.5">
+              <div className="text-[11px] text-slate-500">Para chegar a <b className="text-blue-700">{m.alvo}%</b> em tempo integral</div>
+              <div className="font-display text-xl font-bold tabular-nums text-blue-800">+{n0(m.novas)} <span className="text-[11px] font-normal text-slate-500">novas matrículas</span></div>
+              <div className="text-[10px] text-slate-400">projeção: {m.projecao}% da rede (partindo de {d.cobertura}%)</div>
+            </div>
+          ))}
+        </div>
+      ) : <p className="mt-1 text-[11px] text-emerald-600">Cobertura já elevada — foco em qualificar e manter as matrículas existentes.</p>}
+      {d.prioridades.length > 0 && d.metas.length > 0 && (
+        <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50/60 p-2.5">
+          <div className="text-[11px] font-semibold text-slate-600">Onde criar (sugestão pela lacuna de cada etapa) — meta {d.metas[0].alvo}%</div>
+          <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-slate-600">{d.prioridades.map((p) => (<span key={p.nome}>• <b>{p.nome}</b>: ~{n0(p.sugestao)} matrículas</span>))}</div>
+        </div>
+      )}
+      <div className="mt-3 text-[11px] font-semibold text-slate-700">Etapa 3 — Monitoramento</div>
+      <div className="mt-1.5 space-y-1.5">
+        {MONIT.map((m) => (
+          <div key={m.grupo} className="rounded-lg border border-slate-200 p-2">
+            <div className="flex flex-wrap items-center justify-between gap-1"><span className="text-[11px] font-semibold text-slate-700">{m.grupo}</span><span className={`rounded-full px-2 py-0.5 text-[9px] font-semibold ${TAG[m.temos].c}`}>{TAG[m.temos].t}</span></div>
+            <div className="text-[10px] text-slate-500">{m.ind}</div>
+            <div className="text-[9px] text-slate-400">Fonte: {m.fonte}</div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Etapas 2 e 3 do Plano (Guia MEC). As metas são <b>sugestões pela lacuna</b> — o gestor define os alvos; o i10 apoia a formalização do plano e a captação. Cada meta cumprida amplia o repasse federal por matrícula ETI.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>MEC</b> — Guia de Apoio Técnico ao Plano de Expansão da ETI. Metas calculadas sobre matrículas do Censo/FUNDEB.</Fonte>
+    </Card>
+  );
+}
+
+export function EscolaTurmasPanel({ d }: { d: Un<ReturnType<typeof getEscolaTurmasSC>> }) {
+  const mxE = Math.max(...d.etapas.map((e) => e.qtd), 1);
+  const CORR: Record<string, string> = { Municipal: "#2563eb", Estadual: "#7c3aed", Federal: "#0891b2", Privada: "#64748b" };
+  return (
+    <Card icon={<Building2 className="h-4 w-4" />} titulo="Número de turmas por etapa e rede (INEP Censo Escolar)" cor="#2563eb"
+      csv={<BaixarCsv nome="turmas-por-etapa-rede" label="CSV" linhas={d.redes.flatMap((r) => [{ rede: r.rede, etapa: "Total", turmas: r.turmas }, { rede: r.rede, etapa: "Creche", turmas: r.creche }, { rede: r.rede, etapa: "Pré", turmas: r.pre }, { rede: r.rede, etapa: "Fund AI", turmas: r.fundAi }, { rede: r.rede, etapa: "Fund AF", turmas: r.fundAf }, { rede: r.rede, etapa: "Médio", turmas: r.medio }]) as unknown as Row[]} colunas={[{ chave: "rede", rotulo: "Rede" }, { chave: "etapa", rotulo: "Etapa" }, { chave: "turmas", rotulo: "Turmas" }]} />}>
+      <div className="mt-2 text-[11px] text-slate-500">Total: <b className="text-slate-700">{n0(d.totalTurmas)} turmas</b> em {n0(d.totalEscolas)} escolas ({d.ano})</div>
+      <div className="mt-2 space-y-1">
+        {d.etapas.map((e) => (<div key={e.nome} className="flex items-center gap-2 text-xs"><span className="w-32 shrink-0 text-slate-500">{e.nome}</span><div className="h-3 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-3 rounded bg-blue-500" style={{ width: `${(e.qtd / mxE) * 100}%` }} /></div><span className="w-12 shrink-0 text-right tabular-nums text-slate-600">{n0(e.qtd)}</span></div>))}
+      </div>
+      <div className="mt-3 overflow-x-auto">
+        <table className="w-full text-[11px]">
+          <thead><tr className="text-slate-400"><th className="text-left font-medium">Rede</th><th className="text-right font-medium">Escolas</th><th className="text-right font-medium">Turmas</th><th className="text-right font-medium">Creche</th><th className="text-right font-medium">Pré</th><th className="text-right font-medium">Fund AI</th><th className="text-right font-medium">Fund AF</th><th className="text-right font-medium">Médio</th></tr></thead>
+          <tbody>{d.redes.map((r) => (<tr key={r.rede} className="border-t border-slate-100"><td className="py-0.5 font-semibold" style={{ color: CORR[r.rede] || "#334155" }}>{r.rede}</td><td className="text-right tabular-nums text-slate-500">{n0(r.escolas)}</td><td className="text-right font-bold tabular-nums text-slate-700">{n0(r.turmas)}</td><td className="text-right tabular-nums text-slate-500">{n0(r.creche)}</td><td className="text-right tabular-nums text-slate-500">{n0(r.pre)}</td><td className="text-right tabular-nums text-slate-500">{n0(r.fundAi)}</td><td className="text-right tabular-nums text-slate-500">{n0(r.fundAf)}</td><td className="text-right tabular-nums text-slate-500">{n0(r.medio)}</td></tr>))}</tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Nº de turmas (não de alunos) por etapa e rede. A rede <b>municipal</b> é a que o município administra. Base para dimensionar professores, salas e demanda por etapa.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>INEP</b> — Censo Escolar {d.ano} (microdados da educação básica, `QT_TUR` por etapa). Turmas contadas por etapa, não por série individual.</Fonte>
+    </Card>
+  );
+}
+
+export function RankingDetalhePanel({ d }: { d: Un<ReturnType<typeof getRankingDetalheSC>> }) {
+  return (
+    <Card icon={<ClipboardList className="h-4 w-4" />} titulo="O que corrigir para subir no ranking fiscal" cor="#ea580c"
+      csv={<BaixarCsv nome="ranking-o-que-corrigir" label="CSV" linhas={d.grupos.flatMap((g) => g.itens.map((i) => ({ dimensao: g.dimensao, anexo: i.anexo, verificacao: i.verificacao, o_que_corrigir: i.descricao }))) as unknown as Row[]} colunas={[{ chave: "dimensao", rotulo: "Dimensão" }, { chave: "anexo", rotulo: "Relatório" }, { chave: "verificacao", rotulo: "Cód." }, { chave: "o_que_corrigir", rotulo: "O que corrigir" }]} />}>
+      <div className="mt-2 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50/60 p-2.5">
+        <div className="font-display text-2xl font-bold tabular-nums text-amber-700">{n0(d.totalFalhas)}</div>
+        <div className="text-[11px] text-slate-600">verificações <b>não atendidas</b> em {d.ano} — cada uma corrigida sobe a nota e a posição no ranking do Tesouro.</div>
+      </div>
+      <div className="mt-3 space-y-3">
+        {d.grupos.map((g) => (
+          <div key={g.dimensao}>
+            <div className="text-[11px] font-semibold text-slate-700">{g.dimensao} <span className="font-normal text-slate-400">· {g.itens.length} {g.itens.length === 1 ? "item" : "itens"}</span></div>
+            <ul className="mt-1 space-y-1">
+              {g.itens.map((i) => (
+                <li key={i.verificacao} className="flex gap-2 text-[11px] text-slate-600">
+                  <span className="mt-0.5 shrink-0 text-amber-500">✗</span>
+                  <span>{i.descricao || i.verificacao}{i.anexo && <span className="ml-1 rounded bg-slate-100 px-1 text-[9px] text-slate-500">{i.anexo}</span>}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Lista acionável: são os itens que o Tesouro apontou como pendentes na prestação de contas. Resolver = mais transparência, melhor nota e menos risco de restrição no CAUC.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>Tesouro Nacional</b> — detalhamento por verificação do Ranking da Qualidade da Informação Contábil e Fiscal ({d.ano}).</Fonte>
+    </Card>
+  );
+}
+
+export function RankingTesouroPanel({ d }: { d: Un<ReturnType<typeof getRankingTesouroSC>> }) {
+  const CORN: Record<string, string> = { A: "#059669", B: "#0d9488", C: "#f59e0b", D: "#dc2626" };
+  const cor = CORN[d.nota] || "#64748b";
+  const subiu = (d.melhoraPosicao ?? 0) > 0;
+  const mxAc = 100;
+  return (
+    <Card icon={<Award className="h-4 w-4" />} titulo="Ranking da Qualidade da Informação Fiscal (Tesouro Nacional)" cor={cor}
+      csv={<BaixarCsv nome="ranking-qualidade-fiscal" label="CSV" linhas={d.serie.map((s) => ({ ano: s.ano, nota: s.nota, posicao_nacional: s.posicao, pct_acertos: s.pctAcertos })) as unknown as Row[]} colunas={[{ chave: "ano", rotulo: "Ano" }, { chave: "nota", rotulo: "Nota" }, { chave: "posicao_nacional", rotulo: "Posição nacional" }, { chave: "pct_acertos", rotulo: "% acertos" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div className="flex items-center gap-2"><div className="flex h-12 w-12 items-center justify-center rounded-xl font-display text-2xl font-bold text-white" style={{ background: cor }}>{d.nota || "–"}</div><div><div className="text-[11px] text-slate-500">Nota ({d.anoUlt})</div><div className="text-[10px] text-slate-400">qualidade da informação contábil-fiscal</div></div></div>
+        <div><div className="text-[11px] text-slate-500">Posição nacional</div><div className="font-display text-xl font-bold tabular-nums text-slate-700">{n0(d.posicao)}º</div><div className="text-[10px] text-slate-400">de ~5.570 municípios</div></div>
+        <div><div className="text-[11px] text-slate-500">Acertos</div><div className="font-display text-xl font-bold tabular-nums" style={{ color: cor }}>{d.pctAcertos.toLocaleString("pt-BR")}%</div></div>
+        {d.melhoraPosicao != null && d.melhoraPosicao !== 0 && <div><div className="text-[11px] text-slate-500">Desde {d.serie[0].ano}</div><div className="font-display text-lg font-bold tabular-nums" style={{ color: subiu ? "#059669" : "#dc2626" }}>{subiu ? "▲ subiu" : "▼ caiu"} {n0(Math.abs(d.melhoraPosicao))}</div><div className="text-[10px] text-slate-400">posições no ranking</div></div>}
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        {d.dimensoes.map((dim) => (<div key={dim.nome} className="flex items-center gap-2 text-[11px]"><span className="w-40 shrink-0 text-slate-500">{dim.nome}</span><div className="h-2.5 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-2.5 rounded" style={{ width: `${Math.min(100, dim.valor)}%`, background: cor }} /></div><span className="w-10 shrink-0 text-right tabular-nums text-slate-600">{dim.valor.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}</span></div>))}
+      </div>
+      {d.serie.length > 1 && (
+        <div className="mt-3">
+          <div className="text-[10px] font-semibold text-slate-600">Trajetória dos acertos ({d.serie[0].ano}–{d.anoUlt})</div>
+          <div className="mt-1 flex items-end gap-1" style={{ height: 44 }}>
+            {d.serie.map((s) => (<div key={s.ano} className="flex flex-1 flex-col items-center justify-end" title={`${s.ano}: ${s.pctAcertos}% · nota ${s.nota} · ${s.posicao}º`}><div className="w-full rounded-t" style={{ height: `${Math.max(4, (s.pctAcertos / mxAc) * 100)}%`, background: CORN[s.nota] || "#94a3b8" }} /></div>))}
+          </div>
+          <div className="flex justify-between text-[9px] text-slate-400"><span>{d.serie[0].ano}</span><span>{d.anoUlt}</span></div>
+        </div>
+      )}
+      <p className="mt-2 text-[11px] text-slate-500">Mede se o município entrega e homologa seus relatórios (RREO, DCA, RGF, MSC) no prazo e com consistência contábil. Nota alta = mais transparência e menos risco de restrição no CAUC.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>Tesouro Nacional</b> — Ranking da Qualidade da Informação Contábil e Fiscal dos entes (ranking-municipios.tesouro.gov.br).</Fonte>
+    </Card>
+  );
+}
+
+export function DespesaNaturezaPanel({ d }: { d: Un<ReturnType<typeof getDespesaNaturezaSerieSC>> }) {
+  const rigido = d.rigidez >= 85;
+  return (
+    <Card icon={<Gauge className="h-4 w-4" />} titulo="Como o dinheiro é gasto — natureza e rigidez orçamentária (SICONFI)" cor="#7c3aed"
+      csv={<BaixarCsv nome="despesa-natureza-rigidez" label="CSV" linhas={[{ item: "Rigidez (pessoal+custeio)", valor: `${d.rigidez}%` }, ...d.componentes.map((c) => ({ item: c.nome, valor: c.valor })), ...d.compHist.flatMap((h) => h.setores.map((s) => ({ item: `${s.nome} ${h.ano}`, valor: `${s.pct}%` })))] as unknown as Row[]} colunas={[{ chave: "item", rotulo: "Item" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Rigidez orçamentária ({d.anoUlt})</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: rigido ? "#dc2626" : "#059669" }}>{d.rigidez.toLocaleString("pt-BR")}%</div><div className="text-[10px] text-slate-400">pessoal + custeio (gasto fixo)</div></div>
+        <div className="ml-auto max-w-xs rounded-lg border p-2.5" style={{ borderColor: rigido ? "#fecaca" : "#a7f3d0", background: rigido ? "#fef2f2" : "#ecfdf5" }}><div className="text-[11px] font-semibold" style={{ color: rigido ? "#b91c1c" : "#047857" }}>{rigido ? "⚠️ Orçamento engessado" : "✓ Espaço fiscal razoável"}</div><div className="text-[10px] text-slate-600">{rigido ? "Quase tudo é custo fixo (folha + manutenção) — sobra pouco para investir. Ampliar receita própria ou revisar custeio abre espaço." : "Há margem entre o gasto fixo e o total — o município consegue direcionar recursos para investimento."}</div></div>
+      </div>
+      <div className="mt-2.5 flex h-6 w-full overflow-hidden rounded">
+        {d.componentes.map((c) => (<div key={c.nome} className="flex items-center justify-center text-[9px] font-semibold text-white" style={{ width: `${c.pct}%`, background: c.cor }} title={`${c.nome}: ${c.pct}%`}>{c.pct >= 9 ? `${c.pct}%` : ""}</div>))}
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-slate-600">
+        {d.componentes.map((c) => (<span key={c.nome}><span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: c.cor }} />{c.nome}: <b>{c.pct}%</b> ({brl(c.valor)})</span>))}
+      </div>
+      {d.compHist.length > 1 && (
+        <div className="mt-3">
+          <div className="text-[10px] font-semibold text-slate-600">Evolução da rigidez ({d.compHist[0].ano}–{d.anoUlt})</div>
+          <div className="mt-1 flex items-end gap-0.5" style={{ height: 56 }}>
+            {d.compHist.map((h) => (<div key={h.ano} className="flex flex-1 flex-col-reverse" style={{ height: "100%" }} title={h.ano.toString()}>{h.setores.map((s) => (<div key={s.nome} style={{ height: `${s.pct}%`, background: s.cor }} />))}</div>))}
+          </div>
+          <div className="flex justify-between text-[9px] text-slate-400"><span>{d.compHist[0].ano}</span><span>{d.anoUlt}</span></div>
+          <p className="mt-1 text-[10px] text-slate-500">Vermelho+laranja (pessoal+custeio) = engessado; verde (investimento) = espaço para o futuro. Mostra se o município está ganhando ou perdendo capacidade de investir.</p>
+        </div>
+      )}
+      <Fonte extraido={d.extraido}>Fonte: <b>SICONFI/STN</b> — despesa por natureza (pessoal, custeio/outras correntes, investimento, dívida). Rigidez = (pessoal+custeio) / total.</Fonte>
+    </Card>
+  );
+}
+
+export function FolhaSeriePanel({ d }: { d: Un<ReturnType<typeof getFolhaSerieSC>> }) {
+  const COR: Record<string, string> = { confortavel: "#059669", alerta: "#f59e0b", prudencial: "#ea580c", acima: "#dc2626" };
+  const sobe = (d.tendencia ?? 0) > 0;
+  return (
+    <Card icon={<Users className="h-4 w-4" />} titulo="Folha de pessoal × limite LRF — trajetória (RGF)" cor="#0d9488"
+      csv={<BaixarCsv nome="folha-lrf-serie" label="CSV" linhas={d.serie.map((s) => ({ ano: s.ano, pessoal_pct: s.pct, faixa: s.faixa })) as unknown as Row[]} colunas={[{ chave: "ano", rotulo: "Ano" }, { chave: "pessoal_pct", rotulo: "Pessoal/RCL (%)" }, { chave: "faixa", rotulo: "Faixa LRF" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Pessoal/RCL ({d.ultAno})</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: COR[d.serie[d.serie.length - 1].faixa] }}>{d.ultPct.toLocaleString("pt-BR")}%</div><div className="text-[10px] text-slate-400">limite LRF 54% · prudencial 51,3%</div></div>
+        {d.tendencia != null && <div><div className="text-[11px] text-slate-500">Tendência ({d.serie[0].ano}→{d.ultAno})</div><div className="font-display text-xl font-bold tabular-nums" style={{ color: sobe ? "#dc2626" : "#059669" }}>{sobe ? "▲ +" : "▼ "}{d.tendencia.toLocaleString("pt-BR")} p.p.</div><div className="text-[10px] text-slate-400">{sobe ? "aproximando do limite" : "afastando do limite"}</div></div>}
+      </div>
+      <div className="relative mt-3" style={{ height: 96 }}>
+        {[54, 51.3, 48.6].map((lv) => (<div key={lv} className="absolute inset-x-0 border-t border-dashed" style={{ bottom: `${(lv / 60) * 100}%`, borderColor: lv === 54 ? "#dc2626" : lv === 51.3 ? "#ea580c" : "#f59e0b" }}><span className="absolute right-0 -top-2 bg-white px-1 text-[8px]" style={{ color: lv === 54 ? "#dc2626" : lv === 51.3 ? "#ea580c" : "#f59e0b" }}>{lv === 54 ? "limite 54%" : lv === 51.3 ? "prud. 51,3" : "alerta 48,6"}</span></div>))}
+        <div className="flex h-full items-end gap-1">
+          {d.serie.map((s) => (<div key={s.ano} className="flex flex-1 flex-col items-center justify-end" title={`${s.ano}: ${s.pct}%`}><div className="w-full rounded-t" style={{ height: `${(s.pct / 60) * 100}%`, background: COR[s.faixa] }} /></div>))}
+        </div>
+      </div>
+      <div className="flex justify-between text-[9px] text-slate-400"><span>{d.serie[0].ano}</span><span>{d.ultAno}</span></div>
+      <Fonte extraido={d.extraido}>Fonte: <b>RGF/SICONFI</b> — despesa de pessoal sobre a RCL ajustada (% oficial). Faixas da LRF/LC 101 (Executivo). Escala 0–60%.</Fonte>
+    </Card>
+  );
+}
+
+export function InvestimentoPanel({ d }: { d: Un<ReturnType<typeof getInvestimentoSerieSC>> }) {
+  const mx = Math.max(...d.serie.map((s) => s.valor), 1);
+  return (
+    <Card icon={<TrendingUp className="h-4 w-4" />} titulo="Capacidade de investir — série histórica (SICONFI)" cor="#0d9488"
+      csv={<BaixarCsv nome="investimento-serie" label="CSV" linhas={d.serie.map((s) => ({ ano: s.ano, investimento: s.valor, pct_despesa: s.pctDespesa })) as unknown as Row[]} colunas={[{ chave: "ano", rotulo: "Ano" }, { chave: "investimento", rotulo: "Investimento (R$)" }, { chave: "pct_despesa", rotulo: "% da despesa" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Investimento ({d.ultAno})</div><div className="font-display text-2xl font-bold tabular-nums text-teal-700">{brl(d.ultValor)}</div><div className="text-[10px] text-slate-400">{d.ultPct.toLocaleString("pt-BR")}% da despesa · média {d.mediaPct.toLocaleString("pt-BR")}%</div></div>
+      </div>
+      <div className="mt-3 flex items-end gap-1" style={{ height: 60 }}>
+        {d.serie.map((s) => (<div key={s.ano} className="flex flex-1 flex-col items-center justify-end" title={`${s.ano}: ${brl(s.valor)} (${s.pctDespesa}% da despesa)`}><div className="w-full rounded-t bg-teal-500/80" style={{ height: `${Math.max(4, (s.valor / mx) * 100)}%` }} /></div>))}
+      </div>
+      <div className="flex justify-between text-[9px] text-slate-400"><span>{d.serie[0].ano}</span><span>{d.ultAno}</span></div>
+      <p className="mt-2 text-[11px] text-slate-500">Investimento = obras e equipamentos (não o custeio). O % da despesa mostra quanto o município consegue investir no futuro vs manter a máquina. Quedas indicam aperto fiscal.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>SICONFI/STN</b> — despesa com investimentos por ano.</Fonte>
+    </Card>
+  );
+}
+
+export function DespesaFuncaoPanel({ d }: { d: Un<ReturnType<typeof getDespesaFuncaoSerieSC>> }) {
+  return (
+    <Card icon={<Coins className="h-4 w-4" />} titulo="Para onde vai o dinheiro — despesa por função (SICONFI)" cor="#7c3aed"
+      csv={<BaixarCsv nome="despesa-por-funcao" label="CSV" linhas={[...d.funcoes.map((f) => ({ funcao: f.nome, valor: f.valor, pct: f.pct })), ...d.compHist.flatMap((h) => h.setores.map((s) => ({ funcao: `${s.nome} ${h.ano}`, valor: "", pct: s.pct })))] as unknown as Row[]} colunas={[{ chave: "funcao", rotulo: "Função" }, { chave: "valor", rotulo: "Empenhado (R$)" }, { chave: "pct", rotulo: "%" }]} />}>
+      <div className="mt-2 text-[11px] text-slate-500">Total empenhado ({d.anoUlt}): <b className="text-slate-700">{brl(d.total)}</b></div>
+      <div className="mt-2 flex h-6 w-full overflow-hidden rounded">
+        {d.funcoes.slice(0, 7).map((f) => (<div key={f.nome} className="flex items-center justify-center text-[9px] font-semibold text-white" style={{ width: `${f.pct}%`, background: f.cor }} title={`${f.nome}: ${f.pct}%`}>{f.pct >= 9 ? `${f.pct}%` : ""}</div>))}
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-slate-600">
+        {d.funcoes.slice(0, 8).map((f) => (<span key={f.nome}><span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: f.cor }} />{f.nome}: <b>{f.pct}%</b> ({brl(f.valor)})</span>))}
+      </div>
+      {d.compHist.length > 1 && (
+        <div className="mt-3">
+          <div className="text-[10px] font-semibold text-slate-600">Evolução das prioridades ({d.compHist[0].ano}–{d.compHist[d.compHist.length - 1].ano})</div>
+          <div className="mt-1 flex items-end gap-0.5" style={{ height: 60 }}>
+            {d.compHist.map((h) => (<div key={h.ano} className="flex flex-1 flex-col-reverse" style={{ height: "100%" }} title={h.ano.toString()}>{h.setores.map((s) => (<div key={s.nome} style={{ height: `${s.pct}%`, background: s.cor }} />))}</div>))}
+          </div>
+          <div className="flex justify-between text-[9px] text-slate-400"><span>{d.compHist[0].ano}</span><span>{d.compHist[d.compHist.length - 1].ano}</span></div>
+          <p className="mt-1 text-[10px] text-slate-500">Cada coluna é um ano (100% = despesa daquele ano). Mostra se o município priorizou saúde, educação, urbanismo… ao longo do tempo — o retrato das escolhas de política pública.</p>
+        </div>
+      )}
+      <Fonte extraido={d.extraido}>Fonte: <b>SICONFI/STN</b> — despesa empenhada por função de governo (classificação orçamentária). Top funções + &quot;Outras&quot; agregadas.</Fonte>
+    </Card>
+  );
+}
+
+export function TransferenciasSeriePanel({ d }: { d: Un<ReturnType<typeof getTransferenciasSerieSC>> }) {
+  return (
+    <Card icon={<Banknote className="h-4 w-4" />} titulo="Transferências recebidas — série histórica (FPM · FUNDEB · ICMS · IPVA · SUS)" cor="#2563eb"
+      csv={<BaixarCsv nome="transferencias-serie" label="CSV" linhas={d.transferencias.flatMap((t) => t.serie.map((s) => ({ transferencia: t.nome, ano: s.ano, valor: s.valor }))) as unknown as Row[]} colunas={[{ chave: "transferencia", rotulo: "Transferência" }, { chave: "ano", rotulo: "Ano" }, { chave: "valor", rotulo: "Valor (R$)" }]} />}>
+      <div className="mt-2 text-[11px] text-slate-500">Total das principais transferências ({d.anoUlt}): <b className="text-slate-700">{brl(d.totalUlt)}</b></div>
+      <div className="mt-2 space-y-2">
+        {d.transferencias.map((t) => { const mx = Math.max(...t.serie.map((s) => s.valor), 1); return (
+          <div key={t.nome}>
+            <div className="flex items-center justify-between text-[11px]"><span className="font-semibold" style={{ color: t.cor }}>{t.nome}</span><span className="tabular-nums text-slate-600">{brl(t.ult)} <span className="text-[9px] text-slate-400">({t.serie[0]?.ano}→{d.anoUlt})</span></span></div>
+            <div className="mt-0.5 flex items-end gap-0.5" style={{ height: 26 }}>
+              {t.serie.map((s) => (<div key={s.ano} className="flex-1 rounded-t" title={`${s.ano}: ${brl(s.valor)}`} style={{ height: `${Math.max(4, (s.valor / mx) * 100)}%`, background: t.cor, opacity: 0.85 }} />))}
+            </div>
+          </div>
+        ); })}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">O &quot;gás&quot; que sustenta o município. Acompanhar a trajetória revela dependência e antecipa impacto de mudanças em FPM/FUNDEB ou repasses do SUS.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>SICONFI/STN</b> (FPM, FUNDEB, ICMS, IPVA) e <b>FNS</b> (SUS fundo-a-fundo). Janela comum de anos fechados.</Fonte>
+    </Card>
+  );
+}
+
+export function ReceitaComposicaoPanel({ d }: { d: Un<ReturnType<typeof getReceitaComposicaoSC>> }) {
+  const dep = d.autonomiaPct < 50;
+  const barItens = (itens: { item: string; valor: number; pct: number }[], cor: string) => (
+    <div className="space-y-0.5">{itens.map((x) => (<div key={x.item} className="flex items-center gap-2 text-[11px]"><span className="w-28 shrink-0 text-slate-500">{x.item}</span><div className="h-2.5 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-2.5 rounded" style={{ width: `${Math.min(100, x.pct * 2.5)}%`, background: cor }} /></div><span className="w-20 shrink-0 text-right tabular-nums text-slate-600">{brl(x.valor)}</span></div>))}</div>
+  );
+  return (
+    <Card icon={<Landmark className="h-4 w-4" />} titulo="Como é composta a receita — própria × transferências (SICONFI)" cor="#0d9488"
+      csv={<BaixarCsv nome="receita-composicao" label="CSV" linhas={[{ grupo: "Autonomia fiscal", item: `${d.autonomiaPct}%`, valor: "" }, ...d.itensPropria.map((x) => ({ grupo: "Própria", item: x.item, valor: x.valor })), ...d.itensTransfer.map((x) => ({ grupo: "Transferência", item: x.item, valor: x.valor })), ...d.serie.map((s) => ({ grupo: "Série própria%", item: String(s.ano), valor: s.propriaPct }))] as unknown as Row[]} colunas={[{ chave: "grupo", rotulo: "Grupo" }, { chave: "item", rotulo: "Item" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Autonomia fiscal ({d.anoUlt})</div><div className="font-display text-2xl font-bold tabular-nums" style={{ color: dep ? "#ea580c" : "#059669" }}>{d.autonomiaPct.toLocaleString("pt-BR")}%</div><div className="text-[10px] text-slate-400">receita própria / principais receitas</div></div>
+        <div className="ml-auto max-w-xs rounded-lg border p-2.5" style={{ borderColor: dep ? "#fed7aa" : "#a7f3d0", background: dep ? "#fff7ed" : "#ecfdf5" }}><div className="text-[11px] font-semibold" style={{ color: dep ? "#c2410c" : "#047857" }}>{dep ? "⚠️ Dependente de transferências" : "✓ Arrecadação própria forte"}</div><div className="text-[10px] text-slate-600">{dep ? "A maior parte das principais receitas vem de repasses (FPM, FUNDEB, ICMS) — vulnerável a cortes federais/estaduais." : "O município gera sozinho a maior parte das principais receitas — mais resiliente a cortes de repasse."}</div></div>
+      </div>
+      <div className="mt-2.5 flex h-6 w-full overflow-hidden rounded">
+        <div className="flex items-center justify-center text-[9px] font-semibold text-white" style={{ width: `${d.autonomiaPct}%`, background: "#059669" }} title={`Própria ${d.autonomiaPct}%`}>{d.autonomiaPct >= 12 ? `Própria ${d.autonomiaPct}%` : ""}</div>
+        <div className="flex items-center justify-center text-[9px] font-semibold text-white" style={{ width: `${100 - d.autonomiaPct}%`, background: "#f59e0b" }} title={`Transferências ${Math.round((100 - d.autonomiaPct) * 10) / 10}%`}>{(100 - d.autonomiaPct) >= 12 ? `Transferências ${Math.round((100 - d.autonomiaPct) * 10) / 10}%` : ""}</div>
+      </div>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <div><div className="text-[11px] font-semibold text-emerald-700">Receita própria ({brl(d.propria)})</div><div className="mt-1">{barItens(d.itensPropria, "#059669")}</div></div>
+        <div><div className="text-[11px] font-semibold text-amber-600">Transferências ({brl(d.transfer)})</div><div className="mt-1">{barItens(d.itensTransfer, "#f59e0b")}</div></div>
+      </div>
+      {d.serie.length > 1 && (
+        <div className="mt-3">
+          <div className="text-[10px] font-semibold text-slate-600">Evolução da autonomia ({d.serie[0].ano}–{d.serie[d.serie.length - 1].ano})</div>
+          <div className="mt-1 flex items-end gap-1" style={{ height: 54 }}>
+            {d.serie.map((s) => (<div key={s.ano} className="flex flex-1 flex-col-reverse" style={{ height: "100%" }} title={`${s.ano}: própria ${s.propriaPct}%`}><div style={{ height: `${s.transferPct}%`, background: "#f59e0b" }} /><div style={{ height: `${s.propriaPct}%`, background: "#059669" }} /></div>))}
+          </div>
+          <div className="flex justify-between text-[9px] text-slate-400"><span>{d.serie[0].ano}</span><span>{d.serie[d.serie.length - 1].ano}</span></div>
+          <p className="mt-1 text-[10px] text-slate-500">Verde = própria, laranja = transferências (cada coluna = 100% das principais receitas do ano). Mostra se o município ganhou ou perdeu autonomia fiscal.</p>
+        </div>
+      )}
+      <Fonte extraido={d.extraido}>Fonte: <b>SICONFI/STN</b> — principais receitas municipais (tributos próprios + transferências constitucionais). Exclui RCL (total) e itens estaduais. Não é a receita orçamentária total.</Fonte>
+    </Card>
+  );
+}
+
 export function PibMunicipalPanel({ d }: { d: Un<ReturnType<typeof getPibMunicipalSC>> }) {
   return (
     <Card icon={<TrendingUp className="h-4 w-4" />} titulo="PIB do município (IBGE)" cor="#0d9488"
-      csv={<BaixarCsv nome="pib-municipal" label="CSV" linhas={[{ indicador: "PIB (preços correntes)", valor: d.pib }, { indicador: "PIB per capita", valor: d.pibPerCapita ?? "" }, { indicador: "Posição no estado", valor: `${d.posicaoUf}º de ${d.totalMunis}` }] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor" }]} />}>
+      csv={<BaixarCsv nome="pib-municipal" label="CSV" linhas={[{ indicador: "PIB per capita", valor: d.pibPerCapita ?? "" }, { indicador: "Posição no estado", valor: `${d.posicaoUf}º de ${d.totalMunis}` }, ...d.componentes.map((c) => ({ indicador: `VAB ${c.nome} (${d.compAno})`, valor: c.valor })), ...d.serie.map((s) => ({ indicador: `PIB ${s.ano}`, valor: s.valor }))] as unknown as Row[]} colunas={[{ chave: "indicador", rotulo: "Indicador" }, { chave: "valor", rotulo: "Valor (R$)" }]} />}>
       <div className="mt-2 flex flex-wrap items-end gap-4">
         <div><div className="text-[11px] text-slate-500">PIB (preços correntes)</div><div className="font-display text-2xl font-bold tabular-nums text-teal-700">{brl(d.pib)}</div><div className="text-[10px] text-slate-400">{d.posicaoUf}º maior de {d.totalMunis} no estado · {d.ano}</div></div>
         {d.pibPerCapita != null && <div><div className="text-[11px] text-slate-500">PIB per capita</div><div className="font-display text-xl font-bold tabular-nums text-slate-700">{brl(d.pibPerCapita)}</div><div className="text-[10px] text-slate-400">por habitante/ano</div></div>}
+        {d.crescimento != null && d.serie.length > 1 && <div><div className="text-[11px] text-slate-500">Crescimento nominal</div><div className="font-display text-xl font-bold tabular-nums text-emerald-600">+{d.crescimento.toLocaleString("pt-BR")}%</div><div className="text-[10px] text-slate-400">{d.serie[0].ano}→{d.ano} (inclui inflação)</div></div>}
       </div>
+      {d.serie.length > 1 && (() => { const mx = Math.max(...d.serie.map((s) => s.valor), 1); return (
+        <div className="mt-3">
+          <div className="text-[11px] font-semibold text-slate-600">Trajetória do PIB ({d.serie[0].ano}–{d.ano})</div>
+          <div className="mt-1 flex items-end gap-0.5" style={{ height: 44 }}>
+            {d.serie.map((s) => (<div key={s.ano} title={`${s.ano}: ${brl(s.valor)}`} className="flex-1 rounded-t bg-teal-500/80 hover:bg-teal-600" style={{ height: `${Math.max(3, (s.valor / mx) * 100)}%` }} />))}
+          </div>
+          <div className="flex justify-between text-[9px] text-slate-400"><span>{d.serie[0].ano}</span><span>{d.ano}</span></div>
+        </div>
+      ); })()}
+      {d.componentes.length > 0 && (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50/60 p-3">
+          <div className="text-[11px] font-semibold text-slate-700">Como é composto o PIB ({d.compAno}) — Valor Adicionado por setor + Impostos</div>
+          <div className="mt-1.5 flex h-6 w-full overflow-hidden rounded">
+            {d.componentes.map((c) => (<div key={c.nome} className="flex items-center justify-center text-[9px] font-semibold text-white" style={{ width: `${c.pct}%`, background: c.cor }} title={`${c.nome}: ${c.pct}%`}>{c.pct >= 9 ? `${c.pct}%` : ""}</div>))}
+          </div>
+          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-slate-600">
+            {d.componentes.map((c) => (<span key={c.nome}><span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: c.cor }} />{c.nome}: <b>{c.pct}%</b> ({brl(c.valor)})</span>))}
+          </div>
+          <p className="mt-1.5 text-[10px] text-slate-500">Perfil econômico: <b className="text-slate-700">predomina {d.predominante}</b>. É o que a política pública precisa observar para direcionar incentivos (indústria, agro, serviços) e prever arrecadação.</p>
+          {d.compHist.length > 1 && (
+            <div className="mt-3">
+              <div className="text-[10px] font-semibold text-slate-600">Evolução da composição ({d.compHist[0].ano}–{d.compHist[d.compHist.length - 1].ano})</div>
+              <div className="mt-1 flex items-end gap-0.5" style={{ height: 60 }}>
+                {d.compHist.map((h) => (
+                  <div key={h.ano} className="flex flex-1 flex-col-reverse" style={{ height: "100%" }} title={h.ano}>
+                    {h.setores.map((s) => (<div key={s.nome} style={{ height: `${s.pct}%`, background: s.cor }} />))}
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between text-[9px] text-slate-400"><span>{d.compHist[0].ano}</span><span>{d.compHist[d.compHist.length - 1].ano}</span></div>
+              <p className="mt-1 text-[10px] text-slate-500">Cada coluna é um ano (100% = PIB daquele ano). Mostra se a economia se industrializou, terceirizou ou se tornou mais dependente do setor público.</p>
+            </div>
+          )}
+        </div>
+      )}
       <p className="mt-2 text-[11px] text-slate-500">Riqueza gerada no município em um ano. Base para dimensionar economia local, arrecadação potencial e comparação regional.</p>
-      <Fonte extraido={d.extraido}>Fonte: <b>IBGE</b> — Produto Interno Bruto dos Municípios, preços correntes (tabela SIDRA 5938). PIB per capita = PIB ÷ população do Censo 2022.</Fonte>
+      <Fonte extraido={d.extraido}>Fonte: <b>IBGE</b> — Produto Interno Bruto dos Municípios, preços correntes (tabela SIDRA 5938, série {d.serie.length > 1 ? `${d.serie[0].ano}–${d.ano}` : d.ano}). PIB per capita = PIB ÷ população do Censo 2022.</Fonte>
     </Card>
   );
 }

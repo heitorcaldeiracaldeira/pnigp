@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 const MapaSetores = dynamic(() => import("./mapa-setores"), { ssr: false });
 
-type Geo = { geojson: unknown; maxDens: number; centro: [number, number] };
+type Geo = { geojson: unknown; maxDens: number; maxIdosos: number; maxCriancas: number; centro: [number, number] };
 
 export default function MapaSetoresWrap({ codigo }: { codigo: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -26,7 +26,7 @@ export default function MapaSetoresWrap({ codigo }: { codigo: string }) {
     io.observe(el); return () => io.disconnect();
   }, [codigo, estado]);
 
-  if (geo) return <MapaSetores geojson={geo.geojson} maxDens={geo.maxDens} centro={geo.centro} />;
+  if (geo) return <MapaSetores geojson={geo.geojson} maxDens={geo.maxDens} maxIdosos={geo.maxIdosos} maxCriancas={geo.maxCriancas} centro={geo.centro} />;
   return (
     <div ref={ref} className="flex h-[420px] items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-sm text-slate-400">
       {estado === "erro" ? "Não foi possível carregar o mapa." : estado === "vazio" ? "Malha de setores indisponível." : "Carregando mapa intraurbano…"}

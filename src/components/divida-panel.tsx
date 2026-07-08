@@ -7,13 +7,6 @@ import { Landmark, TrendingDown, Info } from "lucide-react";
 const brlMi = (v: number) => (v >= 1e9 ? `R$ ${(v / 1e9).toFixed(2)} bi` : `R$ ${(v / 1e6).toFixed(1)} mi`);
 const pc = (v: number) => `${v.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%`;
 
-function Spark({ pts }: { pts: number[] }) {
-  if (pts.length < 2) return null;
-  const max = Math.max(...pts, 1), min = Math.min(...pts, 0); const W = 200, H = 32;
-  const d = pts.map((v, i) => `${(i / (pts.length - 1)) * W},${H - ((v - min) / (max - min || 1)) * H}`).join(" ");
-  return <svg viewBox={`0 0 ${W} ${H}`} className="h-8 w-full" preserveAspectRatio="none"><polyline points={d} fill="none" stroke="#7c3aed" strokeWidth="1.5" /></svg>;
-}
-
 export function DividaPanel({ data, nome }: { data: NonNullable<DividaSC>; nome: string }) {
   const d = data;
   const folga = d.limite - d.dclPct; // pontos percentuais até o limite
@@ -57,12 +50,30 @@ export function DividaPanel({ data, nome }: { data: NonNullable<DividaSC>; nome:
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
-        <div className="text-[11px] text-slate-500">
-          <b className="text-slate-700">Posição em SC:</b> {d.posicao}º de {d.scTotal} municípios (do menos ao mais endividado) · mediana SC {pc(d.scMediana)}
-        </div>
-        {d.serie.length > 1 && <div className="w-40"><div className="text-[10px] text-slate-400">trajetória DCL/RCL {d.serie[0].ano}–{d.serie[d.serie.length - 1].ano}</div><Spark pts={d.serie.map((s) => s.pct)} /></div>}
+      <div className="mt-3 text-[11px] text-slate-500">
+        <b className="text-slate-700">Posição em SC:</b> {d.posicao}º de {d.scTotal} municípios (do menos ao mais endividado) · mediana SC {pc(d.scMediana)}
       </div>
+
+      {/* trajetória DCL/RCL vs limite legal 120% */}
+      {d.serie.length > 1 && (() => {
+        const ESC = Math.max(120, ...d.serie.map((s) => s.pct)); // escala inclui o limite 120%
+        const corAno = (p: number) => p > d.limite ? "#e11d48" : p > d.limite * 0.6 ? "#f59e0b" : "#10b981";
+        return (
+          <div className="mt-3">
+            <div className="mb-1 text-[11px] font-semibold text-slate-600">Trajetória da dívida vs limite legal ({d.serie[0].ano}–{d.serie[d.serie.length - 1].ano})</div>
+            <div className="relative" style={{ height: 96 }}>
+              {[{ v: 120, t: "limite 120%", c: "#e11d48" }, { v: 108, t: "alerta 108%", c: "#f59e0b" }].map((lv) => (
+                <div key={lv.v} className="absolute inset-x-0 border-t border-dashed" style={{ bottom: `${(lv.v / ESC) * 100}%`, borderColor: lv.c }}><span className="absolute right-0 -top-2 bg-white px-1 text-[8px]" style={{ color: lv.c }}>{lv.t}</span></div>
+              ))}
+              <div className="flex h-full items-end gap-1">
+                {d.serie.map((s) => (<div key={s.ano} className="flex flex-1 flex-col items-center justify-end" title={`${s.ano}: ${pc(s.pct)}`}><div className="w-full rounded-t" style={{ height: `${Math.max(2, (s.pct / ESC) * 100)}%`, background: corAno(s.pct) }} /></div>))}
+              </div>
+            </div>
+            <div className="flex justify-between text-[9px] text-slate-400"><span>{d.serie[0].ano}</span><span>{d.serie[d.serie.length - 1].ano}</span></div>
+            <p className="mt-1 text-[10px] text-slate-500">Cada barra é a DCL/RCL do ano; a linha vermelha é o teto de 120% (Res. Senado 40/2001). Verde = saudável, amarelo = atenção, vermelho = acima do limite. Mostra se o município está se endividando ou desalavancando.</p>
+          </div>
+        );
+      })()}
 
       <p className="mt-3 text-[11px] text-slate-500"><span className="mr-1 inline-flex items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 font-semibold text-teal-700"><Info aria-hidden className="h-3 w-3" /> Dado oficial</span>Fonte: <b>RGF — Relatório de Gestão Fiscal (SICONFI/Tesouro Nacional)</b>, DCL {d.ano}. O detalhamento das operações de crédito por credor (SCR/CADIP do BCB) é fonte futura — a API pública do BCB está retornando vazio. Exibição neutra.</p>
     </section>

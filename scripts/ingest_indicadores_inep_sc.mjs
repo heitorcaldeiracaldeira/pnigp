@@ -8,6 +8,7 @@ const BASE = `https://download.inep.gov.br/informacoes_estatisticas/indicadores_
 // mapa etapa → coluna por indicador. AFD = CAT_1 (adequado). TDI/ATU = CAT_0.
 const IND = {
   AFD: { ed_inf: "ED_INF_CAT_1", fun_ai: "FUN_AI_CAT_1", fun_af: "FUN_AF_CAT_1", medio: "MED_CAT_1" },
+  DSU: { ed_inf: "ED_INF_CAT_0", fun_ai: "FUN_AI_CAT_0", fun_af: "FUN_AF_CAT_0", medio: "MED_CAT_0" }, // % docentes com curso superior
   TDI: { ed_inf: null, fun_ai: "FUN_AI_CAT_0", fun_af: "FUN_AF_CAT_0", medio: "MED_CAT_0" },
   ATU: { ed_inf: "ED_INF_CAT_0", fun_ai: "FUN_AI_CAT_0", fun_af: "FUN_AF_CAT_0", medio: "MED_CAT_0" },
   APROVACAO: { arq: "tx_rend_municipios", ed_inf: null, fun_ai: "1_CAT_FUN_AI", fun_af: "1_CAT_FUN_AF", medio: "1_CAT_MED" }, // taxa de aprovação

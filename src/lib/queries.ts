@@ -1732,6 +1732,135 @@ export async function getIdebSC(cod: string): Promise<IdebSC> {
   return etapas.length ? { etapas } : null;
 }
 
+// Transferências federais recebidas pelo GOVERNO MUNICIPAL (CGU/Portal da Transparência, download em massa). Só administração pública municipal.
+export async function getTransferenciasCguSC(cod: string): Promise<{ total: number; ano: string; porTipo: { tipo: string; valor: number }[]; porOrgao: { orgao: string; valor: number }[]; porFuncao: { funcao: string; valor: number }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT tipo_transferencia, orgao, funcao, valor, ano_mes, atualizado FROM transferencias_cgu_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const total = rows.reduce((s, r) => s + num(r.valor), 0);
+  const ano = String(rows[0].ano_mes || "").slice(0, 4);
+  const grp = (campo: string, relabel?: (v: string) => string) => {
+    const m: Record<string, number> = {};
+    for (const r of rows) { let k = String(r[campo] || "—"); if (relabel) k = relabel(k); m[k] = (m[k] || 0) + num(r.valor); }
+    return Object.entries(m).map(([k, valor]) => ({ k, valor })).sort((a, b) => b.valor - a.valor);
+  };
+  const orgaoLbl = (o: string) => /sem informa/i.test(o) ? "Constitucionais (FPM/FUNDEB/cota-partes)" : o.replace(/ - Unidades com vínculo direto/i, "");
+  return {
+    total, ano,
+    porTipo: grp("tipo_transferencia").map((x) => ({ tipo: x.k, valor: x.valor })),
+    porOrgao: grp("orgao", orgaoLbl).slice(0, 8).map((x) => ({ orgao: x.k, valor: x.valor })),
+    porFuncao: grp("funcao").filter((x) => x.k !== "—" && x.k !== "Sem informação").slice(0, 8).map((x) => ({ funcao: x.k, valor: x.valor })),
+    extraido: dExtr(rows[0].atualizado),
+  };
+}
+
+// Trajetória histórica das metas de educação — "estamos melhorando?" (IDEB + aplicação MDE). Fontes: ideb_sc, rreo_const_sc.
+export async function getEducacaoTrajetoriaSC(cod: string): Promise<{ ideb: { ano: number; ai: number | null; af: number | null }[]; mde: { ano: number; pct: number }[]; tendIdeb: string; tendMde: string; extraido: string | null } | null> {
+  const idebRows = await query<Record<string, unknown>>(`SELECT ano, etapa, rede, ideb FROM ideb_sc WHERE cod_ibge=$1 AND etapa IN ('AI','AF') ORDER BY ano`, [cod]).catch(() => []);
+  const pref = ["Municipal", "Pública", "Estadual"];
+  const pick = (ano: number, et: string) => { const cand = idebRows.filter((r) => num(r.ano) === ano && r.etapa === et); for (const rd of pref) { const r = cand.find((x) => x.rede === rd); if (r) return num(r.ideb); } return null; };
+  const anos = [...new Set(idebRows.map((r) => num(r.ano)))].sort((a, b) => a - b);
+  const ideb = anos.map((ano) => ({ ano, ai: pick(ano, "AI"), af: pick(ano, "AF") }));
+  const mdeRows = await query<Record<string, unknown>>(`SELECT ano, educacao_pct FROM rreo_const_sc WHERE cod_ibge=$1 AND educacao_pct IS NOT NULL ORDER BY ano`, [cod]).catch(() => []);
+  const mde = mdeRows.map((r) => ({ ano: num(r.ano), pct: Math.round(num(r.educacao_pct) * 10) / 10 }));
+  const tend = (vals: (number | null)[]) => { const v = vals.filter((x): x is number => x != null); if (v.length < 2) return "sd"; const d = v[v.length - 1] - v[0]; return d > 0.05 ? "melhorando" : d < -0.05 ? "piorando" : "estável"; };
+  if (!ideb.length && !mde.length) return null;
+  return { ideb, mde, tendIdeb: tend(ideb.map((x) => x.ai ?? x.af)), tendMde: tend(mde.map((x) => x.pct)), extraido: null };
+}
+
+// Valorização dos profissionais da educação (PNE Metas 15-18) — formação (AFD/INEP) + planos de carreira (MUNIC).
+export async function getValorizacaoMagisterioSC(cod: string): Promise<{ formacaoAI: number | null; formacaoAF: number | null; superiorAI: number | null; superiorAF: number | null; temPlanoDocente: boolean | null; temPlanoNaoDocente: boolean | null; extraido: string | null } | null> {
+  const afd = (await query<Record<string, unknown>>(`SELECT fun_ai, fun_af, atualizado FROM indicadores_inep_sc WHERE cod_ibge=$1 AND indicador='AFD' ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  const dsu = (await query<Record<string, unknown>>(`SELECT fun_ai, fun_af FROM indicadores_inep_sc WHERE cod_ibge=$1 AND indicador='DSU' ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  const munic = await query<Record<string, unknown>>(`SELECT indicador, tem FROM munic_sc WHERE cod_ibge=$1 AND indicador IN ('MEDU16','MEDU21')`, [cod]).catch(() => []);
+  const temM = (id: string) => { const r = munic.find((x) => x.indicador === id); return r ? r.tem === true : null; };
+  if (!afd && !dsu && !munic.length) return null;
+  return { formacaoAI: afd ? num(afd.fun_ai) : null, formacaoAF: afd ? num(afd.fun_af) : null, superiorAI: dsu ? num(dsu.fun_ai) : null, superiorAF: dsu ? num(dsu.fun_af) : null, temPlanoDocente: temM("MEDU16"), temPlanoNaoDocente: temM("MEDU21"), extraido: afd ? dExtr(afd.atualizado) : null };
+}
+
+// ===== DIAGNÓSTICO DA EDUCAÇÃO MUNICIPAL alinhado ao PNE (base: Diagnóstico da Educação Nacional/MEC 2025) =====
+// Espelha as Metas do Plano Nacional de Educação com os dados municipais que temos, organizadas pelos Eixos do documento.
+export type PneMeta = { meta: string; titulo: string; indicador: string; valor: number | null; unidade: string; referencia: string; refNum: number | null; maior_melhor: boolean; situacao: "atingida" | "evolucao" | "distante" | "sd"; aprox?: boolean; nota?: string };
+export type PneEixo = { n: number; titulo: string; metas: PneMeta[] };
+export type DiagnosticoPne = { temPme: boolean | null; eixos: PneEixo[]; resumo: { atingida: number; evolucao: number; distante: number; sd: number }; extraido: string | null } | null;
+export async function getDiagnosticoEducacaoPneSC(cod: string): Promise<DiagnosticoPne> {
+  const mat = (await query<Record<string, unknown>>(`SELECT creche,creche_int,pre,pre_int,fund_ai,fund_af,medio,total,total_int,atualizado FROM fundeb_matriculas_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  if (!mat) return null;
+  const pf = (await query<Record<string, unknown>>(`SELECT faixas FROM populacao_faixa_sc WHERE cod_ibge=$1 LIMIT 1`, [cod]).catch(() => []))[0];
+  const fx = (pf?.faixas || {}) as Record<string, number>;
+  const p04 = num(fx["0-4"]), p59 = num(fx["5-9"]), p1014 = num(fx["10-14"]);
+  // matrículas de TODAS as redes por etapa (Censo Escolar) — cobertura real, não só a rede municipal
+  const cm = await query<Record<string, unknown>>(`SELECT etapa, matriculas FROM censo_matricula_sc WHERE cod_ibge=$1 ORDER BY ano DESC`, [cod]).catch(() => []);
+  const cmMap: Record<string, number> = {}; for (const r of cm) { const e = String(r.etapa); if (!(e in cmMap)) cmMap[e] = num(r.matriculas); }
+  const matCreche = cmMap["Creche"] ?? num(mat.creche);
+  const matPre = cmMap["Pré-Escola"] ?? num(mat.pre);
+  const matFund = cmMap["Ensino Fundamental"] || (num(mat.fund_ai) + num(mat.fund_af));
+  const matEsp = cmMap["Educação Especial"] ?? null;
+  const pctEsp = matEsp != null && cmMap["Total"] ? Math.round((matEsp / cmMap["Total"]) * 1000) / 10 : null;
+  const inep = await query<Record<string, unknown>>(`SELECT indicador, fun_ai, fun_af, medio FROM indicadores_inep_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
+  const ind = (nome: string) => inep.find((r) => r.indicador === nome);
+  const ideb = await query<Record<string, unknown>>(`SELECT etapa, rede, ideb, meta FROM ideb_sc WHERE cod_ibge=$1 ORDER BY ano DESC`, [cod]).catch(() => []);
+  const idebDe = (et: string) => { const pref = ["Municipal", "Pública", "Estadual"]; for (const rd of pref) { const r = ideb.find((x) => x.etapa === et && x.rede === rd); if (r) return { ideb: num(r.ideb), meta: r.meta != null ? num(r.meta) : null }; } return null; };
+  const alfab = num((await query<Record<string, unknown>>(`SELECT taxa FROM alfabetizacao_sc WHERE cod_ibge=$1 LIMIT 1`, [cod]).catch(() => []))[0]?.taxa) || null;
+  const mde = (await query<Record<string, unknown>>(`SELECT educacao_pct FROM rreo_const_sc WHERE cod_ibge=$1 AND educacao_pct IS NOT NULL ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  const munic = await query<Record<string, unknown>>(`SELECT indicador, tem FROM munic_sc WHERE cod_ibge=$1 AND indicador IN ('MEDU14','MEDU16','MEDU22')`, [cod]).catch(() => []);
+  const temM = (id: string) => { const r = munic.find((x) => x.indicador === id); return r ? r.tem === true : null; };
+
+  const sit = (v: number | null, ref: number, maior: boolean, tolPct = 0.9): PneMeta["situacao"] => { if (v == null) return "sd"; if (maior) return v >= ref ? "atingida" : v >= ref * tolPct ? "evolucao" : "distante"; return v <= ref ? "atingida" : v <= ref / tolPct ? "evolucao" : "distante"; };
+  const cob = (m: number, den: number) => den > 0 ? Math.round((m / den) * 1000) / 10 : null;
+
+  const capCob = (m: number, den: number) => { const v = cob(m, den); return v == null ? null : Math.min(100, v); };
+  // denominador EXATO por idade individual (populacao_idade_sc); fallback = aproximação por faixa de 5 anos
+  const pi = (await query<Record<string, unknown>>(`SELECT creche_0_3, pre_4_5, fund_6_14 FROM populacao_idade_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+  const exato = !!(pi && num(pi.creche_0_3) > 0);
+  const den03 = exato ? num(pi.creche_0_3) : p04 * 0.8;
+  const den45 = exato ? num(pi.pre_4_5) : p04 * 0.2 + p59 * 0.2;
+  const den614 = exato ? num(pi.fund_6_14) : p59 * 0.8 + p1014;
+  const crecheCob = cob(matCreche, den03); // meta 50%, não precisa cap
+  const preCob = capCob(matPre, den45);
+  const fundCob = capCob(matFund, den614);
+  const integralCob = num(mat.total) > 0 ? Math.round((num(mat.total_int) / num(mat.total)) * 1000) / 10 : null;
+  const afdAI = num(ind("AFD")?.fun_ai) || null, afdAF = num(ind("AFD")?.fun_af) || null;
+  const afd = afdAI != null && afdAF != null ? Math.round(((afdAI + afdAF) / 2) * 10) / 10 : (afdAI ?? afdAF);
+  const tdiAF = num(ind("TDI")?.fun_af) || null;
+  const idAI = idebDe("AI"), idAF = idebDe("AF");
+  const mdePct = mde ? num(mde.educacao_pct) : null;
+
+  const M = (meta: string, titulo: string, indicador: string, valor: number | null, unidade: string, referencia: string, refNum: number | null, maior: boolean, extra?: Partial<PneMeta>): PneMeta => ({ meta, titulo, indicador, valor, unidade, referencia, refNum, maior_melhor: maior, situacao: refNum == null ? (valor == null ? "sd" : "atingida") : sit(valor, refNum, maior), ...extra });
+  const bool = (meta: string, titulo: string, indicador: string, v: boolean | null): PneMeta => ({ meta, titulo, indicador, valor: null, unidade: "", referencia: "exigido pelo PNE", refNum: null, maior_melhor: true, situacao: v == null ? "sd" : v ? "atingida" : "distante", nota: v == null ? undefined : v ? "possui" : "não possui" });
+
+  const eixos: PneEixo[] = [
+    { n: 1, titulo: "O PNE no município — instrumento de planejamento", metas: [
+      bool("PME", "Plano Municipal de Educação vigente", "IBGE MUNIC", temM("MEDU14")),
+    ] },
+    { n: 2, titulo: "Garantia do direito à educação (acesso e trajetória)", metas: [
+      M("M1", "Creche — atendimento de 0 a 3 anos (todas as redes)", "matrículas ÷ população", crecheCob, "%", "50% (PNE)", 50, true, { aprox: !exato, nota: "taxa bruta: matrículas de todas as redes ÷ população de 0 a 3 anos" + (exato ? " (idade exata, Censo 2022)" : " (aprox. por faixa de 5 anos)") }),
+      M("M1", "Pré-escola — atendimento de 4 e 5 anos (todas as redes)", "matrículas ÷ população", preCob, "%", "100% (PNE)", 100, true, { aprox: !exato, nota: "taxa bruta (todas as redes ÷ população de 4-5 anos" + (exato ? ", idade exata" : ", aprox.") + "); próximo de 100% = pré-escola universalizada" }),
+      M("M2", "Ensino fundamental — atendimento de 6 a 14 anos (todas as redes)", "matrículas ÷ população", fundCob, "%", "≈universal", 95, true, { aprox: !exato, nota: "taxa bruta (todas as redes ÷ população de 6-14 anos" + (exato ? ", idade exata" : ", aprox.") + "); próximo de 100% = fundamental universalizado" }),
+      M("M6", "Educação em tempo integral", "% das matrículas", integralCob, "%", "25% (PNE)", 25, true),
+      M("M9", "Alfabetização da população adulta (15+)", "taxa de alfabetização", alfab, "%", "93,5% (PNE)", 93.5, true),
+    ] },
+    { n: 3, titulo: "Educação, direitos humanos, inclusão e diversidade", metas: [
+      M("M4", "Educação especial — matrículas (inclusão)", "matrículas (todas as redes)", matEsp, "", "atendimento universal", null, true, { nota: (pctEsp != null ? `${pctEsp}% do total de matrículas do município · ` : "") + "o percentual incluído em classe comum exige recorte específico do INEP (indisponível em dado aberto)" }),
+    ] },
+    { n: 4, titulo: "Gestão democrática e qualidade da educação", metas: [
+      M("M7", "IDEB — anos iniciais do fundamental", "IDEB", idAI?.ideb ?? null, "", idAI?.meta ? `meta ${idAI.meta}` : "6,0 (PNE)", idAI?.meta ?? 6.0, true),
+      M("M7", "IDEB — anos finais do fundamental", "IDEB", idAF?.ideb ?? null, "", idAF?.meta ? `meta ${idAF.meta}` : "5,5 (PNE)", idAF?.meta ?? 5.5, true),
+      M("M2", "Distorção idade-série — anos finais", "% em distorção", tdiAF, "%", "reduzir (quanto menor, melhor)", 15, false),
+      bool("M19", "Conselho Municipal de Educação instituído", "IBGE MUNIC", temM("MEDU22")),
+    ] },
+    { n: 5, titulo: "Valorização dos profissionais da educação", metas: [
+      M("M15", "Formação adequada dos docentes", "% com formação na área", afd, "%", "100% (PNE)", 100, true, { nota: "média anos iniciais e finais" }),
+      bool("M18", "Plano de Carreira do Magistério", "IBGE MUNIC", temM("MEDU16")),
+    ] },
+    { n: 6, titulo: "Financiamento da educação", metas: [
+      M("M20", "Aplicação em Manutenção e Desenvolvimento do Ensino", "% da receita de impostos", mdePct, "%", "mínimo 25% (CF)", 25, true),
+    ] },
+  ];
+  const flat = eixos.flatMap((e) => e.metas);
+  const resumo = { atingida: flat.filter((m) => m.situacao === "atingida").length, evolucao: flat.filter((m) => m.situacao === "evolucao").length, distante: flat.filter((m) => m.situacao === "distante").length, sd: flat.filter((m) => m.situacao === "sd").length };
+  return { temPme: temM("MEDU14"), eixos, resumo, extraido: dExtr(mat.atualizado) };
+}
+
 // Economicidade (preço unitário estimado → homologado). Métrica = MEDIANA por item (robusta a erros e a atas).
 // Separada POR MODALIDADE (via join a processos): competição (pregão/concorrência) gera economia; dispensa/inexig. ~0.
 // Exclui erros: homologado>estimado e economia>95% (estimado absurdo / homologado ≈ 0). Não somamos R$ absoluto
@@ -2476,6 +2605,225 @@ export async function getReceitasDetalheSC(cod: string): Promise<ReceitasDetalhe
   return { anoUlt, itens };
 }
 
+// Ranking da Qualidade da Informação Contábil e Fiscal (Tesouro Nacional) — nota (A-D), posição nacional, %acertos, dimensões, série. Fonte: Tesouro (ranking_tesouro_sc).
+export async function getRankingTesouroSC(cod: string): Promise<{ anoUlt: number; nota: string; posicao: number; pctAcertos: number; dimensoes: { nome: string; valor: number }[]; serie: { ano: number; posicao: number; pctAcertos: number; nota: string }[]; melhoraPosicao: number | null; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, nota, posicao, pct_acertos, di, dii, diii, div, atualizado FROM ranking_tesouro_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const serie = rows.map((r) => ({ ano: num(r.ano), posicao: num(r.posicao), pctAcertos: Number(r.pct_acertos) || 0, nota: String(r.nota || "") }));
+  const ult = rows[rows.length - 1], prim = rows[0];
+  const melhoraPosicao = num(prim.posicao) && num(ult.posicao) ? num(prim.posicao) - num(ult.posicao) : null; // positivo = subiu no ranking
+  const dimensoes = [
+    { nome: "Gestão da Informação", valor: Number(ult.di) || 0 }, { nome: "Contábil", valor: Number(ult.dii) || 0 },
+    { nome: "Fiscal (RREO/RGF)", valor: Number(ult.diii) || 0 }, { nome: "Restos a Pagar / outros", valor: Number(ult.div) || 0 },
+  ];
+  return { anoUlt: num(ult.ano), nota: String(ult.nota || ""), posicao: num(ult.posicao), pctAcertos: Number(ult.pct_acertos) || 0, dimensoes, serie, melhoraPosicao, extraido: dExtr(ult.atualizado) };
+}
+
+// MOTOR ISOLADO — quais ESCOLAS priorizar na expansão da ETI, por prontidão de infraestrutura (refeitório/quadra/biblioteca/água/esgoto). Fonte: escolas_sc. NÃO altera nada.
+export async function getEscolasEtiSC(cod: string): Promise<{ nProntas: number; nAdequar: number; total: number; candidatas: { nome: string; bairro: string; matriculas: number; turmas: number; score: number; falta: string[] }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT nome, bairro, coalesce(matriculas,0) matriculas, coalesce(n_turmas,0) turmas, tem_refeitorio, tem_quadra, tem_biblioteca, tem_agua, tem_esgoto, tem_energia, ano FROM escolas_sc WHERE cod_ibge=$1 AND dependencia=3 AND coalesce(matriculas,0)>0`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const b = (v: unknown) => v === true;
+  const ITENS: [string, string, number][] = [["tem_refeitorio", "refeitório", 30], ["tem_quadra", "quadra", 25], ["tem_biblioteca", "biblioteca", 20], ["tem_agua", "água", 10], ["tem_esgoto", "esgoto", 10], ["tem_energia", "energia", 5]];
+  const escolas = rows.map((r) => {
+    let score = 0; const falta: string[] = [];
+    for (const [k, lab, peso] of ITENS) { if (b(r[k])) score += peso; else falta.push(lab); }
+    return { nome: String(r.nome || ""), bairro: String(r.bairro || ""), matriculas: num(r.matriculas), turmas: num(r.turmas), score, falta };
+  });
+  const pronta = (e: { score: number }) => e.score >= 75; // tem refeitório+quadra+biblioteca + básicos
+  const prontas = escolas.filter(pronta).sort((a, b2) => b2.matriculas - a.matriculas);
+  const nAdequar = escolas.length - prontas.length;
+  // candidatas = prontas (maiores primeiro) + as que faltam pouco (score 55-74) como "quase prontas"
+  const candidatas = prontas.slice(0, 10).map((e) => ({ ...e, falta: [] as string[] }));
+  return { nProntas: prontas.length, nAdequar, total: escolas.length, candidatas, extraido: null };
+}
+
+// MOTOR ISOLADO — ganho de FUNDEB ao expandir a ETI (matrícula integral pondera mais). Fonte: fundeb_matriculas_sc + FUNDEB recebido. NÃO altera nenhum outro cálculo.
+// Fatores de ponderação FUNDEB/VAAF 2025 (Resolução MEC 05/2024): [parcial, integral] por etapa.
+const FUNDEB_FATOR: Record<string, [number, number]> = { creche: [1.30, 1.55], pre: [1.25, 1.50], fund_ai: [1.00, 1.50], fund_af: [1.10, 1.50], medio: [1.25, 1.52] };
+export async function getFundebGanhoEtiSC(cod: string): Promise<{ valorAluno: number; fundebAtual: number; metas: { alvo: number; novas: number; ganhoAnual: number }[]; extraido: string | null } | null> {
+  const m = (await query<Record<string, unknown>>(`SELECT creche,creche_int,pre,pre_int,fund_ai,fund_ai_int,fund_af,fund_af_int,medio,medio_int,total,total_int,atualizado FROM fundeb_matriculas_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  const fundeb = num((await query<Record<string, unknown>>(`SELECT valor FROM receitas_detalhe_sc WHERE cod_ibge=$1 AND item='FUNDEB' ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0]?.valor);
+  if (!m || !num(m.total) || !fundeb) return null;
+  const et = ["creche", "pre", "fund_ai", "fund_af", "medio"];
+  const gapE = (e: string) => Math.max(0, num(m[e]) - num(m[e + "_int"]));
+  let wtd = 0; for (const e of et) { const tot = num(m[e]), int = num(m[e + "_int"]), par = tot - int; wtd += par * FUNDEB_FATOR[e][0] + int * FUNDEB_FATOR[e][1]; }
+  if (wtd <= 0) return null;
+  const valorAluno = Math.round(fundeb / wtd);
+  const total = num(m.total), integral = num(m.total_int);
+  const cobertura = (integral / total) * 100;
+  const t1 = Math.min(100, (Math.floor(cobertura / 10) + 1) * 10);
+  const alvos = [...new Set([t1, Math.min(100, t1 + 10)])].filter((a) => a > cobertura);
+  const gapTot = et.reduce((s, e) => s + gapE(e), 0) || 1;
+  const metas = alvos.map((alvo) => {
+    const novas = Math.max(0, Math.ceil((alvo / 100) * total - integral));
+    // distribui as novas pela lacuna de cada etapa e soma o incremento de ponderação × valor-aluno
+    let ganho = 0; for (const e of et) { const parcela = novas * (gapE(e) / gapTot); const inc = FUNDEB_FATOR[e][1] - FUNDEB_FATOR[e][0]; ganho += parcela * inc * valorAluno; }
+    return { alvo, novas, ganhoAnual: Math.round(ganho) };
+  });
+  return { valorAluno, fundebAtual: fundeb, metas, extraido: dExtr(m.atualizado) };
+}
+
+// Taxa de EVASÃO escolar por etapa (Indicadores de Fluxo / Taxas de Transição do INEP). Fonte: INEP (taxa_evasao_sc).
+export async function getEvasaoEscolarSC(cod: string): Promise<{ periodo: string; etapas: { nome: string; evasao: number; nivel: string }[]; pior: { nome: string; evasao: number } | null; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT dependencia, ev_fund_ai, ev_fund_af, ev_medio, periodo, atualizado FROM taxa_evasao_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const tot = rows.find((r) => r.dependencia === "Total") || rows[0];
+  const nivelDe = (v: number, medio: boolean) => { const lim = medio ? [5, 10] : [2, 5]; return v >= lim[1] ? "alto" : v >= lim[0] ? "medio" : "baixo"; };
+  const def: [string, string, boolean][] = [["Fund. anos iniciais", "ev_fund_ai", false], ["Fund. anos finais", "ev_fund_af", false], ["Ensino médio", "ev_medio", true]];
+  const etapas = def.map(([nome, k, medio]) => ({ nome, evasao: tot[k] == null ? -1 : Number(tot[k]), nivel: tot[k] == null ? "sd" : nivelDe(Number(tot[k]), medio) })).filter((e) => e.evasao >= 0);
+  const pior = etapas.length ? etapas.reduce((a, b) => (b.evasao > a.evasao ? b : a)) : null;
+  return { periodo: String(tot.periodo || ""), etapas, pior: pior ? { nome: pior.nome, evasao: pior.evasao } : null, extraido: dExtr(tot.atualizado) };
+}
+
+// Diagnóstico para o Plano de Expansão da ETI (Educação em Tempo Integral) — cobertura atual, por etapa, gap de expansão. Fonte: FUNDEB/Censo (fundeb_matriculas_sc). Base do Guia MEC.
+export async function getEtiDiagnosticoSC(cod: string): Promise<{ ano: number; total: number; integral: number; cobertura: number; metaPne: number; gap: number; etapas: { nome: string; integral: number; total: number; cobertura: number; gap: number }[]; metas: { alvo: number; novas: number; projecao: number }[]; prioridades: { nome: string; sugestao: number }[]; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT ano, total, total_int, creche, creche_int, pre, pre_int, fund_ai, fund_ai_int, fund_af, fund_af_int, medio, medio_int, atualizado FROM fundeb_matriculas_sc WHERE cod_ibge=$1 ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []))[0];
+  if (!r || !num(r.total)) return null;
+  const total = num(r.total), integral = num(r.total_int);
+  const cobertura = total > 0 ? Math.round((integral / total) * 1000) / 10 : 0;
+  const def: [string, string, string][] = [["Creche", "creche_int", "creche"], ["Pré-escola", "pre_int", "pre"], ["Fund. anos iniciais", "fund_ai_int", "fund_ai"], ["Fund. anos finais", "fund_af_int", "fund_af"], ["Ensino médio", "medio_int", "medio"]];
+  const etapas = def.map(([nome, ki, kt]) => { const i = num(r[ki]), t = num(r[kt]); return { nome, integral: i, total: t, cobertura: t > 0 ? Math.round((i / t) * 1000) / 10 : 0, gap: Math.max(0, t - i) }; }).filter((e) => e.total > 0);
+  // Etapa 2 — metas: p/ dois patamares acima do atual, quantas novas matrículas (C) e a projeção (B+C)/A
+  const t1 = Math.min(100, (Math.floor(cobertura / 10) + 1) * 10);
+  const alvos = [...new Set([t1, Math.min(100, t1 + 10)])].filter((a) => a > cobertura);
+  const metas = alvos.map((alvo) => { const novas = Math.max(0, Math.ceil((alvo / 100) * total - integral)); return { alvo, novas, projecao: total > 0 ? Math.round(((integral + novas) / total) * 1000) / 10 : 0 }; });
+  // distribuição sugerida: onde criar (etapas de maior lacuna) para bater o 1º alvo
+  const alvoNovas = metas[0]?.novas || 0; const gapTot = etapas.reduce((s, e) => s + e.gap, 0) || 1;
+  const prioridades = [...etapas].sort((a, b) => b.gap - a.gap).slice(0, 3).map((e) => ({ nome: e.nome, sugestao: Math.round(alvoNovas * (e.gap / gapTot)) }));
+  return { ano: num(r.ano), total, integral, cobertura, metaPne: 25, gap: Math.max(0, total - integral), etapas, metas, prioridades, extraido: dExtr(r.atualizado) };
+}
+
+// Número de TURMAS por etapa e por rede (município). Fonte: INEP Censo Escolar (escola_turmas_sc).
+export async function getEscolaTurmasSC(cod: string): Promise<{ ano: number; totalTurmas: number; totalEscolas: number; etapas: { nome: string; qtd: number }[]; redes: { rede: string; escolas: number; turmas: number; creche: number; pre: number; fundAi: number; fundAf: number; medio: number }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT rede, count(*) escolas, sum(tur_total) turmas, sum(tur_creche) creche, sum(tur_pre) pre, sum(tur_fund_ai) fund_ai, sum(tur_fund_af) fund_af, sum(tur_medio) medio, sum(tur_eja) eja, sum(tur_esp) esp, max(ano) ano, max(atualizado) atualizado FROM escola_turmas_sc WHERE cod_ibge=$1 GROUP BY rede`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const ordem = ["Municipal", "Estadual", "Federal", "Privada"];
+  const redes = rows.map((r) => ({ rede: String(r.rede), escolas: num(r.escolas), turmas: num(r.turmas), creche: num(r.creche), pre: num(r.pre), fundAi: num(r.fund_ai), fundAf: num(r.fund_af), medio: num(r.medio) })).sort((a, b) => (ordem.indexOf(a.rede) + 99 * (ordem.indexOf(a.rede) < 0 ? 1 : 0)) - (ordem.indexOf(b.rede) + 99 * (ordem.indexOf(b.rede) < 0 ? 1 : 0)));
+  const soma = (k: string) => rows.reduce((s, r) => s + num(r[k]), 0);
+  const etapas = [
+    { nome: "Creche", qtd: soma("creche") }, { nome: "Pré-escola", qtd: soma("pre") }, { nome: "Fund. anos iniciais", qtd: soma("fund_ai") },
+    { nome: "Fund. anos finais", qtd: soma("fund_af") }, { nome: "Médio", qtd: soma("medio") }, { nome: "EJA", qtd: soma("eja") }, { nome: "Especial (exclusiva)", qtd: soma("esp") },
+  ].filter((e) => e.qtd > 0);
+  return { ano: num(rows[0].ano), totalTurmas: soma("turmas"), totalEscolas: rows.reduce((s, r) => s + num(r.escolas), 0), etapas, redes, extraido: dExtr(rows[0].atualizado) };
+}
+
+// Detalhe do Ranking Tesouro — verificações NÃO atendidas (o que corrigir p/ subir a nota), agrupadas por dimensão. Fonte: Tesouro (ranking_detalhe_sc).
+export async function getRankingDetalheSC(cod: string): Promise<{ ano: number; totalFalhas: number; grupos: { dimensao: string; itens: { verificacao: string; descricao: string; anexo: string }[] }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, verificacao, dimensao, anexo, descricao, atualizado FROM ranking_detalhe_sc WHERE cod_ibge=$1 AND ano=(SELECT max(ano) FROM ranking_detalhe_sc WHERE cod_ibge=$1) ORDER BY dimensao, verificacao`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const ano = num(rows[0].ano);
+  const limpa = (s: unknown) => String(s || "").replace(/\s+/g, " ").trim();
+  const map = new Map<string, { verificacao: string; descricao: string; anexo: string }[]>();
+  for (const r of rows) { const dim = limpa(r.dimensao) || "Outros"; if (!map.has(dim)) map.set(dim, []); map.get(dim)!.push({ verificacao: limpa(r.verificacao), descricao: limpa(r.descricao), anexo: limpa(r.anexo) }); }
+  const grupos = [...map.entries()].map(([dimensao, itens]) => ({ dimensao, itens })).sort((a, b) => b.itens.length - a.itens.length);
+  return { ano, totalFalhas: rows.length, grupos, extraido: dExtr(rows[0].atualizado) };
+}
+
+// Despesa por NATUREZA (Pessoal/Custeio/Investimento/Dívida) + RIGIDEZ orçamentária, série histórica. Fonte: SICONFI (financas_sc). Mostra o espaço fiscal.
+const NATUREZA_DESP: { key: string; nome: string; cor: string }[] = [
+  { key: "pessoal", nome: "Pessoal", cor: "#dc2626" }, { key: "custeio", nome: "Custeio", cor: "#f59e0b" },
+  { key: "investimento", nome: "Investimento", cor: "#059669" }, { key: "divida", nome: "Dívida", cor: "#64748b" },
+];
+export async function getDespesaNaturezaSerieSC(cod: string): Promise<{ anoUlt: number; total: number; componentes: { nome: string; cor: string; valor: number; pct: number }[]; rigidez: number; compHist: { ano: number; setores: { nome: string; cor: string; pct: number }[] }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, pessoal, custeio, investimento, divida FROM financas_sc WHERE cod_ibge=$1 AND pessoal IS NOT NULL ORDER BY ano`, [cod]).catch(() => []);
+  if (rows.length < 2) return null;
+  const val = (r: Record<string, unknown>, k: string) => num(r[k]);
+  const linha = (r: Record<string, unknown>) => { const t = NATUREZA_DESP.reduce((s, x) => s + val(r, x.key), 0) || 1; return NATUREZA_DESP.map((x) => ({ nome: x.nome, cor: x.cor, valor: val(r, x.key), pct: Math.round((val(r, x.key) / t) * 1000) / 10 })); };
+  const ult = rows[rows.length - 1];
+  const componentes = linha(ult);
+  const total = NATUREZA_DESP.reduce((s, x) => s + val(ult, x.key), 0);
+  const rigidez = total > 0 ? Math.round(((val(ult, "pessoal") + val(ult, "custeio")) / total) * 1000) / 10 : 0;
+  const compHist = rows.map((r) => ({ ano: num(r.ano), setores: linha(r).map((c) => ({ nome: c.nome, cor: c.cor, pct: c.pct })) }));
+  return { anoUlt: num(ult.ano), total, componentes, rigidez, compHist, extraido: null };
+}
+
+// Folha de pessoal — TRAJETÓRIA do % pessoal/RCL vs limites da LRF (alerta 48,6 · prudencial 51,3 · limite 54). Fonte: RGF/SICONFI (rgf_sc).
+export async function getFolhaSerieSC(cod: string): Promise<{ serie: { ano: number; pct: number; faixa: string }[]; ultPct: number; ultAno: number; tendencia: number | null; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, pessoal_pct FROM rgf_sc WHERE cod_ibge=$1 AND pessoal_pct IS NOT NULL AND suspeito IS NOT TRUE ORDER BY ano`, [cod]).catch(() => []);
+  if (rows.length < 2) return null;
+  const faixaDe = (p: number) => p >= 54 ? "acima" : p >= 51.3 ? "prudencial" : p >= 48.6 ? "alerta" : "confortavel";
+  const serie = rows.map((r) => ({ ano: num(r.ano), pct: Math.round(num(r.pessoal_pct) * 10) / 10, faixa: faixaDe(num(r.pessoal_pct)) }));
+  const ult = serie[serie.length - 1], prim = serie[0];
+  const tendencia = Math.round((ult.pct - prim.pct) * 10) / 10; // p.p. no período
+  return { serie, ultPct: ult.pct, ultAno: ult.ano, tendencia, extraido: null };
+}
+
+// Investimento — capacidade de investir ao longo do tempo (R$ + % da despesa). Fonte: SICONFI (financas_sc).
+export async function getInvestimentoSerieSC(cod: string): Promise<{ serie: { ano: number; valor: number; pctDespesa: number }[]; ultValor: number; ultPct: number; ultAno: number; mediaPct: number; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, investimento, despesa FROM financas_sc WHERE cod_ibge=$1 AND investimento IS NOT NULL ORDER BY ano`, [cod]).catch(() => []);
+  if (rows.length < 2) return null;
+  const serie = rows.map((r) => { const v = num(r.investimento), d = num(r.despesa); return { ano: num(r.ano), valor: v, pctDespesa: d > 0 ? Math.round((v / d) * 1000) / 10 : 0 }; }).filter((x) => x.valor > 0);
+  if (serie.length < 2) return null;
+  const ult = serie[serie.length - 1];
+  const mediaPct = Math.round((serie.reduce((s, x) => s + x.pctDespesa, 0) / serie.length) * 10) / 10;
+  return { serie, ultValor: ult.valor, ultPct: ult.pctDespesa, ultAno: ult.ano, mediaPct, extraido: null };
+}
+
+// Decomposição da DESPESA por FUNÇÃO com série histórica — para onde vai o dinheiro ao longo do tempo. Fonte: SICONFI (despesa_subfuncao_sc, empenhado).
+const CORES_FUNCAO = ["#7c3aed", "#0891b2", "#059669", "#f59e0b", "#e11d48", "#2563eb", "#64748b"];
+export async function getDespesaFuncaoSerieSC(cod: string): Promise<{ anoUlt: number; total: number; funcoes: { nome: string; cor: string; valor: number; pct: number }[]; compHist: { ano: number; setores: { nome: string; cor: string; pct: number }[] }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, funcao, sum(empenhado) valor FROM despesa_subfuncao_sc WHERE cod_ibge=$1 GROUP BY ano, funcao`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const anoUlt = Math.max(...rows.map((r) => num(r.ano)));
+  const totUlt = new Map<string, number>();
+  for (const r of rows) if (num(r.ano) === anoUlt) totUlt.set(String(r.funcao), (totUlt.get(String(r.funcao)) || 0) + num(r.valor));
+  const top = [...totUlt.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map((x) => x[0]);
+  const total = [...totUlt.values()].reduce((s, v) => s + v, 0) || 1;
+  const funcoes = [...totUlt.entries()].sort((a, b) => b[1] - a[1]).map(([nome, valor], i) => ({ nome, cor: top.includes(nome) ? CORES_FUNCAO[top.indexOf(nome)] : CORES_FUNCAO[6], valor, pct: Math.round((valor / total) * 1000) / 10 }));
+  // série: top 6 + "Outras", share por ano
+  const porAno = new Map<number, Map<string, number>>();
+  for (const r of rows) { const a = num(r.ano); const f = String(r.funcao); const grp = top.includes(f) ? f : "Outras"; if (!porAno.has(a)) porAno.set(a, new Map()); const m = porAno.get(a)!; m.set(grp, (m.get(grp) || 0) + num(r.valor)); }
+  const ordem = [...top, "Outras"];
+  const compHist = [...porAno.entries()].sort((a, b) => a[0] - b[0]).map(([ano, m]) => { const t = [...m.values()].reduce((s, v) => s + v, 0) || 1; return { ano, setores: ordem.map((nome, i) => ({ nome, cor: nome === "Outras" ? CORES_FUNCAO[6] : CORES_FUNCAO[i], pct: Math.round(((m.get(nome) || 0) / t) * 1000) / 10 })) }; });
+  return { anoUlt, total, funcoes, compHist, extraido: null };
+}
+
+// Transferências recebidas por ORIGEM, série histórica — FPM/FUNDEB/ICMS/IPVA (SICONFI) + SUS (FNS). O "gás" que sustenta o município.
+export async function getTransferenciasSerieSC(cod: string): Promise<{ transferencias: { nome: string; cor: string; fonte: string; serie: SerieAno; ult: number }[]; anoUlt: number; totalUlt: number; extraido: string | null } | null> {
+  const rec = await query<Record<string, unknown>>(`SELECT ano, item, valor FROM receitas_detalhe_sc WHERE cod_ibge=$1 AND item = ANY($2) ORDER BY ano`, [cod, ["FPM", "FUNDEB", "ICMS", "IPVA"]]).catch(() => []);
+  const sus = await query<Record<string, unknown>>(`SELECT ano, sum(vl_total) valor FROM fns_repasse_sc WHERE cod_ibge=$1 GROUP BY ano ORDER BY ano`, [cod]).catch(() => []);
+  if (!rec.length && !sus.length) return null;
+  const DEF: { nome: string; item: string; cor: string; fonte: string }[] = [
+    { nome: "FPM", item: "FPM", cor: "#2563eb", fonte: "STN — Fundo de Participação dos Municípios" },
+    { nome: "FUNDEB", item: "FUNDEB", cor: "#7c3aed", fonte: "FNDE — educação" },
+    { nome: "ICMS (cota-parte)", item: "ICMS", cor: "#059669", fonte: "Estado — 25% do ICMS" },
+    { nome: "IPVA (cota-parte)", item: "IPVA", cor: "#f59e0b", fonte: "Estado — 50% do IPVA" },
+  ];
+  const transferencias: { nome: string; cor: string; fonte: string; serie: SerieAno; ult: number }[] = [];
+  for (const d of DEF) { const s: SerieAno = rec.filter((r) => String(r.item) === d.item && num(r.valor) > 0).map((r) => ({ ano: num(r.ano), valor: num(r.valor) })).sort((a, b) => a.ano - b.ano); if (s.length) transferencias.push({ nome: d.nome, cor: d.cor, fonte: d.fonte, serie: s, ult: s[s.length - 1].valor }); }
+  const susS: SerieAno = sus.filter((r) => num(r.valor) > 0).map((r) => ({ ano: num(r.ano), valor: num(r.valor) })).sort((a, b) => a.ano - b.ano);
+  if (susS.length) transferencias.push({ nome: "SUS (fundo-a-fundo)", cor: "#e11d48", fonte: "FNS — saúde", serie: susS, ult: susS[susS.length - 1].valor });
+  if (!transferencias.length) return null;
+  // janela COMUM e completa: usa o intervalo das transferências constitucionais (SICONFI, anos fechados); exclui ano parcial do SUS
+  const recAnos = rec.map((r) => num(r.ano));
+  const anoMax = recAnos.length ? Math.max(...recAnos) : Math.max(...susS.map((s) => s.ano)) - 1;
+  const anoMin = anoMax - 4;
+  for (const t of transferencias) { t.serie = t.serie.filter((s) => s.ano >= anoMin && s.ano <= anoMax); t.ult = t.serie[t.serie.length - 1]?.valor ?? 0; }
+  const clip = transferencias.filter((t) => t.serie.length);
+  if (!clip.length) return null;
+  const anoUlt = anoMax;
+  const totalUlt = clip.reduce((sum, t) => sum + (t.serie.find((s) => s.ano === anoUlt)?.valor ?? 0), 0);
+  return { transferencias: clip.sort((a, b) => b.ult - a.ult), anoUlt, totalUlt, extraido: null };
+}
+
+// Decomposição da receita por ORIGEM — Própria (tributos municipais + patrimonial) × Transferências — com série histórica. Fonte: SICONFI (via receitas_detalhe_sc).
+// RCL (total), FPE e ITCD (estaduais) EXCLUÍDOS. É a autonomia fiscal — insumo de política pública.
+const RECEITA_PROPRIA = ["ISS", "IPTU", "ITBI", "IRRF", "ITR", "Rend. Aplicação"];
+const RECEITA_TRANSFER = ["FPM", "FUNDEB", "ICMS", "IPVA", "IPI-Exportação"];
+export async function getReceitaComposicaoSC(cod: string): Promise<{ anoUlt: number; propria: number; transfer: number; autonomiaPct: number; itensPropria: { item: string; valor: number; pct: number }[]; itensTransfer: { item: string; valor: number; pct: number }[]; serie: { ano: number; propriaPct: number; transferPct: number; propria: number; transfer: number }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, item, valor FROM receitas_detalhe_sc WHERE cod_ibge=$1 AND item = ANY($2) ORDER BY ano`, [cod, [...RECEITA_PROPRIA, ...RECEITA_TRANSFER]]).catch(() => []);
+  if (!rows.length) return null;
+  const anoUlt = Math.max(...rows.map((r) => num(r.ano)));
+  const porAno = new Map<number, { propria: number; transfer: number }>();
+  for (const r of rows) { const a = num(r.ano); const v = num(r.valor); const prop = RECEITA_PROPRIA.includes(String(r.item)); if (!porAno.has(a)) porAno.set(a, { propria: 0, transfer: 0 }); const o = porAno.get(a)!; if (prop) o.propria += v; else o.transfer += v; }
+  const serie = [...porAno.entries()].map(([ano, o]) => { const t = o.propria + o.transfer || 1; return { ano, propria: o.propria, transfer: o.transfer, propriaPct: Math.round((o.propria / t) * 1000) / 10, transferPct: Math.round((o.transfer / t) * 1000) / 10 }; }).sort((a, b) => a.ano - b.ano);
+  const ult = porAno.get(anoUlt) || { propria: 0, transfer: 0 };
+  const totUlt = ult.propria + ult.transfer || 1;
+  const grp = (lista: string[], tot: number) => lista.map((item) => ({ item, valor: num(rows.find((r) => String(r.item) === item && num(r.ano) === anoUlt)?.valor) })).filter((x) => x.valor > 0).map((x) => ({ ...x, pct: Math.round((x.valor / tot) * 1000) / 10 })).sort((a, b) => b.valor - a.valor);
+  return { anoUlt, propria: ult.propria, transfer: ult.transfer, autonomiaPct: Math.round((ult.propria / totUlt) * 1000) / 10, itensPropria: grp(RECEITA_PROPRIA, totUlt), itensTransfer: grp(RECEITA_TRANSFER, totUlt), serie, extraido: null };
+}
+
 // Produção MAC (Média e Alta Complexidade) — série anual SIH (internações) + SIA (ambulatorial)
 export type MacProducaoSC = { ano: number; internacoes: number; sihValor: number; siaQtd: number; siaValor: number }[];
 export async function getMacProducaoSC(cod: string): Promise<MacProducaoSC> {
@@ -3104,10 +3452,29 @@ export async function getIdhmSC(cod: string): Promise<{ idhm: number; renda: num
 }
 
 // PIB municipal (preços correntes) + PIB per capita + posição no estado. Fonte: IBGE tabela 5938.
-export async function getPibMunicipalSC(cod: string): Promise<{ pib: number; pibPerCapita: number | null; ano: string; posicaoUf: number; totalMunis: number; extraido: string | null } | null> {
-  const r = (await query<Record<string, unknown>>(`SELECT ano, pib, pib_per_capita, atualizado, (SELECT count(*) FROM pib_municipal_sc) tot, (SELECT count(*) FROM pib_municipal_sc b WHERE b.pib > a.pib) acima FROM pib_municipal_sc a WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
+const SETORES_PIB: { key: string; nome: string; cor: string }[] = [
+  { key: "agro", nome: "Agropecuária", cor: "#65a30d" }, { key: "ind", nome: "Indústria", cor: "#0891b2" },
+  { key: "serv", nome: "Serviços", cor: "#7c3aed" }, { key: "adm", nome: "Administração pública", cor: "#64748b" },
+  { key: "imp", nome: "Impostos", cor: "#f59e0b" },
+];
+type CompAno = { ano: string; agro: number; ind: number; serv: number; adm: number; imp: number };
+export async function getPibMunicipalSC(cod: string): Promise<{ pib: number; pibPerCapita: number | null; ano: string; posicaoUf: number; totalMunis: number; serie: SerieAno; crescimento: number | null; compAno: string; componentes: { nome: string; cor: string; valor: number; pct: number }[]; predominante: string; compHist: { ano: string; setores: { nome: string; cor: string; pct: number }[] }[]; extraido: string | null } | null> {
+  const r = (await query<Record<string, unknown>>(`SELECT ano, pib, pib_per_capita, serie, componentes_serie, atualizado, (SELECT count(*) FROM pib_municipal_sc) tot, (SELECT count(*) FROM pib_municipal_sc b WHERE b.pib > a.pib) acima FROM pib_municipal_sc a WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
   if (!r || !num(r.pib)) return null;
-  return { pib: num(r.pib), pibPerCapita: r.pib_per_capita != null ? num(r.pib_per_capita) : null, ano: String(r.ano || ""), posicaoUf: num(r.acima) + 1, totalMunis: num(r.tot), extraido: dExtr(r.atualizado) };
+  const arr = (typeof r.serie === "string" ? JSON.parse(r.serie) : r.serie) as { ano: string; pib: number }[] | null;
+  const serie: SerieAno = (arr || []).map((x) => ({ ano: Number(x.ano), valor: num(x.pib) }));
+  const prim = serie[0], ultS = serie[serie.length - 1];
+  const crescimento = prim && ultS && prim.valor > 0 ? Math.round(((ultS.valor / prim.valor) - 1) * 1000) / 10 : null;
+  // decomposição setorial (VAB por setor + impostos), série histórica
+  const cs = (typeof r.componentes_serie === "string" ? JSON.parse(r.componentes_serie) : r.componentes_serie) as CompAno[] | null;
+  const csArr = cs || [];
+  const val = (o: CompAno, k: string) => num((o as unknown as Record<string, unknown>)[k]);
+  const ult = csArr[csArr.length - 1];
+  const totUlt = ult ? SETORES_PIB.reduce((s, x) => s + val(ult, x.key), 0) : 0;
+  const componentes = ult && totUlt > 0 ? SETORES_PIB.map((x) => ({ nome: x.nome, cor: x.cor, valor: val(ult, x.key), pct: Math.round((val(ult, x.key) / totUlt) * 1000) / 10 })).sort((a, b) => b.valor - a.valor) : [];
+  const predominante = componentes[0]?.nome || "";
+  const compHist = csArr.map((o) => { const t = SETORES_PIB.reduce((s, x) => s + val(o, x.key), 0) || 1; return { ano: o.ano, setores: SETORES_PIB.map((x) => ({ nome: x.nome, cor: x.cor, pct: Math.round((val(o, x.key) / t) * 1000) / 10 })) }; });
+  return { pib: num(r.pib), pibPerCapita: r.pib_per_capita != null ? num(r.pib_per_capita) : null, ano: String(r.ano || ""), posicaoUf: num(r.acima) + 1, totalMunis: num(r.tot), serie, crescimento, compAno: ult?.ano || "", componentes, predominante, compHist, extraido: dExtr(r.atualizado) };
 }
 
 // IBGE Censo 2022 — população por faixa etária (pirâmide) + indicadores (idosos, dependência, envelhecimento). Fonte: IBGE tabela 9514.
@@ -3170,14 +3537,14 @@ export async function getSetoresSC(cod: string): Promise<{ setores: number; bair
 }
 
 // Malha (polígonos) dos setores censitários do município → GeoJSON para o mapa choropleth intraurbano. Fonte: IBGE (GPKG malha com atributos).
-export async function getSetoresGeoSC(cod: string): Promise<{ geojson: unknown; maxDens: number; centro: [number, number] } | null> {
+export async function getSetoresGeoSC(cod: string): Promise<{ geojson: unknown; maxDens: number; maxIdosos: number; maxCriancas: number; centro: [number, number] } | null> {
   const r = (await query<Record<string, unknown>>(`SELECT geojson FROM setores_geo_sc WHERE cod_ibge=$1`, [cod]).catch(() => []))[0];
   if (!r || !r.geojson) return null;
-  const fc = (typeof r.geojson === "string" ? JSON.parse(r.geojson) : r.geojson) as { features: { properties: { densPop: number }; geometry: { coordinates: unknown } }[] };
-  let maxDens = 1, minX = 180, maxX = -180, minY = 90, maxY = -90;
+  const fc = (typeof r.geojson === "string" ? JSON.parse(r.geojson) : r.geojson) as { features: { properties: { densPop: number; pctIdosos?: number; pctCriancas?: number }; geometry: { coordinates: unknown } }[] };
+  let maxDens = 1, maxIdosos = 1, maxCriancas = 1, minX = 180, maxX = -180, minY = 90, maxY = -90;
   const scan = (c: unknown): void => { if (typeof c === "number") return; if (Array.isArray(c) && typeof c[0] === "number") { const [x, y] = c as number[]; if (x < minX) minX = x; if (x > maxX) maxX = x; if (y < minY) minY = y; if (y > maxY) maxY = y; return; } if (Array.isArray(c)) c.forEach(scan); };
-  for (const f of fc.features) { if (f.properties.densPop > maxDens) maxDens = f.properties.densPop; scan(f.geometry.coordinates); }
-  return { geojson: fc, maxDens, centro: [(minX + maxX) / 2, (minY + maxY) / 2] };
+  for (const f of fc.features) { if (f.properties.densPop > maxDens) maxDens = f.properties.densPop; if ((f.properties.pctIdosos ?? 0) > maxIdosos) maxIdosos = f.properties.pctIdosos ?? 0; if ((f.properties.pctCriancas ?? 0) > maxCriancas) maxCriancas = f.properties.pctCriancas ?? 0; scan(f.geometry.coordinates); }
+  return { geojson: fc, maxDens, maxIdosos, maxCriancas, centro: [(minX + maxX) / 2, (minY + maxY) / 2] };
 }
 
 // IBGE Censo 2022 — taxa de alfabetização (15+) por município. Fonte: IBGE tabela 9543.
