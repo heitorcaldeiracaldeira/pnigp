@@ -1,6 +1,6 @@
 // Painéis das novas fontes (eixos econômico/ambiental/social/saúde). Server components, compactos.
 // Padrão: dado + série + carimbo de origem COM data de extração + CSV. (atende à diretriz de proveniência + exportação.)
-import type { getBndesSC, getCfemSC, getAnpSC, getQueimadasSC, getBolsaAtletaSC, getVitaisSC, getAnsCoberturaSC, getEquipamentosEsporteSC, getCagedSC, getRaisSC, getCasamentoEmpregoSC, getProdesSC, getDesastresSC, getSinisaSC, getSinanDengueSC, getAneelGdSC, getAnatelBlSC, getFrotaSC, getIbamaAutosSC, getSinespSC, getIncraAssentamentosSC, getPronafSC, getIcmbioUcSC, getAnaOutorgasSC, getIbgeProducaoSC, getArbovirosesSC, getDatatranSC, getAnpVendasSC, getCapagSC, getRfbArrecadacaoSC, getSimSC, getSinascSC, getSihSC, getIgdmSC, getIbamaEmbargosSC, getQuilombosSC, getSiaProducaoSC, getMedicamentosSC, getSinanAgravosSC, getProfissionaisSaudeSC, getApacSC, getRaasSaudeMentalSC, getCoberturaVacinalSC, getSisaguaSC, getMortalidadeInfantilSC, getFarmaciaPopularSC, getFinanciamentoApsSC, getCoberturaApsSC, getProducaoApsSC, getIndicadoresApsSC, getDinheiroMesaApsSC, getQualidadeIndicadoresApsSC, getVinculoApsSC, getSuasSaldoSC, getPddeSaldoSC, getPnaeAgriSC, getBarragensSC, getPaaSC, getLpgSC, getSalicSC, getNovoPacSC, getCensoCorRacaSC, getPopulacaoFaixaSC, getPibMunicipalSC, getIdhmSC, getCemadenSC, getDomiciliosSC, getAlfabetizacaoSC, getSetoresSC, getMuseusSC, getReceitaComposicaoSC, getDespesaFuncaoSerieSC, getTransferenciasSerieSC, getFolhaSerieSC, getInvestimentoSerieSC, getDespesaNaturezaSerieSC, getRankingTesouroSC, getRankingDetalheSC, getEscolaTurmasSC, getEtiDiagnosticoSC, getEvasaoEscolarSC, getFundebGanhoEtiSC, getEscolasEtiSC, getDiagnosticoEducacaoPneSC, getValorizacaoMagisterioSC, getEducacaoTrajetoriaSC, getTransferenciasCguSC } from "@/lib/queries";
+import type { getBndesSC, getCfemSC, getAnpSC, getQueimadasSC, getBolsaAtletaSC, getVitaisSC, getAnsCoberturaSC, getEquipamentosEsporteSC, getCagedSC, getRaisSC, getCasamentoEmpregoSC, getProdesSC, getDesastresSC, getSinisaSC, getSinanDengueSC, getAneelGdSC, getAnatelBlSC, getFrotaSC, getIbamaAutosSC, getSinespSC, getIncraAssentamentosSC, getPronafSC, getIcmbioUcSC, getAnaOutorgasSC, getIbgeProducaoSC, getArbovirosesSC, getDatatranSC, getAnpVendasSC, getCapagSC, getRfbArrecadacaoSC, getSimSC, getSinascSC, getSihSC, getIgdmSC, getIbamaEmbargosSC, getQuilombosSC, getSiaProducaoSC, getMedicamentosSC, getSinanAgravosSC, getProfissionaisSaudeSC, getApacSC, getRaasSaudeMentalSC, getCoberturaVacinalSC, getSisaguaSC, getMortalidadeInfantilSC, getFarmaciaPopularSC, getFinanciamentoApsSC, getCoberturaApsSC, getProducaoApsSC, getIndicadoresApsSC, getDinheiroMesaApsSC, getQualidadeIndicadoresApsSC, getVinculoApsSC, getSuasSaldoSC, getPddeSaldoSC, getPnaeAgriSC, getBarragensSC, getPaaSC, getLpgSC, getSalicSC, getNovoPacSC, getCensoCorRacaSC, getPopulacaoFaixaSC, getPibMunicipalSC, getIdhmSC, getCemadenSC, getDomiciliosSC, getAlfabetizacaoSC, getSetoresSC, getMuseusSC, getReceitaComposicaoSC, getDespesaFuncaoSerieSC, getTransferenciasSerieSC, getFolhaSerieSC, getInvestimentoSerieSC, getDespesaNaturezaSerieSC, getRankingTesouroSC, getRankingDetalheSC, getEscolaTurmasSC, getEtiDiagnosticoSC, getEvasaoEscolarSC, getFundebGanhoEtiSC, getEscolasEtiSC, getDiagnosticoEducacaoPneSC, getValorizacaoMagisterioSC, getEducacaoTrajetoriaSC, getTransferenciasCguSC, getCaptacaoRelativaSC } from "@/lib/queries";
 import { PNE_ACOES, PRAZO_LABEL, LEVANTAMENTO_INTERNO } from "@/lib/pne-acoes";
 import { BaixarCsv } from "./baixar-csv";
 import MapaSetoresWrap from "./mapa-setores-wrap";
@@ -566,6 +566,29 @@ export function PmeRoteiroPanel({ temPme }: { temPme: boolean | null }) {
 
 const PRAZO_COR: Record<string, string> = { curto: "#dc2626", "médio": "#f59e0b", longo: "#2563eb", "contínuo": "#64748b" };
 
+const FUNC_AREA: Record<string, string> = { "Saúde": "saude", "Educação": "educacao", "Assistência social": "assistencia", "Urbanismo": "infraestrutura", "Habitação": "infraestrutura", "Saneamento básico": "infraestrutura", "Gestão ambiental": "infraestrutura", "Cultura": "cultura", "Segurança pública": "seguranca", "Desporto e lazer": "esporte" };
+const posCor = (p: string) => (p === "acima" ? "#059669" : p === "abaixo" ? "#dc2626" : "#f59e0b");
+
+export function CaptacaoRelativaPanel({ d, programas = [] }: { d: Un<ReturnType<typeof getCaptacaoRelativaSC>>; programas?: { area: string; nome: string; orgao: string }[] }) {
+  const COR = { acima: "#059669", "na média": "#f59e0b", abaixo: "#dc2626" }[d.posicao];
+  const LBL = { acima: "acima dos pares", "na média": "na média dos pares", abaixo: "abaixo dos pares" }[d.posicao];
+  const progsDe = (funcao: string) => { const a = FUNC_AREA[funcao]; return a ? programas.filter((p) => p.area === a) : []; };
+  return (
+    <Card icon={<Wallet className="h-4 w-4" />} titulo="Ponto cego da captação — você vs municípios de mesmo porte" cor="#0891b2"
+      csv={<BaixarCsv nome="captacao-relativa" label="CSV" linhas={[{ item: "Voluntárias captadas", valor: d.voluntarias }, { item: "Per capita (R$/hab)", valor: Math.round(d.perCapita) }, { item: "Mediana dos pares (R$/hab)", valor: Math.round(d.paresMediana) }, { item: "Dinheiro na mesa (estimado)", valor: Math.round(d.dinheiroNaMesa) }, ...d.gaps.map((g) => ({ item: "Lacuna: " + g.funcao, valor: Math.round(g.gap) }))] as unknown as Row[]} colunas={[{ chave: "item", rotulo: "Item" }, { chave: "valor", rotulo: "Valor (R$)" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Transferências voluntárias captadas ({d.ano})</div><div className="font-display text-2xl font-bold tabular-nums text-cyan-700">{brl(d.voluntarias)}</div><div className="text-[10px] text-slate-400">{brl(d.perCapita)}/hab · pares de {d.faixa}: {brl(d.paresMediana)}/hab</div></div>
+        <div className="rounded-lg px-3 py-1.5 text-center" style={{ background: COR + "1e" }}><div className="text-[10px] text-slate-500">posição</div><div className="text-sm font-bold" style={{ color: COR }}>{LBL}</div><div className="text-[10px] text-slate-400">percentil {d.percentil} de {d.nPares} pares</div></div>
+      </div>
+      {d.dinheiroNaMesa > 0 && <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2"><span className="text-[12px] font-semibold text-red-700">💰 ~{brl(d.dinheiroNaMesa)} na mesa</span><span className="text-[11px] text-slate-600"> — é quanto a mais o município receberia se captasse voluntárias no ritmo (por habitante) dos pares de mesmo porte.</span></div>}
+      {d.areas.length > 0 && <div className="mt-3"><div className="text-[11px] font-semibold text-slate-600">Benchmark por área — saúde e educação</div><div className="mt-1 grid gap-1 sm:grid-cols-2">{d.areas.map((a) => (<div key={a.area} className="rounded border border-slate-100 px-2 py-1 text-[11px]"><b className="text-slate-700">{a.area}:</b> {brl(a.munPc)}/hab <span className="text-slate-400">vs pares {brl(a.medPc)}/hab</span> <b style={{ color: posCor(a.posicao) }}>({a.posicao})</b></div>))}</div></div>}
+      {d.gaps.length > 0 && <div className="mt-3"><div className="text-[11px] font-semibold text-slate-600">Onde os pares captam mais → programas federais abertos na área</div><div className="mt-1 space-y-1.5">{d.gaps.map((g) => { const ps = progsDe(g.funcao); return (<div key={g.funcao} className="rounded-lg border border-slate-100 bg-slate-50/40 px-2.5 py-1.5"><div className="flex items-center justify-between text-[11px]"><span className="font-semibold text-slate-700">{g.funcao}</span><span className="font-semibold tabular-nums text-red-600">~{brl(g.gap)} de lacuna</span></div>{ps.length > 0 ? <div className="mt-0.5 text-[10px] text-cyan-700">💡 {ps.length} programa(s) federal(is) nesta área: {ps.slice(0, 3).map((p) => p.nome).join(" · ")}</div> : <div className="mt-0.5 text-[10px] text-slate-400">sem programa curado nesta área no catálogo (ver Radar de Captação abaixo)</div>}</div>); })}</div></div>}
+      <p className="mt-2 text-[11px] text-slate-500">Compara só as transferências <b>voluntárias/legais</b> (convênios, emendas, fundo a fundo) — a parte que depende de <b>projetos e articulação</b>; as constitucionais (FPM/FUNDEB) são automáticas e ficam de fora. É um <b>benchmark de porte</b>, não garantia: a lacuna indica onde municípios parecidos acessam recursos e vale investigar por quê.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>CGU — Portal da Transparência</b> ({d.ano}, favorecido = Administração Pública Municipal) · pares = municípios da mesma faixa populacional (mediana per capita).</Fonte>
+    </Card>
+  );
+}
+
 export function TransferenciasCguPanel({ d }: { d: Un<ReturnType<typeof getTransferenciasCguSC>> }) {
   const mxO = Math.max(...d.porOrgao.map((o) => o.valor), 1);
   const mxF = Math.max(...d.porFuncao.map((f) => f.valor), 1);
@@ -576,7 +599,27 @@ export function TransferenciasCguPanel({ d }: { d: Un<ReturnType<typeof getTrans
       <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
         {d.porTipo.map((t) => (<span key={t.tipo} className="rounded-lg border border-slate-200 px-2.5 py-1"><span className="text-slate-500">{t.tipo === "Constitucionais e Royalties" ? "Constitucionais" : "Voluntárias/legais"}: </span><b className="text-slate-700">{brl(t.valor)}</b></span>))}
       </div>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+      {d.serie.length >= 2 && (() => { const mx = Math.max(...d.serie.map((s) => s.total), 1); return (
+        <div className="mt-3">
+          <div className="text-[11px] font-semibold text-slate-600">Série anual (anos completos)</div>
+          <div className="mt-1 space-y-1">
+            {d.serie.map((s) => (
+              <div key={s.ano} className="flex items-center gap-2 text-[11px]">
+                <span className="w-8 shrink-0 text-slate-500">{s.ano}</span>
+                <div className="flex h-4 flex-1 overflow-hidden rounded bg-slate-100">
+                  <div className="h-4 bg-cyan-600" style={{ width: `${(s.constitucionais / mx) * 100}%` }} title="Constitucionais" />
+                  <div className="h-4 bg-teal-400" style={{ width: `${(s.voluntarias / mx) * 100}%` }} title="Voluntárias/legais" />
+                </div>
+                <span className="w-16 shrink-0 text-right font-semibold tabular-nums text-slate-700">{brl(s.total)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-1 flex gap-3 text-[9px] text-slate-400"><span><span className="mr-0.5 inline-block h-2 w-2 rounded-sm bg-cyan-600" /> constitucionais</span><span><span className="mr-0.5 inline-block h-2 w-2 rounded-sm bg-teal-400" /> voluntárias/legais</span></div>
+        </div>
+      ); })()}
+      {d.parcial && <div className="mt-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-800"><b>{d.parcial.ano} (parcial, {d.parcial.meses} {d.parcial.meses === 1 ? "mês" : "meses"}):</b> {brl(d.parcial.total)} recebidos até agora — ainda não comparável a um ano cheio.</div>}
+      <div className="mt-3 text-[11px] font-semibold text-slate-500">Detalhe de {d.ano}</div>
+      <div className="mt-1 grid gap-3 sm:grid-cols-2">
         <div>
           <div className="text-[11px] font-semibold text-slate-600">Por órgão (de onde vem)</div>
           <div className="mt-1 space-y-1">{d.porOrgao.map((o) => (<div key={o.orgao} className="text-[11px]"><div className="flex justify-between"><span className="truncate text-slate-600" title={o.orgao}>{o.orgao}</span><span className="ml-2 shrink-0 font-semibold tabular-nums text-slate-700">{brl(o.valor)}</span></div><div className="h-1 rounded bg-slate-100"><div className="h-1 rounded bg-cyan-500" style={{ width: `${(o.valor / mxO) * 100}%` }} /></div></div>))}</div>

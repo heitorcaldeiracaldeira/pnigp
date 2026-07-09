@@ -1732,23 +1732,72 @@ export async function getIdebSC(cod: string): Promise<IdebSC> {
   return etapas.length ? { etapas } : null;
 }
 
+// PONTO CEGO da captação: o município capta transferências VOLUNTÁRIAS (a parte captável) acima/abaixo dos pares de mesmo porte?
+// "Dinheiro na mesa" = quanto a mais receberia se captasse na mediana dos pares. Fonte: transferencias_cgu_sc.
+export async function getCaptacaoRelativaSC(cod: string): Promise<{ ano: string; voluntarias: number; perCapita: number; paresMediana: number; posicao: "acima" | "na média" | "abaixo"; percentil: number; dinheiroNaMesa: number; faixa: string; nPares: number; gaps: { funcao: string; gap: number }[]; areas: { area: string; munPc: number; medPc: number; posicao: string; gap: number }[]; extraido: string | null } | null> {
+  const anoR = (await query<Record<string, unknown>>(`SELECT substring(ano_mes,1,4) ano FROM transferencias_cgu_sc GROUP BY 1 HAVING count(DISTINCT ano_mes)>=12 ORDER BY 1 DESC LIMIT 1`).catch(() => []))[0];
+  const ano = anoR ? String(anoR.ano) : null; if (!ano) return null;
+  const NC = "tipo_transferencia <> 'Constitucionais e Royalties'"; // só voluntárias/legais (captáveis)
+  const rows = await query<Record<string, unknown>>(`SELECT t.cod_ibge, e.populacao pop, sum(t.valor) vol FROM transferencias_cgu_sc t JOIN entes_sc e ON e.cod_ibge=t.cod_ibge WHERE substring(t.ano_mes,1,4)=$1 AND ${NC} AND e.tipo='M' AND e.populacao>0 GROUP BY 1,2`, [ano]).catch(() => []);
+  const alvo = rows.find((r) => r.cod_ibge === cod); if (!alvo || !num(alvo.pop)) return null;
+  const gk = _fk(num(alvo.pop));
+  const pares = rows.filter((r) => _fk(num(r.pop)) === gk);
+  const pc = (r: Record<string, unknown>) => num(r.vol) / num(r.pop);
+  const munPc = pc(alvo);
+  const paresPc = pares.map(pc);
+  const mediana = _median(paresPc);
+  const percentil = paresPc.length ? Math.round((paresPc.filter((v) => v <= munPc).length / paresPc.length) * 100) : 0;
+  const posicao = munPc >= mediana * 1.1 ? "acima" : munPc <= mediana * 0.9 ? "abaixo" : "na média";
+  const dinheiroNaMesa = Math.max(0, mediana - munPc) * num(alvo.pop);
+  // por função: onde os pares captam mais (alvos de ação)
+  const fRows = await query<Record<string, unknown>>(`SELECT t.cod_ibge, e.populacao pop, t.funcao, sum(t.valor) v FROM transferencias_cgu_sc t JOIN entes_sc e ON e.cod_ibge=t.cod_ibge WHERE substring(t.ano_mes,1,4)=$1 AND ${NC} AND e.tipo='M' AND e.populacao>0 AND t.funcao NOT IN ('Sem informação','—') GROUP BY 1,2,3`, [ano]).catch(() => []);
+  const paresCods = new Set(pares.map((r) => String(r.cod_ibge)));
+  const funcs = [...new Set(fRows.map((r) => String(r.funcao)))];
+  const gaps = funcs.map((f) => {
+    const fr = fRows.filter((r) => String(r.funcao) === f);
+    const mun = fr.find((r) => r.cod_ibge === cod); const munPcF = mun ? num(mun.v) / num(alvo.pop) : 0;
+    const medF = _median(fr.filter((r) => paresCods.has(String(r.cod_ibge))).map((r) => num(r.v) / num(r.pop)));
+    return { funcao: f, gap: Math.max(0, medF - munPcF) * num(alvo.pop) };
+  }).filter((g) => g.gap > 0).sort((a, b) => b.gap - a.gap).slice(0, 4);
+  // benchmark dedicado por ÁREA (Saúde e Educação) — sempre exibido, mesmo sem lacuna
+  const areaCalc = (fnome: string) => {
+    const fr = fRows.filter((r) => String(r.funcao) === fnome);
+    const mun = fr.find((r) => r.cod_ibge === cod); const mp = mun ? num(mun.v) / num(alvo.pop) : 0;
+    const medF = _median(fr.filter((r) => paresCods.has(String(r.cod_ibge))).map((r) => num(r.v) / num(r.pop)));
+    return { area: fnome, munPc: mp, medPc: medF, posicao: mp >= medF * 1.1 ? "acima" : mp <= medF * 0.9 ? "abaixo" : "na média", gap: Math.max(0, medF - mp) * num(alvo.pop) };
+  };
+  const areas = ["Saúde", "Educação"].map(areaCalc);
+  return { ano, voluntarias: num(alvo.vol), perCapita: munPc, paresMediana: mediana, posicao, percentil, dinheiroNaMesa, faixa: _faixa(num(alvo.pop)), nPares: pares.length, gaps, areas, extraido: null };
+}
+
 // Transferências federais recebidas pelo GOVERNO MUNICIPAL (CGU/Portal da Transparência, download em massa). Só administração pública municipal.
-export async function getTransferenciasCguSC(cod: string): Promise<{ total: number; ano: string; porTipo: { tipo: string; valor: number }[]; porOrgao: { orgao: string; valor: number }[]; porFuncao: { funcao: string; valor: number }[]; extraido: string | null } | null> {
+export async function getTransferenciasCguSC(cod: string): Promise<{ ano: string; total: number; serie: { ano: string; total: number; constitucionais: number; voluntarias: number }[]; parcial: { ano: string; meses: number; total: number } | null; porTipo: { tipo: string; valor: number }[]; porOrgao: { orgao: string; valor: number }[]; porFuncao: { funcao: string; valor: number }[]; extraido: string | null } | null> {
   const rows = await query<Record<string, unknown>>(`SELECT tipo_transferencia, orgao, funcao, valor, ano_mes, atualizado FROM transferencias_cgu_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
   if (!rows.length) return null;
-  const total = rows.reduce((s, r) => s + num(r.valor), 0);
-  const ano = String(rows[0].ano_mes || "").slice(0, 4);
-  const grp = (campo: string, relabel?: (v: string) => string) => {
+  const anoDe = (r: Record<string, unknown>) => String(r.ano_mes || "").slice(0, 4);
+  // série anual (só anos com 12 meses completos entram como comparáveis; aqui somamos o que há)
+  const mesesPorAno: Record<string, Set<string>> = {};
+  for (const r of rows) { (mesesPorAno[anoDe(r)] ||= new Set()).add(String(r.ano_mes)); }
+  const anosCompletos = Object.entries(mesesPorAno).filter(([, s]) => s.size >= 12).map(([a]) => a);
+  const serieMap: Record<string, { total: number; constitucionais: number; voluntarias: number }> = {};
+  for (const r of rows) { const a = anoDe(r); if (!anosCompletos.includes(a)) continue; const s = (serieMap[a] ||= { total: 0, constitucionais: 0, voluntarias: 0 }); const v = num(r.valor); s.total += v; if (/constituc/i.test(String(r.tipo_transferencia))) s.constitucionais += v; else s.voluntarias += v; }
+  const serie = Object.entries(serieMap).map(([ano, v]) => ({ ano, ...v })).sort((a, b) => a.ano.localeCompare(b.ano));
+  // ano corrente PARCIAL (mais recente com < 12 meses) — mostrado à parte, sem entrar na comparação anual
+  const parciais = Object.entries(mesesPorAno).filter(([, s]) => s.size < 12 && s.size > 0).map(([a, s]) => ({ ano: a, meses: s.size })).sort((a, b) => b.ano.localeCompare(a.ano));
+  const parcial = parciais.length ? { ...parciais[0], total: rows.filter((r) => anoDe(r) === parciais[0].ano).reduce((s, r) => s + num(r.valor), 0) } : null;
+  const ano = anosCompletos.sort().slice(-1)[0] || anoDe(rows[0]);
+  const rowsAno = rows.filter((r) => anoDe(r) === ano);
+  const grp = (campo: string, src: Record<string, unknown>[], relabel?: (v: string) => string) => {
     const m: Record<string, number> = {};
-    for (const r of rows) { let k = String(r[campo] || "—"); if (relabel) k = relabel(k); m[k] = (m[k] || 0) + num(r.valor); }
+    for (const r of src) { let k = String(r[campo] || "—"); if (relabel) k = relabel(k); m[k] = (m[k] || 0) + num(r.valor); }
     return Object.entries(m).map(([k, valor]) => ({ k, valor })).sort((a, b) => b.valor - a.valor);
   };
   const orgaoLbl = (o: string) => /sem informa/i.test(o) ? "Constitucionais (FPM/FUNDEB/cota-partes)" : o.replace(/ - Unidades com vínculo direto/i, "");
   return {
-    total, ano,
-    porTipo: grp("tipo_transferencia").map((x) => ({ tipo: x.k, valor: x.valor })),
-    porOrgao: grp("orgao", orgaoLbl).slice(0, 8).map((x) => ({ orgao: x.k, valor: x.valor })),
-    porFuncao: grp("funcao").filter((x) => x.k !== "—" && x.k !== "Sem informação").slice(0, 8).map((x) => ({ funcao: x.k, valor: x.valor })),
+    ano, total: rowsAno.reduce((s, r) => s + num(r.valor), 0), serie, parcial,
+    porTipo: grp("tipo_transferencia", rowsAno).map((x) => ({ tipo: x.k, valor: x.valor })),
+    porOrgao: grp("orgao", rowsAno, orgaoLbl).slice(0, 8).map((x) => ({ orgao: x.k, valor: x.valor })),
+    porFuncao: grp("funcao", rowsAno).filter((x) => x.k !== "—" && x.k !== "Sem informação").slice(0, 8).map((x) => ({ funcao: x.k, valor: x.valor })),
     extraido: dExtr(rows[0].atualizado),
   };
 }
