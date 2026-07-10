@@ -1732,6 +1732,28 @@ export async function getIdebSC(cod: string): Promise<IdebSC> {
   return etapas.length ? { etapas } : null;
 }
 
+// Obras do município (ObrasGov) — detalhe por obra: resumo + por situação + as maiores. Fonte: obras_sc.
+export async function getObrasSC(cod: string): Promise<{ total: number; valorTotal: number; porSituacao: { situacao: string; n: number; valor: number }[]; porOrigem: { origem: string; n: number; valor: number }[]; publico: { n: number; valor: number }; privado: { n: number; valor: number }; maiores: { nome: string; situacao: string; especie: string; valor: number; origem: string; vinculo: string; prazo: string | null }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT nome, situacao, especie, valor, origem, vinculo, data_fim, atualizado FROM obras_sc WHERE cod_ibge=$1`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const valorTotal = rows.reduce((s, r) => s + num(r.valor), 0);
+  const sm: Record<string, { n: number; valor: number }> = {};
+  for (const r of rows) { const k = String(r.situacao || "—"); (sm[k] ||= { n: 0, valor: 0 }); sm[k].n++; sm[k].valor += num(r.valor); }
+  const porSituacao = Object.entries(sm).map(([situacao, v]) => ({ situacao, ...v })).sort((a, b) => b.n - a.n);
+  // contadores por ORIGEM do recurso (uma obra pode ter mais de uma origem)
+  const ESF = ["Federal", "Estadual", "Municipal", "Privado"];
+  const om: Record<string, { n: number; valor: number }> = {}; for (const e of ESF) om[e] = { n: 0, valor: 0 };
+  const pub = { n: 0, valor: 0 }, priv = { n: 0, valor: 0 };
+  for (const r of rows) { const origs = String(r.origem || "").split("/").filter(Boolean); const v = num(r.valor);
+    for (const o of origs) if (om[o]) { om[o].n++; om[o].valor += v; }
+    if (origs.some((o) => o !== "Privado")) { pub.n++; pub.valor += v; }
+    if (origs.includes("Privado")) { priv.n++; priv.valor += v; }
+  }
+  const porOrigem = ESF.map((e) => ({ origem: e, ...om[e] })).filter((x) => x.n > 0);
+  const maiores = [...rows].sort((a, b) => num(b.valor) - num(a.valor)).slice(0, 10).map((r) => ({ nome: String(r.nome || ""), situacao: String(r.situacao || "—"), especie: String(r.especie || ""), valor: num(r.valor), origem: String(r.origem || ""), vinculo: String(r.vinculo || ""), prazo: r.data_fim ? String(r.data_fim).slice(0, 4) : null }));
+  return { total: rows.length, valorTotal, porSituacao, porOrigem, publico: pub, privado: priv, maiores, extraido: dExtr(rows[0].atualizado) };
+}
+
 // PONTO CEGO da captação: o município capta transferências VOLUNTÁRIAS (a parte captável) acima/abaixo dos pares de mesmo porte?
 // "Dinheiro na mesa" = quanto a mais receberia se captasse na mediana dos pares. Fonte: transferencias_cgu_sc.
 export async function getCaptacaoRelativaSC(cod: string): Promise<{ ano: string; voluntarias: number; perCapita: number; paresMediana: number; posicao: "acima" | "na média" | "abaixo"; percentil: number; dinheiroNaMesa: number; faixa: string; nPares: number; gaps: { funcao: string; gap: number }[]; areas: { area: string; munPc: number; medPc: number; posicao: string; gap: number }[]; extraido: string | null } | null> {
@@ -1800,6 +1822,64 @@ export async function getTransferenciasCguSC(cod: string): Promise<{ ano: string
     porFuncao: grp("funcao", rowsAno).filter((x) => x.k !== "—" && x.k !== "Sem informação").slice(0, 8).map((x) => ({ funcao: x.k, valor: x.valor })),
     extraido: dExtr(rows[0].atualizado),
   };
+}
+
+// BANCO DE PREÇOS — busca por descrição sobre preços de referência (compras municipais SC + Banco de Preços em Saúde).
+export async function getBancoPrecosSC(q: string): Promise<{ item: string; unidade: string | null; mediana: number; faixaMin: number | null; faixaMax: number | null; n: number; nMunis: number | null; fonte: string; catmat: string | null; nacMediana: number | null; nacN: number | null; indicioPct: number | null; avulso: number | null; escala: number | null; escalaN: number | null; escalaEconomiaPct: number | null }[]> {
+  const termo = (q || "").trim(); if (termo.length < 2) return [];
+  const like = "%" + termo.replace(/\s+/g, "%") + "%";
+  const ref = await query<Record<string, unknown>>(`SELECT r.chave, r.unidade, r.mediana, r.p25, r.p75, r.n_itens, r.n_munis, r.catmat_pdm, r.catmat_cod FROM precos_referencia_sc r WHERE r.chave ILIKE $1 ORDER BY r.n_itens DESC LIMIT 12`, [like]).catch(() => []);
+  // referência nacional quebrada por forma de aquisição (avulso × escala) — Painel de Preços
+  const pdms = [...new Set(ref.map((r) => r.catmat_cod).filter((x) => x != null))];
+  const nacRows = pdms.length ? await query<Record<string, unknown>>(`SELECT codigo_pdm, unidade, forma, mediana, n_obs FROM precos_nacional_ref WHERE codigo_pdm = ANY($1)`, [pdms]).catch(() => []) : [];
+  const bps = await query<Record<string, unknown>>(`SELECT cod_catmat, descricao, mediana, media, minimo FROM bps_precos_ref WHERE descricao ILIKE $1 ORDER BY length(descricao) LIMIT 10`, [like]).catch(() => []);
+  const a = ref.map((r) => {
+    const med = num(r.mediana);
+    const nrs = nacRows.filter((n) => String(n.codigo_pdm) === String(r.catmat_cod) && String(n.unidade) === String(r.unidade));
+    const av = nrs.find((n) => n.forma === "avulso"); const es = nrs.find((n) => n.forma === "escala");
+    const avPrec = av ? num(av.mediana) : null; const esPrec = es ? num(es.mediana) : null;
+    // referência nacional p/ o indício = a forma avulsa (comparável ao preço unitário municipal); cai p/ escala se só houver ela
+    const nac = avPrec ?? esPrec; const nacN = av ? num(av.n_obs) : (es ? num(es.n_obs) : null);
+    const econRaw = avPrec && esPrec && avPrec > 0 ? Math.round((1 - esPrec / avPrec) * 1000) / 10 : null;
+    // guarda de plausibilidade: economia de escala crível fica ≤85%; unidades contínuas (grama/mililitro) têm
+    // lançamento avulso não confiável (produto inteiro lançado como 1g) → suprimimos o comparativo nesses casos
+    const contInstavel = ["grama", "mililitro"].includes(String(r.unidade || ""));
+    const escalaEconomiaPct = econRaw != null && !contInstavel && Math.abs(econRaw) <= 85 ? econRaw : null;
+    return { item: String(r.catmat_pdm || r.chave || ""), unidade: r.unidade ? String(r.unidade) : null, mediana: med, faixaMin: r.p25 != null ? num(r.p25) : null, faixaMax: r.p75 != null ? num(r.p75) : null, n: num(r.n_itens), nMunis: r.n_munis != null ? num(r.n_munis) : null, fonte: "Compras municipais (SC)", catmat: r.catmat_pdm ? String(r.catmat_pdm) : null, nacMediana: nac, nacN, indicioPct: nac && nac > 0 ? Math.round(((med / nac) - 1) * 1000) / 10 : null, avulso: avPrec, escala: esPrec, escalaN: es ? num(es.n_obs) : null, escalaEconomiaPct };
+  });
+  const b = bps.map((r) => ({ item: String(r.descricao || ""), unidade: null as string | null, mediana: num(r.mediana), faixaMin: r.minimo != null ? num(r.minimo) : null, faixaMax: r.media != null ? num(r.media) : null, n: 0, nMunis: null as number | null, fonte: "Banco de Preços em Saúde (BPS/Min. Saúde)", catmat: r.cod_catmat ? String(r.cod_catmat) : null, nacMediana: null as number | null, nacN: null as number | null, indicioPct: null as number | null, avulso: null as number | null, escala: null as number | null, escalaN: null as number | null, escalaEconomiaPct: null as number | null }));
+  return [...a, ...b].filter((x) => x.mediana > 0).slice(0, 20);
+}
+
+// Salário-Educação (cota municipal) + total FNDE, por município. Fonte: SICONFI DCA I-C (salario_educacao_sc).
+export async function getSalarioEducacaoSC(cod: string): Promise<{ ano: number; salarioEducacao: number | null; fndeTotal: number | null; pctFnde: number | null; serie: { ano: number; se: number | null; fnde: number | null }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, salario_educacao, fnde_total, atualizado FROM salario_educacao_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const serie = rows.map((r) => ({ ano: num(r.ano), se: r.salario_educacao != null ? num(r.salario_educacao) : null, fnde: r.fnde_total != null ? num(r.fnde_total) : null }));
+  const ult = serie[serie.length - 1];
+  const pctFnde = ult.se != null && ult.fnde ? Math.round((ult.se / ult.fnde) * 1000) / 10 : null;
+  return { ano: ult.ano, salarioEducacao: ult.se, fndeTotal: ult.fnde, pctFnde, serie, extraido: dExtr(rows[0].atualizado) };
+}
+
+// SAEB — proficiência em Português e Matemática (escala SAEB) por etapa, série + comparação com a mediana de SC. Fonte: saeb_sc.
+export async function getSaebSC(cod: string): Promise<{ ano: number; etapas: { etapa: string; label: string; rede: string; mat: number | null; port: number | null; matMedSC: number | null; portMedSC: number | null; serie: { ano: number; mat: number | null; port: number | null }[]; tend: string }[]; extraido: string | null } | null> {
+  const rows = await query<Record<string, unknown>>(`SELECT ano, etapa, rede, matematica, portugues, atualizado FROM saeb_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const anoMax = Math.max(...rows.map((r) => num(r.ano)));
+  const scRows = await query<Record<string, unknown>>(`SELECT etapa, matematica, portugues FROM saeb_sc WHERE ano=$1 AND cod_ibge LIKE '42%' AND rede IN ('Municipal','Pública')`, [anoMax]).catch(() => []);
+  const medOf = (et: string, disc: string) => { const v = _median(scRows.filter((r) => r.etapa === et && num(r[disc]) > 0).map((r) => num(r[disc]))); return v || null; };
+  const tend = (vals: (number | null)[]) => { const v = vals.filter((x): x is number => x != null); if (v.length < 2) return "sd"; const d = v[v.length - 1] - v[0]; return d > 1 ? "subiu" : d < -1 ? "caiu" : "estável"; };
+  const pref = ["Municipal", "Pública", "Estadual"]; const LBL: Record<string, string> = { AI: "Anos Iniciais (5º ano)", AF: "Anos Finais (9º ano)", EM: "Ensino Médio" };
+  const etapas = ["AI", "AF", "EM"].map((et) => {
+    const doEt = rows.filter((r) => r.etapa === et); if (!doEt.length) return null;
+    const rede = pref.find((p) => doEt.some((r) => r.rede === p)) || String(doEt[0].rede);
+    const serie = doEt.filter((r) => r.rede === rede).map((r) => ({ ano: num(r.ano), mat: num(r.matematica) || null, port: num(r.portugues) || null })).filter((x) => x.mat || x.port).sort((a, b) => a.ano - b.ano);
+    if (!serie.length) return null;
+    const at = serie[serie.length - 1];
+    return { etapa: et, label: LBL[et], rede, mat: at.mat, port: at.port, matMedSC: medOf(et, "matematica"), portMedSC: medOf(et, "portugues"), serie, tend: tend(serie.map((s) => s.port ?? s.mat)) };
+  }).filter(Boolean) as NonNullable<Awaited<ReturnType<typeof getSaebSC>>>["etapas"];
+  if (!etapas.length) return null;
+  return { ano: anoMax, etapas, extraido: dExtr(rows[0].atualizado) };
 }
 
 // Trajetória histórica das metas de educação — "estamos melhorando?" (IDEB + aplicação MDE). Fontes: ideb_sc, rreo_const_sc.
@@ -4284,17 +4364,17 @@ export async function getVariacaoInternaSC(cod: string): Promise<VariacaoInterna
 }
 
 // COMPRAS POR PREÇO UNITÁRIO — itens em que o município pagou acima da mediana de SC para o MESMO item (sobrepreço).
-export type SobreprecoItem = { descricao: string; unidade: string; ano: number; quantidade: number; unitPago: number; unitRef: number; acimaPct: number; economia: number; nMunisRef: number };
-export type SobreprecoSC = { totalEconomia: number; nItens: number; itens: SobreprecoItem[] } | null;
+export type SobreprecoItem = { descricao: string; unidade: string; ano: number; quantidade: number; unitPago: number; unitRef: number; acimaPct: number; economia: number; nMunisRef: number; cvRef: number | null; unitNac: number | null; acimaNacPct: number | null; nacN: number | null };
+export type SobreprecoSC = { totalEconomia: number; nItens: number; nComNacional: number; nAcimaNacional: number; itens: SobreprecoItem[] } | null;
 export async function getSobreprecoSC(cod: string): Promise<SobreprecoSC> {
   const [r, t] = await Promise.all([
-    query<Record<string, unknown>>(`SELECT descricao, unidade, ano, quantidade, unit_pago, unit_ref, acima_pct, economia, n_munis_ref FROM sobrepreco_compras_sc WHERE cod_ibge=$1 ORDER BY economia DESC LIMIT 30`, [cod]).catch(() => []),
-    query<Record<string, unknown>>(`SELECT count(*) n, sum(economia) e FROM sobrepreco_compras_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT descricao, unidade, ano, quantidade, unit_pago, unit_ref, acima_pct, economia, n_munis_ref, cv_ref, unit_nac, acima_nac_pct, nac_n FROM sobrepreco_compras_sc WHERE cod_ibge=$1 ORDER BY economia DESC LIMIT 30`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(`SELECT count(*) n, sum(economia) e, count(*) FILTER (WHERE unit_nac IS NOT NULL) cn, count(*) FILTER (WHERE acima_nac_pct > 0) an FROM sobrepreco_compras_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
   ]);
   if (!r.length) return null;
   return {
-    totalEconomia: num(t[0]?.e), nItens: num(t[0]?.n),
-    itens: r.map((x) => ({ descricao: String(x.descricao || ""), unidade: String(x.unidade || ""), ano: num(x.ano), quantidade: num(x.quantidade), unitPago: num(x.unit_pago), unitRef: num(x.unit_ref), acimaPct: num(x.acima_pct), economia: num(x.economia), nMunisRef: num(x.n_munis_ref) })),
+    totalEconomia: num(t[0]?.e), nItens: num(t[0]?.n), nComNacional: num(t[0]?.cn), nAcimaNacional: num(t[0]?.an),
+    itens: r.map((x) => ({ descricao: String(x.descricao || ""), unidade: String(x.unidade || ""), ano: num(x.ano), quantidade: num(x.quantidade), unitPago: num(x.unit_pago), unitRef: num(x.unit_ref), acimaPct: num(x.acima_pct), economia: num(x.economia), nMunisRef: num(x.n_munis_ref), cvRef: x.cv_ref != null ? num(x.cv_ref) : null, unitNac: x.unit_nac != null ? num(x.unit_nac) : null, acimaNacPct: x.acima_nac_pct != null ? num(x.acima_nac_pct) : null, nacN: x.nac_n != null ? num(x.nac_n) : null })),
   };
 }
 

@@ -1,6 +1,6 @@
 // Painéis das novas fontes (eixos econômico/ambiental/social/saúde). Server components, compactos.
 // Padrão: dado + série + carimbo de origem COM data de extração + CSV. (atende à diretriz de proveniência + exportação.)
-import type { getBndesSC, getCfemSC, getAnpSC, getQueimadasSC, getBolsaAtletaSC, getVitaisSC, getAnsCoberturaSC, getEquipamentosEsporteSC, getCagedSC, getRaisSC, getCasamentoEmpregoSC, getProdesSC, getDesastresSC, getSinisaSC, getSinanDengueSC, getAneelGdSC, getAnatelBlSC, getFrotaSC, getIbamaAutosSC, getSinespSC, getIncraAssentamentosSC, getPronafSC, getIcmbioUcSC, getAnaOutorgasSC, getIbgeProducaoSC, getArbovirosesSC, getDatatranSC, getAnpVendasSC, getCapagSC, getRfbArrecadacaoSC, getSimSC, getSinascSC, getSihSC, getIgdmSC, getIbamaEmbargosSC, getQuilombosSC, getSiaProducaoSC, getMedicamentosSC, getSinanAgravosSC, getProfissionaisSaudeSC, getApacSC, getRaasSaudeMentalSC, getCoberturaVacinalSC, getSisaguaSC, getMortalidadeInfantilSC, getFarmaciaPopularSC, getFinanciamentoApsSC, getCoberturaApsSC, getProducaoApsSC, getIndicadoresApsSC, getDinheiroMesaApsSC, getQualidadeIndicadoresApsSC, getVinculoApsSC, getSuasSaldoSC, getPddeSaldoSC, getPnaeAgriSC, getBarragensSC, getPaaSC, getLpgSC, getSalicSC, getNovoPacSC, getCensoCorRacaSC, getPopulacaoFaixaSC, getPibMunicipalSC, getIdhmSC, getCemadenSC, getDomiciliosSC, getAlfabetizacaoSC, getSetoresSC, getMuseusSC, getReceitaComposicaoSC, getDespesaFuncaoSerieSC, getTransferenciasSerieSC, getFolhaSerieSC, getInvestimentoSerieSC, getDespesaNaturezaSerieSC, getRankingTesouroSC, getRankingDetalheSC, getEscolaTurmasSC, getEtiDiagnosticoSC, getEvasaoEscolarSC, getFundebGanhoEtiSC, getEscolasEtiSC, getDiagnosticoEducacaoPneSC, getValorizacaoMagisterioSC, getEducacaoTrajetoriaSC, getTransferenciasCguSC, getCaptacaoRelativaSC } from "@/lib/queries";
+import type { getBndesSC, getCfemSC, getAnpSC, getQueimadasSC, getBolsaAtletaSC, getVitaisSC, getAnsCoberturaSC, getEquipamentosEsporteSC, getCagedSC, getRaisSC, getCasamentoEmpregoSC, getProdesSC, getDesastresSC, getSinisaSC, getSinanDengueSC, getAneelGdSC, getAnatelBlSC, getFrotaSC, getIbamaAutosSC, getSinespSC, getIncraAssentamentosSC, getPronafSC, getIcmbioUcSC, getAnaOutorgasSC, getIbgeProducaoSC, getArbovirosesSC, getDatatranSC, getAnpVendasSC, getCapagSC, getRfbArrecadacaoSC, getSimSC, getSinascSC, getSihSC, getIgdmSC, getIbamaEmbargosSC, getQuilombosSC, getSiaProducaoSC, getMedicamentosSC, getSinanAgravosSC, getProfissionaisSaudeSC, getApacSC, getRaasSaudeMentalSC, getCoberturaVacinalSC, getSisaguaSC, getMortalidadeInfantilSC, getFarmaciaPopularSC, getFinanciamentoApsSC, getCoberturaApsSC, getProducaoApsSC, getIndicadoresApsSC, getDinheiroMesaApsSC, getQualidadeIndicadoresApsSC, getVinculoApsSC, getSuasSaldoSC, getPddeSaldoSC, getPnaeAgriSC, getBarragensSC, getPaaSC, getLpgSC, getSalicSC, getNovoPacSC, getCensoCorRacaSC, getPopulacaoFaixaSC, getPibMunicipalSC, getIdhmSC, getCemadenSC, getDomiciliosSC, getAlfabetizacaoSC, getSetoresSC, getMuseusSC, getReceitaComposicaoSC, getDespesaFuncaoSerieSC, getTransferenciasSerieSC, getFolhaSerieSC, getInvestimentoSerieSC, getDespesaNaturezaSerieSC, getRankingTesouroSC, getRankingDetalheSC, getEscolaTurmasSC, getEtiDiagnosticoSC, getEvasaoEscolarSC, getFundebGanhoEtiSC, getEscolasEtiSC, getDiagnosticoEducacaoPneSC, getValorizacaoMagisterioSC, getEducacaoTrajetoriaSC, getTransferenciasCguSC, getCaptacaoRelativaSC, getSaebSC, getObrasSC, getSalarioEducacaoSC } from "@/lib/queries";
 import { PNE_ACOES, PRAZO_LABEL, LEVANTAMENTO_INTERNO } from "@/lib/pne-acoes";
 import { BaixarCsv } from "./baixar-csv";
 import MapaSetoresWrap from "./mapa-setores-wrap";
@@ -631,6 +631,92 @@ export function TransferenciasCguPanel({ d }: { d: Un<ReturnType<typeof getTrans
       </div>
       <p className="mt-2 text-[11px] text-slate-500">Consolida <b>todo o dinheiro federal</b> que chegou à prefeitura — constitucionais (FPM, FUNDEB, cota-partes) e voluntárias/legais (convênios, emendas, fundo a fundo) — por ministério e por área. Apenas o governo municipal (exclui repasses a estado, empresas e ONGs no município).</p>
       <Fonte extraido={d.extraido}>Fonte: <b>CGU — Portal da Transparência</b> (Transferências de Recursos, download em massa; favorecido = Administração Pública Municipal). Contorna a API restrita.</Fonte>
+    </Card>
+  );
+}
+
+const SIT_COR = (s: string) => /conclu/i.test(s) ? "#059669" : /execu|andamento|obras/i.test(s) ? "#2563eb" : /paralis|inativ/i.test(s) ? "#dc2626" : /licita|contrata/i.test(s) ? "#7c3aed" : "#f59e0b";
+const ORIG_COR = (o: string) => ({ Federal: "#2563eb", Estadual: "#7c3aed", Municipal: "#0891b2", Privado: "#64748b" }[o] || "#94a3b8");
+
+export function ObrasPanel({ d }: { d: Un<ReturnType<typeof getObrasSC>> }) {
+  return (
+    <Card icon={<Building2 className="h-4 w-4" />} titulo="Obras no município (ObrasGov / Governo Federal)" cor="#2563eb"
+      csv={<BaixarCsv nome="obras-municipio" label="CSV" linhas={d.maiores.map((o) => ({ obra: o.nome, situacao: o.situacao, especie: o.especie, valor: o.valor, prazo: o.prazo })) as unknown as Row[]} colunas={[{ chave: "obra", rotulo: "Obra" }, { chave: "situacao", rotulo: "Situação" }, { chave: "especie", rotulo: "Espécie" }, { chave: "valor", rotulo: "Valor (R$)" }, { chave: "prazo", rotulo: "Prazo" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Obras cadastradas</div><div className="font-display text-2xl font-bold tabular-nums text-blue-700">{n0(d.total)}</div></div>
+        <div><div className="text-[11px] text-slate-500">Investimento previsto</div><div className="font-display text-xl font-bold tabular-nums text-slate-700">{brl(d.valorTotal)}</div></div>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1"><div className="text-[10px] text-slate-500">Recurso público</div><div className="text-sm font-bold text-emerald-700">{n0(d.publico.n)} <span className="text-[10px] font-normal text-slate-400">obras · {brl(d.publico.valor)}</span></div></div>
+        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1"><div className="text-[10px] text-slate-500">Recurso privado</div><div className="text-sm font-bold text-slate-600">{n0(d.privado.n)} <span className="text-[10px] font-normal text-slate-400">obras · {brl(d.privado.valor)}</span></div></div>
+      </div>
+      <div className="mt-2"><div className="text-[11px] font-semibold text-slate-600">Por origem do recurso</div><div className="mt-1 flex flex-wrap gap-1.5">{d.porOrigem.map((o) => (<span key={o.origem} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: ORIG_COR(o.origem) + "1e", color: ORIG_COR(o.origem) }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: ORIG_COR(o.origem) }} />{o.origem}: {o.n} <span className="font-normal opacity-70">({brl(o.valor)})</span></span>))}</div></div>
+      <div className="mt-2"><div className="text-[11px] font-semibold text-slate-600">Por situação</div><div className="mt-1 flex flex-wrap gap-1.5">
+        {d.porSituacao.map((s) => (<span key={s.situacao} className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: SIT_COR(s.situacao) + "1e", color: SIT_COR(s.situacao) }}><span className="h-1.5 w-1.5 rounded-full" style={{ background: SIT_COR(s.situacao) }} />{s.situacao}: {s.n}</span>))}
+      </div></div>
+      <div className="mt-3">
+        <div className="text-[11px] font-semibold text-slate-600">Maiores obras (por valor previsto)</div>
+        <div className="mt-1 space-y-1">
+          {d.maiores.map((o, i) => (
+            <div key={i} className="flex items-start gap-2 rounded-lg border border-slate-100 bg-slate-50/40 px-2.5 py-1.5">
+              <span className="mt-0.5 h-2 w-2 shrink-0 rounded-full" style={{ background: SIT_COR(o.situacao) }} title={o.situacao} />
+              <div className="min-w-0 flex-1"><div className="truncate text-[11px] font-medium text-slate-700" title={o.nome}>{o.nome}</div><div className="text-[10px] text-slate-400">{o.especie}{o.prazo ? ` · ${o.prazo}` : ""} · <span style={{ color: SIT_COR(o.situacao) }}>{o.situacao}</span>{o.origem ? <> · <span style={{ color: ORIG_COR(o.origem.split("/")[0]) }}>{o.origem}</span></> : null}{o.vinculo ? ` · ${o.vinculo}` : ""}</div></div>
+              <span className="shrink-0 text-[11px] font-bold tabular-nums text-slate-700">{brl(o.valor)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Obras cujo <b>executor é a prefeitura</b>, monitoradas no ObrasGov (Casa Civil) — inclui Novo PAC e demais empreendimentos federais. A situação (concluída, em execução, paralisada, cadastrada) permite acompanhar a carteira e cobrar andamento.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>ObrasGov.br</b> (Governo Federal) — projetos de investimento com executor municipal. Valor = investimento previsto.</Fonte>
+    </Card>
+  );
+}
+
+export function SalarioEducacaoPanel({ d }: { d: Un<ReturnType<typeof getSalarioEducacaoSC>> }) {
+  const serieSe = d.serie.map((s) => s.se).filter((v): v is number => v != null);
+  const mx = Math.max(...serieSe, 1);
+  return (
+    <Card icon={<Banknote className="h-4 w-4" />} titulo="Salário-Educação — cota do município" cor="#0d9488"
+      csv={<BaixarCsv nome="salario-educacao" label="CSV" linhas={d.serie.map((s) => ({ ano: s.ano, salario_educacao: s.se, transferencias_fnde: s.fnde })) as unknown as Row[]} colunas={[{ chave: "ano", rotulo: "Ano" }, { chave: "salario_educacao", rotulo: "Salário-Educação (R$)" }, { chave: "transferencias_fnde", rotulo: "Total FNDE (R$)" }]} />}>
+      <div className="mt-2 flex flex-wrap items-end gap-4">
+        <div><div className="text-[11px] text-slate-500">Salário-Educação recebido ({d.ano})</div><div className="font-display text-2xl font-bold tabular-nums text-teal-700">{d.salarioEducacao != null ? brl(d.salarioEducacao) : "—"}</div></div>
+        {d.pctFnde != null && <div><div className="text-[11px] text-slate-500">do total de transferências do FNDE</div><div className="font-display text-xl font-bold tabular-nums text-slate-700">{d.pctFnde}%</div><div className="text-[10px] text-slate-400">FNDE total: {d.fndeTotal != null ? brl(d.fndeTotal) : "—"}</div></div>}
+      </div>
+      {serieSe.length >= 2 && (
+        <div className="mt-3"><div className="text-[11px] font-semibold text-slate-600">Série anual</div>
+          <div className="mt-1 space-y-1">{d.serie.filter((s) => s.se != null).map((s) => (<div key={s.ano} className="flex items-center gap-2 text-[11px]"><span className="w-8 shrink-0 text-slate-500">{s.ano}</span><div className="h-3.5 flex-1 overflow-hidden rounded bg-slate-100"><div className="h-3.5 rounded bg-teal-500" style={{ width: `${(s.se! / mx) * 100}%` }} /></div><span className="w-16 shrink-0 text-right font-semibold tabular-nums text-slate-700">{brl(s.se!)}</span></div>))}</div>
+        </div>
+      )}
+      <p className="mt-2 text-[11px] text-slate-500">O <b>Salário-Educação</b> é uma contribuição social que financia a educação básica; a <b>cota municipal</b> é repassada proporcionalmente às matrículas. É uma fonte de recurso da educação <b>além do FUNDEB</b> — e complementa as demais transferências do FNDE (PDDE, PNAE etc.).</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>SICONFI</b> (DCA Anexo I-C, conta 1.7.1.4.50 — Transferências do Salário-Educação) · Tesouro Nacional.</Fonte>
+    </Card>
+  );
+}
+
+export function SaebPanel({ d }: { d: Un<ReturnType<typeof getSaebSC>> }) {
+  const TEND: Record<string, string> = { subiu: "↑ subiu", caiu: "↓ caiu", "estável": "→ estável", sd: "" };
+  const disc = (val: number | null, med: number | null, nome: string) => {
+    if (val == null) return null;
+    const cor = med == null ? "#334155" : val >= med ? "#059669" : "#dc2626";
+    return <div className="flex-1"><div className="text-[10px] text-slate-500">{nome}</div><div className="font-display text-lg font-bold tabular-nums" style={{ color: cor }}>{val.toLocaleString("pt-BR")}</div>{med != null && <div className="text-[9px] text-slate-400">SC: {Math.round(med)} · {val >= med ? "acima" : "abaixo"}</div>}</div>;
+  };
+  return (
+    <Card icon={<GraduationCap className="h-4 w-4" />} titulo={`SAEB — proficiência em Português e Matemática (${d.ano})`} cor="#7c3aed"
+      csv={<BaixarCsv nome="saeb-proficiencia" label="CSV" linhas={d.etapas.flatMap((e) => e.serie.map((s) => ({ etapa: e.label, rede: e.rede, ano: s.ano, portugues: s.port, matematica: s.mat }))) as unknown as Row[]} colunas={[{ chave: "etapa", rotulo: "Etapa" }, { chave: "rede", rotulo: "Rede" }, { chave: "ano", rotulo: "Ano" }, { chave: "portugues", rotulo: "Português" }, { chave: "matematica", rotulo: "Matemática" }]} />}>
+      <div className="mt-2 space-y-2">
+        {d.etapas.map((e) => (
+          <div key={e.etapa} className="rounded-xl border border-slate-200 p-3">
+            <div className="flex items-center justify-between"><span className="text-xs font-semibold text-slate-700">{e.label} <span className="font-normal text-slate-400">· {e.rede}</span></span><span className="text-[10px] text-slate-400">{TEND[e.tend]} desde {e.serie[0].ano}</span></div>
+            <div className="mt-2 flex gap-4">
+              {disc(e.port, e.portMedSC, "Português")}
+              {disc(e.mat, e.matMedSC, "Matemática")}
+              <div className="flex-1"><div className="text-[10px] text-slate-400">trajetória (Português)</div><Spark pts={e.serie.map((s) => s.port).filter((v): v is number => v != null)} cor="#7c3aed" /></div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Proficiência na <b>escala SAEB</b> (a nota de aprendizado que compõe o IDEB), separada por <b>Português e Matemática</b> — revela em qual disciplina o município está mais forte ou frágil. Comparado à <b>mediana de SC</b> (rede pública/municipal) do mesmo ano.</p>
+      <Fonte extraido={d.extraido}>Fonte: <b>INEP</b> — SAEB (Sistema de Avaliação da Educação Básica), série 2005–{d.ano}, mesma base do IDEB.</Fonte>
     </Card>
   );
 }

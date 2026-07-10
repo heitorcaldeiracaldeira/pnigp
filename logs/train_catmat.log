@@ -1,0 +1,36 @@
+carregando treino...
+  343,323 exemplos, 20,332 PDMs
+vetorizando (TF-IDF 1-2gram, strip_accents)...
+  limpador de unidade: LIGADO
+  matriz (343323, 20000)
+treinando LinearSVC (validacao)...
+  ACURACIA validacao: PDM 88.6% | CLASSE 94.0%
+
+=== ANALISE DE ERRO (holdout) ===
+  erros: 3,134 | MOLE (classe certa, PDM errado = especificacao): 1,491 (47%) | DURO (classe errada): 1,643 (52%)
+  margem media: ACERTOS 1.55 | ERROS 0.11 (maior no acerto = confianca util)
+  top confusoes de CLASSE (true -> pred : n):
+    6505 -> 7820 : 50
+    6810 -> 6505 : 28
+    6505 -> 6810 : 28
+    6810 -> 7820 : 25
+    6810 -> 6550 : 17
+    6505 -> 6509 : 14
+    6509 -> 6505 : 13
+    6840 -> 6810 : 10
+  (amostra de erros em val_errors.tsv)
+treinando modelo final (todos os dados)...
+  'caneta esferografica azul ponta fina' -> PDM 6011 CUNHA ODONTOLÓGICA
+  'caneta esferografica preta ponta grossa' -> PDM 4414 CANETA DESENHO ARQUITETÔNICO
+  'acucar cristal' -> PDM 5974 CRISTAL QUARTZO
+  'pneu 175/70 r13' -> PDM 1001 ESTACA FUNDAÇÃO
+  'luva de procedimento tamanho m' -> PDM 419 LUVA DE PROTEÇÃO
+classificando chaves de SC (lotes)...
+  3,000/191,593
+  33,000/191,593
+  63,000/191,593
+  93,000/191,593
+  123,000/191,593
+  153,000/191,593
+  183,000/191,593
+OK

@@ -1,0 +1,24 @@
+carregando treino (catalogo)...
+  343,323 exemplos do catalogo + 81,328 ancoras de nome de PDM (peso 4) = 424,651 · 20,332 PDMs
+vetorizando (TF-IDF 1-2gram)...
+  matriz (424651, 20000)
+treinando (validacao intra-catalogo)...
+  acuracia INTRA-CATALOGO (NAO e producao): PDM 82.6% | CLASSE 88.9%
+treinando modelo final (todos os dados)...
+
+=== PORTAO DE SANIDADE (consultas reais) ===
+  OK 'caneta esferografica azul ponta fina' -> PDM 4408 CANETA DE MARCAÇÃO - USO MÉDICO  conf=0.50  (abstem: conf<0.62)
+  XX 'acucar cristal' -> PDM 5975 CRISTAL RESSONANTE - PIEZOELETRICO  conf=0.52  (abstem: conf<0.62)
+  XX 'pneu 175/70 r13' -> PDM 4808 CHALUPA  conf=0.50  (abstem: conf<0.62)
+  OK 'luva de procedimento tamanho m' -> PDM 419 LUVA DE PROTEÇÃO  conf=0.52  (abstem: conf<0.62)
+  OK 'papel a4 75g' -> PDM 127 PAPEL A4  conf=0.86
+  OK 'cimento cp ii' -> PDM 867 CIMENTO PORTLAND  conf=0.60  (abstem: conf<0.62)
+  XX 'dipirona sodica 500mg' -> PDM 362 HIDROMORFONA  conf=0.50  (abstem: conf<0.62)
+  OK 'leite em po integral' -> PDM 838 LEITE PÓ  conf=0.52  (abstem: conf<0.62)
+  OK 'cadeira giratoria' -> PDM 4089 CADEIRA PARA ENFERMEIRA  conf=0.50  (abstem: conf<0.62)
+  OK 'detergente neutro' -> PDM 6136 DETERGENTE  conf=0.50  (abstem: conf<0.62)
+  XX 'alcool em gel 70' -> PDM 3322 COLUNA PURIFICAÇÃO  conf=0.51  (abstem: conf<0.62)
+  XX 'parafuso sextavado' -> PDM 1269 SOQUETE COM ENCAIXE PARA FERRAMENTA  conf=0.51  (abstem: conf<0.62)
+  SANIDADE: 7/12 (58%)
+
+FALHA: sanidade 58% < 66% — modelo REJEITADO, sc_pred NAO sera escrito como confiavel.

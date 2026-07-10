@@ -1,0 +1,126 @@
+<claude-code-hint v="1" type="plugin" value="vercel@claude-plugins-official" />
+Vercel CLI 54.14.0 (Node.js 24.16.0)
+Retrieving project…
+Deploying institutoi10/pnigp
+Uploading [--------------------] (0.0B/246.9KB)
+Uploading [=====---------------] (67.3KB/246.9KB)
+Uploading [==========----------] (131.3KB/246.9KB)
+Uploading [===============-----] (195.3KB/246.9KB)
+Uploading [====================] (246.9KB/246.9KB)
+  Inspect     https://vercel.com/institutoi10/pnigp/5xZrapiABTsdsa3rK44XRGRf2EZk
+▲ Production  https://pnigp-f1c2ccle3-institutoi10.vercel.app
+Building…
+Running build in Washington, D.C., USA (East) – iad1
+Build machine configuration: 2 cores, 8 GB
+Retrieving list of deployment files...
+Skipping build cache, deployment was triggered without cache.
+Skipping build cache, deployment was triggered without cache.
+Downloading 2353 deployment files...
+Running "vercel build"
+Vercel CLI 54.21.1
+Installing dependencies...
+npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+added 734 packages in 27s
+241 packages are looking for funding
+run `npm fund` for details
+Detected Next.js version: 16.2.9
+Running "npm run build"
+> pnigp@0.1.0 build
+> next build
+Applying modifyConfig from Vercel
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+▲ Next.js 16.2.9 (Turbopack)
+Creating an optimized production build ...
+✓ Compiled successfully in 24.2s
+Running TypeScript ...
+Finished TypeScript in 29.3s ...
+Collecting page data using 1 worker ...
+Generating static pages using 1 worker (0/15) ...
+(node:489) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Generating static pages using 1 worker (3/15)
+Generating static pages using 1 worker (7/15)
+Generating static pages using 1 worker (11/15)
+✓ Generating static pages using 1 worker (15/15) in 591ms
+Finalizing page optimization ...
+Running onBuildComplete from Vercel
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/auditoria-diag/[codigo]
+├ ƒ /api/banco-precos
+├ ƒ /api/caderno-emendas
+├ ƒ /api/cmed-pmvg
+├ ƒ /api/coleta-status
+├ ƒ /api/comparar
+├ ƒ /api/compras-item/[cnpj]/[ano]/[seq]
+├ ƒ /api/compras-sc/[codigo]
+├ ƒ /api/contratos-processo/[cnpj]/[ano]/[seq]
+├ ƒ /api/equipamentos-geo/[codigo]
+├ ƒ /api/etl-catalogo
+├ ƒ /api/modelo
+├ ƒ /api/notificacao-acao
+├ ƒ /api/notificacao-cadastro
+├ ƒ /api/plano-trabalho
+├ ƒ /api/preco-referencia/[q]
+├ ƒ /api/serie-anotacao
+├ ƒ /api/setores-geo/[codigo]
+├ ƒ /api/transferencias-sc/[codigo]
+├ ○ /catalogo-dados
+├ ○ /cidadao
+├ ƒ /cidadao/[codigo]
+├ ○ /coleta
+├ ○ /comparar
+├ ○ /dados-municipais
+├ ○ /estrategia
+├ ○ /etl
+├ ○ /governador
+├ ƒ /governador/[uf]
+├ ƒ /governador/[uf]/gestao
+├ ○ /painel
+├ ƒ /painel/[codigo]
+├ ƒ /painel/[codigo]/gestao
+├ ○ /real
+├ ƒ /real/[codigo]
+├ ƒ /relatorio/estado/[uf]
+├ ƒ /relatorio/municipio/[codigo]
+└ ○ /solucoes
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+Build Completed in /vercel/output [1m]
+Deploying outputs...
+Deployment completed
+Creating build cache...
+[2K[1A[2K[G▲ Production  https://pnigp-f1c2ccle3-institutoi10.vercel.app
+Completing…
+▲ Aliased     https://pnigp.vercel.app
+{
+  "status": "ok",
+  "deployment": {
+    "id": "dpl_5xZrapiABTsdsa3rK44XRGRf2EZk",
+    "url": "https://pnigp-f1c2ccle3-institutoi10.vercel.app",
+    "inspectorUrl": "https://vercel.com/institutoi10/pnigp/5xZrapiABTsdsa3rK44XRGRf2EZk",
+    "readyState": "READY",
+    "target": "production",
+    "deploymentApiUrl": "https://api.vercel.com/v13/deployments/dpl_5xZrapiABTsdsa3rK44XRGRf2EZk"
+  },
+  "message": "Deployment pnigp-f1c2ccle3-institutoi10.vercel.app ready.",
+  "next": [
+    {
+      "command": "vercel inspect pnigp-f1c2ccle3-institutoi10.vercel.app",
+      "when": "Inspect deployment"
+    },
+    {
+      "command": "vercel deploy --prod",
+      "when": "Promote to production"
+    }
+  ]
+}
