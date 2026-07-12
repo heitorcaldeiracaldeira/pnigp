@@ -30,6 +30,10 @@ const CONT = new Set(["pacote", "pacotes", "pct", "pac", "pcte", "frasco", "fras
   "lata", "latas", "pote", "potes", "pt", "galao", "galoes", "gl", "balde", "baldes", "saco", "sacos", "sc", "fardo", "fardos", "fd",
   "rolo", "rolos", "rl", "tubo", "tubos", "bisnaga", "bisnagas", "bloco", "blocos", "barra", "barras", "kit", "kits", "conjunto",
   "jogo", "jg", "envelope", "envelopes", "resma", "resmas", "cartela", "cartelas", "bobina", "bobinas", "frasco-ampola", "frasco/ampola", "vidro"]);
+// palavras de SERVIÇO (não-bem) que escapam do FILTRO — excluídas do fallback discreto da Camada 3
+const SERVICO = new Set(["vaga", "vagas", "aula", "aulas", "sessao", "sessoes", "atendimento", "atendimentos", "exame", "exames",
+  "consulta", "consultas", "visita", "visitas", "parecer", "laudo", "laudos", "mensalidade", "assinatura", "licenca", "licencas",
+  "hospedagem", "diaria", "diarias", "pernoite", "evento", "eventos", "inscricao", "inscricoes", "matricula", "vistoria", "outorga"]);
 const clean = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
   .replace(/\s+/g, " ").trim().replace(/(\d),(\d)/g, "$1.$2").replace(/\.$/, "");
 
@@ -45,6 +49,10 @@ function parse(label) {
   const tok = s.replace(/\s*\(.*\)\s*$/, "").trim();
   if (U[tok]) { const [base, mult] = U[tok]; return { base, fator: mult, forma: "avulso", dim: null, metodo: "rotulo_simples", conf: 0.85 }; }
   if (CONT.has(tok)) return { base: tok.replace(/s$/, ""), fator: 1, forma: "avulso", dim: "container", metodo: "rotulo_container", conf: 0.5 };
+  // Camada 3 — fallback discreto: rótulo desconhecido de 1 palavra alfabética = provável unidade discreta própria
+  // (teste, disco, molho, frasco-ampola), fator 1. EXCLUI palavras de serviço (vaga, aula, sessão…) que não são bem.
+  if (/^[a-zç/-]{2,20}$/.test(tok) && !SERVICO.has(tok))
+    return { base: tok.replace(/s$/, ""), fator: 1, forma: "avulso", dim: "discreta", metodo: "rotulo_fallback", conf: 0.6 };
   return null;
 }
 

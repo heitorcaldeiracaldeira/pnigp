@@ -4338,6 +4338,19 @@ export async function getRedFlagsSC(cod: string): Promise<RedFlagsSC> {
   };
 }
 
+// Red-flag de UNIDADE TROCADA — lançamentos cujo preço/unidade básica destoa ≥100× da mediana do grupo (CATMAT+base).
+// Efeito colateral do Passe 2 (desempacotamento). Framing NEUTRO: aponta p/ verificação, não é sobrepreço nem acusação.
+export type MislabelSC = { n: number; nAlto: number; itens: { descricao: string; unidade: string; unitHomologado: number; unidadeBasica: string; precoBasico: number; mediana: number; ratio: number; alto: boolean; causa: string }[] } | null;
+export async function getMislabelUnidadeSC(cod: string): Promise<MislabelSC> {
+  const r = await query<Record<string, unknown>>(`SELECT descricao, unidade, unit_homologado, unidade_basica, pub, med, ratio, alto, causa_provavel
+    FROM mislabel_unidade_sc WHERE cod_ibge=$1 ORDER BY ratio DESC LIMIT 20`, [cod]).catch(() => []);
+  if (!r.length) return null;
+  return {
+    n: r.length, nAlto: r.filter((x) => x.alto).length,
+    itens: r.map((x) => ({ descricao: String(x.descricao || ""), unidade: String(x.unidade || ""), unitHomologado: num(x.unit_homologado), unidadeBasica: String(x.unidade_basica || ""), precoBasico: num(x.pub), mediana: num(x.med), ratio: num(x.ratio), alto: !!x.alto, causa: String(x.causa_provavel || "") })),
+  };
+}
+
 // IBGE MUNIC — instrumentos de gestão do município (planos, conselhos, fundos, instrumentos legais). Base de dados oficial.
 export type MunicItem = { label: string; tem: boolean; valor: string };
 export type MunicGrupo = { grupo: string; itens: MunicItem[]; tem: number; total: number };

@@ -24,10 +24,16 @@ const conv = (num, tok) => { const e = U[tok]; return e ? { base: e[0], fator: n
 // remove trechos de CONCENTRAÇÃO/TAXA p/ não confundir com conteúdo: "10 mg/ml", "5 mg / ml", "1 %"
 const stripConc = (s) => s.replace(/\d+(?:\.\d+)?\s*(?:mg|mcg|g|ui|%)\s*\/\s*(?:ml|l|g|kg|dose|comp\w*)/g, " ").replace(/\d+(?:\.\d+)?\s*%/g, " ");
 
+const EMB_RX = "frascos?|ampolas?|saches?|blisters?|tubos?|potes?|unidades?|comprimidos?|capsulas?|envelopes?|latas?|bisnagas?|caixas?|pacotes?|rolos?";
 function parseDesc(descRaw) {
   const s0 = clean(descRaw); const s = stripConc(s0);
+  // A0) ANINHAMENTO "N <embalagem> de/com M <unit>" — multiplica ("caixa com 12 frascos de 1000ml" → 12000ml).
+  // Conserta o subcount da medida avulsa. Alta confiança (estrutura explícita).
+  let m = s.match(new RegExp(`(\\d+)\\s*(?:${EMB_RX})\\s+(?:de|com|c/|contendo)?\\s*(\\d+(?:\\.\\d+)?)\\s*(${UNIT_RX})\\b`, "i"));
+  if (m) { const c = conv(parseFloat(m[2]), m[3]); const nEmb = parseInt(m[1], 10);
+    if (c && c.fator > 0 && nEmb > 0 && nEmb <= 10000) return { base: c.base, fator: c.fator * nEmb, metodo: "desc_aninhado", conf: 0.85 }; }
   // A) "com/contendo/c/ N <unit>" — conteúdo explícito (alta confiança)
-  let m = s.match(new RegExp(`(?:com|contendo|c/)\\s+(\\d+(?:\\.\\d+)?)\\s*(${UNIT_RX})\\b`, "i"));
+  m = s.match(new RegExp(`(?:com|contendo|c/)\\s+(\\d+(?:\\.\\d+)?)\\s*(${UNIT_RX})\\b`, "i"));
   if (m) { const c = conv(parseFloat(m[1]), m[2]); if (c && c.fator > 0) return { ...c, metodo: "desc_com", conf: 0.85 }; }
   // B) dimensão "N x N [unit]" → área m2 (ex.: 60cmx60cm, 20cm x 1,8m). Cada lado tem sua PRÓPRIA unidade;
   // se o 1º lado não traz unidade, herda a do 2º ("50 x 50 cm").
