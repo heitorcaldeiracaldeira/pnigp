@@ -1,0 +1,19 @@
+29,382 pares · 452 PDMs · ECOA o nome do PDM: 0.0% (vazado) · NÃO ECOA: 100.0% (honesto)
+treino 22,036 · teste 7,346 (ecoa 0 · não-ecoa 7,346)
+
+(A) nearest-name (prod)    | PDM: geral  19.2  ecoa   0.0  NÃO-ECOA  19.2  || CLASSE não-ecoa  25.6
+(B) TF-IDF palavra+SVM     | PDM: geral  91.9  ecoa   0.0  NÃO-ECOA  91.9  || CLASSE não-ecoa  93.2
+(C) TF-IDF char+SVM        | PDM: geral  92.8  ecoa   0.0  NÃO-ECOA  92.8  || CLASSE não-ecoa  94.2
+(D) codificando MiniLM...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|##########| 199/199 [00:00<00:00, 8743.63it/s]
+C:\Users\PC\AppData\Roaming\Python\Python313\site-packages\sklearn\linear_model\_logistic.py:1457: FutureWarning: 'n_jobs' has no effect since 1.8 and will be removed in 1.10. You provided 'n_jobs=-1', please leave it unspecified.
+  warnings.warn(msg, category=FutureWarning)
+(D) embeddings+LogReg      | PDM: geral  90.7  ecoa   0.0  NÃO-ECOA  90.7  || CLASSE não-ecoa  92.5
+
+abstenção (embeddings, SÓ no grupo NÃO-ECOA = honesto):
+  conf>=0.30: precisão  96.8% · cobertura  91.1%
+  conf>=0.50: precisão  98.8% · cobertura  85.0%
+  conf>=0.70: precisão  99.7% · cobertura  76.9%
+  conf>=0.80: precisão  99.8% · cobertura  70.6%
+  conf>=0.90: precisão 100.0% · cobertura  55.7%

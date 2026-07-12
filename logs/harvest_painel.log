@@ -1,0 +1,45 @@
+(node:36900) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+alvo: 800 PDMs (top volume SC) · 100 regs/item · até 3 itens/PDM
+  1/800 PDMs · 1 com dados · 100 pares · 1s
+  26/800 PDMs · 18 com dados · 1.241 pares · 27s
+  51/800 PDMs · 39 com dados · 2.678 pares · 54s
+  76/800 PDMs · 58 com dados · 4.253 pares · 80s
+  101/800 PDMs · 72 com dados · 5.251 pares · 110s
+  126/800 PDMs · 91 com dados · 6.487 pares · 138s
+  151/800 PDMs · 107 com dados · 7.683 pares · 168s
+  176/800 PDMs · 125 com dados · 8.998 pares · 206s
+  201/800 PDMs · 144 com dados · 10.440 pares · 249s
+  226/800 PDMs · 163 com dados · 11.489 pares · 288s
+  251/800 PDMs · 178 com dados · 12.469 pares · 325s
+  276/800 PDMs · 196 com dados · 13.751 pares · 364s
+  301/800 PDMs · 215 com dados · 14.800 pares · 399s
+  326/800 PDMs · 230 com dados · 15.734 pares · 435s
+  351/800 PDMs · 250 com dados · 16.941 pares · 469s
+  376/800 PDMs · 267 com dados · 17.929 pares · 504s
+  401/800 PDMs · 283 com dados · 19.001 pares · 543s
+  426/800 PDMs · 299 com dados · 19.881 pares · 579s
+  451/800 PDMs · 311 com dados · 20.502 pares · 618s
+  476/800 PDMs · 321 com dados · 20.918 pares · 655s
+  501/800 PDMs · 336 com dados · 21.935 pares · 687s
+  526/800 PDMs · 353 com dados · 22.848 pares · 718s
+  551/800 PDMs · 367 com dados · 23.665 pares · 751s
+  576/800 PDMs · 383 com dados · 24.299 pares · 784s
+  601/800 PDMs · 395 com dados · 24.959 pares · 815s
+  626/800 PDMs · 409 com dados · 25.783 pares · 847s
+  651/800 PDMs · 420 com dados · 26.437 pares · 879s
+  676/800 PDMs · 434 com dados · 27.397 pares · 916s
+  701/800 PDMs · 446 com dados · 27.876 pares · 950s
+  726/800 PDMs · 463 com dados · 28.807 pares · 979s
+  751/800 PDMs · 477 com dados · 29.733 pares · 1006s
+  776/800 PDMs · 497 com dados · 30.767 pares · 1035s
+  800/800 PDMs · 516 com dados · 31.725 pares · 1058s
+
+✔ painel_gold: 31.725 pares · 516 PDMs · 186 classes

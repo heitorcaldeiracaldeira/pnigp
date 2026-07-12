@@ -1,0 +1,23 @@
+29,382 pares · 452 PDMs · ECOA o nome do PDM: 100.0% (vazado) · NÃO ECOA: 0.0% (honesto)
+treino 22,036 · teste 7,346 (ecoa 7,346 · não-ecoa 0)
+
+(A) nearest-name (prod)    | PDM: geral  89.6  ecoa  89.6  NÃO-ECOA   0.0  || CLASSE não-ecoa   0.0
+(B) TF-IDF palavra+SVM     | PDM: geral  99.9  ecoa  99.9  NÃO-ECOA   0.0  || CLASSE não-ecoa   0.0
+(C) TF-IDF char+SVM        | PDM: geral  99.8  ecoa  99.8  NÃO-ECOA   0.0  || CLASSE não-ecoa   0.0
+(D) codificando MiniLM...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|##########| 199/199 [00:00<00:00, 2452.38it/s]
+C:\Users\PC\AppData\Roaming\Python\Python313\site-packages\sklearn\linear_model\_logistic.py:1457: FutureWarning: 'n_jobs' has no effect since 1.8 and will be removed in 1.10. You provided 'n_jobs=-1', please leave it unspecified.
+  warnings.warn(msg, category=FutureWarning)
+(D) embeddings+LogReg      | PDM: geral  99.6  ecoa  99.6  NÃO-ECOA   0.0  || CLASSE não-ecoa   0.0
+
+abstenção (embeddings, SÓ no grupo NÃO-ECOA = honesto):
+C:\Users\PC\pnigp\scripts\eval_honesto.py:81: RuntimeWarning: Mean of empty slice
+  m_ = hc >= th; cov = m_.mean()
+C:\Users\PC\AppData\Roaming\Python\Python313\site-packages\numpy\_core\_methods.py:142: RuntimeWarning: invalid value encountered in scalar divide
+  ret = ret.dtype.type(ret / rcount)
+  conf>=0.30: precisão   0.0% · cobertura   nan%
+  conf>=0.50: precisão   0.0% · cobertura   nan%
+  conf>=0.70: precisão   0.0% · cobertura   nan%
+  conf>=0.80: precisão   0.0% · cobertura   nan%
+  conf>=0.90: precisão   0.0% · cobertura   nan%

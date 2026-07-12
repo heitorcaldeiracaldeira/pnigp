@@ -96,3 +96,6 @@ To prepare for this change:
 See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
 (Use `node --trace-warnings ...` to show where the warning was created)
   status: ok
+[2026-07-10T02:30] busca diária do PNCP — ano 2026
+^C[2026-07-12T18:13] busca diária do PNCP — ano 2026
+^C

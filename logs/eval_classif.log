@@ -1,0 +1,56 @@
+carregando gabarito...
+  29,382 pares · 452 PDMs · 169 classes
+  treino 23,505 · teste 5,877
+
+===================== TRILHO: SÓ DESCRIÇÃO (deployável em SC) =====================
+(B) TF-IDF palavra + SVM  : PDM  99.9% | CLASSE  99.9%
+(C) TF-IDF char 3-5 + SVM  : PDM  99.8% | CLASSE  99.8%
+(A) nearest-PDM-name (=prod): PDM  89.6% | CLASSE  91.6%
+(D) codificando com MiniLM (pode levar alguns min)...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|##########| 199/199 [00:00<00:00, 7180.67it/s]
+C:\Users\PC\AppData\Roaming\Python\Python313\site-packages\sklearn\linear_model\_logistic.py:1457: FutureWarning: 'n_jobs' has no effect since 1.8 and will be removed in 1.10. You provided 'n_jobs=-1', please leave it unspecified.
+  warnings.warn(msg, category=FutureWarning)
+(D) embeddings MiniLM+LogReg: PDM  99.5% | CLASSE  99.6%
+    abstenção (embeddings) — precisão × cobertura:
+      conf>=0.50: precisão 99.9% · cobertura 98.5%
+      conf>=0.70: precisão 100.0% · cobertura 96.5%
+      conf>=0.80: precisão 100.0% · cobertura 92.6%
+      conf>=0.90: precisão 100.0% · cobertura 81.6%
+      conf>=0.95: precisão 100.0% · cobertura 59.0%
+
+  [D embeddings] prova concreta:
+    'caneta esferografica azul ponta fina' -> CANETA ESFEROGRÁFICA
+    'acucar cristal' -> AÇÚCAR
+    'pneu 175/70 r13' -> LONA PNEU
+    'luva de procedimento tamanho m' -> LUVA DE COURO
+    'papel a4 75g' -> PAPEL CARTÃO
+    'dipirona sodica 500mg' -> DIPIRONA SÓDICA
+
+  [A nearest-name] prova concreta:
+    'caneta esferografica azul ponta fina' -> CANETA ESFEROGRÁFICA
+    'acucar cristal' -> AÇÚCAR
+    'pneu 175/70 r13' -> LONA PNEU
+    'luva de procedimento tamanho m' -> LUVA P/ PROCEDIMENTO DE SAÚDE NÃO CIRÚRGICO C/ ANVISA
+    'papel a4 75g' -> PAPEL DE FILTRO
+    'dipirona sodica 500mg' -> DIPIRONA SÓDICA
+
+  [C char-svm] prova concreta:
+    'caneta esferografica azul ponta fina' -> CANETA ESFEROGRÁFICA
+    'acucar cristal' -> AÇÚCAR
+    'pneu 175/70 r13' -> ESCITALOPRAM OXALATO
+    'luva de procedimento tamanho m' -> LUVA SEGURANÇA
+    'papel a4 75g' -> PAPEL CARTÃO
+    'dipirona sodica 500mg' -> DIPIRONA SÓDICA
+
+===================== TRILHO: DESC+MARCA (teto) =====================
+(B) TF-IDF palavra + SVM  : PDM  99.9% | CLASSE  99.9%
+(C) TF-IDF char 3-5 + SVM  : PDM  99.8% | CLASSE  99.9%
+
+===================== RESUMO (acurácia PDM no teste real) =====================
+         B_tfidf_word      : PDM  99.9% | CLASSE  99.9%
+  +marca B_tfidf_word      : PDM  99.9% | CLASSE  99.9%
+  +marca C_tfidf_char      : PDM  99.8% | CLASSE  99.9%
+         C_tfidf_char      : PDM  99.8% | CLASSE  99.8%
+         D_embeddings      : PDM  99.5% | CLASSE  99.6%
+         A_nearest_name    : PDM  89.6% | CLASSE  91.6%

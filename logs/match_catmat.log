@@ -1,0 +1,21 @@
+(node:22164) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+materializando chaves de bens (n>=2, length 4..90)…
+  38.889 chaves a casar · lotes de 4000
+  [inteira] 4.000/38.889 (17s)
+  [inteira] 24.000/38.889 (170s)
+  [inteira] 38.889/38.889 (290s)
+fallback substantivo-cabeça (chaves com sim<0.55)…
+  25.200 chaves resgatadas pelo substantivo-cabeça
+canonizando PDMs duplicados…
+  2.768 chaves remapeadas p/ o código canônico
+
+✔ item_catmat_map: 38.889 chaves · 19.843 aceitas (sim>=0.5, 51%) · 25.200 via substantivo-cabeça
+  itens-linha cobertos: 180.671 · aceitos: 122.961 (68%)
