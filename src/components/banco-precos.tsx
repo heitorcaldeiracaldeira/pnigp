@@ -4,8 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { Search, Database } from "lucide-react";
 import { NotaTecnicaCatmat } from "@/components/nota-tecnica-catmat";
 
-type Item = { item: string; unidade: string | null; mediana: number; faixaMin: number | null; faixaMax: number | null; n: number; nMunis: number | null; fonte: string; catmat: string | null; nacMediana: number | null; nacN: number | null; indicioPct: number | null; avulso: number | null; escala: number | null; escalaN: number | null; escalaEconomiaPct: number | null };
+type Item = { item: string; unidade: string | null; mediana: number; faixaMin: number | null; faixaMax: number | null; n: number; nMunis: number | null; fonte: string; catmat: string | null; nacMediana: number | null; nacN: number | null; indicioPct: number | null; avulso: number | null; escala: number | null; escalaN: number | null; escalaEconomiaPct: number | null; precoBasico: number | null; unidadeBasica: string | null; nBasico: number | null; exclBasico: number | null };
 const brl = (v: number) => "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// preço por unidade básica em forma legível: grama→R$/kg, mililitro→R$/L (multiplica p/ a unidade comercial usual)
+const brl4 = (v: number) => "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: v < 0.1 ? 4 : 2 });
+function precoBasico(v: number, base: string): { txt: string; un: string } {
+  if (base === "g") return { txt: brl4(v * 1000), un: "kg" };
+  if (base === "ml") return { txt: brl4(v * 1000), un: "L" };
+  if (base === "m2") return { txt: brl4(v), un: "m²" };
+  if (base === "m3") return { txt: brl4(v), un: "m³" };
+  return { txt: brl4(v), un: base };
+}
 
 export default function BancoPrecos() {
   const [q, setQ] = useState("");
@@ -54,6 +63,9 @@ export default function BancoPrecos() {
                 <div className="font-display text-base font-bold tabular-nums text-teal-700">{brl(it.mediana)}</div>
                 <div className="text-[10px] font-semibold text-slate-500">por {it.unidade || (it.catmat ? "unid. do CATMAT" : "unidade")}</div>
                 {it.faixaMin != null && it.faixaMax != null && <div className="text-[10px] text-slate-400">faixa {brl(it.faixaMin)}–{brl(it.faixaMax)}</div>}
+                {it.precoBasico != null && it.unidadeBasica && (() => { const pb = precoBasico(it.precoBasico, it.unidadeBasica); return (
+                  <div className="mt-0.5 border-t border-slate-100 pt-0.5 text-[10px] text-teal-600" title="Preço desempacotado à unidade básica — comparável entre embalagens diferentes (Passe 2)"><span className="font-semibold">{pb.txt}</span>/{pb.un} <span className="text-slate-400">un. básica{it.nBasico ? ` · ${it.nBasico} compras` : ""}{it.exclBasico ? ` · ${it.exclBasico} fora` : ""}</span></div>
+                ); })()}
                 {it.nacMediana != null && <div className="mt-0.5 border-t border-slate-100 pt-0.5 text-[10px] text-slate-500">Nacional: <b className="text-slate-700">{brl(it.nacMediana)}</b> <span className="text-slate-400">({it.nacN} obs)</span>{it.indicioPct != null && Math.abs(it.indicioPct) >= 10 ? <span className="ml-1 font-bold" style={{ color: it.indicioPct > 0 ? "#dc2626" : "#059669" }}>{it.indicioPct > 0 ? "SC +" : "SC "}{it.indicioPct}%</span> : null}</div>}
               </div>
             </div>

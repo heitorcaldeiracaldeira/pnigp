@@ -1825,13 +1825,15 @@ export async function getTransferenciasCguSC(cod: string): Promise<{ ano: string
 }
 
 // BANCO DE PREÇOS — busca por descrição sobre preços de referência (compras municipais SC + Banco de Preços em Saúde).
-export async function getBancoPrecosSC(q: string): Promise<{ item: string; unidade: string | null; mediana: number; faixaMin: number | null; faixaMax: number | null; n: number; nMunis: number | null; fonte: string; catmat: string | null; nacMediana: number | null; nacN: number | null; indicioPct: number | null; avulso: number | null; escala: number | null; escalaN: number | null; escalaEconomiaPct: number | null }[]> {
+export async function getBancoPrecosSC(q: string): Promise<{ item: string; unidade: string | null; mediana: number; faixaMin: number | null; faixaMax: number | null; n: number; nMunis: number | null; fonte: string; catmat: string | null; nacMediana: number | null; nacN: number | null; indicioPct: number | null; avulso: number | null; escala: number | null; escalaN: number | null; escalaEconomiaPct: number | null; precoBasico: number | null; unidadeBasica: string | null; nBasico: number | null; exclBasico: number | null }[]> {
   const termo = (q || "").trim(); if (termo.length < 2) return [];
   const like = "%" + termo.replace(/\s+/g, "%") + "%";
   const ref = await query<Record<string, unknown>>(`SELECT r.chave, r.unidade, r.mediana, r.p25, r.p75, r.n_itens, r.n_munis, r.catmat_pdm, r.catmat_cod FROM precos_referencia_sc r WHERE r.chave ILIKE $1 ORDER BY r.n_itens DESC LIMIT 12`, [like]).catch(() => []);
   // referência nacional quebrada por forma de aquisição (avulso × escala) — Painel de Preços
   const pdms = [...new Set(ref.map((r) => r.catmat_cod).filter((x) => x != null))];
   const nacRows = pdms.length ? await query<Record<string, unknown>>(`SELECT codigo_pdm, unidade, forma, mediana, n_obs FROM precos_nacional_ref WHERE codigo_pdm = ANY($1)`, [pdms]).catch(() => []) : [];
+  // Passe 2 — referência por UNIDADE BÁSICA (desempacotada) por CATMAT+base+forma, curada por IQR (precos_referencia_basica_sc)
+  const basRows = pdms.length ? await query<Record<string, unknown>>(`SELECT codigo_pdm, unidade_basica, forma, mediana, n_compras, n_excluidos FROM precos_referencia_basica_sc WHERE codigo_pdm = ANY($1)`, [pdms]).catch(() => []) : [];
   const bps = await query<Record<string, unknown>>(`SELECT cod_catmat, descricao, mediana, media, minimo FROM bps_precos_ref WHERE descricao ILIKE $1 ORDER BY length(descricao) LIMIT 10`, [like]).catch(() => []);
   const a = ref.map((r) => {
     const med = num(r.mediana);
@@ -1845,9 +1847,13 @@ export async function getBancoPrecosSC(q: string): Promise<{ item: string; unida
     // lançamento avulso não confiável (produto inteiro lançado como 1g) → suprimimos o comparativo nesses casos
     const contInstavel = ["grama", "mililitro"].includes(String(r.unidade || ""));
     const escalaEconomiaPct = econRaw != null && !contInstavel && Math.abs(econRaw) <= 85 ? econRaw : null;
-    return { item: String(r.catmat_pdm || r.chave || ""), unidade: r.unidade ? String(r.unidade) : null, mediana: med, faixaMin: r.p25 != null ? num(r.p25) : null, faixaMax: r.p75 != null ? num(r.p75) : null, n: num(r.n_itens), nMunis: r.n_munis != null ? num(r.n_munis) : null, fonte: "Compras municipais (SC)", catmat: r.catmat_pdm ? String(r.catmat_pdm) : null, nacMediana: nac, nacN, indicioPct: nac && nac > 0 ? Math.round(((med / nac) - 1) * 1000) / 10 : null, avulso: avPrec, escala: esPrec, escalaN: es ? num(es.n_obs) : null, escalaEconomiaPct };
+    // preço/unidade básica p/ este CATMAT — prefere a forma avulsa; desempate por mais compras
+    const brs = basRows.filter((x) => String(x.codigo_pdm) === String(r.catmat_cod))
+      .sort((x, y) => (y.forma === "avulso" ? 1 : 0) - (x.forma === "avulso" ? 1 : 0) || num(y.n_compras) - num(x.n_compras));
+    const bb = brs[0];
+    return { item: String(r.catmat_pdm || r.chave || ""), unidade: r.unidade ? String(r.unidade) : null, mediana: med, faixaMin: r.p25 != null ? num(r.p25) : null, faixaMax: r.p75 != null ? num(r.p75) : null, n: num(r.n_itens), nMunis: r.n_munis != null ? num(r.n_munis) : null, fonte: "Compras municipais (SC)", catmat: r.catmat_pdm ? String(r.catmat_pdm) : null, nacMediana: nac, nacN, indicioPct: nac && nac > 0 ? Math.round(((med / nac) - 1) * 1000) / 10 : null, avulso: avPrec, escala: esPrec, escalaN: es ? num(es.n_obs) : null, escalaEconomiaPct, precoBasico: bb ? num(bb.mediana) : null, unidadeBasica: bb ? String(bb.unidade_basica) : null, nBasico: bb ? num(bb.n_compras) : null, exclBasico: bb ? num(bb.n_excluidos) : null };
   });
-  const b = bps.map((r) => ({ item: String(r.descricao || ""), unidade: null as string | null, mediana: num(r.mediana), faixaMin: r.minimo != null ? num(r.minimo) : null, faixaMax: r.media != null ? num(r.media) : null, n: 0, nMunis: null as number | null, fonte: "Banco de Preços em Saúde (BPS/Min. Saúde)", catmat: r.cod_catmat ? String(r.cod_catmat) : null, nacMediana: null as number | null, nacN: null as number | null, indicioPct: null as number | null, avulso: null as number | null, escala: null as number | null, escalaN: null as number | null, escalaEconomiaPct: null as number | null }));
+  const b = bps.map((r) => ({ item: String(r.descricao || ""), unidade: null as string | null, mediana: num(r.mediana), faixaMin: r.minimo != null ? num(r.minimo) : null, faixaMax: r.media != null ? num(r.media) : null, n: 0, nMunis: null as number | null, fonte: "Banco de Preços em Saúde (BPS/Min. Saúde)", catmat: r.cod_catmat ? String(r.cod_catmat) : null, nacMediana: null as number | null, nacN: null as number | null, indicioPct: null as number | null, avulso: null as number | null, escala: null as number | null, escalaN: null as number | null, escalaEconomiaPct: null as number | null, precoBasico: null as number | null, unidadeBasica: null as string | null, nBasico: null as number | null, exclBasico: null as number | null }));
   return [...a, ...b].filter((x) => x.mediana > 0).slice(0, 20);
 }
 
