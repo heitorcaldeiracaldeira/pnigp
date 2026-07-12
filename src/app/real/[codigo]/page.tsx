@@ -23,7 +23,7 @@ import { FornecedoresCard } from "@/components/fornecedores-card";
 import { FornecedoresSancionados } from "@/components/fornecedores-sancionados";
 import BancoPrecos from "@/components/banco-precos";
 import { SobreprecoCompras } from "@/components/sobrepreco-compras";
-import { ConstrutorTR } from "@/components/construtor-tr";
+import { ConstrutorProcesso } from "@/components/construtor-processo";
 import { AnalisadorDocumentos } from "@/components/analisador-documentos";
 import { VariacaoInterna } from "@/components/variacao-interna";
 import { RedFlagsFornecedores } from "@/components/red-flags-fornecedores";
@@ -405,9 +405,9 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       <div className="mt-4"><BaseMetodologica area="compras" /></div>
     </> },
     ...(padroesCompras ? [{ id: "padroes-compras", label: "Planejamento de Compras", content: <><AssuntoPadroesCompras dados={padroesCompras} contratos={contratosResumo} pca={pcaResumo} economia={economicidade} nome={ente.nome} /><div className="mt-4"><CatalogoBoasPraticas area="compras" /></div></> }] : []),
-    { id: "construtor-tr", label: "Termo de Referência", content: <>
-      <CabecalhoArea titulo="Construtor de Termo de Referência" intro="Monte a especificação da compra do jeito certo antes de licitar: a Lei 14.133/2021 estrutura o documento, o Banco de Preços dá o preço de referência, o CATMAT/CATSER padroniza o item e um checador evita a superespecificação — a redação restritiva é o que fecha a disputa e encarece. Ao final, gere o TR pronto para revisar." links={[{ label: "Lei 14.133/2021 — Nova Lei de Licitações", href: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" }, { label: "IN SEGES/ME 65/2021 — pesquisa de preços", href: "https://www.gov.br/compras/pt-br" }, { label: "TCE-SC", href: "https://www.tcesc.tc.br" }]} />
-      <ConstrutorTR nome={ente.nome} />
+    { id: "construtor-tr", label: "Processo Licitatório", content: <>
+      <CabecalhoArea titulo="Construtor de Processo Licitatório" intro="Monte a licitação do jeito certo, de ponta a ponta: a partir de uma cesta de itens (com CATMAT e preço de referência do Banco de Preços) e um checador que evita a superespecificação, a plataforma gera todo o encadeamento da Lei 14.133/2021 — DFD → ETP → TR → Edital → Contrato — reaproveitando os mesmos dados. Cole também um documento pronto para uma análise de conformidade." links={[{ label: "Lei 14.133/2021 — Nova Lei de Licitações", href: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" }, { label: "IN SEGES/ME 65/2021 — pesquisa de preços", href: "https://www.gov.br/compras/pt-br" }, { label: "TCE-SC", href: "https://www.tcesc.tc.br" }]} />
+      <ConstrutorProcesso nome={ente.nome} />
       <div className="mt-4"><AnalisadorDocumentos /></div>
     </> },
     ...(atas ? [{ id: "atas", label: "Atas (Registro de Preço)", content: <AtasPainel dados={atas} nome={ente.nome} /> }] : []),
