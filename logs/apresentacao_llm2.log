@@ -1,0 +1,12 @@
+credencial: ANTHROPIC_API_KEY · modelo: claude-haiku-4-5 · MODE=apply
+(node:18948) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+4.104 descrições-resíduo com qtd candidata
+  20/4104  40/4104  60/4104  80/4104  100/4104  120/4104  140/4104  160/4104  180/4104  200/4104  220/4104  240/4104  260/4104  280/4104  300/4104  320/4104  340/4104  360/4104  380/4104  400/4104  420/4104  440/4104  460/4104  480/4104  500/4104  520/4104  540/4104  560/4104  580/4104
