@@ -11,17 +11,17 @@ const PNCP_MAIN = "https://pncp.gov.br/api/pncp/v1";
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 
 async function getMain(url) {
-  for (let t = 0; t < 4; t++) {
+  for (let t = 0; t < 8; t++) {
     try {
       const r = await fetch(url, { signal: AbortSignal.timeout(20000) });
       if (r.status === 204) return [];
-      if (r.status === 429) { await sleep(2500 + t * 2500); continue; }
+      if (r.status === 429) { await sleep(4000 + t * 4000); continue; }   // 429 agressivo do PNCP: backoff longo (até ~32s)
       if (!r.ok) return [];
       const j = await r.json();
       return Array.isArray(j) ? j : [];
-    } catch { await sleep(600 * (t + 1)); }
+    } catch { await sleep(1000 * (t + 1)); }
   }
-  return null;
+  return null;   // esgotou (429/timeout persistente) — o chamador NÃO deve marcar feito
 }
 
 const CAP_RES = Number(process.env.CAP_RES || 5000); // teto de buscas de homologado por compra (atas podem ter ~20k itens)
@@ -31,7 +31,8 @@ async function fetchItens(cnpj, ano, seq) {
   const itens = []; let p = 1;
   while (p <= 60) {
     const pg = await getMain(`${base}?pagina=${p}&tamanhoPagina=500`);
-    if (!Array.isArray(pg) || !pg.length) break;
+    if (pg === null) throw new Error("fetch itens falhou (429/timeout) — retenta no re-run");  // NÃO marca feito
+    if (!pg.length) break;                                                                     // genuinamente sem mais itens
     itens.push(...pg);
     if (pg.length < 500) break;
     p++;
