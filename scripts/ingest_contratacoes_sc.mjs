@@ -1,7 +1,7 @@
 // RAIO-X ESTRUTURADO do processo licitatório — metadata oficial do PNCP, via endpoint de LISTAGEM EM LOTE
 // (/contratacoes/publicacao por data+UF+modalidade, até 500/página) → MUITO menos requisições que 1 chamada/compra.
 // Por compra guarda: PLATAFORMA (usuarioNome, chave p/ rotear o parser de ata), MODALIDADE, modo de disputa, SRP,
-// instrumento, valor ESTIMADO × HOMOLOGADO (economia real), datas, situação. Grava compra_raiox_sc (cnpj/ano/seq),
+// instrumento, valor ESTIMADO × HOMOLOGADO (economia real), datas, situação. Grava contratacoes_sc (cnpj/ano/seq),
 // idempotente (UPSERT) e RESUMÍVEL por janela (mês×modalidade) em _raiox_janela. Backoff em 429. node scripts/ingest_raiox_pncp_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -39,14 +39,18 @@ async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 3, statement_timeout: 120000 });
   db.on("error", () => {});
   const q = async (s, p) => { for (let i = 0; ; i++) { try { return await db.query(s, p); } catch (e) { if (i >= 2) throw e; await sleep(1200 * (i + 1)); } } };
-  await q(`CREATE TABLE IF NOT EXISTS compra_raiox_sc (
+  await q(`CREATE TABLE IF NOT EXISTS contratacoes_sc (
     cod_ibge TEXT, cnpj TEXT, ano INT, seq INT, esfera TEXT, plataforma TEXT, modalidade_id INT, modalidade TEXT, modo_disputa TEXT,
     srp BOOLEAN, instrumento TEXT, valor_estimado NUMERIC, valor_homologado NUMERIC, economia_pct NUMERIC,
     numero_compra TEXT, processo TEXT, objeto TEXT, situacao TEXT, emenda_parlamentar BOOLEAN,
     amparo_legal TEXT, data_publicacao TEXT, data_abertura TEXT, data_encerramento TEXT, atualizado timestamptz DEFAULT now(),
+    numero_controle TEXT GENERATED ALWAYS AS (cnpj || '-1-' || lpad(seq::text, 6, '0') || '/' || ano) STORED,
     PRIMARY KEY (cnpj, ano, seq))`);
-  await q(`CREATE INDEX IF NOT EXISTS ix_raiox_cod ON compra_raiox_sc (cod_ibge)`);
-  await q(`CREATE INDEX IF NOT EXISTS ix_raiox_plat ON compra_raiox_sc (plataforma)`);
+  await q(`CREATE INDEX IF NOT EXISTS ix_raiox_cod ON contratacoes_sc (cod_ibge)`);
+  await q(`CREATE INDEX IF NOT EXISTS ix_raiox_plat ON contratacoes_sc (plataforma)`);
+  await q(`CREATE UNIQUE INDEX IF NOT EXISTS ix_contratacoes_nc ON contratacoes_sc (numero_controle)`);
+  // compat: processos_sc é uma VIEW sobre contratacoes_sc (entidade absorvida); recria se sumir
+  await q(`CREATE OR REPLACE VIEW processos_sc AS SELECT cnpj AS cnpj_orgao, ano, seq AS sequencial, cod_ibge, numero_controle, modalidade_id, modalidade, objeto, valor_estimado, situacao, data_publicacao AS data_pub FROM contratacoes_sc`).catch(() => {});
   await q(`CREATE TABLE IF NOT EXISTS _raiox_janela (mod INT, ano INT, mes INT, n INT, feito_em timestamptz DEFAULT now(), PRIMARY KEY (mod,ano,mes))`);
   // mapa cnpj→cod_ibge (dos itens já ingeridos) p/ carimbar o município
   const codByCnpj = new Map((await q(`SELECT DISTINCT cnpj, cod_ibge FROM itens_sc WHERE cod_ibge IS NOT NULL`)).rows.map((r) => [r.cnpj, r.cod_ibge]));
@@ -62,13 +66,13 @@ async function main() {
         const cnpj = o.orgaoEntidade?.cnpj; if (!cnpj) continue;
         const est = num(o.valorTotalEstimado), hom = num(o.valorTotalHomologado);
         const econ = est && hom && est > 0 ? Math.round((1 - hom / est) * 1000) / 10 : null;
-        await q(`INSERT INTO compra_raiox_sc (cod_ibge,cnpj,ano,seq,esfera,plataforma,modalidade_id,modalidade,modo_disputa,srp,instrumento,
+        await q(`INSERT INTO contratacoes_sc (cod_ibge,cnpj,ano,seq,esfera,plataforma,modalidade_id,modalidade,modo_disputa,srp,instrumento,
             valor_estimado,valor_homologado,economia_pct,numero_compra,processo,objeto,situacao,emenda_parlamentar,amparo_legal,
             data_publicacao,data_abertura,data_encerramento)
           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
           ON CONFLICT (cnpj,ano,seq) DO UPDATE SET plataforma=EXCLUDED.plataforma, modalidade=EXCLUDED.modalidade, modo_disputa=EXCLUDED.modo_disputa,
             srp=EXCLUDED.srp, valor_estimado=EXCLUDED.valor_estimado, valor_homologado=EXCLUDED.valor_homologado, economia_pct=EXCLUDED.economia_pct,
-            situacao=EXCLUDED.situacao, cod_ibge=COALESCE(EXCLUDED.cod_ibge, compra_raiox_sc.cod_ibge), atualizado=now()`,
+            situacao=EXCLUDED.situacao, cod_ibge=COALESCE(EXCLUDED.cod_ibge, contratacoes_sc.cod_ibge), atualizado=now()`,
           [codByCnpj.get(cnpj) || null, cnpj, num(o.anoCompra), num(o.sequencialCompra), o.orgaoEntidade?.esferaId || null, o.usuarioNome || null,
            num(o.modalidadeId), o.modalidadeNome || null, o.modoDisputaNome || null, o.srp === true, o.tipoInstrumentoConvocatorioNome || null,
            est, hom, econ, o.numeroCompra || null, o.processo || null, String(o.objetoCompra || "").slice(0, 500), o.situacaoCompraNome || null,
@@ -82,7 +86,7 @@ async function main() {
     if (nJanela) process.stdout.write(`  mod ${mod} ${j.ano}-${String(j.mes).padStart(2, "0")}: ${nJanela} · total ${totGrav}\r`);
   }
   console.log(`\n✔ ${totGrav.toLocaleString()} compras gravadas (janelas já feitas puladas: ${jaFeitas})`);
-  const s = (await q(`SELECT count(*) n, count(DISTINCT plataforma) plats, count(*) FILTER (WHERE economia_pct IS NOT NULL) c_econ FROM compra_raiox_sc`)).rows[0];
+  const s = (await q(`SELECT count(*) n, count(DISTINCT plataforma) plats, count(*) FILTER (WHERE economia_pct IS NOT NULL) c_econ FROM contratacoes_sc`)).rows[0];
   console.log(`ACUMULADO: ${Number(s.n).toLocaleString()} compras · ${s.plats} plataformas · ${Number(s.c_econ).toLocaleString()} com economia`);
   await db.end();
 }
