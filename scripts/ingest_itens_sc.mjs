@@ -8,6 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const env = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8");
 const DATABASE_URL = env.match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const PNCP_MAIN = "https://pncp.gov.br/api/pncp/v1";
+const CONC = Number(process.env.CONC || 2);   // concorrência de processos; backoff robusto de 429 mantém confiabilidade em conc alto
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 
 async function getMain(url) {
@@ -100,7 +101,7 @@ async function main() {
   const pend = procs.filter((p) => !feitos.has(p.numero_controle));
   console.log(`Itens: ${pend.length} processos pendentes (de ${procs.length} no PNCP/SC)...`);
   let comItens = 0;
-  await pool(pend, 2, async (e) => {
+  await pool(pend, CONC, async (e) => {
     try {
       const itens = await fetchItens(e.cnpj, e.ano, e.seq);
       let n = 0;
