@@ -111,8 +111,8 @@ async function main() {
           [e.cod_ibge, e.cnpj, e.ano, e.seq, it.numero, it.descricao, it.unidade, it.quantidade, it.unitEst, it.unitHom, it.fornecedor, it.cnpjFornecedor, it.porteFornecedor, it.beneficioLC, it.economiaPct, it.ncm, it.catmat, it.tipo, it.situacao]);
         n++;
       }
-      await q(`INSERT INTO itens_proc_feitos (numero_controle,n) VALUES ($1,$2) ON CONFLICT (numero_controle) DO UPDATE SET n=EXCLUDED.n, feito_em=now()`, [e.numero_controle, n]);
-      if (n) comItens++;
+      // todo processo tem ≥1 item: só marca FEITO se veio item (n>0). n=0 = anomalia (fetch vazio) → fica pendente, retenta no re-run.
+      if (n > 0) { await q(`INSERT INTO itens_proc_feitos (numero_controle,n) VALUES ($1,$2) ON CONFLICT (numero_controle) DO UPDATE SET n=EXCLUDED.n, feito_em=now()`, [e.numero_controle, n]); comItens++; }
     } catch (err) { console.log(`  ! falha ${e.numero_controle} (${String(err).slice(0, 35)})`); }
   });
   const c = await db.query(`SELECT count(*) n, count(DISTINCT (cnpj,ano,seq)) p FROM itens_sc`);
