@@ -104,16 +104,19 @@ async function main() {
   await pool(pend, CONC, async (e) => {
     try {
       const itens = await fetchItens(e.cnpj, e.ano, e.seq);
-      let n = 0;
-      for (const it of itens) {
+      const n = itens.length;
+      if (n > 0) {
+        // LOTE: 1 INSERT por processo (não por item) — corta as requisições ao Neon em N× e evita a queda por bombardeio.
+        const A = { num: [], desc: [], uni: [], qtd: [], est: [], hom: [], forn: [], cf: [], pf: [], blc: [], ec: [], ncm: [], cat: [], tipo: [], sit: [] };
+        for (const it of itens) { A.num.push(it.numero); A.desc.push(it.descricao); A.uni.push(it.unidade); A.qtd.push(it.quantidade); A.est.push(it.unitEst); A.hom.push(it.unitHom); A.forn.push(it.fornecedor); A.cf.push(it.cnpjFornecedor); A.pf.push(it.porteFornecedor); A.blc.push(it.beneficioLC); A.ec.push(it.economiaPct); A.ncm.push(it.ncm); A.cat.push(it.catmat); A.tipo.push(it.tipo); A.sit.push(it.situacao); }
         await q(`INSERT INTO itens_sc (cod_ibge,cnpj,ano,seq,numero,descricao,unidade,quantidade,unit_estimado,unit_homologado,fornecedor,cnpj_fornecedor,porte_fornecedor,beneficio_lc,economia_pct,ncm,catmat,tipo,situacao)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+                 SELECT $1,$2,$3,$4, t.* FROM unnest($5::int[],$6::text[],$7::text[],$8::numeric[],$9::numeric[],$10::numeric[],$11::text[],$12::text[],$13::text[],$14::text[],$15::numeric[],$16::text[],$17::text[],$18::text[],$19::text[])
+                   AS t(numero,descricao,unidade,quantidade,unit_estimado,unit_homologado,fornecedor,cnpj_fornecedor,porte_fornecedor,beneficio_lc,economia_pct,ncm,catmat,tipo,situacao)
                  ON CONFLICT (cnpj,ano,seq,numero) DO UPDATE SET descricao=EXCLUDED.descricao,unit_homologado=EXCLUDED.unit_homologado,fornecedor=EXCLUDED.fornecedor,cnpj_fornecedor=EXCLUDED.cnpj_fornecedor,porte_fornecedor=EXCLUDED.porte_fornecedor,beneficio_lc=EXCLUDED.beneficio_lc,economia_pct=EXCLUDED.economia_pct,ncm=EXCLUDED.ncm,catmat=EXCLUDED.catmat,tipo=EXCLUDED.tipo,situacao=EXCLUDED.situacao`,
-          [e.cod_ibge, e.cnpj, e.ano, e.seq, it.numero, it.descricao, it.unidade, it.quantidade, it.unitEst, it.unitHom, it.fornecedor, it.cnpjFornecedor, it.porteFornecedor, it.beneficioLC, it.economiaPct, it.ncm, it.catmat, it.tipo, it.situacao]);
-        n++;
+          [e.cod_ibge, e.cnpj, e.ano, e.seq, A.num, A.desc, A.uni, A.qtd, A.est, A.hom, A.forn, A.cf, A.pf, A.blc, A.ec, A.ncm, A.cat, A.tipo, A.sit]);
+        // todo processo tem ≥1 item: só marca FEITO com n>0 (n=0 = fetch vazio/anomalia → fica pendente, retenta)
+        await q(`INSERT INTO itens_proc_feitos (numero_controle,n) VALUES ($1,$2) ON CONFLICT (numero_controle) DO UPDATE SET n=EXCLUDED.n, feito_em=now()`, [e.numero_controle, n]); comItens++;
       }
-      // todo processo tem ≥1 item: só marca FEITO se veio item (n>0). n=0 = anomalia (fetch vazio) → fica pendente, retenta no re-run.
-      if (n > 0) { await q(`INSERT INTO itens_proc_feitos (numero_controle,n) VALUES ($1,$2) ON CONFLICT (numero_controle) DO UPDATE SET n=EXCLUDED.n, feito_em=now()`, [e.numero_controle, n]); comItens++; }
     } catch (err) { console.log(`  ! falha ${e.numero_controle} (${String(err).slice(0, 35)})`); }
   });
   const c = await db.query(`SELECT count(*) n, count(DISTINCT (cnpj,ano,seq)) p FROM itens_sc`);

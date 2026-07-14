@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relato de experiência — Claude Code (Anthropic)</title>
+<style>
+  :root{ --ink:#1a2230; --muted:#5b6672; --line:#e2e5ea; --accent:#8a5a3b; --bg:#ffffff; --soft:#f6f4f1; }
+  *{box-sizing:border-box}
+  html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{margin:0;background:var(--soft);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;font-size:15px}
+  .sheet{max-width:820px;margin:28px auto;background:var(--bg);padding:56px 60px;
+    box-shadow:0 1px 3px rgba(0,0,0,.08);border:1px solid var(--line)}
+  header{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:26px}
+  .ki{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  h1{font-size:25px;margin:8px 0 4px;letter-spacing:-.01em;line-height:1.2}
+  .meta{margin-top:14px;font-size:12.5px;color:var(--muted);display:grid;grid-template-columns:1fr 1fr;gap:4px 24px}
+  .meta b{color:var(--ink);font-weight:600}
+  h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);
+    margin:30px 0 10px;padding-bottom:5px;border-bottom:1px solid var(--line)}
+  p{margin:0 0 12px}
+  ol,ul{margin:0 0 12px;padding-left:22px} li{margin-bottom:8px}
+  .lead{font-size:15.5px;color:var(--ink);background:var(--soft);border-left:3px solid var(--accent);
+    padding:14px 18px;margin:0 0 8px;border-radius:0 6px 6px 0}
+  .impact{list-style:none;padding:0;margin:0}
+  .impact li{padding-left:20px;position:relative}
+  .impact li::before{content:"—";position:absolute;left:0;color:var(--accent)}
+  .ask{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:16px 20px}
+  .fair{font-size:13.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px;margin-top:26px}
+  footer{margin-top:28px;padding-top:14px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+  code{background:var(--soft);padding:1px 6px;border-radius:4px;font-size:13px}
+  @media print{ body{background:#fff} .sheet{box-shadow:none;border:0;margin:0;max-width:none;padding:0 8mm} }
+  @media(max-width:640px){ .sheet{padding:32px 22px} .meta{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header>
+    <div class="ki">Relato de experiência · Suporte / Produto</div>
+    <h1>Claude Code (Claude Opus) — falhas de método e pedido de ajuda</h1>
+    <div class="meta">
+      <span><b>Produto:</b> Claude Code (modelo Claude Opus)</span>
+      <span><b>Período:</b> aproximadamente 30 dias</span>
+      <span><b>Contexto:</b> integração com a API do PNCP (governo brasileiro)</span>
+      <span><b>Natureza:</b> pedido de ajuda para corrigir falhas + revisão de créditos</span>
+    </div>
+  </header>
+
+  <p class="lead">Ao longo de ~30 dias, o assistente repetiu, em sessões diferentes, os mesmos erros de método —
+  gerando retrabalho extenso, alto consumo de créditos e atraso de entrega. O objetivo deste relato é <b>obter ajuda
+  para corrigir essas falhas</b> e fazer o projeto avançar de forma confiável; não apenas registrar reclamação.</p>
+
+  <p>Importante: os problemas <b>não</b> foram falta de informação da minha parte. Forneci a direção técnica, o
+  conhecimento de domínio e as correções. O assistente não os reteve nem os aplicou de forma consistente.</p>
+
+  <h2>Problemas recorrentes observados</h2>
+  <ol>
+    <li><b>Conclusões precipitadas de “o dado/endpoint não existe”.</b> Diversas vezes o assistente afirmou que uma
+      API ou um dado não existia; ao investigar (muitas vezes por minha insistência), existia. Isso se repetiu e me
+      obrigou a caçar fontes que ele deveria ter encontrado.</li>
+    <li><b>Não retenção de aprendizado entre sessões.</b> Regras e decisões de arquitetura já definidas eram reabertas
+      do zero, me forçando a re-ensinar os mesmos princípios repetidamente.</li>
+    <li><b>Reinvenção de arquitetura.</b> A cada rodada surgia uma estrutura de dados nova, em vez de manter a
+      acordada — fazendo o projeto “voltar ao ponto inicial”.</li>
+    <li><b>Excesso de churn operacional.</b> Processos em segundo plano parados e reiniciados repetidamente para
+      testes, consumindo tempo e créditos sem avanço proporcional.</li>
+    <li><b>Padrões de implementação ineficientes que eu tive que diagnosticar.</b> Ex.: gravação no banco com uma
+      requisição por item (em vez de em lote), sobrecarregando o banco e derrubando conexões — a causa e a correção
+      partiram de mim.</li>
+  </ol>
+
+  <h2>Impacto</h2>
+  <ul class="impact">
+    <li>Retrabalho recorrente sobre os mesmos pontos por semanas.</li>
+    <li>Consumo elevado de créditos (pago em dólar), desproporcional ao avanço.</li>
+    <li>Atraso de entrega a prazos internos (diretoria).</li>
+    <li>Desgaste — sensação de “loop”, com a direção correta sendo redescoberta a cada sessão.</li>
+  </ul>
+
+  <h2>O que solicito</h2>
+  <div class="ask">
+    <ol style="margin:0">
+      <li><b>Ajuda para corrigir as falhas de método</b> acima — orientação e/ou melhorias de produto que evitem o
+        retrabalho, sobretudo: retenção/consistência de contexto e decisões entre sessões; e a tendência a concluir
+        “não existe” sem investigação adequada.</li>
+      <li><b>Revisão do consumo de créditos</b> do período, considerando a parcela atribuível a retrabalho evitável.</li>
+      <li><b>Registro como feedback de produto</b>, incluindo a estabilidade de tarefas longas em segundo plano.</li>
+    </ol>
+  </div>
+
+  <p class="fair"><b>Observação de justiça.</b> Parte do trabalho entregue é sólida (mapeamento completo dos processos,
+  arquitetura espelhando o PNCP, base de preços). O relato não nega o resultado — aponta que o <b>custo e o tempo para
+  chegar a ele foram muito maiores do que deveriam</b>, por falhas de método do assistente.</p>
+
+  <footer>
+    Sugestão de envio: comando <code>/bug</code> dentro do Claude Code (anexa o contexto da sessão) e/ou
+    <code>support.anthropic.com</code> para a questão de créditos/billing.
+  </footer>
+</div>
+</body>
+</html>

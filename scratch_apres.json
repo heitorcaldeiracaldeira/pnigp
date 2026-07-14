@@ -1,0 +1,159 @@
+{
+ "total": {
+  "n": "241302",
+  "org": "1324",
+  "plat": "29",
+  "a0": 2021,
+  "a1": 2923
+ },
+ "modalidade": [
+  {
+   "modalidade": "Dispensa",
+   "n": "117935",
+   "bi": "90.6"
+  },
+  {
+   "modalidade": "Pregão - Eletrônico",
+   "n": "63756",
+   "bi": "72.8"
+  },
+  {
+   "modalidade": "Inexigibilidade",
+   "n": "37394",
+   "bi": "7.4"
+  },
+  {
+   "modalidade": "Concorrência - Eletrônica",
+   "n": "13298",
+   "bi": "12.2"
+  },
+  {
+   "modalidade": "Credenciamento",
+   "n": "5166",
+   "bi": "7.3"
+  },
+  {
+   "modalidade": "Pregão - Presencial",
+   "n": "2273",
+   "bi": "0.4"
+  },
+  {
+   "modalidade": "Concorrência - Presencial",
+   "n": "801",
+   "bi": "1.1"
+  },
+  {
+   "modalidade": "Leilão - Eletrônico",
+   "n": "437",
+   "bi": "0.1"
+  }
+ ],
+ "economia": [
+  {
+   "srp": false,
+   "n": "133423",
+   "media": "6.4"
+  },
+  {
+   "srp": true,
+   "n": "24817",
+   "media": "26.4"
+  }
+ ],
+ "plataforma": [
+  {
+   "plataforma": "Betha Sistemas",
+   "n": "78567"
+  },
+  {
+   "plataforma": "IPM Sistemas",
+   "n": "70878"
+  },
+  {
+   "plataforma": "Compras.gov.br",
+   "n": "20517"
+  },
+  {
+   "plataforma": "ECustomize Consultoria em Software S.A",
+   "n": "16786"
+  },
+  {
+   "plataforma": "Secretaria de Estado da Administração de Santa Catarina",
+   "n": "15485"
+  },
+  {
+   "plataforma": "Pública Tecnologia Ltda.",
+   "n": "11835"
+  }
+ ],
+ "ano": [
+  {
+   "ano": 2022,
+   "n": "2067"
+  },
+  {
+   "ano": 2023,
+   "n": "17209"
+  },
+  {
+   "ano": 2024,
+   "n": "82377"
+  },
+  {
+   "ano": 2025,
+   "n": "92511"
+  },
+  {
+   "ano": 2026,
+   "n": "46887"
+  }
+ ],
+ "munis": [
+  {
+   "cod_ibge": "4205407",
+   "n": "23329"
+  },
+  {
+   "cod_ibge": "4208906",
+   "n": "9244"
+  },
+  {
+   "cod_ibge": "4210506",
+   "n": "7724"
+  },
+  {
+   "cod_ibge": "4202404",
+   "n": "6610"
+  },
+  {
+   "cod_ibge": "4215802",
+   "n": "6063"
+  },
+  {
+   "cod_ibge": "4216909",
+   "n": "5946"
+  },
+  {
+   "cod_ibge": "4218202",
+   "n": "5292"
+  },
+  {
+   "cod_ibge": "4203105",
+   "n": "4270"
+  }
+ ],
+ "dispensa": {
+  "n": "117935",
+  "bi": "90.6"
+ },
+ "precos": {
+  "n": "4787"
+ },
+ "mislabel": {
+  "n": "1478",
+  "m": "71"
+ },
+ "itens": {
+  "n": "1202436"
+ }
+}
