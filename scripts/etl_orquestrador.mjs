@@ -224,10 +224,6 @@ const FONTES = [
     devido: async (st) => diasDesde(st?.ultima_exec) > 300 }, // anual
   { id: "cnes_estab", label: "Estabelecimentos de saúde por município (CNES — rede p/ regulação, API DEMAS)", api: "datasus", script: "scripts/ingest_cnes_estab_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 45 }, // CNES atualiza mensalmente
-  { id: "precos_referencia", label: "Preço de referência por item (mediana SC) + classificação ata/efetivada — base da análise de preços", api: "pncp", script: "scripts/ingest_precos_referencia_sc.mjs", env: {},
-    devido: async (st) => diasDesde(st?.ultima_exec) > 30 }, // recalcula quando itens_sc atualiza
-  { id: "sazonalidade_preco", label: "Sazonalidade de preço por categoria (melhor mês de compra, SC)", api: "pncp", script: "scripts/ingest_sazonalidade_preco_sc.mjs", env: {},
-    devido: async (st) => diasDesde(st?.ultima_exec) > 30 },
   { id: "emendas", label: "Emendas — INDICAÇÃO (SICONV/Transferegov, repositório detru: parlamentar, impositivo, valor destinado)", api: "transferegov", script: "scripts/ingest_emendas_siconv_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 30 },
   { id: "emendas_exec", label: "Emendas — EXECUÇÃO orçamentária federal (Portal da Transparência: empenhado×pago → recurso na mesa)", api: "transferegov", script: "scripts/ingest_emendas_sc.mjs", env: { ANO_INI: "2020", ANO_FIM: "2026" },
