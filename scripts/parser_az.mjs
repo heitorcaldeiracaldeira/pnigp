@@ -72,6 +72,44 @@ export function parseAtaAz(texto) {
   return l1.length ? l1 : parseLayout2(t);
 }
 
+// ═════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// CRUZAMENTO LOTE (documento) → numeroItem (PNCP) — o "lote versus item".
+//
+// 🔴 O documento numera POR LOTE dentro do processo ("Lote 1", "Lote 2"); o PNCP numera POR ITEM com um ID GLOBAL
+// ("numeroItem": 1400443). São DOIS sistemas de numeração diferentes. Medido em 749 lotes:
+//     lote == numeroItem :   0  (0,0%)   ← usar o lote como chave grava 100% ERRADO
+//     casa por DESCRIÇÃO : 749 (100,0%)  ← similaridade 1.00, zero falha
+// Portanto a ponte é a DESCRIÇÃO, e ela é determinística. (2024/76: lote 1→item 1400443, lote 2→1400444.)
+//
+// casaItens(registros, itensDoPncp) → devolve os registros com `numero` = numeroItem REAL do PNCP.
+// Sem casamento confiável (sim < MIN_SIM), `numero` fica null e o registro NÃO deve ser gravado — melhor perder
+// do que pendurar a marca no item errado ([[feedback-privilegiar-dados]]: nunca cortar em silêncio, mas nunca mentir).
+const MIN_SIM = 0.6;
+const normD = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+function simDesc(a, b) {
+  const A = new Set(normD(a).split(" ").filter((x) => x.length > 3));
+  const B = new Set(normD(b).split(" ").filter((x) => x.length > 3));
+  if (!A.size || !B.size) return 0;
+  let i = 0; for (const x of A) if (B.has(x)) i++;
+  return i / Math.min(A.size, B.size);
+}
+export function casaItens(regs, itens) {
+  if (!regs.length || !itens?.length) return regs.map((r) => ({ ...r, numero: null, simItem: 0 }));
+  // resolve UMA vez por lote (todos os licitantes do lote compartilham a descrição)
+  const porChave = new Map();
+  for (const r of regs) {
+    const k = r.lote ?? r.item;
+    if (porChave.has(k)) continue;
+    let melhor = null, ms = 0;
+    for (const it of itens) { const s = simDesc(r.descricao, it.descricao); if (s > ms) { ms = s; melhor = it; } }
+    porChave.set(k, ms >= MIN_SIM ? { numero: Number(melhor.numero), sim: ms } : { numero: null, sim: ms });
+  }
+  return regs.map((r) => {
+    const m = porChave.get(r.lote ?? r.item);
+    return { ...r, numero: m?.numero ?? null, simItem: m?.sim ?? 0 };
+  });
+}
+
 function parseLayout1(t) {
   const cabs = [...t.matchAll(LOTE)].map((m) => ({
     lote: parseInt(m[1], 10),

@@ -72,6 +72,9 @@ export function whereSelecaoAtas(alias = "a", calias = "c") {
 // Por isso o parser é roteado por ISTO, não pela plataforma. Carimbado na ingestão (arquivo_texto_sc.gerador).
 export const GERADORES = [
   { id: "portal_compras_publicas", re: /portaldecompraspublicas|portal de compras p[uú]blicas/i, parser: "parser_ecustomize" },
+  // AZ: 2 layouts. L1 = "FORNECEDORES CLASSIFICADOS ... Lote N Itens do lote:" (todos os licitantes).
+  // L2 = "FORNECEDOR X CNPJ/CPF: ... propriaMarca: proprioModelo:" (por fornecedor; rótulo DEPOIS do valor).
+  { id: "az",                      re: /fornecedores classificados|itens do lote:/i,             parser: "parser_az" },
   { id: "betha",                   re: /movimentos do lote|\bbetha\b/i,                          parser: "parser_betha" },
   { id: "bll",                     re: /bllcompras|bolsa de licitac(o|õ)es/i,                    parser: null },
   { id: "licitar_digital",         re: /licitar digital|licitardigital/i,                        parser: null },

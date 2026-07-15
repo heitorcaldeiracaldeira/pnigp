@@ -10,6 +10,9 @@ const DATABASE_URL = env.match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const PNCP_MAIN = "https://pncp.gov.br/api/pncp/v1";
 const CONC = Number(process.env.CONC || 2);   // concorrência de processos; backoff robusto de 429 mantém confiabilidade em conc alto
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
+// helpers do espelho de /resultados
+const num = (x) => (x == null || x === "" ? null : (Number(x) || 0));
+const dtz = (s) => (s ? String(s).slice(0, 19) : null);
 
 async function getMain(url) {
   for (let t = 0; t < 8; t++) {
@@ -43,16 +46,25 @@ async function fetchItens(cnpj, ano, seq) {
   const premiados = itens.filter((it) => it.temResultado);
   const alvo = premiados.slice(0, CAP_RES);
   if (premiados.length > CAP_RES) console.log(`  ${cnpj}/${ano}/${seq}: ${premiados.length} itens c/ resultado — homologado coletado dos ${CAP_RES} primeiros (cap)`);
-  const resMap = new Map();
+  // 🔴 /resultados é LISTA — "Consultar RESULTADOS" (plural) no endpoint, "Lista de Resultados — Agrupador de
+  // Resultados de um Item da Compra" no Manual de Integração, e existe /resultados/{sequencialResultado}.
+  // O código guardava `r[0]` e DESCARTAVA o resto (medido: ~8% dos resultados perdidos; itens com 3, 5 e até 67).
+  // A causa foi uma frase ERRADA no nosso docs/arquitetura-pncp.md ("só o vencedor") — já corrigida lá.
+  // Agora: TODOS os resultados vão p/ item_resultado_sc (espelho da entidade); itens_sc mantém o 1º achatado
+  // (compatibilidade com as queries de produção — não muda comportamento de quem já lê itens_sc).
+  const resMap = new Map();     // numeroItem -> resultado[0]  (achatado em itens_sc, como antes)
+  const resTodos = [];          // TODOS os resultados -> item_resultado_sc
   let i = 0;
   await Promise.all(Array.from({ length: 6 }, async () => {
     while (i < alvo.length) {
       const it = alvo[i++];
       const r = await getMain(`${base}/${it.numeroItem}/resultados`).catch(() => null);
-      if (Array.isArray(r) && r[0]) resMap.set(it.numeroItem, r[0]);
+      if (!Array.isArray(r) || !r.length) continue;
+      resMap.set(it.numeroItem, r[0]);
+      for (const x of r) resTodos.push({ numeroItem: it.numeroItem, r: x });
     }
   }));
-  return itens.map((it, idx) => {
+  const saida = itens.map((it, idx) => {
     const r = resMap.get(it.numeroItem) || null;
     const unitEst = Number(it.valorUnitarioEstimado) || 0;
     const unitHom = r ? Number(r.valorUnitarioHomologado) || Number(r.valorUnitario) || 0 : 0;
@@ -74,6 +86,8 @@ async function fetchItens(cnpj, ano, seq) {
       situacao: String(it.situacaoCompraItemNome || "") || null,         // Homologado/Fracassado/Deserto/Cancelado — comportamento da compra
     };
   });
+  saida.__resultados = resTodos;   // TODOS os resultados (espelho de /resultados) — anexado ao array RETORNADO
+  return saida;
 }
 
 async function pool(items, conc, fn) { let i = 0, done = 0; await Promise.all(Array.from({ length: conc }, async () => { while (i < items.length) { await fn(items[i++]); if (++done % 20 === 0) console.log(`  …${done}/${items.length}`); } })); }
@@ -91,7 +105,23 @@ async function main() {
     CREATE INDEX IF NOT EXISTS idx_itens_proc ON itens_sc (cnpj, ano, seq);
     CREATE INDEX IF NOT EXISTS idx_itens_catmat ON itens_sc (catmat) WHERE catmat IS NOT NULL;
     CREATE INDEX IF NOT EXISTS idx_itens_ncm ON itens_sc (ncm) WHERE ncm IS NOT NULL;
-    CREATE TABLE IF NOT EXISTS itens_sc_feitos (cod_ibge TEXT, ano INTEGER, PRIMARY KEY (cod_ibge, ano));`);
+    CREATE TABLE IF NOT EXISTS itens_sc_feitos (cod_ibge TEXT, ano INTEGER, PRIMARY KEY (cod_ibge, ano));
+
+    -- ESPELHO da entidade RESULTADO do PNCP (/itens/{numeroItem}/resultados — "Consultar RESULTADOS", plural).
+    -- Um item tem N resultados (credenciamento, cotações de dispensa, SRP): medidos itens com 3, 5 e até 67.
+    -- itens_sc guarda só o 1º achatado (compat. das queries de produção); o conjunto COMPLETO vive aqui.
+    -- Chave = a do PNCP + sequencialResultado (existe /resultados/{sequencialResultado} no spec).
+    CREATE TABLE IF NOT EXISTS item_resultado_sc (
+      cod_ibge TEXT, cnpj TEXT, ano INTEGER, seq INTEGER, numero INTEGER, sequencial_resultado INTEGER,
+      ni_fornecedor TEXT, nome_razao_social_fornecedor TEXT, tipo_pessoa TEXT,
+      quantidade_homologada NUMERIC, valor_unitario_homologado NUMERIC, valor_total_homologado NUMERIC,
+      percentual_desconto NUMERIC, porte_fornecedor_nome TEXT, natureza_juridica_nome TEXT,
+      ordem_classificacao_srp INTEGER, situacao_resultado TEXT, indicador_subcontratacao BOOLEAN,
+      data_resultado DATE, data_cancelamento TIMESTAMPTZ, motivo_cancelamento TEXT,
+      atualizado timestamptz DEFAULT now(),
+      PRIMARY KEY (cnpj, ano, seq, numero, sequencial_resultado) );
+    CREATE INDEX IF NOT EXISTS idx_item_res_proc ON item_resultado_sc (cnpj, ano, seq);
+    CREATE INDEX IF NOT EXISTS idx_item_res_forn ON item_resultado_sc (ni_fornecedor);`);
   for (const c of ["ncm TEXT", "catmat TEXT", "tipo TEXT", "situacao TEXT"]) await db.query(`ALTER TABLE itens_sc ADD COLUMN IF NOT EXISTS ${c}`); // robusto se a tabela já existir
   const q = async (sql, params) => { for (let t = 0; t < 12; t++) { try { return await db.query(sql, params); } catch { await sleep(1500 * (t + 1)); } } throw new Error("db indisponível"); };
   // universo COMPLETO: todos os processos do PNCP em SC (processos_sc)
@@ -114,6 +144,37 @@ async function main() {
                    AS t(numero,descricao,unidade,quantidade,unit_estimado,unit_homologado,fornecedor,cnpj_fornecedor,porte_fornecedor,beneficio_lc,economia_pct,ncm,catmat,tipo,situacao)
                  ON CONFLICT (cnpj,ano,seq,numero) DO UPDATE SET descricao=EXCLUDED.descricao,unit_homologado=EXCLUDED.unit_homologado,fornecedor=EXCLUDED.fornecedor,cnpj_fornecedor=EXCLUDED.cnpj_fornecedor,porte_fornecedor=EXCLUDED.porte_fornecedor,beneficio_lc=EXCLUDED.beneficio_lc,economia_pct=EXCLUDED.economia_pct,ncm=EXCLUDED.ncm,catmat=EXCLUDED.catmat,tipo=EXCLUDED.tipo,situacao=EXCLUDED.situacao`,
           [e.cod_ibge, e.cnpj, e.ano, e.seq, A.num, A.desc, A.uni, A.qtd, A.est, A.hom, A.forn, A.cf, A.pf, A.blc, A.ec, A.ncm, A.cat, A.tipo, A.sit]);
+
+        // ESPELHO: TODOS os resultados do item (antes só o [0] entrava, achatado em itens_sc — ~8% descartados)
+        const R = itens.__resultados || [];
+        if (R.length) {
+          const B = { num: [], sr: [], ni: [], nome: [], tp: [], qh: [], vu: [], vt: [], pd: [], porte: [], nj: [], ord: [], sit: [], sub: [], dr: [], dc: [], mc: [] };
+          for (const { numeroItem, r } of R) {
+            B.num.push(Number(numeroItem)); B.sr.push(Number(r.sequencialResultado) || 1);
+            B.ni.push(r.niFornecedor || null); B.nome.push(String(r.nomeRazaoSocialFornecedor || "").slice(0, 160) || null);
+            B.tp.push(r.tipoPessoa || null); B.qh.push(num(r.quantidadeHomologada)); B.vu.push(num(r.valorUnitarioHomologado));
+            B.vt.push(num(r.valorTotalHomologado)); B.pd.push(num(r.percentualDesconto));
+            B.porte.push(r.porteFornecedorNome || null); B.nj.push(String(r.naturezaJuridicaNome || "").slice(0, 120) || null);
+            B.ord.push(r.ordemClassificacaoSrp != null ? Number(r.ordemClassificacaoSrp) : null);
+            B.sit.push(r.situacaoCompraItemResultadoNome || null); B.sub.push(r.indicadorSubcontratacao === true);
+            B.dr.push(r.dataResultado || null); B.dc.push(dtz(r.dataCancelamento)); B.mc.push(String(r.motivoCancelamento || "").slice(0, 200) || null);
+          }
+          await q(`INSERT INTO item_resultado_sc (cod_ibge,cnpj,ano,seq,numero,sequencial_resultado,ni_fornecedor,
+              nome_razao_social_fornecedor,tipo_pessoa,quantidade_homologada,valor_unitario_homologado,valor_total_homologado,
+              percentual_desconto,porte_fornecedor_nome,natureza_juridica_nome,ordem_classificacao_srp,situacao_resultado,
+              indicador_subcontratacao,data_resultado,data_cancelamento,motivo_cancelamento)
+            SELECT $1,$2,$3,$4, t.* FROM unnest($5::int[],$6::int[],$7::text[],$8::text[],$9::text[],$10::numeric[],$11::numeric[],
+              $12::numeric[],$13::numeric[],$14::text[],$15::text[],$16::int[],$17::text[],$18::bool[],$19::date[],$20::timestamptz[],$21::text[])
+              AS t(numero,sequencial_resultado,ni_fornecedor,nome_razao_social_fornecedor,tipo_pessoa,quantidade_homologada,
+                   valor_unitario_homologado,valor_total_homologado,percentual_desconto,porte_fornecedor_nome,natureza_juridica_nome,
+                   ordem_classificacao_srp,situacao_resultado,indicador_subcontratacao,data_resultado,data_cancelamento,motivo_cancelamento)
+            ON CONFLICT (cnpj,ano,seq,numero,sequencial_resultado) DO UPDATE SET
+              ni_fornecedor=EXCLUDED.ni_fornecedor, nome_razao_social_fornecedor=EXCLUDED.nome_razao_social_fornecedor,
+              quantidade_homologada=EXCLUDED.quantidade_homologada, valor_unitario_homologado=EXCLUDED.valor_unitario_homologado,
+              valor_total_homologado=EXCLUDED.valor_total_homologado, situacao_resultado=EXCLUDED.situacao_resultado,
+              ordem_classificacao_srp=EXCLUDED.ordem_classificacao_srp, atualizado=now()`,
+            [e.cod_ibge, e.cnpj, e.ano, e.seq, B.num, B.sr, B.ni, B.nome, B.tp, B.qh, B.vu, B.vt, B.pd, B.porte, B.nj, B.ord, B.sit, B.sub, B.dr, B.dc, B.mc]);
+        }
         // todo processo tem ≥1 item: só marca FEITO com n>0 (n=0 = fetch vazio/anomalia → fica pendente, retenta)
         await q(`INSERT INTO itens_proc_feitos (numero_controle,n) VALUES ($1,$2) ON CONFLICT (numero_controle) DO UPDATE SET n=EXCLUDED.n, feito_em=now()`, [e.numero_controle, n]); comItens++;
       }
