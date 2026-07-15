@@ -78,10 +78,21 @@ export function parseAtaEcustomize(texto) {
              .replace(/P[áa]gina \d+ de \d+/gi, " ")
              .replace(/\bLance\b|\bValor Total\b|\bLC \d+\b|\bMelhor Lance\b/gi, " ")
              .replace(/\s+/g, " ").trim();
-    // detecta início de item: "NNNN PRODUTO EM MAIÚSCULAS" dentro do pre → atualiza item corrente
-    const hm = pre.match(/(?:^|\s)(\d{3,4})\s+([A-ZÀ-Ú0-9][^]{4,}?)\s*$/);
+    // ─── INÍCIO DE ITEM ───────────────────────────────────────────────────────────────────────────────────────
+    // 🔴 BUG CORRIGIDO 2026-07-15: a âncora REAL do Portal é "Propostas Enviadas LOTE 0001 - ITEM 0001 - <desc>"
+    // (lida no texto de verdade: AtaTotal_367217.pdf, Balneário Piçarras 2025/57). O regex antigo procurava
+    // "NNNN PRODUTO" e NUNCA casava com "LOTE 0001 - ITEM 0001 -" → curCodigo não avançava e TODAS as propostas do
+    // processo caíam no primeiro item. Medido: 802 de 2.402 processos (33,4%) com tudo num item só; 5.307 propostas
+    // no item errado. Achado ao EXIBIR um processo (o valor R$ 289 da FLEXFORMA aparecia no item 1 e era do item 3).
+    // Confirmado na API: /itens/3/resultados = FLEXFORMA R$ 289 — a proposta era mesmo do item 3.
+    // LOTE e ITEM vêm JUNTOS: no PNCP são a mesma entidade (manual §7.14/§7.16, "cada ITEM OU LOTE").
+    const lm = pre.match(/LOTE\s+(\d+)\s*[-–]\s*ITEM\s+(\d+)\s*[-–]\s*([^]{4,}?)\s*$/i);
+    // fallback: layout antigo "NNNN PRODUTO EM MAIÚSCULAS" (não remover: nem toda ata do Portal traz LOTE/ITEM)
+    const hm = lm || pre.match(/(?:^|\s)(\d{3,4})\s+([A-ZÀ-Ú0-9][^]{4,}?)\s*$/);
     let fornecedor = pre;
-    if (hm && hm[2].length > 4) {
+    if (lm) {
+      curCodigo = parseInt(lm[2], 10); curProduto = lm[3].trim();
+    } else if (hm && hm[2].length > 4) {
       // o pre pode ser "…tail_da_proposta_anterior NNNN PRODUTO… FORNECEDOR"; o fornecedor é o que vem depois do produto — mas
       // fornecedor precede o CNPJ, então na 1ª proposta do item o fornecedor está DEPOIS do produto. Pega o último bloco.
       curCodigo = parseInt(hm[1], 10); curProduto = hm[2].trim();
