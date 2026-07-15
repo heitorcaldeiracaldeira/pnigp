@@ -9,6 +9,15 @@ const limpaCnpj = (s) => s.replace(/\s+/g, "");
 // blob modelo+marca é curto → LIMITA o gap a 90 chars (evita backtracking catastrófico que travava o node em atas sem o R$ seguinte)
 const REC = /(\d{2}\.\d{3}\.\d{3}\/\d{4}\s*-\s*\d{2})\s+(\d{2}\/\d{2}\/\d{4}\s*-\s*\d{2}:\d{2}:\d{2})\s+(.{0,90}?)\s+([\d.]+,\d{2,4})\s+R\$\s*([\d.]+,\d{2})\s+R\$\s*([\d.]+,\d{2})\s+(Sim|N[ãa]o)\b/g;
 
+// CABEÇALHO da tabela de propostas ("Fornecedor CNPJ/CPF Data Modelo Marca/ Fabricante Quantidade … LC 123/2006").
+// Na 1ª linha de cada tabela o texto antes do CNPJ é "<cabeçalho> <FORNECEDOR>" → o corte por palavras engolia o
+// cabeçalho como nome (16% das linhas gravadas: "Marca/ Fabricante Quantidade Local/ Regional /2006"). Colunas variam
+// por ata → cada uma opcional, na ordem. Aplicar SÓ ao nome: o `pre` alimenta também a detecção de item (curCodigo).
+const CAB = /Fornecedor\s+CNPJ\s*\/\s*CPF(?:\s+Data)?(?:\s+Modelo)?(?:\s+Marca\s*\/\s*Fabricante)?(?:\s+Quantidade)?(?:\s+Local\s*\/\s*Regional)?(?:\s+Melhor\s+Lance)?(?:\s+Lance)?(?:\s+Valor\s+Total)?(?:\s+LC\s*123\s*\/\s*2006)?/gi;
+// Rede p/ variante não prevista: o nome vem SEMPRE depois do último token de cabeçalho. Tokens distintivos apenas
+// (nada genérico como "Quantidade" solto, que aparece em descrição de produto).
+const CAB_RESID = /^[\s\S]*(?:LC\s*123\s*\/\s*2006|\/\s*2006|Valor\s+Total|Local\s*\/\s*Regional|Marca\s*\/\s*Fabricante|CNPJ\s*\/\s*CPF)\s*/i;
+
 export function parseAtaEcustomize(texto) {
   const t = texto.replace(/\s+/g, " ");
   const out = [];
@@ -30,6 +39,8 @@ export function parseAtaEcustomize(texto) {
       // fornecedor precede o CNPJ, então na 1ª proposta do item o fornecedor está DEPOIS do produto. Pega o último bloco.
       curCodigo = parseInt(hm[1], 10); curProduto = hm[2].trim();
     }
+    // tira o CABEÇALHO da tabela do nome (só aqui: o `pre` acima precisa ficar intacto p/ detectar o item)
+    fornecedor = fornecedor.replace(CAB, " ").replace(/\s+/g, " ").trim().replace(CAB_RESID, "").trim();
     // fornecedor = últimas ~8 palavras antes do CNPJ (nome da empresa), tirando ruído de "Sim/Não"/"NM" da proposta anterior
     fornecedor = fornecedor.replace(/^(Sim|N[ãa]o)\b\s*/i, "").replace(/^[A-Z]{1,3}\s+(?=[A-ZÀ-Ú])/, "");
     const palavras = fornecedor.split(" ");

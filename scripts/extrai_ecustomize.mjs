@@ -12,11 +12,37 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 3, statement_timeout: 120000 });
   db.on("error", () => {});
-  const q = async (s, p) => { for (let i = 0; i < 25; i++) { try { return await db.query(s, p); } catch { await sleep(1500 * (i + 1)); } } throw new Error("db"); };
+  // NÃO engolir o erro: o retry cego escondeu por horas uma colisão de PK que fazia CADA ata queimar ~8min e nunca
+  // gravar "feito" — reprocessando as mesmas 20 atas para sempre. Erro de dado/schema falha na hora, com a mensagem.
+  const FATAL = new Set(["21000", "22P05", "22021", "23505", "23502", "42703", "42P10"]);
+  const q = async (s, p) => {
+    let ultimo;
+    for (let i = 0; i < 25; i++) {
+      try { return await db.query(s, p); }
+      catch (err) { ultimo = err; if (FATAL.has(err.code)) throw err; await sleep(1500 * (i + 1)); }
+    }
+    throw new Error(`db (${ultimo?.code || "?"}): ${ultimo?.message || "sem detalhe"}`);
+  };
   // colunas extras em propostas_sc — cria só se faltar (evita ALTER a cada run, que pega lock exclusivo e deadlocka entre instâncias)
   const cols = new Set((await q(`SELECT column_name FROM information_schema.columns WHERE table_name='propostas_sc'`)).rows.map((r) => r.column_name));
   for (const [nome, tipo] of [["cnpj_fornecedor", "TEXT"], ["data_hora", "TEXT"], ["classificado", "BOOLEAN"], ["valor_total", "NUMERIC"], ["fonte", "TEXT"]])
     if (!cols.has(nome)) await q(`ALTER TABLE propostas_sc ADD COLUMN ${nome} ${tipo}`);
+
+  // IDENTIDADE DA PROPOSTA = CNPJ, não o nome. A PK antiga era (…,numero,fornecedor) — apoiada no campo FUZZY do
+  // parser (o nome sai de heurística), enquanto o CNPJ é âncora determinística. Efeito: dois fornecedores distintos
+  // com o mesmo nome truncado colidiam → "ON CONFLICT DO UPDATE cannot affect row a second time" → a ata NUNCA
+  // gravava e reprocessava eternamente. fornecedor_key usa o CNPJ e cai no nome só p/ extrator que não capta CNPJ.
+  if (!cols.has("fornecedor_key")) {
+    await q(`ALTER TABLE propostas_sc ADD COLUMN fornecedor_key TEXT
+      GENERATED ALWAYS AS (COALESCE(NULLIF(cnpj_fornecedor,''), 'nome:'||lower(fornecedor))) STORED`);
+  }
+  const pkDef = (await q(`SELECT pg_get_constraintdef(c.oid) def FROM pg_constraint c JOIN pg_class t ON t.oid=c.conrelid
+    WHERE t.relname='propostas_sc' AND c.contype='p'`)).rows[0]?.def || "";
+  if (!pkDef.includes("fornecedor_key")) {
+    await q(`ALTER TABLE propostas_sc DROP CONSTRAINT propostas_sc_pkey`);
+    await q(`ALTER TABLE propostas_sc ADD PRIMARY KEY (cnpj,ano,seq,numero,fornecedor_key)`);
+    console.log("↻ PK de propostas_sc migrada p/ (cnpj,ano,seq,numero,fornecedor_key) — identidade pelo CNPJ");
+  }
 
   // só as CHAVES (rápido) — o texto (blob grande) é buscado por ata no loop; agregar texto de 1k atas numa query trava.
   const atas = (await q(`SELECT d.cnpj,d.ano,d.seq,d.cod_ibge
@@ -52,7 +78,7 @@ async function main() {
         await q(`INSERT INTO propostas_sc (cnpj,ano,seq,cod_ibge,numero,fornecedor,cnpj_fornecedor,marca,modelo,valor_unitario,valor_total,data_hora,classificacao,classificado,fonte)
           SELECT $1,$2,$3,$4, t.numero,t.forn,t.cnpjf,t.mar,t.mod,t.val,t.vt,t.dh, CASE WHEN t.cls THEN 'Classificado' ELSE 'Desclassificado' END, t.cls, 'ecustomize-ata'
           FROM unnest($5::int[],$6::text[],$7::text[],$8::text[],$9::text[],$10::numeric[],$11::numeric[],$12::text[],$13::bool[]) AS t(numero,forn,cnpjf,mar,mod,val,vt,dh,cls)
-          ON CONFLICT (cnpj,ano,seq,numero,fornecedor) DO UPDATE SET cnpj_fornecedor=EXCLUDED.cnpj_fornecedor, marca=EXCLUDED.marca, modelo=EXCLUDED.modelo,
+          ON CONFLICT (cnpj,ano,seq,numero,fornecedor_key) DO UPDATE SET fornecedor=EXCLUDED.fornecedor, marca=EXCLUDED.marca, modelo=EXCLUDED.modelo,
             valor_unitario=EXCLUDED.valor_unitario, valor_total=EXCLUDED.valor_total, data_hora=EXCLUDED.data_hora, classificado=EXCLUDED.classificado, fonte='ecustomize-ata', atualizado=now()`,
           [e.cnpj, e.ano, e.seq, e.cod_ibge, P.num, P.forn, P.cnpj, P.mar, P.mod, P.val, P.vt, P.dh, P.cls]);
         await q(`INSERT INTO lances_sc (cnpj,ano,seq,cod_ibge,numero,ordem,fornecedor,valor,data_hora)
