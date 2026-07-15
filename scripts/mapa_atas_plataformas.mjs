@@ -70,12 +70,24 @@ export function whereSelecaoAtas(alias = "a", calias = "c") {
 // sessão: município com ERP Betha/IPM faz o pregão no Portal de Compras Públicas e o PDF sai com a marca do Portal.
 // Medido 2026-07-15: em amostra de 60 docs, Betha rendeu 3.423 propostas e IPM 1.153 com o parser do ECustomize.
 // Por isso o parser é roteado por ISTO, não pela plataforma. Carimbado na ingestão (arquivo_texto_sc.gerador).
+// 🔴 O `gerador` nomeia o **LAYOUT que o parser lê**, NÃO o fornecedor do sistema. Medido 2026-07-15: a BLL publica
+// 1.094 documentos na estrutura do BETHA (`Item:`/`Marca:`), e o balde 'outro' tem 1.500 docs em layouts que já
+// temos parser. Classificar por marca-do-fornecedor deixava tudo isso de fora. Por isso a detecção é ESTRUTURAL:
+// procura a âncora de que o parser precisa. A assinatura do fornecedor só entra como desempate forte (Portal).
+// ORDEM = precedência: o mais específico primeiro.
 export const GERADORES = [
+  // 1) assinatura do FORNECEDOR (a mais forte quando existe): o PDF do Portal se identifica
   { id: "portal_compras_publicas", re: /portaldecompraspublicas|portal de compras p[uú]blicas/i, parser: "parser_ecustomize" },
-  // AZ: 2 layouts. L1 = "FORNECEDORES CLASSIFICADOS ... Lote N Itens do lote:" (todos os licitantes).
-  // L2 = "FORNECEDOR X CNPJ/CPF: ... propriaMarca: proprioModelo:" (por fornecedor; rótulo DEPOIS do valor).
-  { id: "az",                      re: /fornecedores classificados|itens do lote:/i,             parser: "parser_az" },
-  { id: "betha",                   re: /movimentos do lote|\bbetha\b/i,                          parser: "parser_betha" },
+  // 2) ESTRUTURA — a âncora que cada parser realmente precisa, valha p/ qual plataforma for
+  //    AZ-L1: tabela de TODOS os licitantes
+  { id: "az",    re: /CNPJ\s*\/\s*CPF\s+Nome\s+Marca\s+Modelo|fornecedores classificados/i,      parser: "parser_az" },
+  //    Portal/ECustomize: tabela de propostas ("Marca/ Fabricante" é o cabeçalho dela)
+  { id: "portal_compras_publicas", re: /marca\s*\/\s*fabricante/i,                               parser: "parser_ecustomize" },
+  //    Betha: chave-valor "Item: N … Marca:" (o parser ancora nisto)
+  { id: "betha", re: /movimentos do lote|Item:\s*\d+[\s\S]{0,200}?Marca:\s*\w/i,                 parser: "parser_betha" },
+  //    AZ-L2: por fornecedor, rótulo DEPOIS do valor ("propriaMarca:")
+  { id: "az",    re: /itens do lote:|CNPJ\s*\/\s*CPF:\s*\d{11}/i,                                parser: "parser_az" },
+  // 3) fornecedor sem parser (fica registrado p/ saber o tamanho do que falta)
   { id: "bll",                     re: /bllcompras|bolsa de licitac(o|õ)es/i,                    parser: null },
   { id: "licitar_digital",         re: /licitar digital|licitardigital/i,                        parser: null },
   { id: "licitanet",               re: /licitanet/i,                                             parser: null },

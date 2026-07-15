@@ -41,7 +41,10 @@ console.log(`${atas.length.toLocaleString("pt-BR")} atas AZ a extrair`);
 let done = 0, comMarca = 0, erros = 0, totItens = 0, semCasar = 0, totLic = 0;
 for (const e of atas) {
   try {
-    const tx = (await q(`SELECT texto FROM arquivo_texto_sc WHERE cnpj=$1 AND ano=$2 AND seq=$3 ORDER BY chars DESC LIMIT 1`, [e.cnpj, e.ano, e.seq])).rows[0];
+    // ⚠️ FILTRAR PELO GERADOR aqui também: sem isto pega o MAIOR texto do processo (pode ser o edital!) e o parser
+    // recebe o documento errado → 0 licitantes. O processo tem vários documentos; só o do gerador 'az' é a ata dele.
+    const tx = (await q(`SELECT texto FROM arquivo_texto_sc WHERE cnpj=$1 AND ano=$2 AND seq=$3 AND gerador='az'
+      ORDER BY chars DESC LIMIT 1`, [e.cnpj, e.ano, e.seq])).rows[0];
     const brutos = parseAtaAz(tx?.texto || "");
     if (!brutos.length) { await marcaFeito(e, 0); continue; }
     totLic += brutos.length;
