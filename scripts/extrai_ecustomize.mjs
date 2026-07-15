@@ -76,7 +76,7 @@ async function main() {
         P.mar.push(r.marca ? String(r.marca).slice(0, 80) : null); P.mod.push(r.modelo ? String(r.modelo).slice(0, 80) : null);
         P.val.push(r.valorUnitario || null); P.vt.push(r.valorTotal || null); P.dh.push(r.dataHora || null); P.cls.push(!!r.classificado);
         ord++; L.num.push(r.codigo); L.ord.push(ord); L.forn.push(String(r.fornecedor || "").slice(0, 160) || "—"); L.val.push(r.valorUnitario || null); L.dh.push(r.dataHora || null);
-        if (r.classificado) { const cur = vencPorItem.get(r.codigo); if (!cur || r.valorUnitario < cur.valorUnitario) vencPorItem.set(r.codigo, r); }
+        // (vencedor NÃO se deduz aqui — ver abaixo: quem venceu é o que a API informa)
       }
       if (P.num.length) {
         await q(`INSERT INTO propostas_sc (cnpj,ano,seq,cod_ibge,numero,fornecedor,cnpj_fornecedor,marca,modelo,valor_unitario,valor_total,data_hora,classificacao,classificado,fonte)
@@ -89,7 +89,28 @@ async function main() {
           SELECT $1,$2,$3,$4, t.* FROM unnest($5::int[],$6::int[],$7::text[],$8::numeric[],$9::text[]) AS t(numero,ordem,fornecedor,valor,data_hora)
           ON CONFLICT (cnpj,ano,seq,numero,ordem) DO UPDATE SET fornecedor=EXCLUDED.fornecedor, valor=EXCLUDED.valor, data_hora=EXCLUDED.data_hora`,
           [e.cnpj, e.ano, e.seq, e.cod_ibge, L.num, L.ord, L.forn, L.val, L.dh]);
-        // vencedor por item → item_marca_sc
+        // ─── VENCEDOR POR ITEM → item_marca_sc ────────────────────────────────────────────────────────────────
+        // 🔴 BUG CORRIGIDO 2026-07-15 (achado ao EXIBIR um processo real, não por teste): eu deduzia o vencedor como
+        // "menor proposta classificada". Errado por dois motivos:
+        //   1. **a API DIZ quem venceu** (`itens_sc.fornecedor`/`cnpj_fornecedor`) — deduzir o que a fonte informa é
+        //      o erro-raiz que se repetiu o dia inteiro;
+        //   2. a menor PROPOSTA não é o vencedor: existe fase de LANCES. Caso real (Balneário Piçarras 2025/57 item 1):
+        //      MAXMOBILE propôs R$ 879 e ARREMATOU a R$ 230; a menor proposta era da FLEXFORMA (R$ 289, marca ekomob).
+        //      Eu gravava "ekomob" no item — marca de quem PERDEU.
+        // Medido: em 426 itens rastreáveis, só 143 (33,6%) tinham a marca do vencedor real. **66,4% errados.**
+        // Dado errado é pior que dado faltando: o banco de sucesso recomendaria uma marca que o município não comprou.
+        // Agora: casa por CNPJ do vencedor da API. Sem casar (o vencedor não tem proposta identificável na ata, ex.:
+        // ganhou só na fase de lances) → NÃO grava marca. Ausência é honesta; atribuição errada, não.
+        const vencAPI = new Map();   // numeroItem -> cnpj do vencedor, direto da API
+        for (const it of (await q(`SELECT numero, cnpj_fornecedor FROM itens_sc
+              WHERE cnpj=$1 AND ano=$2 AND seq=$3 AND situacao='Homologado' AND cnpj_fornecedor IS NOT NULL`,
+              [e.cnpj, e.ano, e.seq])).rows) vencAPI.set(it.numero, String(it.cnpj_fornecedor).replace(/\D/g, ""));
+        for (const r of props) {
+          const alvo = vencAPI.get(r.codigo);
+          if (!alvo || !r.cnpj) continue;
+          if (String(r.cnpj).replace(/\D/g, "") !== alvo) continue;   // proposta de outro licitante: ignora
+          vencPorItem.set(r.codigo, r);
+        }
         const M = { num: [], mar: [], mod: [], val: [] };
         for (const [cod, r] of vencPorItem) { M.num.push(cod); M.mar.push(r.marca ? String(r.marca).slice(0, 80) : null); M.mod.push(r.modelo ? String(r.modelo).slice(0, 80) : null); M.val.push(r.valorUnitario || null); }
         if (M.num.length) await q(`INSERT INTO item_marca_sc (cnpj,ano,seq,cod_ibge,numero,modelo,marca,valor)

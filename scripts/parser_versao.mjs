@@ -8,4 +8,4 @@
 //      (medido: 315 atas em portal_vencedores, 315 "feitas", 1 item extraído);
 //   2. melhorar um parser não reprocessava NADA — o ganho só valia para documento novo.
 // Estado por documento + versão resolve os dois de uma vez, e é auto-recuperável: não depende de eu lembrar.
-export const PARSER_VERSAO = 1;
+export const PARSER_VERSAO = 2;
