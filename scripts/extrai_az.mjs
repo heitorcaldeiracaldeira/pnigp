@@ -19,6 +19,7 @@
 // node scripts/extrai_az.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
 import { parseAtaAz, casaItens } from "./parser_az.mjs";
+import { PARSER_VERSAO } from "./parser_versao.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); const ROOT = path.join(__dirname, "..");
 const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const LIMIT = Number(process.env.LIMIT || 0);
@@ -34,7 +35,7 @@ const q = async (s, p) => {
 
 const atas = (await q(`SELECT d.cnpj,d.ano,d.seq,d.cod_ibge FROM arquivo_texto_sc d
   WHERE d.gerador='az' AND d.chars > 500
-    AND NOT EXISTS (SELECT 1 FROM marca_ata_feitas f WHERE f.cnpj=d.cnpj AND f.ano=d.ano AND f.seq=d.seq)
+    AND d.parser_versao IS DISTINCT FROM ${PARSER_VERSAO}
   GROUP BY 1,2,3,4 ${LIMIT ? "LIMIT " + LIMIT : ""}`)).rows;
 console.log(`${atas.length.toLocaleString("pt-BR")} atas AZ a extrair`);
 
@@ -84,6 +85,9 @@ for (const e of atas) {
   if (++done % 25 === 0) process.stdout.write(`  ${done}/${atas.length} · ${comMarca} c/marca · ${erros} erros\r`);
 }
 async function marcaFeito(e, n) {
+  // estado NO DOCUMENTO (+versão): parser mudou → reprocessa sozinho. Ver parser_versao.mjs.
+  await q(`UPDATE arquivo_texto_sc SET parser_versao=${PARSER_VERSAO}, n_registros=$4, lido_em=now()
+    WHERE cnpj=$1 AND ano=$2 AND seq=$3 AND gerador='az'`, [e.cnpj, e.ano, e.seq, n]);
   await q(`INSERT INTO marca_ata_feitas (cnpj,ano,seq,n_marcas) VALUES ($1,$2,$3,$4)
     ON CONFLICT (cnpj,ano,seq) DO UPDATE SET n_marcas=EXCLUDED.n_marcas, feito_em=now()`, [e.cnpj, e.ano, e.seq, n]);
 }

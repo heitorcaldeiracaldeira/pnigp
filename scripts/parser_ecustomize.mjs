@@ -19,6 +19,52 @@ const CAB = /Fornecedor\s+CNPJ\s*\/\s*CPF(?:\s+Data)?(?:\s+Modelo)?(?:\s+Marca\s
 // (nada genérico como "Quantidade" solto, que aparece em descrição de produto).
 const CAB_RESID = /^[\s\S]*(?:LC\s*123\s*\/\s*2006|\/\s*2006|Valor\s+Total|Local\s*\/\s*Regional|Marca\s*\/\s*Fabricante|CNPJ\s*\/\s*CPF)\s*/i;
 
+// ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// BLOCO "VENCEDORES" — a 2ª tabela do Portal. O parser de propostas (REC) NÃO a lê: ela não tem CNPJ, nem data,
+// nem Sim/Não. Medido 2026-07-15: é o MAIOR bloco da fila (2.106 de 7.761 docs com marca e sem parser).
+//   Vencedores Código Produto <Fornecedor|Participante> Modelo Marca/ Fabricante <Valor Ofertado|Valor de Referência> Quantidade Valor Total
+//   0001 <produto…> RONIVAN LUIZ TRANTENMULLER - ME Limpa Fossas Iporã Limpa Fossas Iporã 162,00 1.500 243.000,00
+//
+// ⚠️ 3 armadilhas, todas vistas no texto real (nenhuma seria adivinhada):
+//  1. o cabeçalho ALTERNA "Fornecedor"/"Participante" e "Valor Ofertado"/"Valor de Referência";
+//  2. sem marca, o Portal escreve "N/C" ou "X 0" — não vazio;
+//  3. o RODAPÉ do PDF se intromete NO MEIO da tabela ("A autenticidade… Página 2 de 4") e entra no nome se não cortar.
+const VENC_CAB = /Vencedores\s+C[óo]digo\s+Produto\s+(?:Fornecedor|Participante)\s+Modelo\s+Marca\s*\/\s*Fabricante\s+Valor[^]{0,24}?Quantidade\s+Valor\s*Total/i;
+// linha: <cód 4díg> <produto+fornecedor+modelo+marca> <valor> <qtd> <total>. Âncora = os 3 números finais.
+const VENC_LIN = /(\d{4})\s+([\s\S]{5,1200}?)\s+([\d.]+,\d{2,4})\s+([\d.]+(?:,\d+)?)\s+([\d.]+,\d{2})(?=\s|$)/g;
+const RODAPE_PCP = /A autenticidade do documento[\s\S]*?(?:Página \d+ de \d+|portaldecompraspublicas\.com\.br)|Documento gerado eletronicamente[\s\S]*?(?:Código verificador:\s*\w+|Página \d+ de \d+)|Página \d+ de \d+/gi;
+
+export function parseVencedoresPortal(texto) {
+  const t0 = String(texto || "").replace(/\s+/g, " ");
+  const m = VENC_CAB.exec(t0);
+  if (!m) return [];
+  // corta do cabeçalho até o fim do bloco (o que vem depois não é tabela)
+  let bloco = t0.slice(m.index + m[0].length);
+  const fim = bloco.search(/Declara[çc][õo]es Obrigat[óo]rias|Propostas Enviadas|Chat\s+Data|Documentos Anexados|Eventos d[oa]/i);
+  if (fim > 0) bloco = bloco.slice(0, fim);
+  bloco = bloco.replace(RODAPE_PCP, " ").replace(/\s+/g, " ");   // (3) rodapé some ANTES de casar
+  const out = [];
+  for (const x of bloco.matchAll(VENC_LIN)) {
+    // o miolo é "<produto> <FORNECEDOR> <modelo> <marca>" — fuzzy; a marca é a última unidade antes dos números
+    const miolo = x[2].trim();
+    const bt = miolo.split(" ");
+    // (2) "N/C" e "X 0" = sem marca → normalizaMarca devolve null p/ N/C; "0"/"X" tratados aqui
+    const cand = bt[bt.length - 1];
+    const marca = /^(n\/?c|x|0)$/i.test(cand) ? null : normalizaMarca(cand);
+    out.push({
+      numero: parseInt(x[1], 10),
+      produto: miolo.slice(0, 400),
+      valorUnitario: num(x[3]),
+      quantidade: num(x[4]),
+      valorTotal: num(x[5]),
+      marca,
+      vencedor: true,
+      layout: "vencedores",
+    });
+  }
+  return out;
+}
+
 export function parseAtaEcustomize(texto) {
   const t = texto.replace(/\s+/g, " ");
   const out = [];

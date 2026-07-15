@@ -3,6 +3,7 @@
 // item_marca_sc (vencedor = menor valor classificado). Determinístico = rápido, sem LLM. RESUMÍVEL (marca_ata_feitas),
 // LOTE (Neon-safe: 1 INSERT/tabela por ata, pool max 3). node scripts/extrai_ecustomize.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { PARSER_VERSAO } from "./parser_versao.mjs";
 import { parseAtaEcustomize } from "./parser_ecustomize.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); const ROOT = path.join(__dirname, "..");
 const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
@@ -51,7 +52,7 @@ async function main() {
   // só as CHAVES (rápido) — o texto (blob grande) é buscado por ata no loop; agregar texto de 1k atas numa query trava.
   const atas = (await q(`SELECT d.cnpj,d.ano,d.seq,d.cod_ibge FROM arquivo_texto_sc d
     WHERE d.gerador='portal_compras_publicas' AND d.chars > 200
-      AND NOT EXISTS (SELECT 1 FROM marca_ata_feitas f WHERE f.cnpj=d.cnpj AND f.ano=d.ano AND f.seq=d.seq)
+      AND d.parser_versao IS DISTINCT FROM ${PARSER_VERSAO}
     GROUP BY d.cnpj,d.ano,d.seq,d.cod_ibge ${LIMIT ? "LIMIT " + LIMIT : ""}`)).rows;
   console.log(`${atas.length.toLocaleString()} atas do Portal de Compras Públicas a extrair (determinístico, por gerador)`);
 
@@ -101,8 +102,9 @@ async function main() {
           [e.cnpj, e.ano, e.seq, e.cod_ibge, nForn, L.num.length, M.num.length, P.num.length]);
         comProp++;
       }
-      // marca SEMPRE feito → resumível de verdade (avança por todas as atas). Pra melhorar cobertura depois: limpar
-      // marca_ata_feitas das atas ECustomize e reprocessar de propósito.
+      // estado NO DOCUMENTO (+versão): parser mudou → reprocessa sozinho, sem limpar marcador na mão. parser_versao.mjs
+      await q(`UPDATE arquivo_texto_sc SET parser_versao=${PARSER_VERSAO}, n_registros=$4, lido_em=now()
+        WHERE cnpj=$1 AND ano=$2 AND seq=$3 AND gerador='portal_compras_publicas'`, [e.cnpj, e.ano, e.seq, P.num.length]);
       await q(`INSERT INTO marca_ata_feitas (cnpj,ano,seq,n_propostas) VALUES ($1,$2,$3,$4) ON CONFLICT (cnpj,ano,seq) DO UPDATE SET n_propostas=EXCLUDED.n_propostas, feito_em=now()`, [e.cnpj, e.ano, e.seq, P.num.length]);
     } catch (err) { if (process.env.DEBUG) console.log("ERRO ata " + e.ano + "/" + e.seq + ": " + err.message); }
     if (++done % 50 === 0) process.stdout.write(`  ${done}/${atas.length} · ${comProp} c/propostas\r`);

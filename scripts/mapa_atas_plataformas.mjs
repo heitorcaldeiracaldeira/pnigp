@@ -52,6 +52,44 @@ export const EXCLUI = "errata|^edital|termo de referencia|termo_de_referencia|an
 // devolve a cláusula SQL (WHERE) que seleciona os documentos de resultado de TODAS as modalidades. Global (união
 // ata + dispensa), com overrides por plataforma onde o nome é atípico (AZ 'resultados', BLL 'propostasprocesso').
 // usa: FROM arquivos_sc a JOIN contratacoes_sc c USING(cnpj,ano,seq)
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// SELEÇÃO DE DOWNLOAD — pelo TIPO OFICIAL do PNCP, não por regex de título.
+//
+// 🔴 O ERRO ESTRUTURAL QUE ISTO CORRIGE (2026-07-15): `arquivos_sc` sempre teve `tipo_documento_id`, a classificação
+// do PRÓPRIO PNCP. Eu ignorei o campo e inventei um regex de título — virou PORTÃO e fechou 76% do universo.
+//
+// O que a medição mostrou (627.344 docs do catálogo):
+//   · a taxonomia do PNCP NÃO TEM tipo "resultado"/"ata de sessão"/"homologação". Os 19 tipos são Edital, Aviso,
+//     TR, ETP, DFD, Projeto Básico, Minuta, Contrato, Empenho… e **"Outros Documentos"**.
+//   · por isso o município joga a ata em "Outros Documentos" (id 16): 197.462 docs, 270 dos 295 municípios.
+//     É o maior balde do PNCP e é onde a marca mora. Eu tinha baixado 24%.
+//
+// REGRA NOVA: o universo é o tipo do PNCP. O título é PRIORIDADE (ordem), NUNCA portão. Quem decide se o documento
+// é resultado é o PARSER, depois de ler (detecta_layout) — leitura é barata (0,2–2ms); adivinhar pelo nome, não.
+// Edital/TR/ETP/DFD/Aviso ficam de fora pelo campo do PNCP, não pelo meu palpite.
+export const TIPOS_DOC_RESULTADO = [
+  16, // Outros Documentos — 197.462 docs / 270 munis. O balde onde a ata cai por falta de tipo próprio.
+  11, // Ata de Registro de Preço — 330
+  19, // Minuta de Ata de Registro de Preços — 802
+  12, // Contrato — 137 (lista o que foi comprado; barato de checar)
+];
+
+/** universo de download: tipo oficial do PNCP (+ tipo nulo = desconhecido, tem que checar). Título NÃO filtra. */
+export function whereUniversoDoc(alias = "a") {
+  return `(${alias}.tipo_documento_id IS NULL OR ${alias}.tipo_documento_id IN (${TIPOS_DOC_RESULTADO.join(",")}))
+    AND ${alias}.uri IS NOT NULL`;
+}
+
+/** ORDEM da fila (não filtro): 1º municípios sem NENHUMA marca (o produto precisa de largura), 2º título com cara
+ *  de resultado, 3º mais recente. Assim a primeira hora de download já cobre prefeitura nova. */
+export function ordemFilaDoc(alias = "a") {
+  return `(CASE WHEN NOT EXISTS (SELECT 1 FROM item_marca_sc m WHERE m.cod_ibge=${alias}.cod_ibge AND m.marca IS NOT NULL) THEN 0 ELSE 1 END),
+    (CASE WHEN ${alias}.titulo ~* '${SEL_DEFAULT.replace(/'/g, "''")}' THEN 0
+          WHEN ${alias}.titulo ~* '${EXCLUI.replace(/'/g, "''")}' THEN 2 ELSE 1 END),
+    ${alias}.ano DESC`;
+}
+
+// ⚠️ LEGADO — mantido só para não quebrar chamador antigo. NÃO USAR em fila nova: é o portão que fechou 76%.
 // ⚠️ o `sel` da plataforma SOMA ao global, nunca SUBSTITUI. Antes ele substituía: a BLL, cujo sel só tinha
 // "atasessaofinal" (sem separador), perdia o "ata sessao final" (100% marca) que o SEL_ATA global pegaria.
 // O sel por plataforma serve p/ nomes ATÍPICOS (AZ "resultados", BLL "propostasprocesso") — é acréscimo, não recorte.

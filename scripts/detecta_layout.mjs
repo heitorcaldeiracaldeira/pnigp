@@ -13,13 +13,17 @@
 // Fica em módulo próprio p/ evitar ciclo de import: os parsers importam `normalizaMarca` de mapa_atas_plataformas.
 import { parseAtaAz } from "./parser_az.mjs";
 import { parseAtaBetha } from "./parser_betha.mjs";
-import { parseAtaEcustomize } from "./parser_ecustomize.mjs";
+import { parseAtaEcustomize, parseVencedoresPortal } from "./parser_ecustomize.mjs";
 
 // ordem = desempate quando 2 parsers leem o mesmo doc (raro). Do mais específico p/ o mais genérico.
 const CANDIDATOS = [
   { id: "az", fn: (t) => parseAtaAz(t) },
   { id: "portal_compras_publicas", fn: (t) => parseAtaEcustomize(t).filter((r) => r.codigo && (r.fornecedor || r.cnpj)) },
   { id: "betha", fn: (t) => { const r = parseAtaBetha(t); return [...r.itens, ...r.participantes]; } },
+  // bloco "Vencedores" do Portal — 2ª tabela, sem CNPJ/data/Sim-Não: o parser de propostas não a lê.
+  // Era o MAIOR bloco da fila (2.106 de 7.761). Vem por último: se a tabela de PROPOSTAS existe, ela é melhor
+  // (traz TODOS os licitantes); o Vencedores só traz o ganhador.
+  { id: "portal_vencedores", fn: (t) => parseVencedoresPortal(t) },
 ];
 
 /** devolve { gerador, n } — o parser que MAIS extrai; 'outro' se nenhum extrai. */

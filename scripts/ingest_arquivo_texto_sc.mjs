@@ -4,7 +4,7 @@
 // DOCFILTRO define quais documentos baixar (default: atas de sessão — a fonte da marca). node scripts/ingest_arquivo_texto_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
 import { extractText, getDocumentProxy } from "unpdf";
-import { whereSelecaoAtas, detectaGerador } from "./mapa_atas_plataformas.mjs";
+import { whereUniversoDoc, ordemFilaDoc, detectaGerador } from "./mapa_atas_plataformas.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const CONC = Number(process.env.CONC || 4);
@@ -71,14 +71,16 @@ async function main() {
   await q(`ALTER TABLE arquivo_texto_sc ADD COLUMN IF NOT EXISTS gerador TEXT`);
   await q(`CREATE INDEX IF NOT EXISTS ix_arqtexto_gerador ON arquivo_texto_sc (gerador)`);
 
-  // seleção por plataforma/modalidade (mapa_atas_plataformas) — traz o doc de resultado de TODAS as modalidades.
-  const W = whereSelecaoAtas("a", "c");
+  // UNIVERSO = tipo oficial do PNCP (whereUniversoDoc). O TÍTULO NÃO FILTRA — só ordena (ordemFilaDoc).
+  // Antes: regex de título como portão → fechava 76% do catálogo (149.508 docs de "Outros Documentos" nunca vistos,
+  // justo onde estão Betha/149 munis e Pública). Quem decide se é resultado é o parser, depois de ler.
   const docs = (await q(`SELECT a.cnpj,a.ano,a.seq,a.sequencial_documento,a.cod_ibge,a.tipo_documento,a.titulo,a.uri
-    FROM arquivos_sc a JOIN contratacoes_sc c USING (cnpj,ano,seq)
-    WHERE ${W} AND a.uri IS NOT NULL
+    FROM arquivos_sc a
+    WHERE ${whereUniversoDoc("a")}
       AND NOT EXISTS (SELECT 1 FROM arquivo_texto_sc d WHERE d.cnpj=a.cnpj AND d.ano=a.ano AND d.seq=a.seq AND d.sequencial_documento=a.sequencial_documento)
+    ORDER BY ${ordemFilaDoc("a")}
     ${LIMIT ? "LIMIT " + LIMIT : ""}`)).rows;
-  console.log(`${docs.length.toLocaleString()} documentos a baixar (seleção por plataforma/modalidade) · conc ${CONC}`);
+  console.log(`${docs.length.toLocaleString()} documentos a baixar (universo = tipo do PNCP; título só ordena) · conc ${CONC}`);
 
   let ok = 0, vazio = 0, i = 0, done = 0, erros = 0;
   await Promise.all(Array.from({ length: CONC }, async () => {

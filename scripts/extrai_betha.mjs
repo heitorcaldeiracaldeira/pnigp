@@ -10,6 +10,7 @@
 // gravar lote como item seria misturar granularidade. Ver [[pnigp-nomenclatura-pncp]] (espelhar, não inventar).
 // node scripts/extrai_betha.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { PARSER_VERSAO } from "./parser_versao.mjs";
 import { parseAtaBetha } from "./parser_betha.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); const ROOT = path.join(__dirname, "..");
 const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
@@ -28,7 +29,7 @@ async function main() {
 
   const atas = (await q(`SELECT d.cnpj,d.ano,d.seq,d.cod_ibge FROM arquivo_texto_sc d
     WHERE d.gerador='betha' AND d.chars > 200
-      AND NOT EXISTS (SELECT 1 FROM marca_ata_feitas f WHERE f.cnpj=d.cnpj AND f.ano=d.ano AND f.seq=d.seq)
+      AND d.parser_versao IS DISTINCT FROM ${PARSER_VERSAO}
     GROUP BY 1,2,3,4 ${LIMIT ? "LIMIT " + LIMIT : ""}`)).rows;
   console.log(`${atas.length.toLocaleString()} atas Betha-nativas a extrair (determinístico)`);
 
@@ -61,6 +62,9 @@ async function main() {
             n_itens_marca=EXCLUDED.n_itens_marca, atualizado=now()`,
           [e.cnpj, e.ano, e.seq, e.cod_ibge, r.participantes.length, nMarcas, itens.filter((i) => i.marca).length]);
       }
+      // estado NO DOCUMENTO (+versão): parser mudou → reprocessa sozinho. Ver parser_versao.mjs.
+      await q(`UPDATE arquivo_texto_sc SET parser_versao=${PARSER_VERSAO}, n_registros=$4, lido_em=now()
+        WHERE cnpj=$1 AND ano=$2 AND seq=$3 AND gerador='betha'`, [e.cnpj, e.ano, e.seq, nMarcas]);
       await q(`INSERT INTO marca_ata_feitas (cnpj,ano,seq,n_marcas) VALUES ($1,$2,$3,$4)
         ON CONFLICT (cnpj,ano,seq) DO UPDATE SET n_marcas=EXCLUDED.n_marcas, feito_em=now()`, [e.cnpj, e.ano, e.seq, nMarcas]);
     } catch (err) {
