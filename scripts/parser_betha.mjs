@@ -9,6 +9,7 @@
 // Estrutura (texto com espaços normalizados):
 //   CLASSIFICAÇÃO: "<ordem> <RAZÃO SOCIAL> <num> <CNPJ> <oferta inicial> <oferta final> [dif%] <Sim|Não>"
 //   VALORES UNITÁRIOS FINAIS: "Item: N Unidade: U Descrição: D Quantidade: Q Valor Unit.: V Valor Total: T Marca: M Modelo: X"
+import { normalizaMarca } from "./mapa_atas_plataformas.mjs";
 const num = (s) => Number(String(s).replace(/[^\d,.-]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".")) || 0;
 const limpaCnpj = (s) => s.replace(/\s+/g, "");
 // RODAPÉ de página do Betha ("9 de 88Gerado em: 28/03/2025 16:10:00 MUNICIPIO DE X X-SC") cai no meio do texto e
@@ -32,7 +33,7 @@ export function parseAtaBetha(texto) {
   const itens = [], participantes = [];
 
   for (const m of t.matchAll(ITEM)) {
-    const marca = limpaCampo(m[7]).replace(/^[-–]$/, "");
+    const marca = normalizaMarca(limpaCampo(m[7]));   // "Própria"/"Serviço"/"Obra" → null (fiel, mas não é marca)
     const modelo = limpaCampo(m[8]);
     itens.push({
       numero: parseInt(m[1], 10),
@@ -41,8 +42,7 @@ export function parseAtaBetha(texto) {
       quantidade: num(m[4]),
       valorUnitario: num(m[5]),
       valorTotal: num(m[6]),
-      // "Marca: Serviço" = o Betha preenche assim quando é serviço (não é marca de produto) → normaliza p/ null
-      marca: !marca || /^servi[çc]o$/i.test(marca) ? null : marca.slice(0, 80),
+      marca: marca ? marca.slice(0, 80) : null,
       modelo: modelo ? modelo.slice(0, 80) : null,
     });
   }

@@ -2,6 +2,7 @@
 // Cada registro de proposta tem âncoras fortes: CNPJ completo, data/hora, valores com "R$", classificado Sim/Não.
 // Estrutura: <FORNECEDOR> <CNPJ> <DD/MM/AAAA - HH:MM:SS> <modelo marca> <qtd> R$<unit> R$<total> <Sim|Não>
 // Determinístico: fornecedor, cnpj, dataHora, qtd, valorUnit, valorTotal, classificado. Fuzzy: split modelo/marca (marca≈última unidade).
+import { normalizaMarca } from "./mapa_atas_plataformas.mjs";
 const num = (s) => Number(String(s).replace(/[^\d,.-]/g, "").replace(/\.(?=\d{3}(\D|$))/g, "").replace(",", ".")) || 0;
 const limpaCnpj = (s) => s.replace(/\s+/g, "");
 
@@ -48,7 +49,8 @@ export function parseAtaEcustomize(texto) {
     // split modelo/marca do blob (m[3]): marca ≈ última unidade; resto = modelo
     const blob = m[3].trim().replace(/\bN\/C\b/gi, "").trim();
     const bt = blob ? blob.split(" ") : [];
-    const marca = bt.length ? bt[bt.length - 1] : null;
+    // "Própria"/"Serviço"/"Obra" → null: é o que a ata escreve quando não há marca de terceiro (fiel, mas não é marca)
+    const marca = bt.length ? normalizaMarca(bt[bt.length - 1]) : null;
     const modelo = bt.length > 1 ? bt.slice(0, -1).join(" ") : null;
     out.push({
       codigo: curCodigo, produto: curProduto, fornecedor: fornecedor.trim() || null,

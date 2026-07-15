@@ -67,6 +67,19 @@ export const GERADORES = [
   { id: "licitar_digital",         re: /licitar digital|licitardigital/i,                        parser: null },
   { id: "licitanet",               re: /licitanet/i,                                             parser: null },
 ];
+// ——— NORMALIZAÇÃO DA MARCA (compartilhada pelos parsers) ———
+// Quando não há marca de TERCEIRO, os sistemas preenchem o campo Marca com um marcador: "Própria", "Serviço",
+// "Obra", "S/ Marca", "N/A", "-". Isso é FIEL à fonte, não é defeito do parser — mas gravar como se fosse marca
+// mente para quem consulta. Medido 2026-07-15 em item_marca_sc: 30,3% "Própria/Serviço" + 3,0% "Obra/SERVIÇOS".
+// Normalizar p/ NULL faz `marca IS NOT NULL` significar de fato "tem marca de produto" — que é o eixo de qualidade
+// do banco de sucesso ([[pnigp-copiloto-compra]]).
+const SEM_MARCA = /^\s*(marca\s+)?(pr[oó]pri[ao]|servi[çc]os?|obras?|s\/?\s*marca|sem\s+marca|n\/?[ac]|n[aã]o\s+se\s+aplica|nao\s+informad[ao]|diversos?|-{1,3}|\.+)\s*$/i;
+export function normalizaMarca(s) {
+  const m = String(s || "").trim();
+  if (!m || SEM_MARCA.test(m)) return null;
+  return m;
+}
+
 export function detectaGerador(texto) {
   if (!texto) return null;
   // a assinatura vive no cabeçalho/rodapé das páginas — olha as pontas (evita varrer 200k chars de item)
