@@ -9,7 +9,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const env = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8");
 const DATABASE_URL = env.match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const PNCP_MAIN = "https://pncp.gov.br/api/pncp/v1";
-const CONC = Number(process.env.CONC || 2);   // concorrência de processos; backoff robusto de 429 mantém confiabilidade em conc alto
+// VELOCIDADE: o gargalo é HTTP, não o Neon (medido 2026-07-15: Neon com 3 conexões de 901, 0 query ativa, 0 lock;
+// o INSERT já é 1 por processo, em lote). O custo é ~1,1 MILHÃO de GETs em /resultados — um por item premiado.
+// CONC=2 era o freio: 2 processos por vez. O backoff de 429 (até ~32s, 8 tentativas) segura a subida.
+const CONC = Number(process.env.CONC || 8);   // processos em paralelo
+const CONC_RES = Number(process.env.CONC_RES || 12);   // GETs de /resultados em paralelo DENTRO de cada processo
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 // helpers do espelho de /resultados
 const num = (x) => (x == null || x === "" ? null : (Number(x) || 0));
@@ -56,7 +60,7 @@ async function fetchItens(cnpj, ano, seq) {
   const resMap = new Map();     // numeroItem -> resultado[0]  (achatado em itens_sc, como antes)
   const resTodos = [];          // TODOS os resultados -> item_resultado_sc
   let i = 0;
-  await Promise.all(Array.from({ length: 6 }, async () => {
+  await Promise.all(Array.from({ length: CONC_RES }, async () => {
     while (i < alvo.length) {
       const it = alvo[i++];
       const r = await getMain(`${base}/${it.numeroItem}/resultados`).catch(() => null);
@@ -134,8 +138,31 @@ async function main() {
   // Código certo, dado velho, e eu declarando "corrigido". Igualzinho ao marca_ata_feitas das atas.
   // Agora: SOBE INGEST_VERSAO quando mudar o que se extrai → tudo vira pendente sozinho, sem limpeza manual.
   await db.query(`ALTER TABLE itens_proc_feitos ADD COLUMN IF NOT EXISTS versao INT`);
-  const procs = (await db.query(`SELECT numero_controle, cod_ibge, cnpj_orgao cnpj, ano, sequencial seq FROM processos_sc WHERE cnpj_orgao IS NOT NULL AND sequencial IS NOT NULL`).catch(() => ({ rows: [] }))).rows;
-  const feitos = new Set((await db.query(`SELECT numero_controle FROM itens_proc_feitos WHERE versao = $1`, [INGEST_VERSAO])).rows.map((r) => r.numero_controle));
+  // 🔴 SEM `.catch(() => ({rows:[]}))` — o catch silencioso daqui fez o ingest reportar "0 processos pendentes
+  // (de 0 no PNCP/SC)", concluir e SAIR COM CÓDIGO 0 (sucesso), com `processos_sc` tendo 241.302 linhas.
+  // Tarefa verde, zero trabalho, e a mensagem do erro real apagada — nem dava p/ saber o que falhou.
+  // Terceira vez que catch silencioso morde no mesmo dia (2026-07-15). A regra já está na memória do projeto:
+  // erro de dado/schema falha NA HORA; retry cego é só p/ transitório.
+  // 🔴 LER A TABELA, NÃO A VIEW (2026-07-15). `processos_sc` é uma VIEW tão pesada que nem `count(*)` volta em 120s.
+  // Empilhavam-se TRÊS erros e nenhum gritava:
+  //   1. a view estourava o query_timeout de 90s do pool;
+  //   2. o `.catch(() => ({rows:[]}))` daqui virava o timeout em "0 processos pendentes";
+  //   3. o ingest concluía e saía com CÓDIGO 0 — tarefa agendada verde, zero trabalho, por rodadas a fio.
+  // `contratacoes_sc` é a TABELA por trás: mesmas 241.302 linhas, count em 266ms (vs. >120s da view). Mesmo
+  // `numero_controle` que a view expunha → o estado de retomada (itens_proc_feitos) segue casando.
+  // Sem `.catch`: universo vazio é ANOMALIA, não sucesso.
+  // CONEXÃO DEDICADA: o pool tem query_timeout=90s (certo p/ os INSERTs por processo), mas puxar as 241.302 linhas
+  // da listagem estoura isso — é UMA varredura por rodada e merece teto próprio (10 min). Trocar a view pela tabela
+  // sem trocar o timeout NÃO resolve: os dois erros são independentes e me morderam em sequência.
+  const lst = new pg.Client({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, statement_timeout: 600000, query_timeout: 600000 });
+  await lst.connect();
+  const procs = (await lst.query(`SELECT numero_controle, cod_ibge, cnpj, ano, seq
+    FROM contratacoes_sc WHERE cnpj IS NOT NULL AND seq IS NOT NULL AND numero_controle IS NOT NULL`)).rows;
+  if (!procs.length) { await lst.end(); throw new Error("contratacoes_sc devolveu 0 linhas — universo vazio é ANOMALIA, não sucesso"); }
+  // mesma conexão dedicada: hoje devolve poucas linhas, mas CRESCE até 241 mil conforme a coleta avança —
+  // no pool de 90s ela quebraria no meio do caminho, quando já houvesse trabalho feito p/ perder.
+  const feitos = new Set((await lst.query(`SELECT numero_controle FROM itens_proc_feitos WHERE versao = $1`, [INGEST_VERSAO])).rows.map((r) => r.numero_controle));
+  await lst.end();
   const pend = procs.filter((p) => !feitos.has(p.numero_controle));
   console.log(`Itens: ${pend.length} processos pendentes (de ${procs.length} no PNCP/SC) · INGEST_VERSAO=${INGEST_VERSAO}`);
   let comItens = 0;
