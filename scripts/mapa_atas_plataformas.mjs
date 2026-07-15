@@ -27,20 +27,50 @@ export const MAPA = [
 // TODA modalidade — não exclui dispensa/inexigibilidade. Só muda QUAL documento carrega o dado por modalidade: ——
 //  · pregão/concorrência → ata de resultado (propostas + lances de TODOS)
 //  · dispensa/inexigibilidade/credenciamento → termo de homologação / razão da escolha / proposta (marca do vencedor)
-export const SEL_ATA = "atatotal|ata[_ .-]?(final|parcial|sessao|total|de julgamento|de reuni|de realiz)|^ata$|^resultados?\\b|vencedoresprocesso|propostasprocesso|relat(orio)?lance|mapa[_ ]?de[_ ]?(lance|preco)|ata de reuni[aã]o de julgamento|divulgacao do resultado";
-export const SEL_DISPENSA = "termo de homologacao|termo_de_homologacao|razao (da|de) escolha|razoesdaescolha|razao_da_escolha|^homologacao|te?rmo[_ ]?de[_ ]?adjudicacao|^proposta$|carta proposta|ata chamada publica|ata[_ ]de[_ ]registro";
+// ⚠️ o separador precisa aceitar " da "/" de " e MAIS DE UM caractere: "ata da sessao pe" (Betha) e "ata sessao final"
+// (BLL) têm 100% de marca e o padrão antigo `ata[_ .-]?sessao` (1 separador) NÃO os pegava — medido em 2026-07-15.
+const SEP = "[_ .\\-]*(?:d[ae])?[_ .\\-]*";
+export const SEL_ATA = "atatotal|ata" + SEP + "(final|parcial|sessao|sess[aã]o|total|julgamento|reuni|realiz)|^ata$|^resultados?\\b|vencedoresprocesso|propostasprocesso|relat(orio)?lance|mapa[_ ]?de[_ ]?(lance|preco)|divulgacao do resultado";
+// ⚠️ ACENTO: o `~*` do Postgres é case-insensitive mas NÃO accent-insensitive — "termo de homologacao" NÃO casa com
+// "termo de homologação". Medido 2026-07-15: 5.091 docs de resultado ficavam de fora por acento e por erro de
+// digitação da fonte ("razao da escollha", "temo_de_adjudicacao"). Casar pelo RADICAL (homologa/adjudica/raz[ãa]o)
+// resolve os dois de uma vez. `te?rmo` cobre o typo "temo".
+export const SEL_DISPENSA = "ter?mo[_ ]?(de[_ ]?)?homologa|^homologa|raz[ãa]o?[_ ]?(d[ae][_ ]?)?escol?lha|razoesdaescolha|ter?mo[_ ]?de[_ ]?adjudica|^adjudica|^proposta$|carta proposta|ata chamada publica|ata[_ ]de[_ ]registro";
 export const SEL_DEFAULT = SEL_ATA + "|" + SEL_DISPENSA;
 export const EXCLUI = "errata|^edital|termo de referencia|termo_de_referencia|anexo|minuta|projeto b|estudo tecnico|^dfd|parecer|^orcamento|impugnac|^recurso|comprovante|comprovacao|aviso de|abertura de processo";
 
 // devolve a cláusula SQL (WHERE) que seleciona os documentos de resultado de TODAS as modalidades. Global (união
 // ata + dispensa), com overrides por plataforma onde o nome é atípico (AZ 'resultados', BLL 'propostasprocesso').
 // usa: FROM arquivos_sc a JOIN contratacoes_sc c USING(cnpj,ano,seq)
+// ⚠️ o `sel` da plataforma SOMA ao global, nunca SUBSTITUI. Antes ele substituía: a BLL, cujo sel só tinha
+// "atasessaofinal" (sem separador), perdia o "ata sessao final" (100% marca) que o SEL_ATA global pegaria.
+// O sel por plataforma serve p/ nomes ATÍPICOS (AZ "resultados", BLL "propostasprocesso") — é acréscimo, não recorte.
 export function whereSelecaoAtas(alias = "a", calias = "c") {
   const casos = MAPA.filter((m) => m.cobertura === "completo").map((m) =>
-    `WHEN ${calias}.plataforma ILIKE '%${m.match.replace(/'/g, "''")}%' THEN (${alias}.titulo ~* '${(m.sel + "|" + SEL_DISPENSA).replace(/'/g, "''")}')`
+    `WHEN ${calias}.plataforma ILIKE '%${m.match.replace(/'/g, "''")}%' THEN (${alias}.titulo ~* '${(m.sel + "|" + SEL_DEFAULT).replace(/'/g, "''")}')`
   ).join("\n      ");
   return `(CASE
       ${casos}
       ELSE (${alias}.titulo ~* '${SEL_DEFAULT.replace(/'/g, "''")}')
     END) AND NOT (${alias}.titulo ~* '${EXCLUI.replace(/'/g, "''")}')`;
+}
+
+// ——— GERADOR do documento (assinatura NO TEXTO) ———
+// A `plataforma` de contratacoes_sc (=usuarioNome) é quem PUBLICOU no PNCP (o ERP do município), NÃO quem rodou a
+// sessão: município com ERP Betha/IPM faz o pregão no Portal de Compras Públicas e o PDF sai com a marca do Portal.
+// Medido 2026-07-15: em amostra de 60 docs, Betha rendeu 3.423 propostas e IPM 1.153 com o parser do ECustomize.
+// Por isso o parser é roteado por ISTO, não pela plataforma. Carimbado na ingestão (arquivo_texto_sc.gerador).
+export const GERADORES = [
+  { id: "portal_compras_publicas", re: /portaldecompraspublicas|portal de compras p[uú]blicas/i, parser: "parser_ecustomize" },
+  { id: "betha",                   re: /movimentos do lote|\bbetha\b/i,                          parser: "parser_betha" },
+  { id: "bll",                     re: /bllcompras|bolsa de licitac(o|õ)es/i,                    parser: null },
+  { id: "licitar_digital",         re: /licitar digital|licitardigital/i,                        parser: null },
+  { id: "licitanet",               re: /licitanet/i,                                             parser: null },
+];
+export function detectaGerador(texto) {
+  if (!texto) return null;
+  // a assinatura vive no cabeçalho/rodapé das páginas — olha as pontas (evita varrer 200k chars de item)
+  const t = texto.length > 80000 ? texto.slice(0, 60000) + " " + texto.slice(-20000) : texto;
+  for (const g of GERADORES) if (g.re.test(t)) return g.id;   // ordem importa: Portal vence (o ERP só publicou)
+  return "outro";
 }

@@ -44,13 +44,16 @@ async function main() {
     console.log("↻ PK de propostas_sc migrada p/ (cnpj,ano,seq,numero,fornecedor_key) — identidade pelo CNPJ");
   }
 
+  // ROTEADO PELO GERADOR do documento, não pela plataforma do PNCP. `contratacoes_sc.plataforma` (=usuarioNome) é
+  // quem PUBLICOU (o ERP do município); município com ERP Betha/IPM roda o pregão no Portal de Compras Públicas e o
+  // PDF sai com a assinatura do Portal — este mesmo parser lê esses docs (medido: +3.423 propostas em 60 docs "Betha",
+  // +1.153 em 60 "IPM"). Filtrar por plataforma perdia tudo isso. `gerador` é carimbado na ingestão (indexado).
   // só as CHAVES (rápido) — o texto (blob grande) é buscado por ata no loop; agregar texto de 1k atas numa query trava.
-  const atas = (await q(`SELECT d.cnpj,d.ano,d.seq,d.cod_ibge
-    FROM arquivo_texto_sc d JOIN contratacoes_sc c USING (cnpj,ano,seq)
-    WHERE c.plataforma ILIKE '%ECustomize%' AND d.chars > 200
+  const atas = (await q(`SELECT d.cnpj,d.ano,d.seq,d.cod_ibge FROM arquivo_texto_sc d
+    WHERE d.gerador='portal_compras_publicas' AND d.chars > 200
       AND NOT EXISTS (SELECT 1 FROM marca_ata_feitas f WHERE f.cnpj=d.cnpj AND f.ano=d.ano AND f.seq=d.seq)
     GROUP BY d.cnpj,d.ano,d.seq,d.cod_ibge ${LIMIT ? "LIMIT " + LIMIT : ""}`)).rows;
-  console.log(`${atas.length.toLocaleString()} atas ECustomize a extrair (determinístico)`);
+  console.log(`${atas.length.toLocaleString()} atas do Portal de Compras Públicas a extrair (determinístico, por gerador)`);
 
   let comProp = 0, done = 0;
   for (const e of atas) {

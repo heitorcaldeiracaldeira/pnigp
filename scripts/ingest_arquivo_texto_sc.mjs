@@ -4,7 +4,7 @@
 // DOCFILTRO define quais documentos baixar (default: atas de sessão — a fonte da marca). node scripts/ingest_arquivo_texto_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
 import { extractText, getDocumentProxy } from "unpdf";
-import { whereSelecaoAtas } from "./mapa_atas_plataformas.mjs";
+import { whereSelecaoAtas, detectaGerador } from "./mapa_atas_plataformas.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const CONC = Number(process.env.CONC || 4);
@@ -66,6 +66,10 @@ async function main() {
     texto TEXT, chars INT, numero_controle TEXT GENERATED ALWAYS AS (cnpj || '-1-' || lpad(seq::text,6,'0') || '/' || ano) STORED,
     atualizado timestamptz DEFAULT now(), PRIMARY KEY (cnpj,ano,seq,sequencial_documento))`);
   await q(`CREATE INDEX IF NOT EXISTS ix_arqtexto_nc ON arquivo_texto_sc (numero_controle)`);
+  // GERADOR do documento (assinatura no texto) — é o que roteia o parser, NÃO a plataforma do PNCP (=quem publicou).
+  // Carimbado aqui, na ingestão: varrer `texto ~* ...` a cada ciclo seria seq scan em GBs.
+  await q(`ALTER TABLE arquivo_texto_sc ADD COLUMN IF NOT EXISTS gerador TEXT`);
+  await q(`CREATE INDEX IF NOT EXISTS ix_arqtexto_gerador ON arquivo_texto_sc (gerador)`);
 
   // seleção por plataforma/modalidade (mapa_atas_plataformas) — traz o doc de resultado de TODAS as modalidades.
   const W = whereSelecaoAtas("a", "c");
@@ -84,9 +88,9 @@ async function main() {
       if (bruto === null) continue;   // falha de fetch → não grava, retenta
       const texto = limpaTexto(bruto);   // sem NUL/surrogate: senão o Postgres recusa e o coletor inteiro para
       try {
-        await q(`INSERT INTO arquivo_texto_sc (cnpj,ano,seq,sequencial_documento,cod_ibge,tipo_documento,titulo,texto,chars)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (cnpj,ano,seq,sequencial_documento) DO UPDATE SET texto=EXCLUDED.texto, chars=EXCLUDED.chars, atualizado=now()`,
-          [e.cnpj, e.ano, e.seq, Number(e.sequencial_documento) || 0, e.cod_ibge, e.tipo_documento, String(e.titulo || "").slice(0, 300), texto, texto.length]);
+        await q(`INSERT INTO arquivo_texto_sc (cnpj,ano,seq,sequencial_documento,cod_ibge,tipo_documento,titulo,texto,chars,gerador)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (cnpj,ano,seq,sequencial_documento) DO UPDATE SET texto=EXCLUDED.texto, chars=EXCLUDED.chars, gerador=EXCLUDED.gerador, atualizado=now()`,
+          [e.cnpj, e.ano, e.seq, Number(e.sequencial_documento) || 0, e.cod_ibge, e.tipo_documento, String(e.titulo || "").slice(0, 300), texto, texto.length, detectaGerador(texto)]);
         if (texto.length > 50) ok++; else vazio++;
       } catch (err) {
         // 1 doc ruim NÃO pode matar a passada inteira (era o que acontecia) — mas o erro tem que APARECER.

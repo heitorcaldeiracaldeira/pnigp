@@ -7,6 +7,9 @@ import fs from "fs"; import path from "path"; import { fileURLToPath } from "url
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const CONS = "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao";
+// STATE-AGNOSTIC: a UF vem do ambiente (default SC). `UF=SP node scripts/ingest_contratacoes_sc.mjs` replica o
+// pipeline inteiro — o PNCP é nacional e o cod_ibge já identifica o estado. Ver [[pnigp-replicacao-uf-sp]].
+const UF = (process.env.UF || "SC").toUpperCase();
 const MODALIDADES = (process.env.MODALIDADES || "1,2,3,4,5,6,7,8,9,10,11,12,13").split(",").map(Number);
 const ANO_INI = Number(process.env.ANO_INI || 2024);
 const ANO_FIM = Number(process.env.ANO_FIM || 2026);
@@ -25,7 +28,7 @@ function janelas() {
   return out;
 }
 async function getBulk(mod, ini, fim, pagina) {
-  const url = `${CONS}?dataInicial=${ini}&dataFinal=${fim}&codigoModalidadeContratacao=${mod}&uf=SC&pagina=${pagina}&tamanhoPagina=50`;
+  const url = `${CONS}?dataInicial=${ini}&dataFinal=${fim}&codigoModalidadeContratacao=${mod}&uf=${UF}&pagina=${pagina}&tamanhoPagina=50`;
   for (let t = 0; ; t++) {
     let r; try { r = await fetch(url, { signal: AbortSignal.timeout(25000) }); } catch (e) { if (t >= 5) throw e; await sleep(3000 * (t + 1)); continue; }
     if (r.status === 429) { if (t >= 8) throw new Error("429 persistente"); await sleep(8000 * (t + 1)); continue; }
@@ -51,13 +54,24 @@ async function main() {
   await q(`CREATE UNIQUE INDEX IF NOT EXISTS ix_contratacoes_nc ON contratacoes_sc (numero_controle)`);
   // compat: processos_sc é uma VIEW sobre contratacoes_sc (entidade absorvida); recria se sumir
   await q(`CREATE OR REPLACE VIEW processos_sc AS SELECT cnpj AS cnpj_orgao, ano, seq AS sequencial, cod_ibge, numero_controle, modalidade_id, modalidade, objeto, valor_estimado, situacao, data_publicacao AS data_pub FROM contratacoes_sc`).catch(() => {});
+  // ⚠️ A janela de retomada TEM QUE incluir a UF. Sem isso, rodar UF=SP encontraria as janelas marcadas por SC e
+  // PULARIA TUDO em silêncio (ingestão zerada sem erro) — a mesma classe do TRUNCATE que apagaria SC ([[pnigp-replicacao-uf-sp]]).
   await q(`CREATE TABLE IF NOT EXISTS _raiox_janela (mod INT, ano INT, mes INT, n INT, feito_em timestamptz DEFAULT now(), PRIMARY KEY (mod,ano,mes))`);
+  await q(`ALTER TABLE _raiox_janela ADD COLUMN IF NOT EXISTS uf TEXT`);
+  await q(`UPDATE _raiox_janela SET uf='SC' WHERE uf IS NULL`);   // as janelas existentes são todas de SC
+  const pkJanela = (await q(`SELECT pg_get_constraintdef(c.oid) def FROM pg_constraint c JOIN pg_class r ON r.oid=c.conrelid
+    WHERE r.relname='_raiox_janela' AND c.contype='p'`)).rows[0]?.def || "";
+  if (!pkJanela.includes("uf")) {
+    await q(`ALTER TABLE _raiox_janela DROP CONSTRAINT _raiox_janela_pkey`);
+    await q(`ALTER TABLE _raiox_janela ADD PRIMARY KEY (uf,mod,ano,mes)`);
+    console.log("↻ _raiox_janela: PK migrada p/ (uf,mod,ano,mes) — retomada por UF");
+  }
   // mapa cnpj→cod_ibge (dos itens já ingeridos) p/ carimbar o município
   const codByCnpj = new Map((await q(`SELECT DISTINCT cnpj, cod_ibge FROM itens_sc WHERE cod_ibge IS NOT NULL`)).rows.map((r) => [r.cnpj, r.cod_ibge]));
 
   const js = janelas(); let totGrav = 0, jaFeitas = 0;
   for (const mod of MODALIDADES) for (const j of js) {
-    if ((await q(`SELECT 1 FROM _raiox_janela WHERE mod=$1 AND ano=$2 AND mes=$3`, [mod, j.ano, j.mes])).rowCount) { jaFeitas++; continue; }
+    if ((await q(`SELECT 1 FROM _raiox_janela WHERE uf=$4 AND mod=$1 AND ano=$2 AND mes=$3`, [mod, j.ano, j.mes, UF])).rowCount) { jaFeitas++; continue; }
     let pagina = 1, tp = 1, nJanela = 0;
     do {
       const r = await getBulk(mod, j.ini, j.fim, pagina).catch(() => ({ data: [], totalPaginas: 0 }));
@@ -82,7 +96,7 @@ async function main() {
       }
       pagina++;
     } while (pagina <= tp);
-    await q(`INSERT INTO _raiox_janela (mod,ano,mes,n) VALUES ($1,$2,$3,$4) ON CONFLICT (mod,ano,mes) DO UPDATE SET n=EXCLUDED.n, feito_em=now()`, [mod, j.ano, j.mes, nJanela]);
+    await q(`INSERT INTO _raiox_janela (uf,mod,ano,mes,n) VALUES ($5,$1,$2,$3,$4) ON CONFLICT (uf,mod,ano,mes) DO UPDATE SET n=EXCLUDED.n, feito_em=now()`, [mod, j.ano, j.mes, nJanela, UF]);
     if (nJanela) process.stdout.write(`  mod ${mod} ${j.ano}-${String(j.mes).padStart(2, "0")}: ${nJanela} · total ${totGrav}\r`);
   }
   console.log(`\n✔ ${totGrav.toLocaleString()} compras gravadas (janelas já feitas puladas: ${jaFeitas})`);
