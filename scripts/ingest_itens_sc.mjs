@@ -2,6 +2,7 @@
 // Lê as maiores contratações (compras_sc.top) de cada ente e grava os itens (descrição, qtd,
 // unitário estimado×homologado, fornecedor/CNPJ/porte, LC123). Idempotente, resumível.
 // node scripts/ingest_itens_sc.mjs   (env ANO opcional p/ um ano; padrão = último ano por ente)
+import { INGEST_VERSAO } from "./ingest_versao.mjs";
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -126,10 +127,17 @@ async function main() {
   const q = async (sql, params) => { for (let t = 0; t < 12; t++) { try { return await db.query(sql, params); } catch { await sleep(1500 * (t + 1)); } } throw new Error("db indisponível"); };
   // universo COMPLETO: todos os processos do PNCP em SC (processos_sc)
   await db.query(`CREATE TABLE IF NOT EXISTS itens_proc_feitos (numero_controle TEXT PRIMARY KEY, n INTEGER, feito_em timestamptz DEFAULT now())`);
+  // ─── ESTADO COM VERSÃO ────────────────────────────────────────────────────────────────────────────────────────
+  // 🔴 A ARMADILHA QUE ME PEGOU 3× EM 2026-07-15: marcador de "feito" sem versão faz o conserto NÃO ACONTECER.
+  // Prova: corrigi o `r[0]` (só o 1º resultado entrava; ~8% descartados), escrevi o INSERT em item_resultado_sc…
+  // e a tabela ficou com ZERO linhas — os 241.302 processos já estavam marcados feitos e o ingest pulou todos.
+  // Código certo, dado velho, e eu declarando "corrigido". Igualzinho ao marca_ata_feitas das atas.
+  // Agora: SOBE INGEST_VERSAO quando mudar o que se extrai → tudo vira pendente sozinho, sem limpeza manual.
+  await db.query(`ALTER TABLE itens_proc_feitos ADD COLUMN IF NOT EXISTS versao INT`);
   const procs = (await db.query(`SELECT numero_controle, cod_ibge, cnpj_orgao cnpj, ano, sequencial seq FROM processos_sc WHERE cnpj_orgao IS NOT NULL AND sequencial IS NOT NULL`).catch(() => ({ rows: [] }))).rows;
-  const feitos = new Set((await db.query(`SELECT numero_controle FROM itens_proc_feitos`)).rows.map((r) => r.numero_controle));
+  const feitos = new Set((await db.query(`SELECT numero_controle FROM itens_proc_feitos WHERE versao = $1`, [INGEST_VERSAO])).rows.map((r) => r.numero_controle));
   const pend = procs.filter((p) => !feitos.has(p.numero_controle));
-  console.log(`Itens: ${pend.length} processos pendentes (de ${procs.length} no PNCP/SC)...`);
+  console.log(`Itens: ${pend.length} processos pendentes (de ${procs.length} no PNCP/SC) · INGEST_VERSAO=${INGEST_VERSAO}`);
   let comItens = 0;
   await pool(pend, CONC, async (e) => {
     try {
@@ -176,7 +184,9 @@ async function main() {
             [e.cod_ibge, e.cnpj, e.ano, e.seq, B.num, B.sr, B.ni, B.nome, B.tp, B.qh, B.vu, B.vt, B.pd, B.porte, B.nj, B.ord, B.sit, B.sub, B.dr, B.dc, B.mc]);
         }
         // todo processo tem ≥1 item: só marca FEITO com n>0 (n=0 = fetch vazio/anomalia → fica pendente, retenta)
-        await q(`INSERT INTO itens_proc_feitos (numero_controle,n) VALUES ($1,$2) ON CONFLICT (numero_controle) DO UPDATE SET n=EXCLUDED.n, feito_em=now()`, [e.numero_controle, n]); comItens++;
+        await q(`INSERT INTO itens_proc_feitos (numero_controle,n,versao) VALUES ($1,$2,$3)
+          ON CONFLICT (numero_controle) DO UPDATE SET n=EXCLUDED.n, versao=EXCLUDED.versao, feito_em=now()`,
+          [e.numero_controle, n, INGEST_VERSAO]); comItens++;
       }
     } catch (err) { console.log(`  ! falha ${e.numero_controle} (${String(err).slice(0, 35)})`); }
   });
