@@ -66,8 +66,17 @@ async function main() {
     await q(`ALTER TABLE _raiox_janela ADD PRIMARY KEY (uf,mod,ano,mes)`);
     console.log("↻ _raiox_janela: PK migrada p/ (uf,mod,ano,mes) — retomada por UF");
   }
-  // mapa cnpj→cod_ibge (dos itens já ingeridos) p/ carimbar o município
+  // 🔴 ESPELHAR O PNCP (lei: SISTEMA DE ORIGEM = SISTEMA DE DESTINO — [[pnigp-nomenclatura-pncp]]).
+  // O objeto `compra` do PNCP TRAZ a entidade `unidadeOrgao` com o município do processo:
+  //   unidadeOrgao = { codigoIbge, municipioNome, ufSigla, ufNome, codigoUnidade, nomeUnidade }
+  // Antes, isto era DESCARTADO e o município era DEDUZIDO de um mapa cnpj→cod_ibge montado de `itens_sc` — inventar
+  // arquitetura sobre um campo que já existe. Custo medido: 3.724 processos ficaram SEM município e só 289 dos 295
+  // municípios de SC apareciam. Agora o cod_ibge vem do PNCP; o mapa fica só de FALLBACK p/ registro antigo.
   const codByCnpj = new Map((await q(`SELECT DISTINCT cnpj, cod_ibge FROM itens_sc WHERE cod_ibge IS NOT NULL`)).rows.map((r) => [r.cnpj, r.cod_ibge]));
+  // colunas-espelho da unidadeOrgao (idempotente)
+  for (const [c, t] of [["municipio_nome", "TEXT"], ["unidade_codigo", "TEXT"], ["unidade_nome", "TEXT"],
+                        ["orgao_razao_social", "TEXT"], ["uf", "TEXT"], ["numero_controle_pncp", "TEXT"]])
+    await q(`ALTER TABLE contratacoes_sc ADD COLUMN IF NOT EXISTS ${c} ${t}`);
 
   const js = janelas(); let totGrav = 0, jaFeitas = 0;
   for (const mod of MODALIDADES) for (const j of js) {
@@ -82,16 +91,25 @@ async function main() {
         const econ = est && hom && est > 0 ? Math.round((1 - hom / est) * 1000) / 10 : null;
         await q(`INSERT INTO contratacoes_sc (cod_ibge,cnpj,ano,seq,esfera,plataforma,modalidade_id,modalidade,modo_disputa,srp,instrumento,
             valor_estimado,valor_homologado,economia_pct,numero_compra,processo,objeto,situacao,emenda_parlamentar,amparo_legal,
-            data_publicacao,data_abertura,data_encerramento)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
+            data_publicacao,data_abertura,data_encerramento,
+            municipio_nome,unidade_codigo,unidade_nome,orgao_razao_social,uf,numero_controle_pncp)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29)
           ON CONFLICT (cnpj,ano,seq) DO UPDATE SET plataforma=EXCLUDED.plataforma, modalidade=EXCLUDED.modalidade, modo_disputa=EXCLUDED.modo_disputa,
             srp=EXCLUDED.srp, valor_estimado=EXCLUDED.valor_estimado, valor_homologado=EXCLUDED.valor_homologado, economia_pct=EXCLUDED.economia_pct,
-            situacao=EXCLUDED.situacao, cod_ibge=COALESCE(EXCLUDED.cod_ibge, contratacoes_sc.cod_ibge), atualizado=now()`,
-          [codByCnpj.get(cnpj) || null, cnpj, num(o.anoCompra), num(o.sequencialCompra), o.orgaoEntidade?.esferaId || null, o.usuarioNome || null,
+            situacao=EXCLUDED.situacao, cod_ibge=COALESCE(EXCLUDED.cod_ibge, contratacoes_sc.cod_ibge),
+            municipio_nome=EXCLUDED.municipio_nome, unidade_codigo=EXCLUDED.unidade_codigo, unidade_nome=EXCLUDED.unidade_nome,
+            orgao_razao_social=EXCLUDED.orgao_razao_social, uf=EXCLUDED.uf, numero_controle_pncp=EXCLUDED.numero_controle_pncp, atualizado=now()`,
+          // cod_ibge: do PNCP (unidadeOrgao.codigoIbge); o mapa cnpj→ibge fica só de fallback
+          [o.unidadeOrgao?.codigoIbge || codByCnpj.get(cnpj) || null, cnpj, num(o.anoCompra), num(o.sequencialCompra), o.orgaoEntidade?.esferaId || null, o.usuarioNome || null,
            num(o.modalidadeId), o.modalidadeNome || null, o.modoDisputaNome || null, o.srp === true, o.tipoInstrumentoConvocatorioNome || null,
            est, hom, econ, o.numeroCompra || null, o.processo || null, String(o.objetoCompra || "").slice(0, 500), o.situacaoCompraNome || null,
            o.emendaParlamentar === true, String(o.amparoLegal?.nome || o.amparoLegal?.descricao || "").slice(0, 160),
-           dt(o.dataPublicacaoPncp), dt(o.dataAberturaProposta), dt(o.dataEncerramentoProposta)]);
+           dt(o.dataPublicacaoPncp), dt(o.dataAberturaProposta), dt(o.dataEncerramentoProposta),
+           // espelho da unidadeOrgao/orgaoEntidade do PNCP (antes: descartados)
+           o.unidadeOrgao?.municipioNome || null, o.unidadeOrgao?.codigoUnidade || null,
+           String(o.unidadeOrgao?.nomeUnidade || "").slice(0, 160) || null,
+           String(o.orgaoEntidade?.razaoSocial || "").slice(0, 160) || null,
+           o.unidadeOrgao?.ufSigla || null, o.numeroControlePNCP || null]);
         totGrav++; nJanela++;
       }
       pagina++;

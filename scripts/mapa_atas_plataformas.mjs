@@ -30,14 +30,24 @@ export const MAPA = [
 // ⚠️ o separador precisa aceitar " da "/" de " e MAIS DE UM caractere: "ata da sessao pe" (Betha) e "ata sessao final"
 // (BLL) têm 100% de marca e o padrão antigo `ata[_ .-]?sessao` (1 separador) NÃO os pegava — medido em 2026-07-15.
 const SEP = "[_ .\\-]*(?:d[ae])?[_ .\\-]*";
-export const SEL_ATA = "atatotal|ata" + SEP + "(final|parcial|sessao|sess[aã]o|total|julgamento|reuni|realiz)|^ata$|^resultados?\\b|vencedoresprocesso|propostasprocesso|relat(orio)?lance|mapa[_ ]?de[_ ]?(lance|preco)|divulgacao do resultado";
+// 🔴 ATENÇÃO — estes padrões rodam no POSTGRES (`~*`), que usa regex POSIX, NÃO PCRE/JavaScript.
+// Em POSIX, **`\b` é o caractere BACKSPACE**, não fronteira de palavra. A fronteira é **`\y`** (ou `\m`/`\M`).
+// Custou caro: `^resultados?\b` NUNCA casou → **7.281 documentos "resultados" da AZ INFORMATICA** (plataforma de
+// cobertura COMPLETA: propostas + lances de TODOS) foram descartados em silêncio. Um `\b` aqui não dá erro — só
+// deixa de casar. Testar SEMPRE que o padrão casa com o que DEVE, não só que rejeita o que não deve.
+export const SEL_ATA = "atatotal|ata" + SEP + "(final|parcial|sessao|sess[aã]o|total|julgamento|reuni|realiz)|^ata$|^resultados?\\y|vencedoresprocesso|propostasprocesso|relat(orio)?lance|mapa[_ ]?de[_ ]?(lance|preco)|divulgacao do resultado";
 // ⚠️ ACENTO: o `~*` do Postgres é case-insensitive mas NÃO accent-insensitive — "termo de homologacao" NÃO casa com
 // "termo de homologação". Medido 2026-07-15: 5.091 docs de resultado ficavam de fora por acento e por erro de
 // digitação da fonte ("razao da escollha", "temo_de_adjudicacao"). Casar pelo RADICAL (homologa/adjudica/raz[ãa]o)
 // resolve os dois de uma vez. `te?rmo` cobre o typo "temo".
-export const SEL_DISPENSA = "ter?mo[_ ]?(de[_ ]?)?homologa|^homologa|raz[ãa]o?[_ ]?(d[ae][_ ]?)?escol?lha|razoesdaescolha|ter?mo[_ ]?de[_ ]?adjudica|^adjudica|^proposta$|carta proposta|ata chamada publica|ata[_ ]de[_ ]registro";
+// `^proposta$` (ancorado) só casava com o título que fosse EXATAMENTE "proposta" — mas a LEI do usuário diz que na
+// dispensa a marca está na PROPOSTA do vencedor, e ela se chama "Proposta Comercial"/"Proposta de Preço"/"Proposta
+// Vencedora" (2.246 rejeitados). `ata[_ ]de[_ ]registro` exigia o "de" e perdia "ata registro de preco" (949).
+// MODELO/ANEXO de proposta é FORMULÁRIO em branco, não dado → vai no EXCLUI.
+export const SEL_DISPENSA = "ter?mo[_ ]?(de[_ ]?)?homologa|^homologa|raz[ãa]o?[_ ]?(d[ae][_ ]?)?escol?lha|razoesdaescolha|ter?mo[_ ]?de[_ ]?adjudica|^adjudica|propostas?[_ ]?(comercial|de[_ ]?pre[çc]o|vencedora|recebidas|final)|^propostas?\\y|carta proposta|ata chamada publica|ata[_ ]?(de[_ ]?)?registro";
 export const SEL_DEFAULT = SEL_ATA + "|" + SEL_DISPENSA;
-export const EXCLUI = "errata|^edital|termo de referencia|termo_de_referencia|anexo|minuta|projeto b|estudo tecnico|^dfd|parecer|^orcamento|impugnac|^recurso|comprovante|comprovacao|aviso de|abertura de processo";
+// +modelo/formulario: "modelo proposta comercial" é FORMULÁRIO EM BRANCO, não a proposta preenchida.
+export const EXCLUI = "errata|^edital|termo de referencia|termo_de_referencia|anexo|minuta|projeto b|estudo tecnico|^dfd|parecer|^orcamento|impugnac|^recurso|comprovante|comprovacao|aviso de|abertura de processo|^modelo|formulario";
 
 // devolve a cláusula SQL (WHERE) que seleciona os documentos de resultado de TODAS as modalidades. Global (união
 // ata + dispensa), com overrides por plataforma onde o nome é atípico (AZ 'resultados', BLL 'propostasprocesso').
