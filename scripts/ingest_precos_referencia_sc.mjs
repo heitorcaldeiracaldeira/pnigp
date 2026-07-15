@@ -1,3 +1,13 @@
+// ⛔ DESATIVADO EM 15/07/2026 — NÃO RODAR. Script de jun/2026, código morto e PERIGOSO.
+// Ele faz `DROP TABLE precos_referencia_sc` e recria com schema pobre (k, n_compras…). Mas a
+// `precos_referencia_sc` DE PRODUÇÃO foi reconstruída em julho com outro schema (chave, catmat_pdm,
+// catmat_classe, catmat_cod, catmat_sim, desvio, cv — 1.007 refs / 936 com CATMAT) e alimenta o
+// `getBancoPrecosSC` (/api/banco-precos). Rodar isto DESTRÓI o Banco de Preços, sem erro visível.
+// >>> Quem constrói a tabela hoje é `scripts/build_precos_compras.mjs`. <<<
+// Mantido só por histórico. Ver memória: pnigp-mina-precos-referencia.
+console.error("⛔ ingest_precos_referencia_sc.mjs está DESATIVADO (jun/2026): faria DROP na precos_referencia_sc de PRODUÇÃO (catmat_cod → getBancoPrecosSC). Use scripts/build_precos_compras.mjs.");
+process.exit(1);
+
 // ETL — Preço de REFERÊNCIA por item (descritivo canônico + unidade) entre municípios de SC, a partir de itens_sc (PNCP).
 // Base da análise de VARIAÇÃO DE PREÇOS / sobrepreço (não há CATMAT → agrupa por descrição normalizada). node scripts/ingest_precos_referencia_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";

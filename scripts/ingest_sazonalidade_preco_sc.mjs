@@ -1,3 +1,9 @@
+// ⛔ DESATIVADO EM 15/07/2026 — NÃO RODAR. Script de jun/2026, código morto (a análise saiu do ar: comparava por
+// valor TOTAL; foi refeita por VALOR UNITÁRIO). Faz `DROP TABLE sazonalidade_preco_sc`. Só histórico.
+// Ver memória: pnigp-mina-precos-referencia.
+console.error("⛔ ingest_sazonalidade_preco_sc.mjs está DESATIVADO (jun/2026): código morto, faz DROP em sazonalidade_preco_sc.");
+process.exit(1);
+
 // ETL — Sazonalidade de PREÇO por categoria de produto (SC). Índice relativo: preço do mês ÷ mediana anual do MESMO
 // item canônico (normaliza itens diferentes). Identifica o melhor mês de compra por grupo. node scripts/ingest_sazonalidade_preco_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
