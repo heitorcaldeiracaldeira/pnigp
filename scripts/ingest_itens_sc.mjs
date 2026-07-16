@@ -3,6 +3,7 @@
 // unitário estimado×homologado, fornecedor/CNPJ/porte, LC123). Idempotente, resumível.
 // node scripts/ingest_itens_sc.mjs   (env ANO opcional p/ um ano; padrão = último ano por ente)
 import { INGEST_VERSAO } from "./ingest_versao.mjs";
+import { CAMPOS_ITEM, DDL_ITEM } from "./campos_item_pncp.mjs";
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -69,27 +70,24 @@ async function fetchItens(cnpj, ano, seq) {
       for (const x of r) resTodos.push({ numeroItem: it.numeroItem, r: x });
     }
   }));
+  // OS 36 CAMPOS vêm do mapa declarativo (campos_item_pncp.mjs) — origem = destino. O que sobra aqui é só o que
+  // NÃO vem de /itens: os campos do vencedor, que vêm de /resultados, e a economia, que é derivada dos dois.
+  // 🔴 `beneficio_lc` (legado) gravava só o NOME e descartava "sem benefício" → EXCLUSIVO(1) e UNIVERSAL(4)
+  // ficavam indistinguíveis. Mantido p/ compatibilidade das queries antigas; o certo é `tipo_beneficio_id`.
   const saida = itens.map((it, idx) => {
     const r = resMap.get(it.numeroItem) || null;
     const unitEst = Number(it.valorUnitarioEstimado) || 0;
     const unitHom = r ? Number(r.valorUnitarioHomologado) || Number(r.valorUnitario) || 0 : 0;
     const benef = String(it.tipoBeneficioNome || "");
-    return {
-      numero: Number(it.numeroItem) || idx + 1,
-      descricao: String(it.descricao || "").slice(0, 240),
-      unidade: String(it.unidadeMedida || ""),
-      quantidade: Number(it.quantidade) || 0,
-      unitEst, unitHom: unitHom > 0 ? unitHom : null,
-      fornecedor: r ? String(r.nomeRazaoSocialFornecedor || r.niFornecedor || "") || null : null,
-      cnpjFornecedor: r ? String(r.niFornecedor || "") || null : null,
-      porteFornecedor: r ? String(r.porteFornecedorNome || r.porteFornecedor || "") || null : null,
-      beneficioLC: benef && !/nenhum|não|nao|sem benef/i.test(benef) ? benef : null,
-      economiaPct: unitEst > 0 && unitHom > 0 ? Math.round(((unitEst - unitHom) / unitEst) * 1000) / 10 : null,
-      ncm: String(it.ncmNbsCodigo || "") || null,                         // código fiscal do produto (comparar mesmo produto)
-      catmat: it.catalogoCodigoItem != null ? String(it.catalogoCodigoItem) : null, // CATMAT/CATSER (catálogo oficial)
-      tipo: String(it.materialOuServicoNome || "") || null,              // Material | Serviço
-      situacao: String(it.situacaoCompraItemNome || "") || null,         // Homologado/Fracassado/Deserto/Cancelado — comportamento da compra
-    };
+    const linha = {};
+    for (const [col, , fn] of CAMPOS_ITEM) linha[col] = fn(it, idx);
+    linha.unit_homologado = unitHom > 0 ? unitHom : null;
+    linha.fornecedor = r ? String(r.nomeRazaoSocialFornecedor || r.niFornecedor || "").slice(0, 160) || null : null;
+    linha.cnpj_fornecedor = r ? String(r.niFornecedor || "") || null : null;
+    linha.porte_fornecedor = r ? String(r.porteFornecedorNome || r.porteFornecedor || "") || null : null;
+    linha.beneficio_lc = benef && !/nenhum|não|nao|sem benef/i.test(benef) ? benef : null;
+    linha.economia_pct = unitEst > 0 && unitHom > 0 ? Math.round(((unitEst - unitHom) / unitEst) * 1000) / 10 : null;
+    return linha;
   });
   saida.__resultados = resTodos;   // TODOS os resultados (espelho de /resultados) — anexado ao array RETORNADO
   return saida;
@@ -127,7 +125,13 @@ async function main() {
       PRIMARY KEY (cnpj, ano, seq, numero, sequencial_resultado) );
     CREATE INDEX IF NOT EXISTS idx_item_res_proc ON item_resultado_sc (cnpj, ano, seq);
     CREATE INDEX IF NOT EXISTS idx_item_res_forn ON item_resultado_sc (ni_fornecedor);`);
-  for (const c of ["ncm TEXT", "catmat TEXT", "tipo TEXT", "situacao TEXT"]) await db.query(`ALTER TABLE itens_sc ADD COLUMN IF NOT EXISTS ${c}`); // robusto se a tabela já existir
+  // OS 36 CAMPOS do item (campos_item_pncp.mjs) — ADD COLUMN IF NOT EXISTS, não destrói nada.
+  // Antes guardávamos 8 de 36. Os 28 que faltavam incluem `tipo_beneficio_id` (item EXCLUSIVO ME/EPP × UNIVERSAL),
+  // `criterio_julgamento_id` (muda o significado do preço), `orcamento_sigiloso` (trava do cálculo de disputa) e
+  // `informacao_complementar` (munição p/ o CATMAT). Ver o mapa p/ o porquê de cada um.
+  await db.query(`ALTER TABLE itens_sc ${DDL_ITEM}`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_itens_beneficio ON itens_sc (tipo_beneficio_id) WHERE tipo_beneficio_id IS NOT NULL`);
+  await db.query(`CREATE INDEX IF NOT EXISTS idx_itens_criterio ON itens_sc (criterio_julgamento_id) WHERE criterio_julgamento_id IS NOT NULL`);
   const q = async (sql, params) => { for (let t = 0; t < 12; t++) { try { return await db.query(sql, params); } catch { await sleep(1500 * (t + 1)); } } throw new Error("db indisponível"); };
   // universo COMPLETO: todos os processos do PNCP em SC (processos_sc)
   await db.query(`CREATE TABLE IF NOT EXISTS itens_proc_feitos (numero_controle TEXT PRIMARY KEY, n INTEGER, feito_em timestamptz DEFAULT now())`);
@@ -172,13 +176,22 @@ async function main() {
       const n = itens.length;
       if (n > 0) {
         // LOTE: 1 INSERT por processo (não por item) — corta as requisições ao Neon em N× e evita a queda por bombardeio.
-        const A = { num: [], desc: [], uni: [], qtd: [], est: [], hom: [], forn: [], cf: [], pf: [], blc: [], ec: [], ncm: [], cat: [], tipo: [], sit: [] };
-        for (const it of itens) { A.num.push(it.numero); A.desc.push(it.descricao); A.uni.push(it.unidade); A.qtd.push(it.quantidade); A.est.push(it.unitEst); A.hom.push(it.unitHom); A.forn.push(it.fornecedor); A.cf.push(it.cnpjFornecedor); A.pf.push(it.porteFornecedor); A.blc.push(it.beneficioLC); A.ec.push(it.economiaPct); A.ncm.push(it.ncm); A.cat.push(it.catmat); A.tipo.push(it.tipo); A.sit.push(it.situacao); }
-        await q(`INSERT INTO itens_sc (cod_ibge,cnpj,ano,seq,numero,descricao,unidade,quantidade,unit_estimado,unit_homologado,fornecedor,cnpj_fornecedor,porte_fornecedor,beneficio_lc,economia_pct,ncm,catmat,tipo,situacao)
-                 SELECT $1,$2,$3,$4, t.* FROM unnest($5::int[],$6::text[],$7::text[],$8::numeric[],$9::numeric[],$10::numeric[],$11::text[],$12::text[],$13::text[],$14::text[],$15::numeric[],$16::text[],$17::text[],$18::text[],$19::text[])
-                   AS t(numero,descricao,unidade,quantidade,unit_estimado,unit_homologado,fornecedor,cnpj_fornecedor,porte_fornecedor,beneficio_lc,economia_pct,ncm,catmat,tipo,situacao)
-                 ON CONFLICT (cnpj,ano,seq,numero) DO UPDATE SET descricao=EXCLUDED.descricao,unit_homologado=EXCLUDED.unit_homologado,fornecedor=EXCLUDED.fornecedor,cnpj_fornecedor=EXCLUDED.cnpj_fornecedor,porte_fornecedor=EXCLUDED.porte_fornecedor,beneficio_lc=EXCLUDED.beneficio_lc,economia_pct=EXCLUDED.economia_pct,ncm=EXCLUDED.ncm,catmat=EXCLUDED.catmat,tipo=EXCLUDED.tipo,situacao=EXCLUDED.situacao`,
-          [e.cod_ibge, e.cnpj, e.ano, e.seq, A.num, A.desc, A.uni, A.qtd, A.est, A.hom, A.forn, A.cf, A.pf, A.blc, A.ec, A.ncm, A.cat, A.tipo, A.sit]);
+        // SQL GERADO do mapa (campos_item_pncp) + os campos do vencedor (/resultados) e a economia (derivada).
+        // Gerar em vez de escrever à mão: 40 `unnest` posicionais é onde eu trocaria dois de lugar — o que NÃO dá
+        // erro de sintaxe, dá dado errado e silencioso. Aqui coluna e campo da API andam colados.
+        const EXTRA = [["unit_homologado", "numeric"], ["fornecedor", "text"], ["cnpj_fornecedor", "text"],
+          ["porte_fornecedor", "text"], ["beneficio_lc", "text"], ["economia_pct", "numeric"]];
+        const COLS = [...CAMPOS_ITEM.map(([c, t]) => [c, t]), ...EXTRA];
+        const arrays = COLS.map(([c]) => itens.map((it) => it[c] ?? null));
+        const listaCols = COLS.map(([c]) => c).join(",");
+        const unnests = COLS.map(([, t], i) => `$${i + 5}::${t}[]`).join(",");
+        const tCols = COLS.map(([c]) => c).join(",");
+        // `numero` é chave — nunca no SET. O resto atualiza (reprocesso tem que poder corrigir dado velho).
+        const sets = COLS.filter(([c]) => c !== "numero").map(([c]) => `${c}=EXCLUDED.${c}`).join(",");
+        await q(`INSERT INTO itens_sc (cod_ibge,cnpj,ano,seq,${listaCols})
+                 SELECT $1,$2,$3,$4, t.* FROM unnest(${unnests}) AS t(${tCols})
+                 ON CONFLICT (cnpj,ano,seq,numero) DO UPDATE SET ${sets}`,
+          [e.cod_ibge, e.cnpj, e.ano, e.seq, ...arrays]);
 
         // ESPELHO: TODOS os resultados do item (antes só o [0] entrava, achatado em itens_sc — ~8% descartados)
         const R = itens.__resultados || [];

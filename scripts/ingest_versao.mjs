@@ -17,4 +17,6 @@
 // HISTÓRICO:
 //   1 = original (só o 1º resultado do item; 8 campos do item)
 //   2 = TODOS os resultados por item (item_resultado_sc populada) — o conserto do `r[0]` finalmente valendo no dado
-export const INGEST_VERSAO = 2;
+//   3 = OS 36 CAMPOS do item (antes 8): tipo_beneficio_id (EXCLUSIVO ME/EPP x UNIVERSAL — antes indistinguíveis),
+//       criterio_julgamento_id, orcamento_sigiloso, informacao_complementar + 24. Ver campos_item_pncp.mjs.
+export const INGEST_VERSAO = 3;
