@@ -26,10 +26,20 @@
 //
 // Rodar os testes:  node scripts/classifica_especificacao.mjs
 
-const TEC  = /\b\d+\s*(mm|cm|m²|m2|kg|g\b|ml|litros?|w\b|v\b|volts?|btu|polegadas?|amp|hz|rpm|gr\b)/gi;
-const NORM = /\b(abnt|nbr|inmetro|iso\s*\d|anvisa|nr-?\d|din\b|astm)/gi;
-const EXIG = /\b(dever[áa]|deve\s+(ser|ter|possuir)|m[íi]nim[oa]|m[áa]xim[oa]|garantia|caracter[íi]sticas?|composi[çc][ãa]o|marca|fabricante|certifica)/gi;
-const ATTR = /\b(material|tipo|cor|tamanho|dimens[õo]es|capacidade|pot[êe]ncia|volt|modelo|arma[çc][ãa]o|acabamento|espessura|largura|comprimento|altura|peso|volume|apresenta[çc][ãa]o|formato|aplica[çc][ãa]o|folhas?)\s*:/gi;
+// 🔴 SEM \b — O TEXTO DO PDF VEM COLADO. Caso real (Florianópolis 2024/94, R$ 108.730,60), o unpdf entrega:
+//   "nimo,100CV,podendodispordeturbocompressor,...;arcondicionadodefábrica;AirBag,...–ABS;garantiamínimade12(doze)meses"
+// Não há fronteira de palavra, então `\b` nunca casa e a especificação do carro (potência, ar condicionado,
+// airbag, ABS, garantia) foi DESCARTADA com score 0,22. Calibrei em 5 blocos com espaço; o mundo veio grudado.
+// Fronteira de palavra aqui é ficção — casar por SUBSTRING é o que funciona no texto real.
+const TEC  = /\d+\s*(mm|cm|m²|m2|kg|ml|litros?|volts?|btu|polegadas?|amp|hz|rpm|cv\b|cc\b|kva|ah\b|psi|gb\b|tb\b|mah|w\b|v\b|g\b|gr\b)/gi;
+const NORM = /(abnt|nbr|inmetro|iso\s*\d|anvisa|nr-?\d|astm|denatran|contran)/gi;
+// exigência: em prosa E colado. "garantiamínimade12meses" tem garantia + mínima; ambos casam sem \b.
+const EXIG = /(dever[áa]|deve\s*(ser|ter|possuir)|m[íi]nim[oa]|m[áa]xim[oa]|garantia|caracter[íi]stica|composi[çc][ãa]o|marca|fabricante|certifica|obrigat[óo]ri)/gi;
+// atributo ROTULADO ("Material:") — continua valendo; é a assinatura da planilha rica (barraca/guardanapo)
+const ATTR = /(material|tipo|cor|tamanho|dimens[õo]es|capacidade|pot[êe]ncia|volt|modelo|arma[çc][ãa]o|acabamento|espessura|largura|comprimento|altura|peso|volume|apresenta[çc][ãa]o|formato|aplica[çc][ãa]o|folhas?)\s*:/gi;
+// 🔑 ESPECIFICAÇÃO EM PROSA (o carro): não tem rótulo nenhum, mas enumera ATRIBUTOS DO BEM. É o 4º sinal —
+// sem ele, toda especificação escrita em texto corrido é descartada. Tirado do bloco REAL, não inventado.
+const PROSA = /(ar\s*condicionado|air\s*bag|abs\b|combust[íi]vel|bicombust[íi]vel|gasolina|etanol|turbo|c[âa]mbio|dire[çc][ãa]o\s*(hidr|el[ée]tr)|freio|pneu|motor\b|voltagem|bivolt|bluetooth|wi-?fi|led\b|inox|emplacamento|licenciamento|assist[êe]ncia\s*t[ée]cnica|itens\s*obrigat)/gi;
 
 /**
  * @param {string} bloco  o recorte do TR/Projeto Básico/Edital onde o produto foi achado
@@ -43,11 +53,12 @@ export function ehEspecificacao(bloco) {
   const nor = (t.match(NORM) || []).length;
   const exi = (t.match(EXIG) || []).length;
   const att = (t.match(ATTR) || []).length;
-  // PORTÃO: ninguém descrevendo, ninguém exigindo, nenhuma norma → é nome/planilha/cláusula, não especificação
-  if (att === 0 && exi === 0 && nor === 0) return { ok: false, score: 0, att, exi, nor, tec };
+  const pro = (t.match(PROSA) || []).length;   // atributos do bem em texto corrido (o carro)
+  // PORTÃO: ninguém descrevendo (rótulo OU prosa), ninguém exigindo, nenhuma norma → é nome/planilha/cláusula
+  if (att === 0 && exi === 0 && nor === 0 && pro === 0) return { ok: false, score: 0, att, exi, nor, tec, pro };
   // densidade por 100 chars: bloco grande não ganha só por ser grande
-  const score = Number((100 * (att * 3 + exi * 2 + nor * 3 + tec) / n).toFixed(2));
-  return { ok: score >= 0.8, score, att, exi, nor, tec };
+  const score = Number((100 * (att * 3 + exi * 2 + nor * 3 + pro * 2 + tec) / n).toFixed(2));
+  return { ok: score >= 0.8, score, att, exi, nor, tec, pro };
 }
 
 // ─── TESTES (rodar o arquivo direto) ──────────────────────────────────────────────────────────────────────────
@@ -72,14 +83,22 @@ if (process.argv[1] && process.argv[1].endsWith("classifica_especificacao.mjs"))
       "O pagamento será efetuado em até 30 (trinta) dias após o recebimento definitivo do objeto, mediante apresentação da nota fiscal devidamente atestada pelo setor competente."],
     ["[novo] especificação de pneu", true,
       "PNEU 275/80 R22,5 - Pneu radial, uso misto, borracha natural, índice de carga mínimo 149/146, certificação INMETRO obrigatória, garantia de 5 anos contra defeitos de fabricação."],
+    // 🔴 O CASO QUE QUEBROU A v3 — texto REAL do TR de Florianópolis 2024/94 (unpdf entrega COLADO, sem espaço).
+    // O PNCP diz só "veiculo" (7 chars); ISTO é o que o TR diz do carro de R$ 108.730,60. A v3 deu 0,22 e
+    // descartou: `\b` não casa em texto grudado, "CV" não estava nas unidades, e a espec. é PROSA, sem rótulo.
+    ["[REAL colado] veículo Florianópolis", true,
+      "nimo,100CV,podendodispordeturbocompressor,combustívelgasolina,etanoloubicombustível(etanolegasolina);arcondicionadodefábrica;AirBag,napartefrontalparaocondutoreopassageirodoassentodianteiro,eainda,osistemadefrenagemantitravamentodasrodas–ABS;todositensobrigatóriosconformelegislaçãovigente;documentação(emplacamentoelicenciamento)emnomedoMUNICÍPIODEFLORIANÓPOLIS;garantiamínimade12(doze)meses.TOTALR$108.730,601.3.NaturezadoObjeto1.3.1.Oitemobjeto"],
+    // controle: cláusula jurídica COLADA — não pode passar só por estar grudada
+    ["[REAL colado] cláusula jurídica", false,
+      "Opagamentoseráefetuadoematé30(trinta)diasapósorecebimentodefinitivodoobjeto,medianteapresentaçãodanotafiscaldevidamenteatestadapelosetorcompetente,observadaaordemcronológicadeexigibilidade."],
   ];
-  console.log(`${"caso".padEnd(42)} ${"tec".padStart(3)} ${"nrm".padStart(3)} ${"exi".padStart(3)} ${"att".padStart(3)} ${"score".padStart(6)}  ${"veredito".padEnd(6)} esperado`);
+  console.log(`${"caso".padEnd(42)} ${"tec".padStart(3)} ${"nrm".padStart(3)} ${"exi".padStart(3)} ${"att".padStart(3)} ${"pro".padStart(3)} ${"score".padStart(6)}  ${"veredito".padEnd(6)} esperado`);
   let ok = 0;
   for (const [nome, esperado, bloco] of CASOS) {
     const c = ehEspecificacao(bloco);
     const acertou = c.ok === esperado;
     if (acertou) ok++;
-    console.log(`${nome.padEnd(42)} ${String(c.tec).padStart(3)} ${String(c.nor).padStart(3)} ${String(c.exi).padStart(3)} ${String(c.att).padStart(3)} ${String(c.score).padStart(6)}  ${(c.ok ? "SIM" : "não").padEnd(6)} ${esperado ? "SIM" : "não"} ${acertou ? "✓" : "✗ ERROU"}`);
+    console.log(`${nome.padEnd(42)} ${String(c.tec).padStart(3)} ${String(c.nor).padStart(3)} ${String(c.exi).padStart(3)} ${String(c.att).padStart(3)} ${String(c.pro).padStart(3)} ${String(c.score).padStart(6)}  ${(c.ok ? "SIM" : "não").padEnd(6)} ${esperado ? "SIM" : "não"} ${acertou ? "✓" : "✗ ERROU"}`);
   }
   console.log(`\n${ok} de ${CASOS.length} certos  (3 são controles NOVOS, não usados para calibrar)`);
   if (ok < CASOS.length) process.exit(1);
