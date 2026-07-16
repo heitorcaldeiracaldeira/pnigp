@@ -77,6 +77,39 @@ await q(`CREATE TABLE IF NOT EXISTS coleta_incremental_log (
   rodada_em timestamptz DEFAULT now(), uf TEXT, janela_ini TEXT, janela_fim TEXT,
   vistos INT, mudaram INT, iguais INT, novos INT, gets INT)`);
 
+// ─── pncp_evento — O LOG DO PNCP ESPELHADO. É a peça central. ─────────────────────────────────────────────────
+// O PNCP é um LOG (só Inclusão/Retificação): aqui ele vira fila. O evento chega → fica gravado → e CADA consumidor
+// pega a sua fatia no seu tempo. Ninguém varre nada; ninguém pergunta "mudou?" — o log já disse.
+//
+// 🔑 UM EVENTO, DOIS CONSUMIDORES: "categoria 5, ação 0" = o resultado deste item foi publicado agora.
+//    → `consumido_dado`     : preenche item_resultado_sc (a fatia, não o banco todo)
+//    → `consumido_notif`    : avisa o fornecedor ("este item homologou")
+//    Não são dois sistemas com integração no meio. É o mesmo evento, lido duas vezes.
+//
+// Chave = a do PNCP + o carimbo do evento. Idempotente: reprocessar a janela não duplica.
+// Categorias (§/historico, medido em 221 eventos): 1=Contratação · 4=Item · 5=Resultado · 6=Documento
+// Ações: 0=Inclusão · 1=Retificação · **2=EXCLUSÃO** (achado no dado, não no manual — ver nota abaixo)
+//
+// 🔴 A AÇÃO 2 = EXCLUSÃO é OBRIGATÓRIA no consumo. Eu afirmei "só 2 verbos" depois de ver 221 eventos de 9
+// processos; bastaram 544 de 80 p/ o terceiro aparecer. O `tipoLogManutencaoNome` diz "Exclusão" — estava no JSON
+// o tempo todo. Justificativas REAIS: "Arquivo excluído pelo sistema para inclusão de um novo arquivo"
+// (Compras.gov.br) e "Arquivo sem registro de sincronização local" (ECustomize, 9 docs no mesmo segundo).
+// CONSEQUÊNCIA: documento pode ser excluído e SUBSTITUÍDO. Quem só consome Inclusão baixa a ata, ela é trocada,
+// e a base fica com a versão MORTA sem nunca saber. Categoria 6 + ação 2 = INVALIDE o que você tem.
+await q(`CREATE TABLE IF NOT EXISTS pncp_evento (
+  cnpj TEXT, ano INT, seq INT, cod_ibge TEXT,
+  categoria INT, acao INT, item_numero INT, resultado_sequencial INT,
+  documento_tipo TEXT, documento_titulo TEXT, documento_sequencial INT,
+  usuario_nome TEXT, justificativa TEXT,
+  ocorrido_em timestamptz,
+  visto_em timestamptz DEFAULT now(),
+  consumido_dado timestamptz,      -- quando a FATIA do dado foi preenchida (NULL = pendente)
+  consumido_notif timestamptz,     -- quando a notificação saiu (NULL = pendente)
+  PRIMARY KEY (cnpj, ano, seq, categoria, acao, ocorrido_em, item_numero, resultado_sequencial, documento_sequencial))`);
+await q(`CREATE INDEX IF NOT EXISTS ix_evento_dado  ON pncp_evento (categoria, ocorrido_em) WHERE consumido_dado IS NULL`);
+await q(`CREATE INDEX IF NOT EXISTS ix_evento_notif ON pncp_evento (categoria, ocorrido_em) WHERE consumido_notif IS NULL`);
+await q(`CREATE INDEX IF NOT EXISTS ix_evento_proc  ON pncp_evento (cnpj, ano, seq)`);
+
 // ─── 1. QUEM mudou (as 13 modalidades) ────────────────────────────────────────────────────────────────────────
 let vistos = 0, gets = 0;
 const mudou = [];   // {numeroControle, cnpj, ano, seq, cod_ibge, dataAtualizacao}
@@ -114,14 +147,16 @@ console.log(`  ${novos.length} novos · ${paraRefrescar.length - novos.length} m
 // Sem isto seria 1 GET por item p/ descobrir. Com isto, 1 por processo.
 const PNCP = "https://pncp.gov.br/api/pncp/v1";
 const eventos = { item: 0, resultado: 0, documento: 0, contratacao: 0 };
+let gravados = 0;
 const itensMexidos = new Map();   // "cnpj/ano/seq" -> Set(numeroItem) que mudaram
 for (const x of paraRefrescar.slice(0, Number(process.env.CAP || 500))) {
   const h = await get(`${PNCP}/orgaos/${x.cnpj}/compras/${x.ano}/${x.seq}/historico`);
   gets++;
   if (!Array.isArray(h)) continue;
   const chave = `${x.cnpj}/${x.ano}/${x.seq}`;
+  const E = { cat: [], ac: [], it: [], rs: [], dt: [], dtit: [], dsq: [], us: [], ju: [], oc: [] };
   for (const e of h) {
-    // só o que entrou DENTRO da janela — o histórico traz a vida toda do processo
+    // só o que entrou DENTRO da janela — o histórico traz a vida TODA do processo (o Piçarras tem 22 eventos)
     if (e.logManutencaoDataInclusao && e.logManutencaoDataInclusao.slice(0, 10).replace(/-/g, "") < D0) continue;
     if (e.categoriaLogManutencao === 1) eventos.contratacao++;
     if (e.categoriaLogManutencao === 6) eventos.documento++;
@@ -132,6 +167,27 @@ for (const x of paraRefrescar.slice(0, Number(process.env.CAP || 500))) {
         itensMexidos.get(chave).add(e.itemNumero);
       }
     }
+    // -1 no lugar de NULL nas colunas da PK: no Postgres, NULL nunca conflita com NULL — o ON CONFLICT não
+    // pegaria e a mesma janela duplicaria a cada re-run. É a diferença entre fila idempotente e lixo acumulado.
+    E.cat.push(e.categoriaLogManutencao ?? -1); E.ac.push(e.tipoLogManutencao ?? -1);
+    E.it.push(e.itemNumero ?? -1); E.rs.push(e.itemResultadoSequencial ?? -1);
+    E.dt.push(e.documentoTipo ? String(e.documentoTipo).slice(0, 60) : null);
+    E.dtit.push(e.documentoTitulo ? String(e.documentoTitulo).slice(0, 200) : null);
+    E.dsq.push(e.documentoSequencial ?? -1);
+    E.us.push(e.usuarioNome ? String(e.usuarioNome).slice(0, 120) : null);
+    E.ju.push(e.justificativa ? String(e.justificativa).slice(0, 500) : null);
+    E.oc.push(e.logManutencaoDataInclusao ? String(e.logManutencaoDataInclusao).slice(0, 19) : null);
+  }
+  if (E.cat.length && !DRY) {
+    await q(`INSERT INTO pncp_evento (cnpj,ano,seq,cod_ibge,categoria,acao,item_numero,resultado_sequencial,
+        documento_tipo,documento_titulo,documento_sequencial,usuario_nome,justificativa,ocorrido_em)
+      SELECT $1,$2,$3,$4, t.* FROM unnest($5::int[],$6::int[],$7::int[],$8::int[],$9::text[],$10::text[],
+        $11::int[],$12::text[],$13::text[],$14::timestamptz[])
+        AS t(categoria,acao,item_numero,resultado_sequencial,documento_tipo,documento_titulo,
+             documento_sequencial,usuario_nome,justificativa,ocorrido_em)
+      ON CONFLICT DO NOTHING`,
+      [x.cnpj, x.ano, x.seq, x.ibge, E.cat, E.ac, E.it, E.rs, E.dt, E.dtit, E.dsq, E.us, E.ju, E.oc]);
+    gravados += E.cat.length;
   }
 }
 const totItens = [...itensMexidos.values()].reduce((a, s) => a + s.size, 0);

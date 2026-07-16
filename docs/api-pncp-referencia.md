@@ -134,7 +134,14 @@ disputa) · `3` Ato que autoriza a Contratação Direta (dispensa SEM disputa / 
 | `4` | Item de Contratação | `1` | Retificação |
 | `5` | Resultado de Item de Contratação | | |
 | `6` | Documento de Contratação | | |
-> **4 entidades × 2 ações. É log de PUBLICAÇÃO, não do pregão.** Não há evento de adjudicação, lance ou sessão.
+**🔴 CORRIGIDO — existe uma TERCEIRA ação: `2` = Exclusão** (achada no dado; o `tipoLogManutencaoNome` diz).
+Eu afirmei "2 verbos" depois de 221 eventos / 9 processos; bastaram 544 / 80 para cair. Justificativas reais:
+*"Arquivo excluído pelo sistema para inclusão de um novo arquivo"* (Compras.gov.br) · *"Arquivo sem registro de
+sincronização local"* (ECustomize, 9 docs no mesmo segundo). Bate com `/arquivos/excluidos/{sd}` no spec.
+**CONSEQUÊNCIA: documento pode ser excluído e SUBSTITUÍDO.** Quem só consome Inclusão baixa a ata, ela é trocada, e
+a base fica com a versão MORTA sem saber. **Categoria 6 + ação 2 = invalide o que você tem.**
+
+> **4 entidades × 3 ações. É log de PUBLICAÇÃO, não do pregão.** Não há evento de adjudicação, lance ou sessão.
 > Campos: `logManutencaoDataInclusao`, `usuarioNome`, `itemNumero`, `itemResultadoSequencial`, `documentoTitulo`,
 > `justificativa`.
 
