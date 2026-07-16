@@ -1,0 +1,5 @@
+=== FASE 1: download do texto das atas (02:20) ===
+      0 [main] bash 173 dofork: child -1 - forked process 36292 died unexpectedly, retry 0, exit code 0xC000026B, errno 11
+scripts/roda_atas_pipeline.sh: fork: retry: Resource temporarily unavailable
+1059659 [main] bash 173 dofork: child -1 - forked process 37168 died unexpectedly, retry 0, exit code 0xC000026B, errno 11
+scripts/roda_atas_pipeline.sh: fork: retry: Resource temporarily unavailable

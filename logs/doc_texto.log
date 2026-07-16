@@ -1,0 +1,12 @@
+(node:35048) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+13.212 documentos a baixar (filtro: titulo:atatotal|ata.*(sess|julg|realiz|final|resultad)|mapa.*lance) · conc 4
+Warning: TT: undefined function: 32
+  100/13212 · 97 com texto · 3 vazios  200/13212 · 194 com texto · 6 vazios  300/13212 · 292 com texto · 8 vazios  400/13371 · 390 com texto · 10 vazios  500/13371 · 490 com texto · 10 vazios  600/13371 · 587 com texto · 13 vazios

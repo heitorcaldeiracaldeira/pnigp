@@ -1,0 +1,569 @@
+==== 15/07/2026  3:25:27,34 :: EXTRAI ECUSTOMIZE ==== 
+(node:34552) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+1.261 atas ECustomize a extrair (determinístico)
+==== 15/07/2026  3:29:14,90 :: EXTRAI ECUSTOMIZE ==== 
+(node:13972) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+1.346 atas ECustomize a extrair (determinístico)
+==== 15/07/2026  3:41:27,42 :: EXTRAI ECUSTOMIZE ==== 
+(node:7916) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+1.540 atas ECustomize a extrair (determinístico)
+==== 15/07/2026  3:58:09,35 :: EXTRAI ECUSTOMIZE ==== 
+(node:23244) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+1.493 atas ECustomize a extrair (determinístico)
+  50/1493 · 24 c/propostas==== 15/07/2026  4:11:27,66 :: EXTRAI ECUSTOMIZE ==== 
+(node:19408) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+1.452 atas ECustomize a extrair (determinístico)
+  50/1452 · 25 c/propostas  100/1452 · 40 c/propostas  150/1452 · 59 c/propostas  200/1452 · 74 c/propostas  250/1452 · 100 c/propostas  300/1452 · 136 c/propostas  350/1452 · 146 c/propostas  400/1452 · 157 c/propostas  450/1452 · 194 c/propostas  500/1452 · 227 c/propostas  550/1452 · 245 c/propostas  600/1452 · 245 c/propostas  650/1452 · 251 c/propostas  700/1452 · 257 c/propostas  750/1452 · 305 c/propostas  800/1452 · 328 c/propostas  850/1452 · 328 c/propostas  900/1452 · 328 c/propostas  950/1452 · 328 c/propostas  1000/1452 · 356 c/propostas  1050/1452 · 382 c/propostas  1100/1452 · 416 c/propostas  1150/1452 · 456 c/propostas  1200/1452 · 483 c/propostas  1250/1452 · 510 c/propostas  1300/1452 · 541 c/propostas  1350/1452 · 545 c/propostas  1400/1452 · 571 c/propostas  1450/1452 · 600 c/propostas
+✔ ECustomize: 5.308 propostas · 2.738 fornecedores · 1.078 marcas
+==== 15/07/2026  7:26:27,06 :: EXTRAI ECUSTOMIZE ==== 
+(node:7712) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+37 atas ECustomize a extrair (determinístico)
+^C==== 15/07/2026  7:56:27,04 :: EXTRAI ECUSTOMIZE ==== 
+(node:6196) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+20 atas ECustomize a extrair (determinístico)
+^C==== 15/07/2026  8:11:27,07 :: EXTRAI ECUSTOMIZE ==== 
+(node:1292) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+20 atas ECustomize a extrair (determinístico)
+^C==== 15/07/2026  8:26:27,10 :: EXTRAI ECUSTOMIZE ==== 
+(node:6780) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+20 atas ECustomize a extrair (determinístico)
+^C==== 15/07/2026  9:06:03,27 :: EXTRAI ECUSTOMIZE ==== 
+(node:26412) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+20 atas ECustomize a extrair (determinístico)
+==== 15/07/2026 10:11:16,15 :: EXTRAI ECUSTOMIZE ==== 
+(node:20720) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+640 atas ECustomize a extrair (determinístico)
+  50/640 · 15 c/propostas  100/640 · 17 c/propostas  150/640 · 32 c/propostas  200/640 · 45 c/propostas  250/640 · 64 c/propostas^C==== 15/07/2026 10:26:27,04 :: EXTRAI ECUSTOMIZE ==== 
+(node:16588) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+427 atas ECustomize a extrair (determinístico)
+  50/427 · 3 c/propostas  100/427 · 17 c/propostas  150/427 · 23 c/propostas  200/427 · 58 c/propostas  250/427 · 72 c/propostas  300/427 · 78 c/propostas  350/427 · 78 c/propostas  400/427 · 85 c/propostas
+✔ ECustomize: 7.153 propostas · 3.425 fornecedores · 1.381 marcas
+==== 15/07/2026 10:41:27,04 :: EXTRAI ECUSTOMIZE ==== 
+(node:9028) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+705 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/705 · 6 c/propostas  100/705 · 14 c/propostas  150/705 · 25 c/propostas  200/705 · 32 c/propostas  250/705 · 44 c/propostas  300/705 · 53 c/propostas  350/705 · 63 c/propostas  400/705 · 76 c/propostas  450/705 · 90 c/propostas  500/705 · 102 c/propostas  550/705 · 114 c/propostas  600/705 · 118 c/propostas  650/705 · 129 c/propostas  700/705 · 148 c/propostas
+✔ ECustomize: 8.301 propostas · 3.865 fornecedores · 1.607 marcas
+==== 15/07/2026 10:56:27,07 :: EXTRAI ECUSTOMIZE ==== 
+(node:5468) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+391 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/391 · 23 c/propostas  100/391 · 38 c/propostas  150/391 · 47 c/propostas  200/391 · 63 c/propostas  250/391 · 74 c/propostas  300/391 · 88 c/propostas  350/391 · 102 c/propostas
+✔ ECustomize: 9.144 propostas · 4.137 fornecedores · 1.714 marcas
+==== 15/07/2026 11:01:01,85 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:6552) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+3.232 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/3232 · 12 c/propostas  100/3232 · 28 c/propostas  150/3232 · 47 c/propostas  200/3232 · 64 c/propostas  250/3232 · 73 c/propostas  300/3232 · 88 c/propostas^C==== 15/07/2026 11:11:27,08 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:6196) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+2.942 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/2942 · 15 c/propostas  100/2942 · 31 c/propostas  150/2942 · 48 c/propostas  200/2942 · 60 c/propostas  250/2942 · 80 c/propostas  300/2942 · 94 c/propostas  350/2942 · 109 c/propostas  400/2942 · 126 c/propostas  450/2942 · 140 c/propostas  500/2942 · 160 c/propostas  550/2942 · 181 c/propostas  600/2942 · 196 c/propostas  650/2942 · 219 c/propostas  700/2942 · 240 c/propostas  750/2942 · 258 c/propostas  800/2942 · 279 c/propostas  850/2942 · 296 c/propostas  900/2942 · 313 c/propostas  950/2942 · 334 c/propostas  1000/2942 · 353 c/propostas  1050/2942 · 366 c/propostas  1100/2942 · 386 c/propostas  1150/2942 · 407 c/propostas  1200/2942 · 426 c/propostas  1250/2942 · 444 c/propostas  1300/2942 · 464 c/propostas  1350/2942 · 478 c/propostas  1400/2942 · 498 c/propostas  1450/2942 · 512 c/propostas  1500/2942 · 528 c/propostas  1550/2942 · 545 c/propostas  1600/2942 · 570 c/propostas  1650/2942 · 584 c/propostas  1700/2942 · 595 c/propostas  1750/2942 · 617 c/propostas  1800/2942 · 631 c/propostas  1850/2942 · 648 c/propostas  1900/2942 · 665 c/propostas  1950/2942 · 683 c/propostas  2000/2942 · 704 c/propostas  2050/2942 · 718 c/propostas  2100/2942 · 733 c/propostas  2150/2942 · 748 c/propostas  2200/2942 · 765 c/propostas  2250/2942 · 777 c/propostas  2300/2942 · 796 c/propostas  2350/2942 · 818 c/propostas  2400/2942 · 834 c/propostas  2450/2942 · 858 c/propostas  2500/2942 · 874 c/propostas  2550/2942 · 892 c/propostas  2600/2942 · 917 c/propostas^C==== 15/07/2026 11:56:27,10 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:9640) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+674 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/674 · 13 c/propostas  100/674 · 27 c/propostas  150/674 · 43 c/propostas  200/674 · 51 c/propostas  250/674 · 64 c/propostas  300/674 · 76 c/propostas  350/674 · 94 c/propostas  400/674 · 102 c/propostas  450/674 · 120 c/propostas  500/674 · 133 c/propostas^C==== 15/07/2026 12:11:27,11 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:21580) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+173 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/173 · 15 c/propostas  100/173 · 36 c/propostas  150/173 · 55 c/propostas
+✔ ECustomize: 9.876 propostas · 4.364 fornecedores · 1.843 marcas
+==== 15/07/2026 12:13:10,83 :: EXTRAI BETHA ==== 
+(node:26828) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+1.094 atas Betha-nativas a extrair (determinístico)
+  50/1094 · 11 c/marca · 0 erros  100/1094 · 21 c/marca · 0 erros  150/1094 · 28 c/marca · 0 erros  200/1094 · 33 c/marca · 0 erros  250/1094 · 43 c/marca · 0 erros  300/1094 · 52 c/marca · 0 erros  350/1094 · 64 c/marca · 0 erros  400/1094 · 70 c/marca · 0 erros  450/1094 · 80 c/marca · 0 erros  500/1094 · 88 c/marca · 0 erros  550/1094 · 100 c/marca · 0 erros  600/1094 · 110 c/marca · 0 erros  650/1094 · 115 c/marca · 0 erros  700/1094 · 128 c/marca · 0 erros  750/1094 · 135 c/marca · 0 erros  800/1094 · 143 c/marca · 0 erros  850/1094 · 153 c/marca · 0 erros  900/1094 · 164 c/marca · 0 erros  950/1094 · 172 c/marca · 0 erros  1000/1094 · 187 c/marca · 0 erros  1050/1094 · 200 c/marca · 0 erros
+✔ Betha: 5.072 itens gravados · 204 atas c/ marca · 0 erros
+  item_marca_sc total: 3.227 itens com marca · 1.496 marcas distintas
+==== 15/07/2026 12:26:27,10 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:12900) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+418 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/418 · 13 c/propostas  100/418 · 28 c/propostas  150/418 · 44 c/propostas  200/418 · 60 c/propostas  250/418 · 79 c/propostas  300/418 · 92 c/propostas  350/418 · 108 c/propostas  400/418 · 121 c/propostas
+✔ ECustomize: 10.793 propostas · 4.674 fornecedores · 1.994 marcas
+==== 15/07/2026 12:30:55,15 :: EXTRAI BETHA ==== 
+(node:3924) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+174 atas Betha-nativas a extrair (determinístico)
+  50/174 · 22 c/marca · 0 erros  100/174 · 26 c/marca · 0 erros  150/174 · 26 c/marca · 0 erros
+✔ Betha: 449 itens gravados · 27 atas c/ marca · 0 erros
+  item_marca_sc total: 3.556 itens com marca · 1.618 marcas distintas
+==== 15/07/2026 12:41:27,15 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:21120) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+265 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/265 · 24 c/propostas  100/265 · 54 c/propostas  150/265 · 78 c/propostas  200/265 · 106 c/propostas  250/265 · 133 c/propostas
+✔ ECustomize: 11.977 propostas · 5.042 fornecedores · 2.148 marcas
+==== 15/07/2026 12:45:09,60 :: EXTRAI BETHA ==== 
+(node:24032) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+14 atas Betha-nativas a extrair (determinístico)
+
+✔ Betha: 39 itens gravados · 1 atas c/ marca · 0 erros
+  item_marca_sc total: 3.661 itens com marca · 1.673 marcas distintas
+==== 15/07/2026 12:56:27,13 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:25808) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+293 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/293 · 12 c/propostas  100/293 · 31 c/propostas  150/293 · 49 c/propostas  200/293 · 63 c/propostas  250/293 · 84 c/propostas^C==== 15/07/2026 13:11:27,39 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:9356) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+100 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/100 · 21 c/propostas  100/100 · 40 c/propostas
+✔ ECustomize: 12.908 propostas · 5.345 fornecedores · 2.280 marcas
+==== 15/07/2026 13:12:38,35 :: EXTRAI BETHA ==== 
+(node:14604) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+53 atas Betha-nativas a extrair (determinístico)
+  50/53 · 7 c/marca · 0 erros
+✔ Betha: 121 itens gravados · 7 atas c/ marca · 0 erros
+  item_marca_sc total: 5.926 itens com marca · 2.405 marcas distintas
+==== 15/07/2026 13:26:27,14 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:8556) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+195 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/195 · 15 c/propostas  100/195 · 39 c/propostas  150/195 · 55 c/propostas
+✔ ECustomize: 13.470 propostas · 5.500 fornecedores · 2.375 marcas
+==== 15/07/2026 13:29:01,64 :: EXTRAI BETHA ==== 
+(node:16788) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+226 atas Betha-nativas a extrair (determinístico)
+  50/226 · 15 c/marca · 0 erros  100/226 · 33 c/marca · 0 erros  150/226 · 54 c/marca · 0 erros  200/226 · 64 c/marca · 0 erros
+✔ Betha: 1.407 itens gravados · 64 atas c/ marca · 0 erros
+  item_marca_sc total: 6.966 itens com marca · 2.712 marcas distintas
+==== 15/07/2026 13:41:27,17 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:6760) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+173 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/173 · 9 c/propostas  100/173 · 19 c/propostas  150/173 · 30 c/propostas
+✔ ECustomize: 13.679 propostas · 5.561 fornecedores · 2.397 marcas
+==== 15/07/2026 13:43:32,60 :: EXTRAI BETHA ==== 
+(node:20816) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+127 atas Betha-nativas a extrair (determinístico)
+  50/127 · 9 c/marca · 0 erros  100/127 · 9 c/marca · 0 erros
+✔ Betha: 231 itens gravados · 10 atas c/ marca · 0 erros
+  item_marca_sc total: 7.089 itens com marca · 2.741 marcas distintas
+==== 15/07/2026 13:56:27,20 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:21800) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+284 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/284 · 20 c/propostas  100/284 · 37 c/propostas  150/284 · 57 c/propostas  200/284 · 79 c/propostas  250/284 · 98 c/propostas
+✔ ECustomize: 14.346 propostas · 5.742 fornecedores · 2.491 marcas
+==== 15/07/2026 14:00:33,61 :: EXTRAI BETHA ==== 
+(node:20356) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+79 atas Betha-nativas a extrair (determinístico)
+  50/79 · 0 c/marca · 0 erros
+✔ Betha: 0 itens gravados · 0 atas c/ marca · 0 erros
+  item_marca_sc total: 7.131 itens com marca · 2.766 marcas distintas
+==== 15/07/2026 14:11:27,17 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:16924) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+215 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/215 · 21 c/propostas  100/215 · 42 c/propostas  150/215 · 55 c/propostas  200/215 · 74 c/propostas
+✔ ECustomize: 14.935 propostas · 5.911 fornecedores · 2.587 marcas
+==== 15/07/2026 14:14:40,33 :: EXTRAI BETHA ==== 
+(node:13296) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+44 atas Betha-nativas a extrair (determinístico)
+
+✔ Betha: 3 itens gravados · 2 atas c/ marca · 0 erros
+  item_marca_sc total: 7.179 itens com marca · 2.786 marcas distintas
+==== 15/07/2026 14:26:26,30 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:2228) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+300 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/300 · 29 c/propostas  100/300 · 54 c/propostas  150/300 · 85 c/propostas  200/300 · 110 c/propostas  250/300 · 141 c/propostas  300/300 · 171 c/propostas
+✔ ECustomize: 16.071 propostas · 6.218 fornecedores · 2.706 marcas
+==== 15/07/2026 14:31:40,69 :: EXTRAI BETHA ==== 
+(node:6928) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+31 atas Betha-nativas a extrair (determinístico)
+
+✔ Betha: 10 itens gravados · 1 atas c/ marca · 0 erros
+  item_marca_sc total: 7.242 itens com marca · 2.814 marcas distintas
+==== 15/07/2026 14:41:26,24 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:7524) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+127 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/127 · 12 c/propostas  100/127 · 28 c/propostas
+✔ ECustomize: 16.331 propostas · 6.278 fornecedores · 2.731 marcas
+==== 15/07/2026 14:43:15,77 :: EXTRAI BETHA ==== 
+(node:20588) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+6 atas Betha-nativas a extrair (determinístico)
+
+✔ Betha: 1 itens gravados · 0 atas c/ marca · 0 erros
+  item_marca_sc total: 7.252 itens com marca · 2.819 marcas distintas
+==== 15/07/2026 14:56:26,21 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:10480) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+188 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/188 · 29 c/propostas  100/188 · 52 c/propostas  150/188 · 75 c/propostas
+✔ ECustomize: 16.991 propostas · 6.423 fornecedores · 2.800 marcas
+==== 15/07/2026 14:59:27,63 :: EXTRAI BETHA ==== 
+(node:20392) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+29 atas Betha-nativas a extrair (determinístico)
+
+✔ Betha: 66 itens gravados · 1 atas c/ marca · 0 erros
+  item_marca_sc total: 7.287 itens com marca · 2.837 marcas distintas
+==== 15/07/2026 15:11:26,21 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:22836) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+184 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/184 · 13 c/propostas  100/184 · 41 c/propostas  150/184 · 52 c/propostas
+✔ ECustomize: 17.401 propostas · 6.523 fornecedores · 2.829 marcas
+==== 15/07/2026 15:13:49,26 :: EXTRAI BETHA ==== 
+(node:8548) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+23 atas Betha-nativas a extrair (determinístico)
+
+✔ Betha: 1 itens gravados · 0 atas c/ marca · 0 erros
+  item_marca_sc total: 7.303 itens com marca · 2.846 marcas distintas
+==== 15/07/2026 15:26:26,21 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:1772) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+243 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/243 · 7 c/propostas  100/243 · 7 c/propostas  150/243 · 7 c/propostas  200/243 · 7 c/propostas
+✔ ECustomize: 17.539 propostas · 6.551 fornecedores · 2.878 marcas
+==== 15/07/2026 15:29:08,02 :: EXTRAI BETHA ==== 
+(node:26856) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+196 atas Betha-nativas a extrair (determinístico)
+  50/196 · 1 c/marca · 0 erros  100/196 · 1 c/marca · 0 erros  150/196 · 2 c/marca · 0 erros
+✔ Betha: 46 itens gravados · 2 atas c/ marca · 0 erros
+  item_marca_sc total: 7.340 itens com marca · 2.856 marcas distintas
+==== 15/07/2026 15:41:26,24 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:11048) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+2.634 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
+  50/2634 · 46 c/propostas  100/2634 · 94 c/propostas  150/2634 · 139 c/propostas  200/2634 · 186 c/propostas  250/2634 · 234 c/propostas  300/2634 · 278 c/propostas  350/2634 · 319 c/propostas  400/2634 · 365 c/propostas  450/2634 · 410 c/propostas  500/2634 · 459 c/propostas  550/2634 · 505 c/propostas  600/2634 · 549 c/propostas  650/2634 · 595 c/propostas  700/2634 · 642 c/propostas  750/2634 · 687 c/propostas  800/2634 · 734 c/propostas  850/2634 · 779 c/propostas  900/2634 · 823 c/propostas  950/2634 · 869 c/propostas  1000/2634 · 916 c/propostas
