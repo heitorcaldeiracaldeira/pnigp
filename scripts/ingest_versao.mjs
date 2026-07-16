@@ -19,4 +19,6 @@
 //   2 = TODOS os resultados por item (item_resultado_sc populada) — o conserto do `r[0]` finalmente valendo no dado
 //   3 = OS 36 CAMPOS do item (antes 8): tipo_beneficio_id (EXCLUSIVO ME/EPP x UNIVERSAL — antes indistinguíveis),
 //       criterio_julgamento_id, orcamento_sigiloso, informacao_complementar + 24. Ver campos_item_pncp.mjs.
-export const INGEST_VERSAO = 3;
+//   4 = SEM FILTRO CEGO: busca /resultados de TODOS os itens (antes: só de quem a flag temResultado apontava,
+//       e ela está NULA em 90%). + raw jsonb no item e no resultado. Nada é descartado, nada é pré-decidido.
+export const INGEST_VERSAO = 4;

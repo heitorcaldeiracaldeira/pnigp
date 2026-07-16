@@ -48,10 +48,23 @@ async function fetchItens(cnpj, ano, seq) {
     p++;
   }
   if (!itens.length) return [];
-  // homologado só dos itens premiados (temResultado), com concorrência; cap c/ log honesto
-  const premiados = itens.filter((it) => it.temResultado);
-  const alvo = premiados.slice(0, CAP_RES);
-  if (premiados.length > CAP_RES) console.log(`  ${cnpj}/${ano}/${seq}: ${premiados.length} itens c/ resultado — homologado coletado dos ${CAP_RES} primeiros (cap)`);
+  // 🔴 SEM FILTRO. Busca /resultados de TODOS os itens.
+  //
+  // O que estava aqui: `itens.filter(it => it.temResultado).slice(0, CAP_RES)` — só consultava o resultado de quem
+  // a FLAG dizia ter resultado, e no máximo 5.000. Parecia otimização; era um filtro CEGO na entrada.
+  // Medido 2026-07-16: `temResultado` está **NULO em 312.871 de 346.038 itens (90%)** — porque a coleta dos 36
+  // campos nunca rodou. Ou seja: a flag decidia o que eu ia olhar, e eu nunca conferi a flag. Item que homologou
+  // com a flag errada era INVISÍVEL para sempre — e nenhuma métrica minha acharia, porque a métrica também não olha.
+  //
+  // É a 3ª vez que o mesmo erro acontece no mesmo dia, sempre um filtro MEU na entrada, antes de qualquer medição:
+  //   · regex de título decidia qual documento baixar        → fechou 76% do catálogo
+  //   · `r[0]` decidia qual resultado guardar                → descartava ~8% (1,6 resultado/item na média)
+  //   · flag `temResultado` decidia qual item consultar      → nula em 90%
+  // As três me deram bases limpas, coerentes e ERRADAS. Filtro que decide o que se olha não é otimização —
+  // é ponto cego com nome de eficiência, e o custo dele é invisível por construção.
+  //
+  // Custo de tirar: ~2,2 milhões de GETs em vez de ~1,1 milhão. É o preço de não decidir antes de ver.
+  const alvo = itens;
   // 🔴 /resultados é LISTA — "Consultar RESULTADOS" (plural) no endpoint, "Lista de Resultados — Agrupador de
   // Resultados de um Item da Compra" no Manual de Integração, e existe /resultados/{sequencialResultado}.
   // O código guardava `r[0]` e DESCARTAVA o resto (medido: ~8% dos resultados perdidos; itens com 3, 5 e até 67).
@@ -87,6 +100,7 @@ async function fetchItens(cnpj, ano, seq) {
     linha.porte_fornecedor = r ? String(r.porteFornecedorNome || r.porteFornecedor || "") || null : null;
     linha.beneficio_lc = benef && !/nenhum|não|nao|sem benef/i.test(benef) ? benef : null;
     linha.economia_pct = unitEst > 0 && unitHom > 0 ? Math.round(((unitEst - unitHom) / unitEst) * 1000) / 10 : null;
+    linha.raw = JSON.stringify(it);   // o item inteiro, como veio
     return linha;
   });
   saida.__resultados = resTodos;   // TODOS os resultados (espelho de /resultados) — anexado ao array RETORNADO
@@ -130,6 +144,9 @@ async function main() {
   // `criterio_julgamento_id` (muda o significado do preço), `orcamento_sigiloso` (trava do cálculo de disputa) e
   // `informacao_complementar` (munição p/ o CATMAT). Ver o mapa p/ o porquê de cada um.
   await db.query(`ALTER TABLE itens_sc ${DDL_ITEM}`);
+  // o JSON CRU do item — nada descartado, nunca (mesma razão da contratacao)
+  await db.query(`ALTER TABLE itens_sc ADD COLUMN IF NOT EXISTS raw JSONB`);
+  await db.query(`ALTER TABLE item_resultado_sc ADD COLUMN IF NOT EXISTS raw JSONB`);
   await db.query(`CREATE INDEX IF NOT EXISTS idx_itens_beneficio ON itens_sc (tipo_beneficio_id) WHERE tipo_beneficio_id IS NOT NULL`);
   await db.query(`CREATE INDEX IF NOT EXISTS idx_itens_criterio ON itens_sc (criterio_julgamento_id) WHERE criterio_julgamento_id IS NOT NULL`);
   const q = async (sql, params) => { for (let t = 0; t < 12; t++) { try { return await db.query(sql, params); } catch { await sleep(1500 * (t + 1)); } } throw new Error("db indisponível"); };
@@ -180,7 +197,7 @@ async function main() {
         // Gerar em vez de escrever à mão: 40 `unnest` posicionais é onde eu trocaria dois de lugar — o que NÃO dá
         // erro de sintaxe, dá dado errado e silencioso. Aqui coluna e campo da API andam colados.
         const EXTRA = [["unit_homologado", "numeric"], ["fornecedor", "text"], ["cnpj_fornecedor", "text"],
-          ["porte_fornecedor", "text"], ["beneficio_lc", "text"], ["economia_pct", "numeric"]];
+          ["porte_fornecedor", "text"], ["beneficio_lc", "text"], ["economia_pct", "numeric"], ["raw", "jsonb"]];
         const COLS = [...CAMPOS_ITEM.map(([c, t]) => [c, t]), ...EXTRA];
         const arrays = COLS.map(([c]) => itens.map((it) => it[c] ?? null));
         const listaCols = COLS.map(([c]) => c).join(",");
