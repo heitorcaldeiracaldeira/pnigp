@@ -74,9 +74,32 @@ async function main() {
   // municípios de SC apareciam. Agora o cod_ibge vem do PNCP; o mapa fica só de FALLBACK p/ registro antigo.
   const codByCnpj = new Map((await q(`SELECT DISTINCT cnpj, cod_ibge FROM itens_sc WHERE cod_ibge IS NOT NULL`)).rows.map((r) => [r.cnpj, r.cod_ibge]));
   // colunas-espelho da unidadeOrgao (idempotente)
+  // 🔑 link_sistema_origem — O CAMPO QUE DIZ ONDE O PROCESSO REALMENTE MORA. Vinha na API e era DESCARTADO.
+  // Caso real (Entre Rios 2024/34): o município publicou UM arquivo no PNCP — o DFD, classificado como "Edital".
+  // O TR e o edital de verdade NÃO estão no PNCP (o /historico confirma: 2 eventos, nenhuma exclusão — nunca
+  // foram publicados). Mas a API entrega o endereço exato:
+  //   https://portaldecompraspublicas.com.br/processos/SC/Prefeitura-Municipal-de-Entre-Rios-1489/PE-26-2024-2024-327854
+  // É o edital, os lances, as propostas e a MARCA de cada licitante — a um clique, num campo que nós jogávamos fora.
+  // Responde a pergunta do usuário ("por que eu acho sozinho nos portais?"): o PNCP DÁ o link; nós é que não líamos.
+  // Não é scraping às cegas — é seguir o endereço que a fonte publica.
+  //
+  // justificativa_presencial: idem, um dos 32 campos descartados. Diz por que NÃO foi eletrônico (art. 17 §2º:
+  // "preferencialmente eletrônica, admitida a presencial desde que MOTIVADA").
   for (const [c, t] of [["municipio_nome", "TEXT"], ["unidade_codigo", "TEXT"], ["unidade_nome", "TEXT"],
-                        ["orgao_razao_social", "TEXT"], ["uf", "TEXT"], ["numero_controle_pncp", "TEXT"]])
+                        ["orgao_razao_social", "TEXT"], ["uf", "TEXT"], ["numero_controle_pncp", "TEXT"],
+                        ["link_sistema_origem", "TEXT"], ["justificativa_presencial", "TEXT"],
+                        ["data_atualizacao", "TIMESTAMPTZ"], ["raw", "JSONB"]])
     await q(`ALTER TABLE contratacoes_sc ADD COLUMN IF NOT EXISTS ${c} ${t}`);
+  await q(`CREATE INDEX IF NOT EXISTS ix_contr_link ON contratacoes_sc (link_sistema_origem) WHERE link_sistema_origem IS NOT NULL`);
+  // 🔑 `raw` — O JSON CRU, INTEIRO. NÃO DESCARTA NADA. NUNCA.
+  // Mapear campo a campo é uma corrida que eu perco sempre: escrevi um mapa de 49 campos e SEIS escaparam —
+  // `linkProcessoEletronico` (um 2º link que eu nem sabia existir), `dataAtualizacaoGlobal`, `fontesOrcamentarias`,
+  // `tipoInstrumentoConvocatorioCodigo`. Amanhã o PNCP acrescenta um e escapa de novo.
+  // As colunas típadas continuam (as queries de produção dependem delas e índice em coluna é mais rápido);
+  // o `raw` é a garantia: o que a API mandou está aqui, íntegro, e nada precisa ser recoletado quando
+  // descobrirmos que um campo importa. Custo: ~2 KB por contratação. Barato perto de 16h de recoleta.
+  // Consultar: raw->>'linkProcessoEletronico' · raw->'fontesOrcamentarias' · raw->'orgaoEntidade'->>'poderId'
+  await q(`CREATE INDEX IF NOT EXISTS ix_contr_raw ON contratacoes_sc USING gin (raw)`);
 
   const js = janelas(); let totGrav = 0, jaFeitas = 0;
   for (const mod of MODALIDADES) for (const j of js) {
@@ -92,13 +115,16 @@ async function main() {
         await q(`INSERT INTO contratacoes_sc (cod_ibge,cnpj,ano,seq,esfera,plataforma,modalidade_id,modalidade,modo_disputa,srp,instrumento,
             valor_estimado,valor_homologado,economia_pct,numero_compra,processo,objeto,situacao,emenda_parlamentar,amparo_legal,
             data_publicacao,data_abertura,data_encerramento,
-            municipio_nome,unidade_codigo,unidade_nome,orgao_razao_social,uf,numero_controle_pncp)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29)
+            municipio_nome,unidade_codigo,unidade_nome,orgao_razao_social,uf,numero_controle_pncp,
+            link_sistema_origem,justificativa_presencial,data_atualizacao,raw)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33)
           ON CONFLICT (cnpj,ano,seq) DO UPDATE SET plataforma=EXCLUDED.plataforma, modalidade=EXCLUDED.modalidade, modo_disputa=EXCLUDED.modo_disputa,
             srp=EXCLUDED.srp, valor_estimado=EXCLUDED.valor_estimado, valor_homologado=EXCLUDED.valor_homologado, economia_pct=EXCLUDED.economia_pct,
             situacao=EXCLUDED.situacao, cod_ibge=COALESCE(EXCLUDED.cod_ibge, contratacoes_sc.cod_ibge),
             municipio_nome=EXCLUDED.municipio_nome, unidade_codigo=EXCLUDED.unidade_codigo, unidade_nome=EXCLUDED.unidade_nome,
-            orgao_razao_social=EXCLUDED.orgao_razao_social, uf=EXCLUDED.uf, numero_controle_pncp=EXCLUDED.numero_controle_pncp, atualizado=now()`,
+            orgao_razao_social=EXCLUDED.orgao_razao_social, uf=EXCLUDED.uf, numero_controle_pncp=EXCLUDED.numero_controle_pncp,
+            link_sistema_origem=EXCLUDED.link_sistema_origem, justificativa_presencial=EXCLUDED.justificativa_presencial,
+            data_atualizacao=EXCLUDED.data_atualizacao, raw=EXCLUDED.raw, atualizado=now()`,
           // cod_ibge: do PNCP (unidadeOrgao.codigoIbge); o mapa cnpj→ibge fica só de fallback
           [o.unidadeOrgao?.codigoIbge || codByCnpj.get(cnpj) || null, cnpj, num(o.anoCompra), num(o.sequencialCompra), o.orgaoEntidade?.esferaId || null, o.usuarioNome || null,
            num(o.modalidadeId), o.modalidadeNome || null, o.modoDisputaNome || null, o.srp === true, o.tipoInstrumentoConvocatorioNome || null,
@@ -109,7 +135,13 @@ async function main() {
            o.unidadeOrgao?.municipioNome || null, o.unidadeOrgao?.codigoUnidade || null,
            String(o.unidadeOrgao?.nomeUnidade || "").slice(0, 160) || null,
            String(o.orgaoEntidade?.razaoSocial || "").slice(0, 160) || null,
-           o.unidadeOrgao?.ufSigla || null, o.numeroControlePNCP || null]);
+           o.unidadeOrgao?.ufSigla || null, o.numeroControlePNCP || null,
+           // 🔑 linkSistemaOrigem: ONDE O PROCESSO REALMENTE MORA. Era descartado.
+           String(o.linkSistemaOrigem || "").slice(0, 500) || null,
+           String(o.justificativaPresencial || "").slice(0, 1000) || null,
+           dt(o.dataAtualizacao),
+           // o JSON CRU inteiro — nada descartado, nunca
+           JSON.stringify(o)]);
         totGrav++; nJanela++;
       }
       pagina++;
