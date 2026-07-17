@@ -652,6 +652,37 @@ export async function getOrFetchTransferenciasSC(cod: string): Promise<Transfere
   return d;
 }
 
+/* ===== CONTADOR POR FASE do processo licitatório (processo_fase_sc) =====
+   As fases são as que o PNCP publica — não as 7 da Lei 14.133 art. 17 ("adjudicado"/"em lances" não são publicados).
+   Cada processo cai em UMA fase. As 5 primeiras são limpas; `em_analise` é o balde honesto (contém processos que
+   o município cancelou no portal e o PNCP nunca soube). Fonte: build_processo_fase_sc.mjs. */
+export type ProcessoFase = { fase: string; label: string; n: number; valor: number };
+
+const FASE_LABEL: Record<string, string> = {
+  recebendo_proposta: "Recebendo proposta",
+  homologada: "Homologada",
+  contratada: "Contratada",
+  deserta_fracassada: "Deserta / fracassada",
+  cancelada: "Cancelada",
+  em_analise: "Em análise",
+};
+const FASE_ORDEM = ["recebendo_proposta", "homologada", "contratada", "deserta_fracassada", "cancelada", "em_analise"];
+
+/** Contador por fase de um município. Leitura instantânea da tabela derivada (índice cod_ibge,fase). */
+export async function getProcessoFasesSC(cod: string): Promise<ProcessoFase[]> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT fase, count(*)::int n, coalesce(sum(coalesce(valor_homologado, valor_estimado)),0)::numeric valor
+       FROM processo_fase_sc WHERE cod_ibge = $1 GROUP BY fase`,
+    [cod],
+  ).catch(() => []);
+  const byFase = new Map(rows.map((r) => [String(r.fase), r]));
+  // ordem fixa; fases sem processo aparecem com 0 (o contador não "some" quando o município não tem a fase)
+  return FASE_ORDEM.map((f) => {
+    const r = byFase.get(f);
+    return { fase: f, label: FASE_LABEL[f] ?? f, n: r ? num(r.n) : 0, valor: r ? num(r.valor) : 0 };
+  });
+}
+
 /* ===== CONTRATOS assinados (PNCP /contratos) conectados ao processo licitatório ===== */
 
 export type ContratoProcesso = { fornecedor: string; ni: string; valor: number; vigInicio: string | null; vigFim: string | null; assinatura: string | null; objeto: string };

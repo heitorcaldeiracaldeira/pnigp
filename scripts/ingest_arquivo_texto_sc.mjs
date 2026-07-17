@@ -9,6 +9,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const CONC = Number(process.env.CONC || 4);
 const LIMIT = Number(process.env.LIMIT || 0);
+// UNIVERSO: "resultado" (default — tipos 16/11/19/12, a caça da ata/marca) ou "todos" (SEM filtro de tipo —
+// CADA documento do PNCP: edital, TR, ETP, DFD, projeto básico… — a especificação do item vive aqui). Regra 2.
+const UNIVERSO = (process.env.UNIVERSO || "resultado").toLowerCase();
 const MAXCHARS = Number(process.env.MAXCHARS || 200000);   // teto de texto por doc (atas gigantes)
 // quais documentos materializar. default = ATA DE SESSÃO (fonte da marca/lances). Ex.: "edital" p/ editais.
 const DOCFILTRO = process.env.DOCFILTRO || "titulo:atatotal|ata.*(sess|julg|realiz|final|resultad)|mapa.*lance";
