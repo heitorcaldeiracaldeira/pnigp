@@ -1,3 +1,8 @@
+// ⚠️ DEPRECADO (jul/2026) — SUBSTITUÍDO por scripts/build_compras_sc.mjs (derivada do espelho, Lei 1).
+// Este script re-buscava o agregado da API do PNCP; como faz UPSERT numa tabela de tamanho fixo, o count(*) ficava
+// parado e o monitor do orquestrador o matava como "estagnado" (falso-positivo). O orquestrador NÃO o chama mais.
+// Mantido só como referência histórica. Não re-ativar: compras_sc agora é função pura de contratacoes_sc.
+//
 // Fase 2 — Compras OFICIAIS (PNCP) de Santa Catarina, agregadas por ente no banco.
 // Para cada ente de entes_sc: contratações 2024 (PNCP), esfera municipal (ou estadual),
 // principais modalidades, paginação limitada. Idempotente (UPSERT). node scripts/ingest_compras_sc.mjs

@@ -74,16 +74,22 @@ async function main() {
   await q(`ALTER TABLE arquivo_texto_sc ADD COLUMN IF NOT EXISTS gerador TEXT`);
   await q(`CREATE INDEX IF NOT EXISTS ix_arqtexto_gerador ON arquivo_texto_sc (gerador)`);
 
-  // UNIVERSO = tipo oficial do PNCP (whereUniversoDoc). O TÍTULO NÃO FILTRA — só ordena (ordemFilaDoc).
-  // Antes: regex de título como portão → fechava 76% do catálogo (149.508 docs de "Outros Documentos" nunca vistos,
-  // justo onde estão Betha/149 munis e Pública). Quem decide se é resultado é o parser, depois de ler.
+  // UNIVERSO = tipo oficial do PNCP. O TÍTULO NÃO FILTRA — só ordena.
+  //  "resultado" (default): ata/marca (whereUniversoDoc). "criacao": documentos da construção (a spec do item vive
+  //  aqui — TR/ETP/PB/Edital/Aviso/DFD…). "todos": sem filtro de tipo.
+  // ordem = prioridade p/ enriquecimento (spec-rica primeiro). TIPOS=4,7,6 restringe (fatia de alto valor).
+  const CRIACAO = process.env.TIPOS ? process.env.TIPOS.split(",").map(Number) : [4, 7, 6, 5, 8, 10, 20, 1, 3, 2, 9, 16];
+  const universoSQL = UNIVERSO === "criacao" ? `a.tipo_documento_id = ANY(ARRAY[${CRIACAO.join(",")}]) AND a.uri IS NOT NULL`
+    : UNIVERSO === "todos" ? `a.uri IS NOT NULL` : whereUniversoDoc("a");
+  const ordemSQL = UNIVERSO === "criacao" ? `array_position(ARRAY[${CRIACAO.join(",")}], a.tipo_documento_id), a.data_publicacao DESC NULLS LAST`
+    : UNIVERSO === "todos" ? `a.data_publicacao DESC NULLS LAST` : ordemFilaDoc("a");
   const docs = (await q(`SELECT a.cnpj,a.ano,a.seq,a.sequencial_documento,a.cod_ibge,a.tipo_documento,a.titulo,a.uri
     FROM arquivos_sc a
-    WHERE ${whereUniversoDoc("a")}
+    WHERE ${universoSQL}
       AND NOT EXISTS (SELECT 1 FROM arquivo_texto_sc d WHERE d.cnpj=a.cnpj AND d.ano=a.ano AND d.seq=a.seq AND d.sequencial_documento=a.sequencial_documento)
-    ORDER BY ${ordemFilaDoc("a")}
+    ORDER BY ${ordemSQL}
     ${LIMIT ? "LIMIT " + LIMIT : ""}`)).rows;
-  console.log(`${docs.length.toLocaleString()} documentos a baixar (universo = tipo do PNCP; título só ordena) · conc ${CONC}`);
+  console.log(`${docs.length.toLocaleString()} documentos a baixar (universo=${UNIVERSO}) · conc ${CONC}`);
 
   let ok = 0, vazio = 0, i = 0, done = 0, erros = 0;
   await Promise.all(Array.from({ length: CONC }, async () => {

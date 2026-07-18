@@ -35,8 +35,16 @@ function riscoContrato(c: Contrato): { nivel: Nivel; motivos: string[] } {
   return { nivel, motivos };
 }
 
+type Andamento = {
+  linhas: { modalidade: string; familia: string; n_itens: number; homologado: number; andamento: number; aberto: number; perdido: number; cancelado: number; erros: number }[];
+  totais: { n_itens: number; homologado: number; andamento: number; aberto: number; perdido: number; cancelado: number; erros: number };
+  problemas: { modalidade: string; item: number; descricao: string; quantidade: number; unitEstimado: number; unitHomologado: number; valor: number; situacao: string; processo: string }[];
+  suspeitos: { modalidade: string; processo: string; objeto: string; orgao: string; ano: number; estimado: number; homologado: number }[];
+};
+
 export function ComprasSCSection({ codigo, tipo }: { codigo: string; tipo: "M" | "E" }) {
   const [data, setData] = useState<Resp | null | undefined>(undefined);
+  const [andamento, setAndamento] = useState<Andamento | null | undefined>(undefined);
 
   useEffect(() => {
     let vivo = true;
@@ -45,6 +53,16 @@ export function ComprasSCSection({ codigo, tipo }: { codigo: string; tipo: "M" |
       .then((r) => r.json())
       .then((d) => vivo && setData(d))
       .catch(() => vivo && setData(null));
+    return () => { vivo = false; };
+  }, [codigo]);
+
+  useEffect(() => {
+    let vivo = true;
+    setAndamento(undefined);
+    fetch(`/api/andamento-compras/${codigo}`)
+      .then((r) => r.json())
+      .then((d) => vivo && setAndamento(d))
+      .catch(() => vivo && setAndamento(null));
     return () => { vivo = false; };
   }, [codigo]);
 
@@ -124,6 +142,14 @@ export function ComprasSCSection({ codigo, tipo }: { codigo: string; tipo: "M" |
           </div>
 
           {latest.por_modalidade.length > 0 && (
+            <ClassificacaoModalidade dados={latest.por_modalidade} ano={ano} />
+          )}
+
+          {andamento && andamento.linhas && andamento.linhas.length > 0 && (
+            <AndamentoCompras dados={andamento} />
+          )}
+
+          {latest.por_modalidade.length > 0 && (
             <section className="rounded-2xl border border-slate-200 bg-white p-5">
               <h3 className="font-semibold text-slate-800">Compras por modalidade · {ano}</h3>
               <p className="mb-2 text-xs text-slate-500">Valor contratado por modalidade (PNCP)</p>
@@ -135,6 +161,186 @@ export function ComprasSCSection({ codigo, tipo }: { codigo: string; tipo: "M" |
         </>
       )}
     </>
+  );
+}
+
+// Nossa classificação: 13 tipos oficiais do PNCP → 4 famílias (Lei 14.133). Mostra PROCESSOS e VALOR (valor = decisão).
+const FAMILIAS: { nome: string; teste: RegExp; cor: string }[] = [
+  { nome: "Licitação", teste: /preg|concorr|concurso|di[aá]logo/i, cor: "bg-teal-600" },
+  { nome: "Contratação direta", teste: /dispensa|inexig|credenc/i, cor: "bg-amber-500" },
+  { nome: "Alienação", teste: /leil/i, cor: "bg-violet-500" },
+  { nome: "Procedimento auxiliar", teste: /pr[eé].?qualif|manifesta/i, cor: "bg-slate-400" },
+];
+
+function ClassificacaoModalidade({ dados, ano }: { dados: { modalidade: string; n: number; valor: number }[]; ano: number }) {
+  const totalN = dados.reduce((s, m) => s + m.n, 0);
+  const totalV = dados.reduce((s, m) => s + m.valor, 0);
+  if (!totalN) return null;
+  const grupos = FAMILIAS
+    .map((f) => {
+      const itens = dados.filter((m) => f.teste.test(m.modalidade)).sort((a, b) => b.valor - a.valor);
+      return { ...f, itens, n: itens.reduce((s, m) => s + m.n, 0), valor: itens.reduce((s, m) => s + m.valor, 0) };
+    })
+    .filter((g) => g.n > 0)
+    .sort((a, b) => b.valor - a.valor);
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <div className="mb-1 flex items-baseline justify-between gap-2">
+        <h3 className="font-semibold text-slate-800">Classificação dos processos por modalidade · {ano}</h3>
+        <span className="text-xs tabular-nums text-slate-500">{totalN.toLocaleString("pt-BR")} processos · <b className="text-slate-700">{fmtBRLCompact(totalV)}</b></span>
+      </div>
+      <p className="mb-3 text-xs text-slate-500">Tipos oficiais do PNCP agrupados por família (Lei 14.133) — nº de processos e valor contratado</p>
+      <div className="space-y-4">
+        {grupos.map((g) => (
+          <div key={g.nome}>
+            <div className="mb-1.5 flex items-baseline justify-between gap-2">
+              <span className="flex items-center gap-2 text-sm font-semibold text-slate-700"><span className={`h-2.5 w-2.5 rounded-full ${g.cor}`} /> {g.nome}</span>
+              <span className="text-xs tabular-nums text-slate-500">{g.n.toLocaleString("pt-BR")} proc · <b className="text-slate-800">{fmtBRLCompact(g.valor)}</b> · {totalV > 0 ? ((g.valor / totalV) * 100).toFixed(1) : "0"}% do valor</span>
+            </div>
+            <div className="space-y-1">
+              {g.itens.map((m) => (
+                <div key={m.modalidade} className="flex items-center gap-2">
+                  <span className="w-40 shrink-0 truncate text-xs text-slate-600" title={m.modalidade}>{m.modalidade}</span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                    <div className={`h-full ${g.cor} opacity-80`} style={{ width: `${totalV > 0 ? (m.valor / totalV) * 100 : 0}%` }} />
+                  </div>
+                  <span className="w-14 shrink-0 text-right text-[11px] tabular-nums text-slate-400">{m.n.toLocaleString("pt-BR")}</span>
+                  <span className="w-20 shrink-0 text-right text-xs font-medium tabular-nums text-slate-700">{fmtBRLCompact(m.valor)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// Andamento: itens × modalidade × STATUS × valor. Barra empilhada por situação; erros p/ controle interno abaixo.
+function AndamentoCompras({ dados }: { dados: Andamento }) {
+  const { linhas, totais } = dados;
+  if (!linhas.length || totais.n_itens === 0) return null;
+  const grupos = FAMILIAS
+    .map((f) => ({ nome: f.nome, itens: linhas.filter((l) => l.familia === f.nome).sort((a, b) => (b.homologado + b.andamento + b.aberto + b.perdido + b.cancelado) - (a.homologado + a.andamento + a.aberto + a.perdido + a.cancelado)) }))
+    .filter((g) => g.itens.length);
+  const maxTot = Math.max(...linhas.map((l) => l.homologado + l.andamento + l.aberto + l.perdido + l.cancelado), 1);
+  const seg = (v: number, cor: string, t: string) => (v > 0 ? <div key={t} className={cor} style={{ width: `${(v / maxTot) * 100}%` }} title={`${t}: ${fmtBRLCompact(v)}`} /> : null);
+  const kpi = [
+    { r: "Homologado", a: "comprou · eficácia", v: totais.homologado, c: "text-emerald-600", b: "bg-emerald-500" },
+    { r: "Em andamento", a: "na mesa", v: totais.andamento, c: "text-sky-600", b: "bg-sky-400" },
+    { r: "Recebendo proposta", a: "agir hoje", v: totais.aberto, c: "text-teal-600", b: "bg-teal-500" },
+    { r: "Deserto/Fracassado", a: "retrabalho", v: totais.perdido, c: "text-rose-600", b: "bg-rose-500" },
+  ];
+  const leg: [string, string][] = [["bg-emerald-500", "Homologado"], ["bg-sky-400", "Em andamento"], ["bg-teal-500", "Recebendo proposta"], ["bg-rose-500", "Deserto/Fracassado"], ["bg-slate-400", "Cancelado"]];
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <h3 className="font-semibold text-slate-800">Andamento das compras · modalidade × situação</h3>
+      <p className="mb-3 text-xs text-slate-500">{totais.n_itens.toLocaleString("pt-BR")} itens · valor por situação — o andamento vive no <b>item</b> (98% dos processos são só &quot;Divulgada&quot;)</p>
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {kpi.map((k) => (
+          <div key={k.r} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500"><span className={`h-2 w-2 rounded-full ${k.b}`} /> {k.r}</div>
+            <div className={`font-display text-lg font-bold tabular-nums ${k.c}`}>{fmtBRLCompact(k.v)}</div>
+            <div className="text-[10px] text-slate-400">{k.a}</div>
+          </div>
+        ))}
+      </div>
+      <div className="space-y-3">
+        {grupos.map((g) => (
+          <div key={g.nome}>
+            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400">{g.nome}</div>
+            <div className="space-y-1.5">
+              {g.itens.map((l) => {
+                const tot = l.homologado + l.andamento + l.aberto + l.perdido + l.cancelado;
+                return (
+                  <div key={l.modalidade} className="flex items-center gap-2">
+                    <span className="w-40 shrink-0 truncate text-xs text-slate-600" title={l.modalidade}>{l.modalidade}</span>
+                    <div className="flex h-3 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      {seg(l.homologado, "bg-emerald-500", "Homologado")}{seg(l.andamento, "bg-sky-400", "Em andamento")}{seg(l.aberto, "bg-teal-500", "Recebendo proposta")}{seg(l.perdido, "bg-rose-500", "Deserto/Fracassado")}{seg(l.cancelado, "bg-slate-400", "Cancelado")}
+                    </div>
+                    <span className="w-14 shrink-0 text-right text-[11px] tabular-nums text-slate-400">{l.n_itens.toLocaleString("pt-BR")}</span>
+                    <span className="w-20 shrink-0 text-right text-xs font-medium tabular-nums text-slate-700">{fmtBRLCompact(tot)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500">
+        {leg.map(([c, t]) => (<span key={t} className="flex items-center gap-1"><span className={`h-2 w-2 rounded-full ${c}`} /> {t}</span>))}
+      </div>
+      {totais.erros > 0 && (
+        <div className="mt-4">
+          <div className="mb-2 flex items-start gap-2 text-xs text-amber-800">
+            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <span><strong>{totais.erros.toLocaleString("pt-BR")} {totais.erros === 1 ? "item" : "itens"} com valor implausível</strong> (&gt; R$ 100 mi/item — provável erro de digitação): <b>excluídos do valor</b>, contados na quantidade, preservados no dado bruto. <b>Controle interno:</b> revise e corrija na origem.</span>
+          </div>
+          {dados.problemas.length > 0 && (
+            <div className="overflow-x-auto rounded-lg border border-amber-200">
+              <table className="w-full text-xs">
+                <thead className="bg-amber-50 text-amber-900">
+                  <tr className="text-left">
+                    <th className="p-2 font-medium">Modalidade</th>
+                    <th className="p-2 font-medium">Item</th>
+                    <th className="p-2 text-right font-medium">Quantidade</th>
+                    <th className="p-2 text-right font-medium">Preço unit.</th>
+                    <th className="p-2 text-right font-medium">Valor</th>
+                    <th className="hidden p-2 font-medium md:table-cell">Processo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dados.problemas.map((p, i) => (
+                    <tr key={i} className="border-t border-amber-100 align-top">
+                      <td className="whitespace-nowrap p-2 text-slate-600">{p.modalidade}</td>
+                      <td className="p-2 text-slate-700" title={p.descricao}>{p.descricao.length > 46 ? p.descricao.slice(0, 46) + "…" : p.descricao}</td>
+                      <td className="whitespace-nowrap p-2 text-right tabular-nums text-slate-600">{p.quantidade.toLocaleString("pt-BR")}</td>
+                      <td className="whitespace-nowrap p-2 text-right tabular-nums text-slate-600">{fmtBRL(Math.max(p.unitEstimado, p.unitHomologado))}</td>
+                      <td className="whitespace-nowrap p-2 text-right font-semibold tabular-nums text-rose-700">{fmtBRLCompact(p.valor)}</td>
+                      <td className="hidden whitespace-nowrap p-2 font-mono text-[10px] text-slate-400 md:table-cell">{p.processo}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+      {dados.suspeitos && dados.suspeitos.length > 0 && (
+        <div className="mt-4">
+          <div className="mb-2 flex items-start gap-2 text-xs text-amber-800">
+            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <span><strong>{dados.suspeitos.length} {dados.suspeitos.length === 1 ? "processo" : "processos"} com valor implausível</strong> (&gt; R$ 1 bi/processo — ex.: dispensa muito acima do teto legal, provável erro de digitação): <b>excluídos do valor</b> das compras, preservados no dado bruto. <b>Controle interno:</b> confira o valor na origem (PNCP).</span>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-amber-200">
+            <table className="w-full text-xs">
+              <thead className="bg-amber-50 text-amber-900">
+                <tr className="text-left">
+                  <th className="p-2 font-medium">Modalidade</th>
+                  <th className="p-2 font-medium">Objeto</th>
+                  <th className="p-2 text-right font-medium">Ano</th>
+                  <th className="p-2 text-right font-medium">Estimado</th>
+                  <th className="p-2 text-right font-medium">Homologado</th>
+                  <th className="hidden p-2 font-medium md:table-cell">Processo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {dados.suspeitos.map((s, i) => (
+                  <tr key={i} className="border-t border-amber-100 align-top">
+                    <td className="whitespace-nowrap p-2 text-slate-600">{s.modalidade}</td>
+                    <td className="p-2 text-slate-700" title={s.objeto}>{s.objeto.length > 46 ? s.objeto.slice(0, 46) + "…" : s.objeto}</td>
+                    <td className="whitespace-nowrap p-2 text-right tabular-nums text-slate-600">{s.ano}</td>
+                    <td className="whitespace-nowrap p-2 text-right tabular-nums text-slate-600">{fmtBRLCompact(s.estimado)}</td>
+                    <td className="whitespace-nowrap p-2 text-right font-semibold tabular-nums text-rose-700">{fmtBRLCompact(s.homologado)}</td>
+                    <td className="hidden whitespace-nowrap p-2 font-mono text-[10px] text-slate-400 md:table-cell">{s.processo}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </section>
   );
 }
 

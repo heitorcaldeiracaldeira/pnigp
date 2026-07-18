@@ -621,6 +621,63 @@ export async function getComprasComEvolucao(cod: string): Promise<{ latest: Comp
   return { latest, serie };
 }
 
+/* ===== ANDAMENTO DAS COMPRAS — itens × modalidade × STATUS × valor (derivada app.andamento_compras_sc). ==========
+   O andamento vive no ITEM (Homologado/Em andamento/Deserto/Fracassado), não no processo (98% "Divulgada").
+   Denominador = ITENS. Valores implausíveis (erro de digitação) contam na quantidade mas ficam FORA do valor (erros). */
+export type AndamentoCompras = {
+  linhas: { modalidade: string; familia: string; n_itens: number; homologado: number; andamento: number; aberto: number; perdido: number; cancelado: number; erros: number }[];
+  totais: { n_itens: number; homologado: number; andamento: number; aberto: number; perdido: number; cancelado: number; erros: number };
+  problemas: { modalidade: string; item: number; descricao: string; quantidade: number; unitEstimado: number; unitHomologado: number; valor: number; situacao: string; processo: string }[];
+  suspeitos: { modalidade: string; processo: string; objeto: string; orgao: string; ano: number; estimado: number; homologado: number }[];
+};
+const _famModalidade = (m: string) =>
+  /preg|concorr|concurso|di[aá]logo/i.test(m) ? "Licitação"
+  : /dispensa|inexig|credenc/i.test(m) ? "Contratação direta"
+  : /leil/i.test(m) ? "Alienação" : "Procedimento auxiliar";
+export async function getAndamentoCompras(cod: string): Promise<AndamentoCompras | null> {
+  const rows = await query<Record<string, unknown>>(
+    `SELECT modalidade,
+       sum(n_itens)::int n_itens,
+       coalesce(sum(valor) FILTER (WHERE status='Homologado'),0)::float homologado,
+       coalesce(sum(valor) FILTER (WHERE status='Em andamento'),0)::float andamento,
+       coalesce(sum(valor) FILTER (WHERE status='Recebendo proposta'),0)::float aberto,
+       coalesce(sum(valor) FILTER (WHERE status IN ('Deserto','Fracassado')),0)::float perdido,
+       coalesce(sum(valor) FILTER (WHERE status='Cancelado'),0)::float cancelado,
+       coalesce(sum(n_implausivel),0)::int erros
+     FROM app.andamento_compras_sc WHERE cod_ibge = $1 GROUP BY modalidade
+     ORDER BY sum(valor) DESC NULLS LAST`, [cod]).catch(() => []);
+  if (!rows.length) return null;
+  const n = (v: unknown) => Number(v) || 0;
+  const linhas = rows.map((r) => ({
+    modalidade: String(r.modalidade), familia: _famModalidade(String(r.modalidade)),
+    n_itens: n(r.n_itens), homologado: n(r.homologado), andamento: n(r.andamento),
+    aberto: n(r.aberto), perdido: n(r.perdido), cancelado: n(r.cancelado), erros: n(r.erros),
+  }));
+  const totais = linhas.reduce((a, l) => ({
+    n_itens: a.n_itens + l.n_itens, homologado: a.homologado + l.homologado, andamento: a.andamento + l.andamento,
+    aberto: a.aberto + l.aberto, perdido: a.perdido + l.perdido, cancelado: a.cancelado + l.cancelado, erros: a.erros + l.erros,
+  }), { n_itens: 0, homologado: 0, andamento: 0, aberto: 0, perdido: 0, cancelado: 0, erros: 0 });
+  const probs = await query<Record<string, unknown>>(
+    `SELECT modalidade, numero_controle, numero, descricao, quantidade, unit_estimado, unit_homologado, situacao, valor
+       FROM app.compra_valor_implausivel_sc WHERE cod_ibge = $1 ORDER BY valor DESC LIMIT 40`, [cod]).catch(() => []);
+  const problemas = probs.map((p) => ({
+    modalidade: String(p.modalidade), item: n(p.numero), descricao: String(p.descricao || ""),
+    quantidade: n(p.quantidade), unitEstimado: n(p.unit_estimado), unitHomologado: n(p.unit_homologado),
+    valor: n(p.valor), situacao: String(p.situacao || ""), processo: String(p.numero_controle || ""),
+  }));
+  // suspeitos NÍVEL PROCESSO: > R$ 1 bi/processo (ex.: 1 Dispensa de R$ 50 bi) — excluídos do valor de compras_sc,
+  // preservados no espelho. Companheira app.compra_processo_implausivel_sc (build_compras_sc.mjs).
+  const susp = await query<Record<string, unknown>>(
+    `SELECT modalidade, numero_controle, objeto, orgao, ano, valor_estimado, valor_homologado
+       FROM app.compra_processo_implausivel_sc WHERE cod_ibge = $1
+       ORDER BY greatest(valor_estimado, valor_homologado) DESC LIMIT 40`, [cod]).catch(() => []);
+  const suspeitos = susp.map((s) => ({
+    modalidade: String(s.modalidade), processo: String(s.numero_controle || ""), objeto: String(s.objeto || ""),
+    orgao: String(s.orgao || ""), ano: n(s.ano), estimado: n(s.valor_estimado), homologado: n(s.valor_homologado),
+  }));
+  return { linhas, totais, problemas, suspeitos };
+}
+
 /* ========= TRANSFERÊNCIAS DA UNIÃO / CONVÊNIOS (Transferegov via Portal da Transparência) ===== */
 
 export async function getTransferenciasSC(cod: string): Promise<TransferenciasSC | null> {

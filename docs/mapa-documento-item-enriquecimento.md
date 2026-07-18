@@ -1,6 +1,6 @@
 # Mapa: modalidade → documento → onde procurar (enriquecimento da classificação do item)
 
-**Objetivo:** o campo `descricaoItem` do PNCP tem teto de **2.048 caracteres** (média real 148) — é rótulo, não especificação. A especificação completa do item vive, **sem limite**, nos documentos da fase de criação. Este mapa diz, sem adivinhação: **qual documento** carrega a spec por modalidade e **onde dentro dele** procurar. Fonte da escrita: Manual das APIs de Consultas PNCP v1.0 §5.12 (`docs/manual-integracao-pncp.txt`). Fonte da definição: Lei 14.133 (`docs/lei-14133-integral.md`).
+**Objetivo:** o campo `descricaoItem` do PNCP tem teto de **2.048 caracteres** (média real 148) — é rótulo, não especificação. A especificação completa do item vive, **sem limite**, nos documentos da fase de criação. Este mapa diz, sem adivinhação: **qual documento** carrega a spec por modalidade e **onde dentro dele** procurar. Fonte da escrita: Manual das APIs de Consultas PNCP v1.0 §5.12 (`docs/manual-integracao-pncp.txt`). Fonte da definição: Lei 14.133 (`docs/lei-14133-integral.md`). **Estudo empírico + casador: `docs/casamento-item-documento-estudo.md`** (200 pregões; union 0,92; casador IDF+posição+confiança; convergência).
 
 ---
 

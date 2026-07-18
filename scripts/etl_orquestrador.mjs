@@ -156,8 +156,10 @@ const FONTES = [
     } },
   { id: "siops", label: "Saúde ASPS (SIOPS)", api: "siops", script: "scripts/ingest_siops_sc.mjs", env: {},
     devido: async () => (await maxAno("siops_sc")) < ANO_FECHADO },
-  { id: "compras", label: "Compras (PNCP ano corrente)", api: "pncp", script: "scripts/ingest_compras_sc.mjs", env: { ANO: String(ANO_CORRENTE), REFRESH: "1" },
-    devido: async (st) => diasDesde(st?.ultima_exec) > 25 },
+  // DERIVADA (Lei 1): compras_sc é função pura do espelho (contratacoes_sc) — reconstrói em segundos, sem re-fetch do
+  // PNCP. Re-deriva quando o espelho mudou (evento→flag→re-deriva a fatia), não por varredura. Mata o REFRESH full antigo.
+  { id: "compras", label: "Compras por ente/ano — DERIVADA do espelho (contratacoes_sc, sem re-fetch)", api: "derivado", script: "scripts/build_compras_sc.mjs", env: {},
+    devido: async (st) => { const m = (await db.query(`SELECT max(atualizado) x FROM contratacoes_sc`).catch(() => ({ rows: [{}] }))).rows[0]?.x; return !st?.ultima_exec || (!!m && new Date(m) > new Date(st.ultima_exec)); } },
   { id: "contratos", label: "Contratos (PNCP ano corrente, append)", api: "pncp", script: "scripts/ingest_contratos_sc.mjs", env: { APPEND: "1", ANOS: String(ANO_CORRENTE), REFRESH: "1" },
     devido: async (st) => diasDesde(st?.ultima_exec) > 25 },
   { id: "pca", label: "PCA (PNCP)", api: "pncp", script: "scripts/ingest_pca_sc.mjs", env: { ANOS: `${ANO_CORRENTE},${ANO_CORRENTE + 1}` },

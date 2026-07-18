@@ -1,0 +1,34 @@
+
+> pnigp@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.9 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.7:3000
+- Environments: .env.local
+✓ Ready in 9.9s
+
+(node:4596) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ GET /api/andamento-compras/4205407 200 in 5.4s (next.js: 4.1s, application-code: 1316ms)
+ GET /real/4205407 200 in 3.2min (next.js: 1039ms, application-code: 3.2min)
+ GET /api/andamento-compras/4205407 200 in 2.7s (next.js: 24ms, application-code: 2.7s)
+ GET /api/caderno-emendas?cod=4205407&escopo=estadual 200 in 3.8s (next.js: 297ms, application-code: 3.5s)
+ GET /api/caderno-emendas?cod=4205407&escopo=federal 200 in 4.2s (next.js: 144ms, application-code: 4.0s)
+ GET /api/compras-sc/4205407 200 in 3.8s (next.js: 1796ms, application-code: 2.0s)
+ GET /api/serie-anotacao?escopo=causa-aps&cod=4205407 200 in 1401ms (next.js: 262ms, application-code: 1139ms)
+ GET /api/equipamentos-geo/4205407 200 in 4.7s (next.js: 1693ms, application-code: 3.0s)
+ GET /api/processo-fases/4205407 200 in 4.3s (next.js: 3.0s, application-code: 1330ms)
+ GET /api/serie-anotacao?escopo=fns&cod=4205407 200 in 856ms (next.js: 5ms, application-code: 851ms)
+ GET /api/serie-anotacao?escopo=acc-aps&cod=4205407 200 in 503ms (next.js: 6ms, application-code: 497ms)
+ GET /api/notificacao-cadastro?cod=4205407 200 in 880ms (next.js: 484ms, application-code: 396ms)
+ GET /api/notificacao-acao?cod=4205407 200 in 1473ms (next.js: 288ms, application-code: 1184ms)
+ GET /api/transferencias-sc/4205407 200 in 1996ms (next.js: 1347ms, application-code: 649ms)
+ GET /api/auditoria-diag/4205407 200 in 3.0s (next.js: 1401ms, application-code: 1555ms)

@@ -1,4 +1,4 @@
-(node:27532) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+(node:8104) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
 In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
 
 To prepare for this change:
@@ -7,5 +7,6 @@ To prepare for this change:
 
 See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
 (Use `node --trace-warnings ...` to show where the warning was created)
-backfill raw: 240.281 processos pendentes · 627.294 documentos sem raw · conc 4
-  100/240281 · 191 raws · 0 novos  200/240281 · 629 raws · 0 novos  300/240281 · 853 raws · 0 novos  400/240281 · 1013 raws · 0 novos  500/240281 · 1189 raws · 0 novos  600/240281 · 1366 raws · 0 novos
+backfill raw: 56 processos pendentes · 208 documentos sem raw · conc 4
+
+✔ arquivos_sc: 627.832 documentos · 627.624 com raw · faltam 208

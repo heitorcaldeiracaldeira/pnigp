@@ -1,0 +1,200 @@
+{"cnpj":"95952230000167","ano":2024,"seq":43,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":2449,"ed_cov":1}
+{"cnpj":"83024257000100","ano":2025,"seq":327,"plataforma":"IPM Sistemas","tr_cov":0,"ed_ok":true,"ed_chars":72000,"ed_cov":1}
+{"cnpj":"82939422000191","ano":2024,"seq":48,"plataforma":"Betha Sistemas","tr_cov":0,"ed_ok":true,"ed_chars":117402,"ed_cov":0.333}
+{"cnpj":"83102277000152","ano":2025,"seq":259,"plataforma":"Pública Tecnologia Ltda.","tr_cov":0.893,"ed_ok":true,"ed_chars":67745,"ed_cov":0}
+{"cnpj":"83102277000152","ano":2025,"seq":311,"plataforma":"Pública Tecnologia Ltda.","tr_cov":0.879,"ed_ok":true,"ed_chars":70355,"ed_cov":0.121}
+{"cnpj":"83779462000186","ano":2025,"seq":99,"plataforma":"AZ INFORMATICA LTDA","tr_cov":0.769,"ed_ok":true,"ed_chars":3107,"ed_cov":1}
+{"cnpj":"82777236000101","ano":2025,"seq":190,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":95127,"ed_cov":0.8}
+{"cnpj":"83024687000122","ano":2024,"seq":36,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":94193,"ed_cov":1}
+{"cnpj":"95952230000167","ano":2024,"seq":85,"plataforma":"AZ INFORMATICA LTDA","tr_cov":0.696,"ed_ok":true,"ed_chars":2162,"ed_cov":0.783}
+{"cnpj":"82854670000130","ano":2024,"seq":253,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":169805,"ed_cov":1}
+{"cnpj":"83102855000150","ano":2025,"seq":116,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":164024,"ed_cov":1}
+{"cnpj":"78505591000146","ano":2025,"seq":35,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":213128,"ed_cov":1}
+{"cnpj":"01612844000156","ano":2025,"seq":109,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":132497,"ed_cov":1}
+{"cnpj":"11481782000144","ano":2024,"seq":10,"plataforma":"AZ INFORMATICA LTDA","tr_cov":0.975,"ed_ok":true,"ed_chars":31669,"ed_cov":0.975}
+{"cnpj":"82916800000111","ano":2025,"seq":393,"plataforma":"Betha Sistemas","tr_cov":0.9,"ed_ok":true,"ed_chars":68942,"ed_cov":0.4}
+{"cnpj":"82951351000142","ano":2024,"seq":440,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":1,"ed_ok":true,"ed_chars":150416,"ed_cov":1}
+{"cnpj":"82892316000108","ano":2025,"seq":140,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":133039,"ed_cov":0.538}
+{"cnpj":"83931550000151","ano":2024,"seq":84,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":1,"ed_ok":true,"ed_chars":303925,"ed_cov":1}
+{"cnpj":"12075748000132","ano":2025,"seq":100,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":596705,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2024,"seq":524,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.933,"ed_ok":true,"ed_chars":177206,"ed_cov":0.933}
+{"cnpj":"83931550000151","ano":2024,"seq":176,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.455,"ed_ok":true,"ed_chars":222596,"ed_cov":1}
+{"cnpj":"11840546000177","ano":2025,"seq":19,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":125944,"ed_cov":1}
+{"cnpj":"12075748000132","ano":2025,"seq":77,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":525235,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2024,"seq":98,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.5,"ed_ok":true,"ed_chars":149541,"ed_cov":0.348}
+{"cnpj":"82925652000100","ano":2025,"seq":77,"plataforma":"Betha Sistemas","tr_cov":0.316,"ed_ok":true,"ed_chars":144032,"ed_cov":0.263}
+{"cnpj":"83102277000152","ano":2024,"seq":293,"plataforma":"Pública Tecnologia Ltda.","tr_cov":0,"ed_ok":true,"ed_chars":68616,"ed_cov":0.2}
+{"cnpj":"82951351000142","ano":2025,"seq":716,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.571,"ed_ok":true,"ed_chars":192623,"ed_cov":0.619}
+{"cnpj":"83102491000109","ano":2025,"seq":174,"plataforma":"Betha Sistemas","tr_cov":0.966,"ed_ok":true,"ed_chars":75630,"ed_cov":0.966}
+{"cnpj":"82892324000146","ano":2025,"seq":94,"plataforma":"Betha Sistemas","tr_cov":0.667,"ed_ok":true,"ed_chars":87557,"ed_cov":1}
+{"cnpj":"83102715000182","ano":2025,"seq":58,"plataforma":"AZ INFORMATICA LTDA","tr_cov":0.784,"ed_ok":true,"ed_chars":2684,"ed_cov":0.784}
+{"cnpj":"83102764000115","ano":2025,"seq":339,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":4307,"ed_cov":1}
+{"cnpj":"14819230000191","ano":2025,"seq":7,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":79112,"ed_cov":0.037}
+{"cnpj":"82947979000174","ano":2025,"seq":256,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":121199,"ed_cov":0.5}
+{"cnpj":"83102491000109","ano":2025,"seq":153,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":58198,"ed_cov":1}
+{"cnpj":"82928656000133","ano":2025,"seq":281,"plataforma":"ECustomize Consultoria em Software S.A","tr_cov":0,"ed_ok":true,"ed_chars":4238,"ed_cov":0.143}
+{"cnpj":"82951351000142","ano":2024,"seq":478,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0,"ed_ok":true,"ed_chars":159054,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2024,"seq":63,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0,"ed_ok":true,"ed_chars":161786,"ed_cov":1}
+{"cnpj":"83102855000150","ano":2025,"seq":184,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":120766,"ed_cov":1}
+{"cnpj":"82892365000132","ano":2025,"seq":79,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":74570,"ed_cov":1}
+{"cnpj":"82916800000111","ano":2024,"seq":426,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":91192,"ed_cov":1}
+{"cnpj":"11474080000133","ano":2025,"seq":6,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":247127,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2024,"seq":605,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0,"ed_ok":true,"ed_chars":151086,"ed_cov":0.806}
+{"cnpj":"83039842000184","ano":2025,"seq":77,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":221654,"ed_cov":0.968}
+{"cnpj":"82951351000142","ano":2025,"seq":682,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":1,"ed_ok":true,"ed_chars":210627,"ed_cov":1}
+{"cnpj":"83102780000108","ano":2024,"seq":82,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":87877,"ed_cov":1}
+{"cnpj":"82930181000110","ano":2024,"seq":88,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":126339,"ed_cov":1}
+{"cnpj":"83102517000119","ano":2025,"seq":53,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":187966,"ed_cov":1}
+{"cnpj":"83102285000107","ano":2025,"seq":92,"plataforma":"Pública Tecnologia Ltda.","tr_cov":0.887,"ed_ok":true,"ed_chars":26159,"ed_cov":0.887}
+{"cnpj":"16780795000138","ano":2025,"seq":29,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":1815,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2024,"seq":132,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0,"ed_ok":true,"ed_chars":149826,"ed_cov":0.775}
+{"cnpj":"83102343000194","ano":2025,"seq":177,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":123040,"ed_cov":0.667}
+{"cnpj":"82951351000142","ano":2024,"seq":494,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.5,"ed_ok":true,"ed_chars":109743,"ed_cov":0.5}
+{"cnpj":"82951351000142","ano":2024,"seq":412,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.032,"ed_ok":true,"ed_chars":149773,"ed_cov":0.645}
+{"cnpj":"17243084000197","ano":2025,"seq":137,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":81130,"ed_cov":1}
+{"cnpj":"83102475000116","ano":2024,"seq":216,"plataforma":"IPM Sistemas","tr_cov":0.5,"ed_ok":true,"ed_chars":125879,"ed_cov":0.875}
+{"cnpj":"83108357000115","ano":2024,"seq":604,"plataforma":"AZ INFORMATICA LTDA","tr_cov":0.913,"ed_ok":true,"ed_chars":15247,"ed_cov":1}
+{"cnpj":"17243084000197","ano":2025,"seq":53,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":69389,"ed_cov":1}
+{"cnpj":"82892316000108","ano":2025,"seq":83,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":138730,"ed_cov":0}
+{"cnpj":"12075748000132","ano":2025,"seq":178,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":422971,"ed_cov":1}
+{"cnpj":"82939422000191","ano":2024,"seq":98,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":94536,"ed_cov":1}
+{"cnpj":"84591890000143","ano":2025,"seq":156,"plataforma":"ECustomize Consultoria em Software S.A","tr_cov":1,"ed_ok":true,"ed_chars":283768,"ed_cov":1}
+{"cnpj":"83074302000131","ano":2024,"seq":84,"plataforma":"Pública Tecnologia Ltda.","tr_cov":1,"ed_ok":true,"ed_chars":89015,"ed_cov":0.333}
+{"cnpj":"82844754000192","ano":2024,"seq":18,"plataforma":"AZ INFORMATICA LTDA","tr_cov":0.917,"ed_ok":true,"ed_chars":2121,"ed_cov":1}
+{"cnpj":"83102475000116","ano":2025,"seq":96,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":106356,"ed_cov":1}
+{"cnpj":"12075748000132","ano":2024,"seq":66,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":426214,"ed_cov":1}
+{"cnpj":"12075748000132","ano":2025,"seq":118,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":2436441,"ed_cov":1}
+{"cnpj":"12075748000132","ano":2024,"seq":129,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":325642,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2024,"seq":679,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.636,"ed_ok":true,"ed_chars":137873,"ed_cov":1}
+{"cnpj":"83102715000182","ano":2025,"seq":8,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":1648,"ed_cov":1}
+{"cnpj":"15442776000139","ano":2024,"seq":16,"plataforma":"AZ INFORMATICA LTDA","tr_cov":0.988,"ed_ok":true,"ed_chars":44624,"ed_cov":0.988}
+{"cnpj":"83021808000182","ano":2024,"seq":183,"plataforma":"ECustomize Consultoria em Software S.A","tr_cov":1,"ed_ok":true,"ed_chars":71972,"ed_cov":1}
+{"cnpj":"83102731000175","ano":2025,"seq":224,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":107735,"ed_cov":1}
+{"cnpj":"07383800000188","ano":2025,"seq":77,"plataforma":"Pública Tecnologia Ltda.","tr_cov":1,"ed_ok":true,"ed_chars":16212,"ed_cov":1}
+{"cnpj":"95991071000100","ano":2024,"seq":41,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":79366,"ed_cov":0.5}
+{"cnpj":"83779462000186","ano":2025,"seq":57,"plataforma":"AZ INFORMATICA LTDA","tr_cov":0.971,"ed_ok":true,"ed_chars":42782,"ed_cov":1}
+{"cnpj":"82892282000143","ano":2025,"seq":73,"plataforma":"Pública Tecnologia Ltda.","tr_cov":0.692,"ed_ok":true,"ed_chars":137543,"ed_cov":0.692}
+{"cnpj":"83102806000118","ano":2025,"seq":104,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":5246,"ed_cov":1}
+{"cnpj":"83754044000134","ano":2024,"seq":314,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":115824,"ed_cov":1}
+{"cnpj":"83754044000134","ano":2025,"seq":341,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":63397,"ed_cov":1}
+{"cnpj":"83024240000153","ano":2024,"seq":175,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":136125,"ed_cov":1}
+{"cnpj":"83039842000184","ano":2024,"seq":50,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":119023,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2025,"seq":780,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":1,"ed_ok":true,"ed_chars":317512,"ed_cov":1}
+{"cnpj":"83024257000100","ano":2025,"seq":225,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":67522,"ed_cov":1}
+{"cnpj":"95952248000169","ano":2025,"seq":109,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":1580,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2024,"seq":502,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.034,"ed_ok":true,"ed_chars":181458,"ed_cov":0.931}
+{"cnpj":"83891283000136","ano":2024,"seq":1153,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0,"ed_ok":true,"ed_chars":70124,"ed_cov":0}
+{"cnpj":"83102244000102","ano":2025,"seq":60,"plataforma":"AZ INFORMATICA LTDA","tr_cov":0.667,"ed_ok":true,"ed_chars":2597,"ed_cov":0.933}
+{"cnpj":"83074294000123","ano":2024,"seq":76,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":100402,"ed_cov":1}
+{"cnpj":"83021873000108","ano":2024,"seq":1890,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":143987,"ed_cov":1}
+{"cnpj":"83108357000115","ano":2024,"seq":40,"plataforma":"AZ INFORMATICA LTDA","tr_cov":0.963,"ed_ok":true,"ed_chars":42250,"ed_cov":0.975}
+{"cnpj":"83102780000108","ano":2024,"seq":147,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":90266,"ed_cov":1}
+{"cnpj":"13791885000136","ano":2025,"seq":23,"plataforma":"Betha Sistemas","tr_cov":0.212,"ed_ok":true,"ed_chars":350216,"ed_cov":1}
+{"cnpj":"81531162000158","ano":2025,"seq":347,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":86420,"ed_cov":1}
+{"cnpj":"06017932000123","ano":2025,"seq":51,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":181676,"ed_cov":1}
+{"cnpj":"12092636000190","ano":2024,"seq":64,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":150790,"ed_cov":0.107}
+{"cnpj":"12092636000190","ano":2025,"seq":34,"plataforma":"IPM Sistemas","tr_cov":0.958,"ed_ok":true,"ed_chars":146960,"ed_cov":0.188}
+{"cnpj":"82928656000133","ano":2025,"seq":174,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":16906,"ed_cov":1}
+{"cnpj":"83102277000152","ano":2024,"seq":229,"plataforma":"Pública Tecnologia Ltda.","tr_cov":1,"ed_ok":true,"ed_chars":69358,"ed_cov":0}
+{"cnpj":"95952230000167","ano":2025,"seq":45,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":false,"ed_chars":1,"ed_cov":null}
+{"cnpj":"95991097000158","ano":2024,"seq":235,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":73502,"ed_cov":0.042}
+{"cnpj":"82777301000190","ano":2025,"seq":331,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":131550,"ed_cov":1}
+{"cnpj":"82702259000149","ano":2024,"seq":12,"plataforma":"Licitar Digital - Plataforma de Licitações Online","tr_cov":1,"ed_ok":true,"ed_chars":139280,"ed_cov":1}
+{"cnpj":"83039842000184","ano":2025,"seq":112,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":136801,"ed_cov":1}
+{"cnpj":"83102244000102","ano":2024,"seq":41,"plataforma":"AZ INFORMATICA LTDA","tr_cov":0.96,"ed_ok":true,"ed_chars":9761,"ed_cov":0.96}
+{"cnpj":"82951351000142","ano":2024,"seq":557,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.961,"ed_ok":true,"ed_chars":181716,"ed_cov":0.941}
+{"cnpj":"83931550000151","ano":2024,"seq":204,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":1,"ed_ok":true,"ed_chars":219370,"ed_cov":1}
+{"cnpj":"83102301000153","ano":2024,"seq":123,"plataforma":"Governançabrasil Tecnologia e Gestão em Serviços","tr_cov":1,"ed_ok":true,"ed_chars":94278,"ed_cov":1}
+{"cnpj":"83754044000134","ano":2024,"seq":163,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":88698,"ed_cov":1}
+{"cnpj":"83102277000152","ano":2025,"seq":323,"plataforma":"Pública Tecnologia Ltda.","tr_cov":1,"ed_ok":true,"ed_chars":70695,"ed_cov":0}
+{"cnpj":"11355483000163","ano":2024,"seq":32,"plataforma":"AZ INFORMATICA LTDA","tr_cov":0.875,"ed_ok":true,"ed_chars":3909,"ed_cov":1}
+{"cnpj":"83108357000115","ano":2025,"seq":412,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":2144,"ed_cov":1}
+{"cnpj":"82844754000192","ano":2024,"seq":6,"plataforma":"AZ INFORMATICA LTDA","tr_cov":0.25,"ed_ok":true,"ed_chars":963,"ed_cov":0.75}
+{"cnpj":"03111139000109","ano":2025,"seq":19,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":1935,"ed_cov":1}
+{"cnpj":"83102681000126","ano":2025,"seq":7,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":108030,"ed_cov":1}
+{"cnpj":"83102459000123","ano":2025,"seq":1235,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":199428,"ed_cov":1}
+{"cnpj":"82892365000132","ano":2024,"seq":36,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":77549,"ed_cov":0.2}
+{"cnpj":"82815085000120","ano":2024,"seq":153,"plataforma":"ECustomize Consultoria em Software S.A","tr_cov":1,"ed_ok":true,"ed_chars":125641,"ed_cov":1}
+{"cnpj":"83102244000102","ano":2025,"seq":141,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":2958,"ed_cov":1}
+{"cnpj":"10496741000169","ano":2025,"seq":38,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":162296,"ed_cov":1}
+{"cnpj":"82928706000182","ano":2025,"seq":121,"plataforma":"Betha Sistemas","tr_cov":0.938,"ed_ok":true,"ed_chars":107302,"ed_cov":0.938}
+{"cnpj":"83102244000102","ano":2025,"seq":70,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":1970,"ed_cov":1}
+{"cnpj":"83102798000100","ano":2025,"seq":251,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":37218,"ed_cov":1}
+{"cnpj":"83754044000134","ano":2024,"seq":254,"plataforma":"Betha Sistemas","tr_cov":0.625,"ed_ok":true,"ed_chars":80675,"ed_cov":0.625}
+{"cnpj":"12075748000132","ano":2025,"seq":37,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":395422,"ed_cov":1}
+{"cnpj":"95952248000169","ano":2025,"seq":66,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":8860,"ed_cov":1}
+{"cnpj":"08935681000191","ano":2024,"seq":22,"plataforma":"Pública Tecnologia Ltda.","tr_cov":0.875,"ed_ok":true,"ed_chars":106278,"ed_cov":0}
+{"cnpj":"82939455000131","ano":2025,"seq":60,"plataforma":"Pública Tecnologia Ltda.","tr_cov":1,"ed_ok":true,"ed_chars":293609,"ed_cov":1}
+{"cnpj":"83102228000110","ano":2025,"seq":48,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":92463,"ed_cov":0.641}
+{"cnpj":"83074294000123","ano":2024,"seq":104,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":103234,"ed_cov":1}
+{"cnpj":"82930181000110","ano":2025,"seq":417,"plataforma":"Betha Sistemas","tr_cov":0.019,"ed_ok":true,"ed_chars":129214,"ed_cov":0.849}
+{"cnpj":"83102715000182","ano":2025,"seq":26,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":2030,"ed_cov":1}
+{"cnpj":"83102715000182","ano":2024,"seq":37,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":1857,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2024,"seq":138,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0,"ed_ok":true,"ed_chars":242154,"ed_cov":0.682}
+{"cnpj":"83891283000136","ano":2024,"seq":1256,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.604,"ed_ok":true,"ed_chars":63171,"ed_cov":0.229}
+{"cnpj":"82947979000174","ano":2024,"seq":140,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":115759,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2024,"seq":600,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0,"ed_ok":true,"ed_chars":100203,"ed_cov":0.842}
+{"cnpj":"83102798000100","ano":2024,"seq":159,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":38923,"ed_cov":1}
+{"cnpj":"82939422000191","ano":2024,"seq":86,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":99021,"ed_cov":1}
+{"cnpj":"82930181000110","ano":2024,"seq":73,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":115474,"ed_cov":1}
+{"cnpj":"82892282000143","ano":2024,"seq":70,"plataforma":"Pública Tecnologia Ltda.","tr_cov":1,"ed_ok":true,"ed_chars":137242,"ed_cov":1}
+{"cnpj":"82892308000153","ano":2025,"seq":53,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":3097,"ed_cov":1}
+{"cnpj":"83891283000136","ano":2025,"seq":1001,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.37,"ed_ok":true,"ed_chars":72517,"ed_cov":0.259}
+{"cnpj":"83891283000136","ano":2025,"seq":479,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.4,"ed_ok":true,"ed_chars":66900,"ed_cov":0.2}
+{"cnpj":"83102475000116","ano":2024,"seq":97,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":98194,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2025,"seq":235,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":1,"ed_ok":true,"ed_chars":134648,"ed_cov":0.375}
+{"cnpj":"83754044000134","ano":2024,"seq":202,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":115615,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2024,"seq":565,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.08,"ed_ok":true,"ed_chars":174105,"ed_cov":0.68}
+{"cnpj":"82951351000142","ano":2025,"seq":84,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0,"ed_ok":true,"ed_chars":157955,"ed_cov":1}
+{"cnpj":"95951323000177","ano":2024,"seq":119,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":16110,"ed_cov":1}
+{"cnpj":"83931550000151","ano":2025,"seq":31,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0,"ed_ok":true,"ed_chars":184751,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2025,"seq":44,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":1,"ed_ok":true,"ed_chars":147334,"ed_cov":1}
+{"cnpj":"82892282000143","ano":2025,"seq":93,"plataforma":"Pública Tecnologia Ltda.","tr_cov":1,"ed_ok":true,"ed_chars":145526,"ed_cov":1}
+{"cnpj":"82558909000124","ano":2025,"seq":297,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":63083,"ed_cov":0}
+{"cnpj":"83074294000123","ano":2024,"seq":43,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":101858,"ed_cov":1}
+{"cnpj":"82939380000199","ano":2025,"seq":25,"plataforma":"Betha Sistemas","tr_cov":0.013,"ed_ok":true,"ed_chars":129803,"ed_cov":0.912}
+{"cnpj":"82951351000142","ano":2025,"seq":477,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0,"ed_ok":true,"ed_chars":176945,"ed_cov":1}
+{"cnpj":"83009902000116","ano":2024,"seq":77,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":119915,"ed_cov":1}
+{"cnpj":"11173405000148","ano":2025,"seq":43,"plataforma":"Pública Tecnologia Ltda.","tr_cov":1,"ed_ok":true,"ed_chars":4658,"ed_cov":0.091}
+{"cnpj":"83931550000151","ano":2025,"seq":24,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.4,"ed_ok":true,"ed_chars":226245,"ed_cov":0.933}
+{"cnpj":"83102277000152","ano":2025,"seq":221,"plataforma":"Pública Tecnologia Ltda.","tr_cov":0.333,"ed_ok":true,"ed_chars":60964,"ed_cov":0.333}
+{"cnpj":"01743462000161","ano":2025,"seq":12,"plataforma":"IPM Sistemas","tr_cov":0.786,"ed_ok":true,"ed_chars":104386,"ed_cov":0.857}
+{"cnpj":"83931550000151","ano":2025,"seq":10,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.2,"ed_ok":true,"ed_chars":187837,"ed_cov":0.8}
+{"cnpj":"82947979000174","ano":2024,"seq":97,"plataforma":"IPM Sistemas","tr_cov":0.733,"ed_ok":true,"ed_chars":118702,"ed_cov":0.733}
+{"cnpj":"83102657000197","ano":2024,"seq":166,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":1085,"ed_cov":1}
+{"cnpj":"17243084000197","ano":2025,"seq":42,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":86775,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2025,"seq":65,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0,"ed_ok":true,"ed_chars":166012,"ed_cov":0.95}
+{"cnpj":"83039842000184","ano":2024,"seq":127,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":130988,"ed_cov":1}
+{"cnpj":"83039842000184","ano":2025,"seq":178,"plataforma":"IPM Sistemas","tr_cov":0.85,"ed_ok":true,"ed_chars":186805,"ed_cov":1}
+{"cnpj":"17243084000197","ano":2025,"seq":16,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":86944,"ed_cov":1}
+{"cnpj":"83102244000102","ano":2024,"seq":120,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":1197,"ed_cov":1}
+{"cnpj":"83102731000175","ano":2025,"seq":241,"plataforma":"Betha Sistemas","tr_cov":0.975,"ed_ok":true,"ed_chars":178492,"ed_cov":0.975}
+{"cnpj":"12075748000132","ano":2025,"seq":126,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":880895,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2024,"seq":205,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0,"ed_ok":true,"ed_chars":159376,"ed_cov":0.895}
+{"cnpj":"12092636000190","ano":2025,"seq":51,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":160008,"ed_cov":0.452}
+{"cnpj":"82951351000142","ano":2025,"seq":600,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.049,"ed_ok":true,"ed_chars":272884,"ed_cov":1}
+{"cnpj":"83102277000152","ano":2025,"seq":270,"plataforma":"Pública Tecnologia Ltda.","tr_cov":0.714,"ed_ok":true,"ed_chars":62006,"ed_cov":0}
+{"cnpj":"83102806000118","ano":2025,"seq":9,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":98780,"ed_cov":0.659}
+{"cnpj":"30753960000193","ano":2024,"seq":5,"plataforma":"IPM Sistemas","tr_cov":0.917,"ed_ok":true,"ed_chars":98220,"ed_cov":0.917}
+{"cnpj":"83102277000152","ano":2024,"seq":134,"plataforma":"Pública Tecnologia Ltda.","tr_cov":1,"ed_ok":true,"ed_chars":68573,"ed_cov":1}
+{"cnpj":"10509952000199","ano":2025,"seq":49,"plataforma":"Betha Sistemas","tr_cov":0.388,"ed_ok":true,"ed_chars":158448,"ed_cov":0.388}
+{"cnpj":"83102715000182","ano":2025,"seq":49,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":1865,"ed_cov":1}
+{"cnpj":"83021808000182","ano":2024,"seq":67,"plataforma":"ECustomize Consultoria em Software S.A","tr_cov":1,"ed_ok":true,"ed_chars":82895,"ed_cov":1}
+{"cnpj":"11692396000100","ano":2025,"seq":6,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":186152,"ed_cov":1}
+{"cnpj":"83931550000151","ano":2024,"seq":185,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.8,"ed_ok":true,"ed_chars":270731,"ed_cov":0.988}
+{"cnpj":"83108357000115","ano":2025,"seq":338,"plataforma":"AZ INFORMATICA LTDA","tr_cov":0.875,"ed_ok":true,"ed_chars":93189,"ed_cov":1}
+{"cnpj":"83754044000134","ano":2025,"seq":83,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":83237,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2024,"seq":314,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0,"ed_ok":true,"ed_chars":263067,"ed_cov":0}
+{"cnpj":"17243084000197","ano":2025,"seq":54,"plataforma":"Betha Sistemas","tr_cov":0.25,"ed_ok":true,"ed_chars":68261,"ed_cov":0.25}
+{"cnpj":"82928698000174","ano":2025,"seq":24,"plataforma":"IPM Sistemas","tr_cov":0.825,"ed_ok":true,"ed_chars":57440,"ed_cov":0.025}
+{"cnpj":"82892316000108","ano":2025,"seq":276,"plataforma":"ECustomize Consultoria em Software S.A","tr_cov":1,"ed_ok":true,"ed_chars":106183,"ed_cov":0.111}
+{"cnpj":"83102780000108","ano":2024,"seq":85,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":1551,"ed_cov":1}
+{"cnpj":"01612836000100","ano":2024,"seq":79,"plataforma":"IPM Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":71373,"ed_cov":1}
+{"cnpj":"10540697000147","ano":2025,"seq":23,"plataforma":"Betha Sistemas","tr_cov":0.88,"ed_ok":true,"ed_chars":84682,"ed_cov":0.88}
+{"cnpj":"82940776000156","ano":2024,"seq":769,"plataforma":"ECustomize Consultoria em Software S.A","tr_cov":0.667,"ed_ok":true,"ed_chars":155952,"ed_cov":1}
+{"cnpj":"83102814000164","ano":2025,"seq":56,"plataforma":"AZ INFORMATICA LTDA","tr_cov":1,"ed_ok":true,"ed_chars":7370,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2025,"seq":390,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":0.048,"ed_ok":true,"ed_chars":166008,"ed_cov":1}
+{"cnpj":"82939430000138","ano":2024,"seq":94,"plataforma":"Betha Sistemas","tr_cov":1,"ed_ok":true,"ed_chars":101334,"ed_cov":1}
+{"cnpj":"13791885000136","ano":2025,"seq":31,"plataforma":"Betha Sistemas","tr_cov":0.667,"ed_ok":true,"ed_chars":362728,"ed_cov":0.667}
+{"cnpj":"13791885000136","ano":2025,"seq":34,"plataforma":"Betha Sistemas","tr_cov":0,"ed_ok":true,"ed_chars":180964,"ed_cov":1}
+{"cnpj":"82951351000142","ano":2024,"seq":176,"plataforma":"Secretaria de Estado da Administração de Santa Catarina","tr_cov":1,"ed_ok":true,"ed_chars":146188,"ed_cov":1}
