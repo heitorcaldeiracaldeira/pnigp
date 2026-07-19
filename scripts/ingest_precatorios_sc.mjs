@@ -2,6 +2,7 @@
 // Lista entes devedores → soma/qtde de precatórios por ente → agrega por município (casamento por nome).
 // Replicável por UF (cada TJ tem o seu — CNJ Res. 303). node scripts/ingest_precatorios_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { SG_UF } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP (era 'SC' fixo)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const BASE = "https://app.tjsc.jus.br/tjsc-precregespecial/rest/listaunificadaprecatorios";
@@ -34,7 +35,7 @@ async function main() {
   const q = async (s, p) => { for (let t = 0; t < 6; t++) { try { return await db.query(s, p); } catch { await sleep(1000 * (t + 1)); } } throw new Error("db"); };
 
   // municípios p/ casamento (longest-match do nome dentro do nome do ente)
-  const muns = (await db.query(`SELECT cod_ibge, nome FROM entes_sc WHERE tipo='M' AND uf='SC'`)).rows.map((r) => ({ cod: r.cod_ibge, nome: r.nome, n: norm(r.nome) })).sort((a, b) => b.n.length - a.n.length);
+  const muns = (await db.query(`SELECT cod_ibge, nome FROM entes_sc WHERE tipo='M' AND uf='${SG_UF}'`)).rows.map((r) => ({ cod: r.cod_ibge, nome: r.nome, n: norm(r.nome) })).sort((a, b) => b.n.length - a.n.length);
   const casar = (deEntidade) => { const d = norm(deEntidade); for (const m of muns) if (m.n.length >= 4 && d.includes(m.n)) return m.cod; return null; };
 
   const entes = await getJSON(`${BASE}/entidadesdevedoras/`);

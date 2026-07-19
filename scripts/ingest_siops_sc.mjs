@@ -2,6 +2,7 @@
 // Fonte oficial: API pública SIOPS/Min. Saúde (indicador 3.2). co_municipio = 6 primeiros dígitos do cod_ibge.
 // Idempotente/resumível. node scripts/ingest_siops_sc.mjs [cod_ibge]
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { COD_ESTADO, NOME_ESTADO } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP; entes filtrados por código IBGE
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const API = "https://siops-consulta-publica-api.saude.gov.br/v1";
@@ -48,7 +49,8 @@ async function main() {
   const arg = process.argv[2];
   if (arg) { for (const ano of ANOS) console.log(`${arg} ${ano}:`, JSON.stringify(saudeDe(await getIndic(arg.slice(0, 6), ano)))); await db.end(); return; }
 
-  const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' ORDER BY cod_ibge`)).rows;
+  // só os municípios da UF alvo (prefixo do cod_ibge = código da UF) — nacional-safe.
+  const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' AND left(cod_ibge,2)=$1 ORDER BY cod_ibge`, [COD_ESTADO])).rows;
   const feitos = process.env.REFRESH === "1" ? new Set() : new Set((await db.query(`SELECT cod_ibge||'-'||ano k FROM siops_sc`)).rows.map((r) => r.k));
   let n = 0;
   await pool(entes, 4, async (e) => {
@@ -65,8 +67,11 @@ async function main() {
       n++;
     }
   });
-  const c = await db.query(`SELECT count(*) linhas, count(DISTINCT cod_ibge) entes, count(*) FILTER (WHERE saude_pct<15) abaixo FROM siops_sc`);
-  console.log(`Concluído: ${n} novas | ${JSON.stringify(c.rows[0])}`);
+  // VERIFICAÇÃO — piso constitucional da saúde: a LC 141 obriga o município a aplicar ≥15% da receita PRÓPRIA de
+  // impostos em ASPS. `abaixo` = quantos ficaram sob 15% (descumprimento constitucional → alerta ao gestor/controle).
+  // POR QUÊ 15% e não outro: é o mínimo fixado pela Constituição (art.198 §2º III) e detalhado pela LC 141/2012.
+  const c = await db.query(`SELECT count(*) linhas, count(DISTINCT cod_ibge) entes, count(*) FILTER (WHERE saude_pct<15) abaixo_do_piso FROM siops_sc WHERE left(cod_ibge,2)=$1`, [COD_ESTADO]);
+  console.log(`${NOME_ESTADO} — concluído: ${n} novas | ${JSON.stringify(c.rows[0])}`);
   await db.end();
 }
 main().catch((e) => { console.error("ERRO:", e); process.exit(1); });

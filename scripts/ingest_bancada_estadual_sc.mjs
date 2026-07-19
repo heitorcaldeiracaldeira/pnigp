@@ -2,6 +2,7 @@
 // Roster = candidatos cargo 7 com situação "ELEITO ..." (QP/Média). Votos por município no mesmo passo.
 // node scripts/ingest_bancada_estadual_sc.mjs
 import fs from "fs"; import pg from "pg"; import readline from "readline"; import { spawn } from "child_process";
+import { SG_UF } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP (era 'SC' fixo)
 const DATABASE_URL = fs.readFileSync("C:/Users/PC/pnigp/.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const DIR = "C:/Users/PC/AppData/Local/Temp/claude/C--Users-PC/ba9cc77b-9f1b-4cbc-90a2-e9a04839ff68/scratchpad";
 const ZIP = `${DIR}/tse2022.zip`, MEMBRO = "votacao_candidato_munzona_2022_SC.csv";
@@ -24,7 +25,7 @@ async function main() {
     if (!line) continue; const c = line.split(";").map((x) => x.replace(/^"|"$/g, ""));
     if (idx === null) { const h = c.map((x) => x.trim().toUpperCase()); idx = { cargo: h.indexOf("CD_CARGO"), turno: h.indexOf("NR_TURNO"), uf: h.indexOf("SG_UF"), mun: h.indexOf("NM_MUNICIPIO"), sq: h.indexOf("SQ_CANDIDATO"), urna: h.indexOf("NM_URNA_CANDIDATO"), part: h.indexOf("SG_PARTIDO"), sit: h.indexOf("DS_SIT_TOT_TURNO"), votos: h.indexOf("QT_VOTOS_NOMINAIS") }; continue; }
     linhas++;
-    if (idx.uf >= 0 && c[idx.uf] !== "SC") continue;
+    if (idx.uf >= 0 && c[idx.uf] !== SG_UF) continue;
     if (c[idx.cargo] !== "7") continue; // 7 = Deputado Estadual
     if (idx.turno >= 0 && c[idx.turno] !== "1") continue;
     const sit = c[idx.sit] || "";

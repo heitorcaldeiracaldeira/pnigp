@@ -3,6 +3,7 @@
 // →proponente SC; emenda.ID_PROPOSTA→convenio. Tabela emendas_indicacao_sc (a execução orçamentária federal vem do
 // coletor Portal em emendas_execucao_sc — tabelas SEPARADAS, sem clobber). Idempotente. node scripts/ingest_emendas_siconv_sc.mjs
 import fs from "fs"; import path from "path"; import zlib from "zlib"; import { fileURLToPath } from "url"; import pg from "pg";
+import { SG_UF } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP (era 'SC' fixo)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const BASE = "https://repositorio.dados.gov.br/seges/detru";
@@ -45,7 +46,7 @@ async function main() {
   const pr = parse(await baixarCsv("siconv_proponentes.csv.zip"));
   const pCnpj = ix(pr.head, "IDENTIF_PROPONENTE"), pUf = ix(pr.head, "UF_PROPONENTE"), pMun = ix(pr.head, "MUNICIPIO_PROPONENTE");
   const cnpjSC = new Map(); // CNPJ → {cod_ibge, municipio}
-  for (let i = 1; i < pr.linhas.length; i++) { if (!pr.linhas[i]) continue; const c = pr.linhas[i].split(";"); if ((c[pUf] || "").replace(/"/g, "").trim() !== "SC") continue; const cnpj = dig(c[pCnpj]); const mun = (c[pMun] || "").replace(/"/g, "").trim(); cnpjSC.set(cnpj, { cod: mapMun.get(norm(mun)) || null, municipio: mun }); }
+  for (let i = 1; i < pr.linhas.length; i++) { if (!pr.linhas[i]) continue; const c = pr.linhas[i].split(";"); if ((c[pUf] || "").replace(/"/g, "").trim() !== SG_UF) continue; const cnpj = dig(c[pCnpj]); const mun = (c[pMun] || "").replace(/"/g, "").trim(); cnpjSC.set(cnpj, { cod: mapMun.get(norm(mun)) || null, municipio: mun }); }
   console.log(`proponentes SC: ${cnpjSC.size}`);
 
   console.log("baixando convênios…");

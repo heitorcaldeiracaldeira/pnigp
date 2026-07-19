@@ -2,6 +2,7 @@
 // Fonte: minhareceita.org (base Receita Federal). Cache em cnpj_loc, idempotente/resumível, rate-limited.
 // node scripts/ingest_cnpj_loc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { SG_UF } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP (era 'SC' fixo)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
@@ -51,7 +52,7 @@ async function main() {
   await Promise.all(Array.from({ length: CONC }, async () => {
     while (i < pend.length) { await gravar(pend[i++]); await sleep(120); }
   }));
-  const c = await db.query(`SELECT count(*) total, count(*) FILTER(WHERE uf='SC') sc, count(*) FILTER(WHERE uf IS NOT NULL AND uf<>'SC') fora FROM cnpj_loc`);
+  const c = await db.query(`SELECT count(*) total, count(*) FILTER(WHERE uf='${SG_UF}') sc, count(*) FILTER(WHERE uf IS NOT NULL AND uf<>'${SG_UF}') fora FROM cnpj_loc`);
   console.log(`Concluído: ${ok} resolvidos, ${falha} falhas. Cache: ${JSON.stringify(c.rows[0])}`);
   await db.end();
 }

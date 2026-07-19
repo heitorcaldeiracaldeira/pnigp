@@ -2,6 +2,7 @@
 // (leisure=pitch/sports_centre/stadium/track/fitness_station) → coords reais. Município por centróide mais próximo.
 // Alimenta o mapa (camada "esporte") + a seção Equipamentos na aba Esporte. node scripts/ingest_equipamentos_esporte_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { SG_UF } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP (era 'SC' fixo)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const UA = "pnigp-i10/1.0 (institutoi10; i10.ai@i10.org.br)";
@@ -34,7 +35,7 @@ async function main() {
   db.on("error", () => {});
   await db.query(`CREATE TABLE IF NOT EXISTS equipamentos_esporte_sc (id TEXT PRIMARY KEY, cat TEXT, nome TEXT, tipo TEXT, cod_ibge TEXT, municipio TEXT, latitude DOUBLE PRECISION, longitude DOUBLE PRECISION, fonte TEXT, atualizado timestamptz DEFAULT now())`);
   const q = async (s, p) => { for (let t = 0; t < 6; t++) { try { return await db.query(s, p); } catch { await sleep(1000 * (t + 1)); } } throw new Error("db"); };
-  const ents = (await db.query(`SELECT cod_ibge, nome, latitude, longitude FROM entes_sc WHERE tipo='M' AND uf='SC' AND latitude IS NOT NULL`)).rows.map((e) => ({ ...e, latitude: Number(e.latitude), longitude: Number(e.longitude) }));
+  const ents = (await db.query(`SELECT cod_ibge, nome, latitude, longitude FROM entes_sc WHERE tipo='M' AND uf='${SG_UF}' AND latitude IS NOT NULL`)).rows.map((e) => ({ ...e, latitude: Number(e.latitude), longitude: Number(e.longitude) }));
   const nearest = (lat, lon) => { let best = null, bd = Infinity; for (const e of ents) { const d = hav(lat, lon, e.latitude, e.longitude); if (d < bd) { bd = d; best = e; } } return best; };
 
   const els = await overpass();

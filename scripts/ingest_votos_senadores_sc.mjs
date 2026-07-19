@@ -3,6 +3,7 @@
 // Mapa (bancada → titular eleito + ano): Amin=titular 2018; Hermes Klann=suplente de Jorge Seif (2022); Ivete da Silveira=suplente de Dário Berger (2018).
 // node scripts/ingest_votos_senadores_sc.mjs
 import fs from "fs"; import pg from "pg"; import readline from "readline"; import { spawn } from "child_process";
+import { SG_UF } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP (era 'SC' fixo)
 const DATABASE_URL = fs.readFileSync("C:/Users/PC/pnigp/.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const DIR = "C:/Users/PC/AppData/Local/Temp/claude/C--Users-PC/ba9cc77b-9f1b-4cbc-90a2-e9a04839ff68/scratchpad";
 const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z0-9 ]/g, "").replace(/\s+/g, " ").trim();
@@ -18,7 +19,7 @@ async function main() {
   db.on("error", () => {});
   await db.query(`CREATE TABLE IF NOT EXISTS votos_bancada_sc (bancada_id TEXT, cod_ibge TEXT, votos INT, atualizado timestamptz DEFAULT now(), PRIMARY KEY (bancada_id, cod_ibge))`);
   const q = async (s, p) => { for (let t = 0; t < 6; t++) { try { return await db.query(s, p); } catch { await new Promise((r) => setTimeout(r, 800 * (t + 1))); } } throw new Error("db"); };
-  const banc = (await db.query(`SELECT id, nome FROM bancada_federal_sc WHERE uf='SC' AND casa='senado'`)).rows;
+  const banc = (await db.query(`SELECT id, nome FROM bancada_federal_sc WHERE uf='${SG_UF}' AND casa='senado'`)).rows;
   const idDe = (nome) => banc.find((b) => norm(b.nome) === norm(nome))?.id;
   const munToCod = new Map((await db.query(`SELECT cod_ibge, nome FROM entes_sc WHERE tipo='M'`)).rows.map((e) => [norm(e.nome), e.cod_ibge]));
 
@@ -38,7 +39,7 @@ async function main() {
       if (!line) continue; const c = line.split(";").map((x) => x.replace(/^"|"$/g, ""));
       if (idx === null) { const h = c.map((x) => x.trim().toUpperCase()); idx = { cargo: h.indexOf("CD_CARGO"), turno: h.indexOf("NR_TURNO"), mun: h.indexOf("NM_MUNICIPIO"), nm: h.indexOf("NM_CANDIDATO"), urna: h.indexOf("NM_URNA_CANDIDATO"), votos: h.indexOf("QT_VOTOS_NOMINAIS"), uf: h.indexOf("SG_UF") }; continue; }
       linhas++;
-      if (idx.uf >= 0 && c[idx.uf] !== "SC") continue;
+      if (idx.uf >= 0 && c[idx.uf] !== SG_UF) continue;
       if (c[idx.cargo] !== "5") continue; // 5 = Senador
       if (idx.turno >= 0 && c[idx.turno] !== "1") continue;
       const cn = new Set(norm(c[idx.nm]).split(" ").filter((t) => t.length > 2));

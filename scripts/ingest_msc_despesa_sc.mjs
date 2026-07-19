@@ -2,6 +2,7 @@
 // o RREO dá a MAGNITUDE (total oficial exato). Ancoramos a forma ao total → reconcilia por construção.
 // node scripts/ingest_msc_despesa_sc.mjs   (ANO opcional=2024; ENTES opcional=lista; SO_FLORIPA=1 p/ teste)
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { SG_UF } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP (era 'SC' fixo)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const MSC = "https://apidatalake.tesouro.gov.br/ords/siconfi/tt/msc_orcamentaria";
@@ -45,7 +46,7 @@ async function main() {
   db.on("error", () => {});
   await db.query(`CREATE TABLE IF NOT EXISTS msc_despesa_sc (cod_ibge TEXT, ano INT, tipo TEXT, categoria TEXT, valor NUMERIC, total_rreo NUMERIC, atualizado timestamptz DEFAULT now(), PRIMARY KEY (cod_ibge, ano, tipo, categoria))`);
   const q = async (s, p) => { for (let t = 0; t < 6; t++) { try { return await db.query(s, p); } catch { await sleep(1000 * (t + 1)); } } throw new Error("db"); };
-  let entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' AND uf='SC' ORDER BY cod_ibge`)).rows.map((r) => r.cod_ibge);
+  let entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' AND uf=$1 ORDER BY cod_ibge`, [SG_UF])).rows.map((r) => r.cod_ibge);
   if (process.env.SO_FLORIPA) entes = ["4205407"];
   if (process.env.ENTES) entes = process.env.ENTES.split(",");
 

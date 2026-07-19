@@ -69,7 +69,9 @@ await Promise.all(Array.from({ length: CONC }, async () => {
       // ── cat 6 (Inclusão/Retificação): o evento JÁ TRAZ o tipo. Só o 16 ("Outros Documentos") tem ata.
       else if (e.categoria === 6) {
         const vale = /outros documentos/i.test(String(e.documento_tipo || ""));
-        if (!DRY) await q(`UPDATE pncp_evento SET alvo_download=$1 WHERE ctid=$2`, [vale, e.ctid]);
+        // marca alvo_download E consumido_dado NA MESMA UPDATE: a UPDATE move a linha (novo ctid), então a marcação
+        // genérica lá embaixo (WHERE ctid=<antigo>) erraria o alvo e o evento voltaria eterno na fila. Aqui já resolve.
+        if (!DRY) await q(`UPDATE pncp_evento SET alvo_download=$1, consumido_dado=now() WHERE ctid=$2`, [vale, e.ctid]);
         feito.doc++;
       }
       // ── cat 5: RESULTADO publicado → busca só ESTE item. É o evento que mais vale.

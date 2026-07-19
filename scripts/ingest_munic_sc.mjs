@@ -2,6 +2,7 @@
 // "tem/não tem" planos e conselhos municipais (vários são pré-requisito p/ transferências federais → captação).
 // Truque: tabelas SIDRA "Municípios COM X" só retornam quem TEM → presença = tem. node scripts/ingest_munic_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { SG_UF } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP (era 'SC' fixo)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
@@ -52,7 +53,7 @@ async function main() {
   db.on("error", () => {});
   await db.query(`CREATE TABLE IF NOT EXISTS munic_sc (cod_ibge TEXT, indicador TEXT, grupo TEXT, label TEXT, tem BOOLEAN, atualizado timestamptz DEFAULT now(), PRIMARY KEY (cod_ibge, indicador))`);
   const q = async (s, p) => { for (let t = 0; t < 6; t++) { try { return await db.query(s, p); } catch { await sleep(1000 * (t + 1)); } } throw new Error("db"); };
-  const muns = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' AND uf='SC'`)).rows.map((r) => r.cod_ibge);
+  const muns = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' AND uf='${SG_UF}'`)).rows.map((r) => r.cod_ibge);
   for (const ind of IND) {
     const com = await municipiosCom(ind.tab);
     if (!com) { console.log(`  [falha] ${ind.ch} (t/${ind.tab})`); continue; }

@@ -2,6 +2,7 @@
 // em $CLAUDE_JOB_DIR/tmp via readline (streaming, sem OOM). proposta(714MB)→ID_PROPOSTA SC; convenio→valores/execução.
 // node scripts/ingest_convenios_siconv_sc.mjs
 import fs from "fs"; import path from "path"; import readline from "readline"; import { fileURLToPath } from "url"; import pg from "pg";
+import { SG_UF } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP (era 'SC' fixo)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const TMP = process.env.CLAUDE_JOB_DIR ? path.join(process.env.CLAUDE_JOB_DIR, "tmp") : ".";
@@ -28,7 +29,7 @@ async function main() {
   const ph = await header(fProp); const pId = ix(ph, "ID_PROPOSTA"), pUf = ix(ph, "UF_PROPONENTE"), pMun = ix(ph, "MUNIC_PROPONENTE"), pIbge = ix(ph, "COD_MUNIC_IBGE");
   const propSC = new Map(); let pl = 0;
   { const rl = readline.createInterface({ input: fs.createReadStream(fProp, "utf8") }); let first = true;
-    for await (const line of rl) { if (first) { first = false; continue; } if (!line) continue; const c = line.split(";"); if ((c[pUf] || "").replace(/"/g, "").trim() !== "SC") continue;
+    for await (const line of rl) { if (first) { first = false; continue; } if (!line) continue; const c = line.split(";"); if ((c[pUf] || "").replace(/"/g, "").trim() !== SG_UF) continue;
       const cod = ibge.get(String(c[pIbge] || "").replace(/\D/g, "").slice(0, 6)) || null;
       propSC.set((c[pId] || "").replace(/"/g, "").trim(), { cod, mun: (c[pMun] || "").replace(/"/g, "").trim() }); pl++; } }
   console.log(`propostas SC: ${propSC.size}`);

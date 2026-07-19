@@ -3,6 +3,7 @@
 // Truque: codigo_ibge ENTRE ASPAS; pega o ÚLTIMO período COM dado (202612 = mês futuro, vem vazio). Grava em assistencia_social_sc.
 // node scripts/ingest_bpc_sc.mjs
 import fs from "fs"; import pg from "pg";
+import { SG_UF } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP (era 'SC' fixo)
 const DATABASE_URL = fs.readFileSync("C:/Users/PC/pnigp/.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const BASE = "https://aplicacoes.mds.gov.br/sagi/servicos/misocial";
 const FL = "anomes_s,bpc_ben_i,bpc_val_f,bpc_residencia_quantidade_idosos_i,bpc_residencia_quantidade_deficientes_i";
@@ -31,7 +32,7 @@ async function main() {
   for (const c of ["bpc_beneficiarios NUMERIC", "bpc_valor NUMERIC", "bpc_idosos NUMERIC", "bpc_deficientes NUMERIC", "bpc_anomes TEXT"])
     await db.query(`ALTER TABLE assistencia_social_sc ADD COLUMN IF NOT EXISTS ${c}`);
   const q = async (s, p) => { for (let t = 0; t < 6; t++) { try { return await db.query(s, p); } catch { await sleep(1000 * (t + 1)); } } throw new Error("db"); };
-  const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' AND uf='SC' ORDER BY cod_ibge`)).rows;
+  const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' AND uf='${SG_UF}' ORDER BY cod_ibge`)).rows;
   let ok = 0;
   for (const e of entes) {
     const d = await bpcDe(String(e.cod_ibge).slice(0, 6));

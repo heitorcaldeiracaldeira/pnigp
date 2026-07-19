@@ -83,13 +83,18 @@ async function main() {
     : UNIVERSO === "todos" ? `a.uri IS NOT NULL` : whereUniversoDoc("a");
   const ordemSQL = UNIVERSO === "criacao" ? `array_position(ARRAY[${CRIACAO.join(",")}], a.tipo_documento_id), a.data_publicacao DESC NULLS LAST`
     : UNIVERSO === "todos" ? `a.data_publicacao DESC NULLS LAST` : ordemFilaDoc("a");
+  // SHARD (opcional): NSHARD>1 particiona o trabalho por hash da chave → N processos paralelos SEM sobreposição
+  // (cada um pega uma fatia disjunta). Guardado por env: sem NSHARD, o comportamento é idêntico ao de antes.
+  const NSHARD = Number(process.env.NSHARD || 0), SHARD = Number(process.env.SHARD || 0);
+  const shardSQL = NSHARD > 1 ? `AND ((hashtext(a.numero_controle || '#' || a.sequencial_documento::text) % ${NSHARD}) + ${NSHARD}) % ${NSHARD} = ${SHARD}` : "";
   const docs = (await q(`SELECT a.cnpj,a.ano,a.seq,a.sequencial_documento,a.cod_ibge,a.tipo_documento,a.titulo,a.uri
     FROM arquivos_sc a
     WHERE ${universoSQL}
       AND NOT EXISTS (SELECT 1 FROM arquivo_texto_sc d WHERE d.cnpj=a.cnpj AND d.ano=a.ano AND d.seq=a.seq AND d.sequencial_documento=a.sequencial_documento)
+      ${shardSQL}
     ORDER BY ${ordemSQL}
     ${LIMIT ? "LIMIT " + LIMIT : ""}`)).rows;
-  console.log(`${docs.length.toLocaleString()} documentos a baixar (universo=${UNIVERSO}) · conc ${CONC}`);
+  console.log(`${docs.length.toLocaleString()} documentos a baixar (universo=${UNIVERSO}) · conc ${CONC}${NSHARD>1?` · shard ${SHARD}/${NSHARD}`:""}`);
 
   let ok = 0, vazio = 0, i = 0, done = 0, erros = 0;
   await Promise.all(Array.from({ length: CONC }, async () => {

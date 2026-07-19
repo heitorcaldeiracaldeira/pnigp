@@ -2,6 +2,7 @@
 // Fonte: TSE perfil_comparecimento_abstencao 2022 (QT_APTOS por município/zona, turno 1).
 // node scripts/ingest_eleitorado_sc.mjs
 import fs from "fs"; import pg from "pg"; import readline from "readline"; import { spawn } from "child_process";
+import { SG_UF } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP (era 'SC' fixo)
 const DATABASE_URL = fs.readFileSync("C:/Users/PC/pnigp/.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const DIR = "C:/Users/PC/AppData/Local/Temp/claude/C--Users-PC/ba9cc77b-9f1b-4cbc-90a2-e9a04839ff68/scratchpad";
 const ZIP = `${DIR}/comparecimento2022.zip`, MEMBRO = "perfil_comparecimento_abstencao_2022_SC.csv";
@@ -22,7 +23,7 @@ async function main() {
     if (!line) continue; const c = line.split(";").map((x) => x.replace(/^"|"$/g, ""));
     if (idx === null) { const h = c.map((x) => x.trim().toUpperCase()); idx = { turno: h.indexOf("NR_TURNO"), uf: h.indexOf("SG_UF"), mun: h.indexOf("NM_MUNICIPIO"), aptos: h.indexOf("QT_APTOS") }; continue; }
     linhas++;
-    if (idx.uf >= 0 && c[idx.uf] !== "SC") continue;
+    if (idx.uf >= 0 && c[idx.uf] !== SG_UF) continue;
     if (idx.turno >= 0 && c[idx.turno] !== "1") continue; // 1º turno = eleitorado total
     const cod = munToCod.get(norm(c[idx.mun])); if (!cod) continue;
     acc.set(cod, (acc.get(cod) || 0) + (parseInt(c[idx.aptos], 10) || 0));

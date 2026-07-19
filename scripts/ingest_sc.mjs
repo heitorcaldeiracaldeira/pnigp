@@ -152,7 +152,7 @@ async function main() {
     }
     if (gravou) {
       await client.query(
-        `INSERT INTO entes_sc (cod_ibge,nome,uf,tipo,populacao) VALUES ($1,$2,'SC',$3,$4)
+        `INSERT INTO entes_sc (cod_ibge,nome,uf,tipo,populacao) VALUES ($1,$2,'${SG_UF}',$3,$4)
          ON CONFLICT (cod_ibge) DO UPDATE SET nome=EXCLUDED.nome,populacao=EXCLUDED.populacao`,
         [e.cod, e.nome, e.tipo, pop],
       );

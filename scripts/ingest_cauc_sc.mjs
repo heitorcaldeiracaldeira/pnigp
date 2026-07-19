@@ -54,7 +54,7 @@ async function main() {
     const dataPesq = dataM ? dataM[1].split("/").reverse().join("-") : null;
     for (let r = hi + 1; r < lines.length; r++) {
       const c = splitCsv(lines[r]);
-      if (c[0] !== "SC") continue;
+      if (c[0] !== SG_UF) continue;
       const ibge = (c[2] || "").replace(/\D/g, "");
       const cod = esfera === "E" ? COD_ESTADO : cod6.get(ibge.slice(0, 6));
       if (!cod) continue;

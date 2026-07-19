@@ -2,6 +2,7 @@
 // por função, por município. Tabela SEPARADA da anual (despesa_subfuncao_sc) p/ NÃO contaminar as análises de ano fechado.
 // node scripts/ingest_acompanhamento_funcao_sc.mjs   (ANO opcional = ano corrente)
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { SG_UF } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP (era 'SC' fixo)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const SIC = "https://apidatalake.tesouro.gov.br/ords/siconfi/tt/rreo";
@@ -40,7 +41,7 @@ async function main() {
   db.on("error", () => {});
   await db.query(`CREATE TABLE IF NOT EXISTS acompanhamento_funcao_sc (cod_ibge TEXT, ano INT, bimestre INT, funcao TEXT, dotacao NUMERIC, empenhado NUMERIC, atualizado timestamptz DEFAULT now(), PRIMARY KEY (cod_ibge, ano, funcao))`);
   const q = async (s, p) => { for (let t = 0; t < 6; t++) { try { return await db.query(s, p); } catch { await sleep(1000 * (t + 1)); } } throw new Error("db"); };
-  const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' AND uf='SC' ORDER BY cod_ibge`)).rows;
+  const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' AND uf=$1 ORDER BY cod_ibge`, [SG_UF])).rows;
   // último bimestre publicado (testa 6..1 no 1º ente)
   let bim = 0;
   for (let p = 6; p >= 1; p--) { const it = await fetchAnexo(ANO, p, entes[0].cod_ibge); if (it && it.length) { bim = p; break; } }

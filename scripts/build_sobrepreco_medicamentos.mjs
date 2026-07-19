@@ -3,6 +3,7 @@
 // (o teto mais permissivo), e flaga só quando paga > teto × 1,15. SC = PMVG 17%. Framing: INDÍCIO, a verificar.
 // node scripts/build_sobrepreco_medicamentos.mjs
 import fs from "fs"; import pg from "pg";
+import { SG_UF } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP (era 'SC' fixo)
 const DATABASE_URL = fs.readFileSync("C:/Users/PC/pnigp/.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const MARGEM = 1.15;
 const STOP = new Set(["DE", "DA", "DO", "COM", "SEM", "SOB", "FORMA", "ACETATO", "CLORIDRATO", "SODICO", "SODICA", "MONOIDRATADA", "DICLORIDRATO", "SULFATO", "MALEATO", "BESILATO", "FUMARATO", "POTASSICO", "POTASSIO", "CALCICO", "ASSOCIADA", "ASSOCIADO"]);
@@ -28,7 +29,7 @@ async function main() {
   await db.query(`TRUNCATE sobrepreco_medicamentos_sc`);
   await db.query(`CREATE INDEX IF NOT EXISTS ix_sobremed_cod ON sobrepreco_medicamentos_sc(cod_ibge)`);
 
-  const entes = (await q(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' AND uf='SC'`)).rows;
+  const entes = (await q(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' AND uf='${SG_UF}'`)).rows;
   let totMun = 0, totFlag = 0;
   for (const e of entes) {
     const it = (await q(`SELECT descricao, unit_homologado, sum(quantidade) qtd FROM itens_sc

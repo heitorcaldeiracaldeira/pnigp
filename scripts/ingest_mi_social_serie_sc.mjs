@@ -2,6 +2,7 @@
 // Insumo do moat (granular + série + demografia). Indicadores curados; todos os meses disponíveis (desde ~2004). Bulk insert via UNNEST.
 // Truque: codigo_ibge ENTRE ASPAS. node scripts/ingest_mi_social_serie_sc.mjs
 import fs from "fs"; import pg from "pg";
+import { SG_UF } from "./_uf.mjs";   // NACIONAL-READY: UF=SP roda SP (era 'SC' fixo)
 const DATABASE_URL = fs.readFileSync("C:/Users/PC/pnigp/.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const BASE = "https://aplicacoes.mds.gov.br/sagi/servicos/misocial";
 // indicador curado -> campo no Solr
@@ -35,7 +36,7 @@ async function main() {
   db.on("error", () => {});
   await db.query(`CREATE TABLE IF NOT EXISTS mi_social_serie_sc (cod_ibge TEXT, anomes TEXT, indicador TEXT, valor NUMERIC, PRIMARY KEY (cod_ibge, anomes, indicador))`);
   const q = async (s, p) => { for (let t = 0; t < 6; t++) { try { return await db.query(s, p); } catch { await sleep(1000 * (t + 1)); } } throw new Error("db"); };
-  const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' AND uf='SC' ORDER BY cod_ibge`)).rows;
+  const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' AND uf='${SG_UF}' ORDER BY cod_ibge`)).rows;
   let ok = 0, linhas = 0;
   for (const e of entes) {
     const docs = await serieDe(String(e.cod_ibge).slice(0, 6));
