@@ -5,6 +5,7 @@
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
 import { PARSER_VERSAO } from "./parser_versao.mjs";
 import { parseAtaEcustomize } from "./parser_ecustomize.mjs";
+import { casaItens } from "./parser_az.mjs";   // casa a proposta ao item do PNCP pela DESCRIÇÃO (conserto do bug do código)
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); const ROOT = path.join(__dirname, "..");
 const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const LIMIT = Number(process.env.LIMIT || 0);
@@ -66,16 +67,24 @@ async function main() {
       const porChave = new Map();
       for (const r of recs) { const k = r.codigo + "|" + r.cnpj; const cur = porChave.get(k); if (!cur || r.valorUnitario < cur.valorUnitario) porChave.set(k, r); }
       const props = [...porChave.values()];
+      // 🔴 CONSERTO (proposta no item errado, medido 33,4% dos processos): NÃO usar r.codigo — o curCodigo do PDF não
+      // avança e joga tudo no item 1. Casar cada proposta ao item do PNCP pela DESCRIÇÃO (produto → itens_sc.descricao,
+      // casaItens MIN_SIM=0.6). Sem casar → dropa (a lista de itens é a AUTORITATIVA, da API). Ver pnigp-proposta-item-errado.
+      const apiItens = (await q(`SELECT numero, descricao, cnpj_fornecedor, situacao FROM itens_sc WHERE cnpj=$1 AND ano=$2 AND seq=$3`, [e.cnpj, e.ano, e.seq])).rows
+        .map((r) => ({ numero: Number(r.numero), descricao: r.descricao, cnpj_fornecedor: r.cnpj_fornecedor, situacao: r.situacao }));
+      const casados = casaItens(props.map((r) => ({ item: r.codigo, descricao: r.produto })), apiItens);
+      props.forEach((r, i) => { r._numero = casados[i]?.numero ?? null; });
+      const propsOk = props.filter((r) => r._numero != null);   // sem casar pela DESCRIÇÃO → NÃO grava (item errado, não)
       // lotes
       const P = { num: [], forn: [], cnpj: [], mar: [], mod: [], val: [], vt: [], dh: [], cls: [] };
       const L = { num: [], ord: [], forn: [], val: [], dh: [] };
       const vencPorItem = new Map();
       let ord = 0;
-      for (const r of props) {
-        P.num.push(r.codigo); P.forn.push(String(r.fornecedor || "").slice(0, 160) || "—"); P.cnpj.push(r.cnpj || null);
+      for (const r of propsOk) {
+        P.num.push(r._numero); P.forn.push(String(r.fornecedor || "").slice(0, 160) || "—"); P.cnpj.push(r.cnpj || null);
         P.mar.push(r.marca ? String(r.marca).slice(0, 80) : null); P.mod.push(r.modelo ? String(r.modelo).slice(0, 80) : null);
         P.val.push(r.valorUnitario || null); P.vt.push(r.valorTotal || null); P.dh.push(r.dataHora || null); P.cls.push(!!r.classificado);
-        ord++; L.num.push(r.codigo); L.ord.push(ord); L.forn.push(String(r.fornecedor || "").slice(0, 160) || "—"); L.val.push(r.valorUnitario || null); L.dh.push(r.dataHora || null);
+        ord++; L.num.push(r._numero); L.ord.push(ord); L.forn.push(String(r.fornecedor || "").slice(0, 160) || "—"); L.val.push(r.valorUnitario || null); L.dh.push(r.dataHora || null);
         // (vencedor NÃO se deduz aqui — ver abaixo: quem venceu é o que a API informa)
       }
       if (P.num.length) {
@@ -101,15 +110,13 @@ async function main() {
         // Dado errado é pior que dado faltando: o banco de sucesso recomendaria uma marca que o município não comprou.
         // Agora: casa por CNPJ do vencedor da API. Sem casar (o vencedor não tem proposta identificável na ata, ex.:
         // ganhou só na fase de lances) → NÃO grava marca. Ausência é honesta; atribuição errada, não.
-        const vencAPI = new Map();   // numeroItem -> cnpj do vencedor, direto da API
-        for (const it of (await q(`SELECT numero, cnpj_fornecedor FROM itens_sc
-              WHERE cnpj=$1 AND ano=$2 AND seq=$3 AND situacao='Homologado' AND cnpj_fornecedor IS NOT NULL`,
-              [e.cnpj, e.ano, e.seq])).rows) vencAPI.set(it.numero, String(it.cnpj_fornecedor).replace(/\D/g, ""));
-        for (const r of props) {
-          const alvo = vencAPI.get(r.codigo);
+        const vencAPI = new Map();   // numeroItem (REAL) -> cnpj do vencedor, direto da API
+        for (const it of apiItens) if (it.situacao === "Homologado" && it.cnpj_fornecedor) vencAPI.set(it.numero, String(it.cnpj_fornecedor).replace(/\D/g, ""));
+        for (const r of propsOk) {
+          const alvo = vencAPI.get(r._numero);
           if (!alvo || !r.cnpj) continue;
           if (String(r.cnpj).replace(/\D/g, "") !== alvo) continue;   // proposta de outro licitante: ignora
-          vencPorItem.set(r.codigo, r);
+          vencPorItem.set(r._numero, r);
         }
         const M = { num: [], mar: [], mod: [], val: [] };
         for (const [cod, r] of vencPorItem) { M.num.push(cod); M.mar.push(r.marca ? String(r.marca).slice(0, 80) : null); M.mod.push(r.modelo ? String(r.modelo).slice(0, 80) : null); M.val.push(r.valorUnitario || null); }

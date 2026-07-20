@@ -6,6 +6,7 @@
 // 1 INSERT/ata via unnest, pool max 3), cache de LLM, robusto a erro (não marca feito em falha). node scripts/ingest_marca_atas_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
 import { z } from "zod"; import { generateObject } from "ai";
+import { casaItens } from "./parser_az.mjs";   // casa o item da ata ao do PNCP pela DESCRIÇÃO (conserto do bug do código)
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); const ROOT = path.join(__dirname, "..");
 for (const f of [path.join(ROOT, ".env.ai"), path.join(ROOT, ".env.local")])
   try { for (const l of fs.readFileSync(f, "utf8").split("\n")) { const m = l.match(/^([A-Z_]+)=(.*)$/); if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^"|"$/g, ""); } } catch {}
@@ -14,6 +15,7 @@ const MODEL = anthropic(process.env.RERANK_MODEL_ANTHROPIC || "claude-haiku-4-5"
 const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const CONC = Number(process.env.CONC || 3);
 const LIMIT = Number(process.env.LIMIT || 0);
+const GATE = process.env.GATE_MARCA === "1";   // modo resíduo: só processos cujo doc TEM o token 'marca' (Haiku só onde a marca existe no papel)
 const CACHE = path.join(__dirname, "_marca_atas_cache.json");
 const cache = fs.existsSync(CACHE) ? JSON.parse(fs.readFileSync(CACHE, "utf8")) : {};
 let dirty = 0; const saveCache = () => { fs.writeFileSync(CACHE, JSON.stringify(cache)); dirty = 0; };
@@ -92,9 +94,14 @@ async function main() {
   await q(`CREATE TABLE IF NOT EXISTS marca_ata_feitas (cnpj TEXT, ano INT, seq INT, n_propostas INT, feito_em timestamptz DEFAULT now(), PRIMARY KEY (cnpj,ano,seq))`);
 
   // universo: atas com TEXTO já materializado, ainda não extraídas. Lê o texto GUARDADO — não re-baixa do PNCP.
+  // MODALIDADES=8,9,12 restringe às modalidades SEM parser determinístico (dispensa/inexig/credenciamento) — o LLM
+  // é o catch-all agnóstico de formato; o determinístico cobre pregão/concorrência de graça. Sem env = todas.
+  const MODS = process.env.MODALIDADES ? process.env.MODALIDADES.split(",").map((x) => parseInt(x, 10)).filter(Boolean) : null;
+  const modFiltro = MODS ? `AND EXISTS (SELECT 1 FROM contratacoes_sc c WHERE c.cnpj=d.cnpj AND c.ano=d.ano AND c.seq=d.seq AND c.modalidade_id = ANY(ARRAY[${MODS.join(",")}]))` : "";
   const atas = (await q(`SELECT d.cnpj,d.ano,d.seq,d.cod_ibge,(array_agg(d.texto ORDER BY d.sequencial_documento DESC))[1] texto
     FROM arquivo_texto_sc d WHERE d.chars > 50
       AND NOT EXISTS (SELECT 1 FROM marca_ata_feitas f WHERE f.cnpj=d.cnpj AND f.ano=d.ano AND f.seq=d.seq)
+      ${modFiltro}
     GROUP BY d.cnpj,d.ano,d.seq,d.cod_ibge ${LIMIT ? "LIMIT " + LIMIT : ""}`)).rows;
   console.log(`${atas.length.toLocaleString()} atas a extrair (texto guardado) · conc ${CONC}`);
 
@@ -119,8 +126,15 @@ async function main() {
             porItem.set(cod, cur);
           }
         }
-        // nossos itens (para validar código e pegar a descrição oficial)
-        const nossos = new Map((await q(`SELECT numero, descricao FROM itens_sc WHERE cnpj=$1 AND ano=$2 AND seq=$3`, [e.cnpj, e.ano, e.seq])).rows.map((r) => [Number(r.numero), r.descricao]));
+        // nossos itens do PNCP — a lista AUTORITATIVA (numero + descrição oficial)
+        const nossosRows = (await q(`SELECT numero, descricao FROM itens_sc WHERE cnpj=$1 AND ano=$2 AND seq=$3`, [e.cnpj, e.ano, e.seq])).rows;
+        const nossos = new Map(nossosRows.map((r) => [Number(r.numero), r.descricao]));
+        // 🔴 CONSERTO (proposta no item errado, medido 33,4% dos processos): NÃO confiar no código da ata — o LLM/parser
+        // desalinha e joga tudo no item 1. Casar o item da ata ao do PNCP pela DESCRIÇÃO (casaItens, MIN_SIM=0.6). Sem
+        // casar → dropa (melhor perder do que pendurar a marca no item errado). Ver [[pnigp-proposta-item-errado]].
+        const itensApi = nossosRows.map((r) => ({ numero: Number(r.numero), descricao: r.descricao }));
+        const regsMatch = [...porItem].map(([cod, d]) => ({ item: cod, descricao: d.descricao || nossos.get(cod) || "" }));
+        const codParaNumero = new Map(casaItens(regsMatch, itensApi).map((r) => [r.item, r.numero]));
 
         // —— monta lotes ——
         const P = { num: [], desc: [], forn: [], mar: [], mod: [], val: [], cls: [] };  // propostas
@@ -128,8 +142,9 @@ async function main() {
         const L = { num: [], ord: [], forn: [], val: [], dh: [] };                        // lances
         const fornVistos = new Set();
         for (const [cod, d] of porItem) {
-          if (nossos.size && !nossos.has(cod)) continue;   // código inexistente no processo → ignora (ruído do LLM)
-          const descOf = nossos.get(cod) || d.descricao || null;
+          const numero = codParaNumero.get(cod);
+          if (numero == null) continue;   // não casou pela DESCRIÇÃO → NÃO grava (não pendura marca no item errado)
+          const descOf = nossos.get(numero) || d.descricao || null;
           // propostas (todos) — dedup por fornecedor dentro do item
           const dedup = new Map();
           for (const p of d.propostas) {
@@ -139,7 +154,7 @@ async function main() {
           }
           let vencedor = null;
           for (const p of dedup.values()) {
-            P.num.push(cod); P.desc.push(String(descOf || "").slice(0, 200));
+            P.num.push(numero); P.desc.push(String(descOf || "").slice(0, 200));
             P.forn.push((p.fornecedor || "").slice(0, 160) || "—"); P.mar.push(p.marca ? String(p.marca).slice(0, 80) : null);
             P.mod.push(p.modelo ? String(p.modelo).slice(0, 80) : null); P.val.push(brnum(p.valorUnitario) || null);
             P.cls.push(p.classificacao ? String(p.classificacao).slice(0, 30) : null);
@@ -151,14 +166,14 @@ async function main() {
             vencedor = c[0] || null;
           }
           if (vencedor && (vencedor.marca || vencedor.modelo)) {
-            M.num.push(cod); M.desc.push(String(descOf || "").slice(0, 200)); M.prod.push(vencedor.fornecedor ? null : null);
+            M.num.push(numero); M.desc.push(String(descOf || "").slice(0, 200)); M.prod.push(vencedor.fornecedor ? null : null);
             M.mod.push(vencedor.modelo ? String(vencedor.modelo).slice(0, 80) : null); M.mar.push(vencedor.marca ? String(vencedor.marca).slice(0, 80) : null);
             M.val.push(brnum(vencedor.valorUnitario) || null);
           }
           // lances com valor
           let ord = 0;
           for (const l of d.lances) { const v = brnum(l.valor); if (!v) continue; ord++;
-            L.num.push(cod); L.ord.push(ord); L.forn.push((l.fornecedor || "").slice(0, 160) || "—"); L.val.push(v); L.dh.push((l.dataHora || "").slice(0, 30) || null); }
+            L.num.push(numero); L.ord.push(ord); L.forn.push((l.fornecedor || "").slice(0, 160) || "—"); L.val.push(v); L.dh.push((l.dataHora || "").slice(0, 30) || null); }
         }
         // —— INSERT em LOTE (Neon-safe: 1 query/tabela por ata) ——
         if (P.num.length) await q(`INSERT INTO propostas_sc (cnpj,ano,seq,cod_ibge,numero,descricao,fornecedor,marca,modelo,valor_unitario,classificacao)

@@ -8,4 +8,6 @@
 //      (medido: 315 atas em portal_vencedores, 315 "feitas", 1 item extraído);
 //   2. melhorar um parser não reprocessava NADA — o ganho só valia para documento novo.
 // Estado por documento + versão resolve os dois de uma vez, e é auto-recuperável: não depende de eu lembrar.
-export const PARSER_VERSAO = 3;
+// v4 (2026-07-19): conserto do "proposta no item errado" — extrai_ecustomize casa a proposta ao item do PNCP pela
+// DESCRIÇÃO (casaItens), não mais pelo r.codigo do PDF (que não avançava → tudo no item 1, 33,4% dos processos).
+export const PARSER_VERSAO = 4;

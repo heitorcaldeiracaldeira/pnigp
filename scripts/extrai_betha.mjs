@@ -12,6 +12,7 @@
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
 import { PARSER_VERSAO } from "./parser_versao.mjs";
 import { parseAtaBetha } from "./parser_betha.mjs";
+import { casaItens } from "./parser_az.mjs";   // casa o item da ata ao do PNCP pela DESCRIÇÃO (conserto do bug do número)
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); const ROOT = path.join(__dirname, "..");
 const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const LIMIT = Number(process.env.LIMIT || 0);
@@ -42,17 +43,24 @@ async function main() {
       const porItem = new Map();
       for (const i of r.itens) { const c = porItem.get(i.numero); if (!c || (i.marca && !c.marca)) porItem.set(i.numero, i); }
       const itens = [...porItem.values()];
-      if (itens.length) {
+      // 🔴 CONSERTO (mesmo bug do ecustomize): NÃO confiar no nº do item do documento Betha — casar pela DESCRIÇÃO ao
+      // item do PNCP (casaItens, MIN_SIM 0.6). Sem casar → dropa (o numeroItem do PNCP nem sempre = nº do documento).
+      const apiItens = (await q(`SELECT numero, descricao FROM itens_sc WHERE cnpj=$1 AND ano=$2 AND seq=$3`, [e.cnpj, e.ano, e.seq])).rows
+        .map((r) => ({ numero: Number(r.numero), descricao: r.descricao }));
+      const casados = casaItens(itens.map((i) => ({ item: i.numero, descricao: i.descricao })), apiItens);
+      itens.forEach((i, k) => { i._numero = casados[k]?.numero ?? null; });
+      const itensOk = itens.filter((i) => i._numero != null);
+      if (itensOk.length) {
         const M = { num: [], desc: [], mod: [], mar: [], val: [] };
-        for (const i of itens) {
-          M.num.push(i.numero); M.desc.push(i.descricao || null); M.mod.push(i.modelo); M.mar.push(i.marca); M.val.push(i.valorUnitario || null);
+        for (const i of itensOk) {
+          M.num.push(i._numero); M.desc.push(i.descricao || null); M.mod.push(i.modelo); M.mar.push(i.marca); M.val.push(i.valorUnitario || null);
         }
         await q(`INSERT INTO item_marca_sc (cnpj,ano,seq,cod_ibge,numero,descricao,modelo,marca,valor)
           SELECT $1,$2,$3,$4, t.* FROM unnest($5::int[],$6::text[],$7::text[],$8::text[],$9::numeric[]) AS t(numero,descricao,modelo,marca,valor)
           ON CONFLICT (cnpj,ano,seq,numero) DO UPDATE SET descricao=COALESCE(EXCLUDED.descricao,item_marca_sc.descricao),
             modelo=EXCLUDED.modelo, marca=EXCLUDED.marca, valor=EXCLUDED.valor, atualizado=now()`,
           [e.cnpj, e.ano, e.seq, e.cod_ibge, M.num, M.desc, M.mod, M.mar, M.val]);
-        totItens += itens.length;
+        totItens += itensOk.length;
         if (itens.some((i) => i.marca)) comMarca++;
       }
       const nMarcas = new Set(itens.filter((i) => i.marca).map((i) => i.marca.toLowerCase())).size;
