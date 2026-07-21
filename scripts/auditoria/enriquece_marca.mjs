@@ -16,12 +16,13 @@ import { limpaMarca, parseBR, extraiMarcas } from "../portais_comportamento.mjs"
 import { buscaDoPortal, buscaPeloLink, RECEITA } from "./receitas_portais.mjs";
 const USAR_LINK = process.env.USAR_LINK === "1";   // usa linkSistemaOrigem do PNCP (rate-limited) p/ descobrir a origem
 const U = fs.readFileSync("./.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
-const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }, max: 3, statement_timeout: 590000 });
+const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }, max: 6, statement_timeout: 590000 });
 const UF = (process.env.UF || "sc").toLowerCase();
 const ITENS = `itens_${UF}`, TXT = `arquivo_texto_${UF}`, ARQ = `arquivos_${UF}`;
 const PADRAO = `app.item_marca_padrao_${UF}`, CONF = `app.item_marca_conferida_${UF}`, FEITAS = `app.enriq_marca_feitas_${UF}`;
 const PPR = "app.processo_portal_real";
 const LIM = process.env.LIMIT != null ? Number(process.env.LIMIT) : 50;
+const CONC = Number(process.env.CONC || 4);   // workers concorrentes
 const FILTRO_ARQ = process.env.ARQ || null, FILTRO_PORTAL = process.env.PORTAL || null;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const RES_REGEX = "(homolog|ata de|ata final|adjudica|resultado|vencedor|registro de pre|proposta)";
@@ -71,9 +72,9 @@ async function main() {
       and not exists(select 1 from ${CONF} c where c.cnpj=i.cnpj and c.ano=i.ano and c.seq=i.seq)
       and not exists(select 1 from ${FEITAS} f where f.cnpj=i.cnpj and f.ano=i.ano and f.seq=i.seq)
     ${lim}`, FILTRO_PORTAL ? [FILTRO_PORTAL] : [])).rows;
-  console.log(`FILA: ${procs.length} procs homologados (TODOS — cada um veio de algum lugar e ESTÁ no PNCP)`);
-  let comMarca = 0, paresTot = 0; const porFonte = {};
-  for (const p of procs) {
+  console.log(`FILA: ${procs.length} procs homologados (TODOS — cada um veio de algum lugar e ESTÁ no PNCP) · CONC ${CONC}`);
+  let comMarca = 0, paresTot = 0, feitos = 0; const porFonte = {};
+  async function processa(p) {
     const portal = p.portal_real; let status = "sem_marca", n = 0, fonte = "-";
     try {
       const ac = await textoAcervo(p);
@@ -84,9 +85,10 @@ async function main() {
         const tx = await viaPNCP(p);
         const pp = extraiMarca(tx); if (pp.length) { pares = pp; fonte = "pncp"; }
       }
-      // 3) NÃO achou no PNCP → traz ONDE FOI FEITO (origem já roteada) e BUSCA o doc no portal
+      // 3) NÃO achou no PNCP → traz ONDE FOI FEITO (origem roteada) e BUSCA o doc no portal.
+      //    id vem do DOC (grátis); se não achar e USAR_LINK, cai no linkSistemaOrigem (PNCP, rate-limited c/ backoff).
       if (!pares.length && RECEITA[portal]) {
-        const tx = await buscaDoPortal(portal, ac.todo, p.cnpj, p.ano, p.seq, { usarPNCP: false });
+        const tx = await buscaDoPortal(portal, ac.todo, p.cnpj, p.ano, p.seq, { usarPNCP: USAR_LINK });
         const pp = extraiMarca(tx); if (pp.length) { pares = pp; fonte = "portal:" + portal; }
       }
       // 3b) origem NÃO roteada e PNCP falhou → descobre onde foi feito pelo linkSistemaOrigem e busca lá
@@ -106,8 +108,12 @@ async function main() {
     } catch (e) { status = "erro:" + e.message.slice(0, 40); }
     porFonte[fonte] = (porFonte[fonte] || 0) + 1;
     await marcaFeito(p, portal || "(sem rota)", fonte, status, n);
-    process.stdout.write(`  ${comMarca} com marca · ${paresTot} pares\r`);
+    process.stdout.write(`  ${++feitos}/${procs.length} · ${comMarca} com marca · ${paresTot} pares\r`);
   }
+  // pool de CONC workers
+  let idx = 0;
+  async function worker(w) { await sleep(w * 300); while (idx < procs.length) { const p = procs[idx++]; try { await processa(p); } catch {} } }
+  await Promise.all(Array.from({ length: CONC }, (_, w) => worker(w)));
   console.log(`\n✔ ${comMarca}/${procs.length} procs com marca · ${paresTot} pares`);
   console.log("por fonte:", JSON.stringify(porFonte));
   await db.end();
