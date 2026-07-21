@@ -29,7 +29,8 @@ function catalogo(docNorm, off) {
   return nums.length ? nums[nums.length - 1] : null;
 }
 // BLOCO de spec = do anchor do item ATÉ o anchor do próximo item no MESMO doc (capado)
-function bloco(docNorm, off, offs, cap = 600) {
+const BLOCO_CAP = Number(process.env.BLOCO_CAP || 2500); // teto do bloco de spec (era 600 → truncava multi-atributo)
+function bloco(docNorm, off, offs, cap = BLOCO_CAP) {
   if (off == null) return null;
   const nexts = offs.filter((o) => o != null && o > off);
   const end = Math.min(off + cap, nexts.length ? Math.min(...nexts) : off + cap);

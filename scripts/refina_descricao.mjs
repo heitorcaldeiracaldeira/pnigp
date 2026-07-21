@@ -29,34 +29,44 @@ function normUnidade(u) {
   return s.split(" ")[0]; // fallback: 1ª palavra
 }
 
-// limpa ruído tabular: preço (r/R$), códigos de catálogo, marca/modelo, runs de números, nº do item no início
+// DESCOLADOR — separa palavras grudadas do PDF (multi-atributo: veículo/equipamento): fronteira número↔letra + termos de spec
+const KW = "minimo|maximo|maxima|minima|capacidade|cambio|automatico|automatica|manual|direcao|eletrica|eletrico|hidraulica|vidro|litros|litro|altura|distancia|potencia|tensao|largura|comprimento|espessura|material|cor|peso|volume|diametro|aproximad[oa]|contendo|embalagem|tipo|modelo|bivolt|watts|volts|amperes|tanque|motor|combustivel|gasolina|diesel|flex|portas|malas|eixos|solo|seguranca|garantia|anos|medidas|medida|referencia|conforme|revestido|fabricad[oa]|produzid[oa]|composicao|sabores|sabor|acompanha|possui|dimensoes";
+const KW_RE = new RegExp("([a-z])(" + KW + ")\\b", "gi");
+function desgruda(s) {
+  let t = s.replace(/([a-z])(\d)/gi, "$1 $2").replace(/(\d)([a-z])/gi, "$1 $2"); // número↔letra
+  t = t.replace(KW_RE, "$1 $2");                                                  // termo de spec grudado no anterior
+  return t.replace(/\s+/g, " ").trim();
+}
+// limpa ruído tabular: preço (r/R$), códigos de catálogo, marca/modelo, runs de preço, nº do item no início
 function limpaNoise(s) {
   return (" " + s + " ")
-    .replace(/\br\s*\$?\s*[\d.,]+/gi, " ")                       // r 240 00 / R$ 5,89
-    .replace(/\b(cim|cin|cir|cat|cod|pdm)\s*\d+\b/gi, " ")       // códigos de catálogo (cim2614, cin20109)
+    .replace(/\br\s*\$?\s*[\d.,]+/gi, " ").replace(/\b(cim|cin|cir|cat|cod|pdm)\s*\d+\b/gi, " ")
     .replace(/\bmarca\b[\s:]*\S+/gi, " ").replace(/\bmodelo\b[\s:]*\S*/gi, " ")
     .replace(/valor\s+(inicial|final|unit\w*|total)/gi, " ").replace(/itens do lote|quantidade/gi, " ")
-    .replace(/\b\d[\d.,]*\b(?:\s+\b\d[\d.,]*\b)+/g, " ")         // runs de 2+ grupos numéricos (coluna de preço/qtd)
-    .replace(/\b\d{3,}\b/g, " ")                                 // códigos numéricos longos
+    .replace(/\b\d[\d.,]*\b(?:\s+\b\d[\d.,]*\b){2,}/g, " ")      // runs de 3+ números (coluna de preço) — preserva medidas
     .replace(/\s+/g, " ").trim()
-    .replace(/^[\d\s.,;:|()-]+/, "").replace(/[\s.,;:|()-]+$/, "").trim(); // nº do item no início + pontuação nas pontas
+    .replace(/^[\d\s.,;:|()-]+/, "").replace(/[\s.,;:|()-]+$/, "").trim();
 }
-// isola a SPEC pela JANELA de maior densidade de tokens do item, aperta do 1º ao último token e limpa o ruído
+// isola a SPEC: janela de densidade de tokens do item → CAPTURA GRANDE p/ frente até o próximo item/preço → descola → limpa
 function refina(api, doc) {
   if (!doc) return null;
   const apiSet = new Set(norm(api).split(/\s+/).filter((t) => t.length > 2));
-  if (!apiSet.size) { const c = limpaNoise(doc); return c.length >= 8 ? c.slice(0, 400) : null; }
   const words = doc.split(/\s+/), nw = words.map(norm);
+  if (!apiSet.size) { const c = limpaNoise(desgruda(words.slice(0, 250).join(" "))); return c.length >= 8 ? c : null; }
   const W = Math.max(10, Math.min(45, apiSet.size * 2 + 8));
   let bStart = 0, bSc = -1;
   for (let i = 0; i <= Math.max(0, words.length - 1); i++) { let sc = 0; for (let j = i; j < Math.min(words.length, i + W); j++) if (apiSet.has(nw[j])) sc++; if (sc > bSc) { bSc = sc; bStart = i; } }
   const hit = []; for (let j = bStart; j < Math.min(words.length, bStart + W); j++) if (apiSet.has(nw[j])) hit.push(j);
-  const s = hit.length ? hit[0] : bStart, e = hit.length ? Math.min(words.length, hit[hit.length - 1] + 2) : bStart + W;
-  const c = limpaNoise(words.slice(s, e).join(" "));
+  const start = hit.length ? hit[0] : bStart;
+  let end = Math.min(words.length, start + 250);  // captura GRANDE (não corta os atributos)
+  for (let j = start + 3; j < end; j++) {         // corta no próximo item/coluna de preço
+    if (/valor|^r$|itens do lote/i.test(words[j]) || (/^\d[\d.,]*$/.test(words[j]) && /^\d[\d.,]*$/.test(words[j + 1] || "") && /^\d[\d.,]*$/.test(words[j + 2] || ""))) { end = j; break; }
+  }
+  const c = limpaNoise(desgruda(words.slice(start, end).join(" ")));
   return c.length >= 8 ? c : null;
 }
 
-const REFINO_V = 2; // bump ao melhorar a heurística → reprocessa
+const REFINO_V = 3; // bump ao melhorar a heurística → reprocessa (v3: captura grande + descolador)
 async function main() {
   await db.query(`ALTER TABLE app.item_enriquecimento ADD COLUMN IF NOT EXISTS descricao_refinada text`);
   await db.query(`ALTER TABLE app.item_enriquecimento ADD COLUMN IF NOT EXISTS unidade_norm text`);
