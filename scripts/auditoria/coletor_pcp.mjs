@@ -2,13 +2,13 @@
 //   PNCP API → linkSistemaOrigem → codigoLicitacao → gera relatório (POST+poll) → PDF → parser colunar → ancora por valor.
 //   Vencedor = marca do vencedor (→ item_marca_padrao, via 'PCP') · PropostaEletronica = concorrentes (→ item_marca_candidata).
 // Idempotente (app.pcp_feitas_${uf}). LIMIT=N p/ leva; LIMIT=0 = todos os PCP-roteados sem marca. node scripts/auditoria/coletor_pcp.mjs
-import fs from "fs"; import pg from "pg";
+import fs from "fs"; import pg from "pg"; import { execSync } from "child_process";
 import { extractText, getDocumentProxy } from "unpdf";
 import { limpaMarca, parseBR } from "../portais_comportamento.mjs";
 const U = fs.readFileSync("./.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }, max: 3, statement_timeout: 590000 });
 const UF = (process.env.UF || "sc").toLowerCase();
-const PADRAO = `app.item_marca_padrao_${UF}`, FEITAS = `app.pcp_feitas_${UF}`;
+const PADRAO = `app.item_marca_padrao_${UF}`, FEITAS = `app.pcp_feitas_${UF}`, CONF = `app.item_marca_conferida_${UF}`;
 const LIM = process.env.LIMIT != null ? Number(process.env.LIMIT) : 30;
 const CONC = Number(process.env.CONC || 3);   // workers concorrentes (relatório em host separado tolera; pcpId tem backoff 429)
 const GEN = "https://conteudo.api.portaldecompraspublicas.com.br/v1/arquivo/download";
@@ -70,6 +70,7 @@ async function main() {
       and not exists(select 1 from app.item_marca_conferida_${UF} c where c.cnpj=p.cnpj and c.ano=p.ano and c.seq=p.seq)
       and not exists(select 1 from ${FEITAS} f where f.cnpj=p.cnpj and f.ano=p.ano and f.seq=p.seq)
     ${lim}`)).rows;
+  if (procs.length === 0) { console.log(`acervo PCP fechado — nada a coletar (consolida já rodou na leva que fechou)`); await db.end(); return; }
   console.log(`PCP a coletar: ${procs.length} · concorrência ${CONC}`);
   let comMarca = 0, paresTot = 0, feitos = 0, rateSeguidos = 0, parar = false;
 
@@ -104,8 +105,22 @@ async function main() {
   await Promise.all(Array.from({ length: CONC }, (_, w) => worker(w)));
 
   if (parar) console.log(`\nrate limit persistente — parei (idempotente; a task relança e retoma)`);
-  console.log(`\n✔ PCP: ${comMarca}/${feitos} procs com marca · ${paresTot} pares → rode consolida_marca.mjs`);
+  console.log(`\n✔ PCP: ${comMarca}/${feitos} procs com marca · ${paresTot} pares`);
   console.table((await db.query(`select status, count(*) n from ${FEITAS} group by 1 order by 2 desc`)).rows);
+
+  // fechou o acervo? (esta leva drenou tudo e NÃO parou por rate) → consolida AUTOMÁTICO, aqui (event-driven, sem polling)
+  const rest = Number((await db.query(`
+    select count(*) n from (
+      select distinct p.cnpj,p.ano,p.seq from app.processo_portal_real p
+      where p.portal_real='Portal de Compras Públicas'
+        and exists(select 1 from itens_${UF} i where i.cnpj=p.cnpj and i.ano=p.ano and i.seq=p.seq and i.unit_homologado is not null)
+        and not exists(select 1 from ${CONF} c where c.cnpj=p.cnpj and c.ano=p.ano and c.seq=p.seq)
+        and not exists(select 1 from ${FEITAS} f where f.cnpj=p.cnpj and f.ano=p.ano and f.seq=p.seq)) t`)).rows[0].n);
   await db.end();
+  if (!parar && rest === 0 && feitos > 0) {
+    console.log(`\n🏁 acervo PCP fechado → rodando consolida_marca (ancora as marcas 'PCP' por valor → conferida)`);
+    try { execSync(`"${process.execPath}" scripts/auditoria/consolida_marca.mjs`, { stdio: "inherit" }); }
+    catch (e) { console.error("consolida_marca falhou:", e.message); }
+  }
 }
 main().catch((e) => { console.error("ERRO:", e.message); process.exit(1); });
