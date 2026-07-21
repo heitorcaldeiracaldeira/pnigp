@@ -29,18 +29,18 @@ await q(`
     i.cnpj,i.ano,i.seq, i.numero::text, s.marca, nullif(btrim(s.modelo),''), i.cnpj_fornecedor, i.unit_homologado,
     false, false, true, 'consolidado', s.via, now()
   FROM (
-    SELECT cnpj,ano,seq, marca, modelo, valor::numeric v, 'C:colunar' via, 1 pri FROM ${COLUNAR}
+    SELECT cnpj,ano,seq, NULL::text num, marca, modelo, valor::numeric v, 'C:colunar' via, 1 pri FROM ${COLUNAR}
     UNION ALL
-    SELECT cnpj,ano,seq, marca, NULL::text modelo, valor::numeric v, 'AB:'||coalesce(padrao,'?') via, 2 pri FROM ${PADRAO}
+    SELECT cnpj,ano,seq, NULL::text num, marca, NULL::text modelo, valor::numeric v, 'AB:'||coalesce(padrao,'?') via, 2 pri FROM ${PADRAO}
     UNION ALL
-    SELECT cnpj,ano,seq, marca, modelo,
-      (CASE WHEN replace(replace(valor_unitario::text,'.',''),',','.') ~ '^[0-9]+(\\.[0-9]+)?$'
-            THEN replace(replace(valor_unitario::text,'.',''),',','.')::numeric END) v, 'V:visao' via, 3 pri FROM ${VISAO}
+    -- VISÃO: o valor lido é ruim, mas o NÚMERO do item é confiável → ancora por número (não por valor)
+    SELECT cnpj,ano,seq, numero num, marca, modelo, NULL::numeric v, 'V:visao' via, 3 pri FROM ${VISAO}
   ) s
   JOIN ${ITENS} i
     ON i.cnpj=s.cnpj AND i.ano=s.ano AND i.seq=s.seq
    AND i.unit_homologado IS NOT NULL
-   AND s.v IS NOT NULL AND abs(s.v - i.unit_homologado) < 0.02
+   AND ( (s.num IS NOT NULL AND i.numero::text = btrim(s.num))          -- visão: ancora por NÚMERO
+      OR (s.num IS NULL AND s.v IS NOT NULL AND abs(s.v - i.unit_homologado) < 0.02) )  -- A/B, colunar: por VALOR
   WHERE s.marca IS NOT NULL AND length(btrim(s.marca))>=2
     AND s.marca !~* '^(servi|material|pe[çc]a|diversos|v[aá]rios|nacional|importad|pr[oó]pri|sem marca|conforme|generic|n/?c|n/?a|fabricante|n[aã]o inform|engenharia|obra)'
   ORDER BY i.cnpj,i.ano,i.seq,i.numero, s.pri, length(s.marca) DESC;
