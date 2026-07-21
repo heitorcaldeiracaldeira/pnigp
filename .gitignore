@@ -51,3 +51,10 @@ next-env.d.ts
 backups/
 _*.mjs
 .env.ai
+
+# temporários / estudo (não versionar)
+logs/
+.claude/
+scripts/marca_tpl/
+etl.log
+*.log
