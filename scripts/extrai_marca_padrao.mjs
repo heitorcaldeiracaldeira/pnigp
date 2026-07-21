@@ -52,8 +52,8 @@ async function main(){
   for(const p of procs){
     const docs=(await db.query(`select texto from ${T_TEXTO} where cnpj=$1 and ano=$2 and seq=$3 and chars>500`,[p.cnpj,p.ano,p.seq])).rows;
     const rows=[]; for(const d of docs) for(const par of extrai(d.texto)) if(par.valor!=null) rows.push(par);
-    // RECONCILE da via A/B: apaga os pares antigos do processo e grava os atuais EM LOTE (1 ida/tabela)
-    await db.query(`delete from ${T_PADRAO} where cnpj=$1 and ano=$2 and seq=$3`,[p.cnpj,p.ano,p.seq]);
+    // RECONCILE da via A/B: apaga só os pares A/B antigos do processo (NÃO toca PCP/BLL/P de outras vias) e grava os atuais EM LOTE
+    await db.query(`delete from ${T_PADRAO} where cnpj=$1 and ano=$2 and seq=$3 and (padrao in ('A','B') or padrao is null)`,[p.cnpj,p.ano,p.seq]);
     if(rows.length){
       const vals=[]; const ph=rows.map((r,i)=>`($${i*6+1},$${i*6+2},$${i*6+3},$${i*6+4},$${i*6+5},$${i*6+6})`).join(",");
       rows.forEach(r=>vals.push(p.cnpj,p.ano,p.seq,r.marca,r.valor,r.padrao));
