@@ -41,6 +41,7 @@ export const LEIS_PORTAL = {
   bolsa_vs_erp:     "BOLSA roda a disputa e guarda o doc de resultado. ERP (IPM/atende, Betha, Pública, Governança) só PUBLICA/RELATA — o domínio dele aparece no edital como publicação, mas a disputa roda em ALGUMA bolsa. Rota: bolsa SEMPRE vence o ERP; ERP só é 'portal' se tem módulo próprio de disputa E a URL vem em contexto de disputa (pregão/lance/sessão).",
   detecta_dominio:  "O portal é ESCOLHA da entidade, sabida SÓ pelo DOMÍNIO de disputa no doc — nunca pelo NOME (boilerplate/CRC: 'e-lic' 87% falso, 'banco do brasil' 99% falso), nunca pela GEOGRAFIA/UF (ex: Governo de SP usa compras.gov federal, não portal próprio; ter portal estadual é exceção — SC tem), nunca pelo ERP (relata, não define). Cada portal tem SEU padrão; casar sempre pelo domínio, por processo.",
   entrada_universal:"PNCP linkSistemaOrigem dá a URL do portal por processo — mas só p/ PARTE (PCP sempre; BLL subconjunto; VAZIO p/ BNC, Compras.gov, e-lic). Vazio → busca nativa do portal (quase sempre reCAPTCHA/WebForms).",
+  pncp_entrada_limpa:"⭐ P/ toda BOLSA que trava o portal próprio (reCAPTCHA/login: BBMNET, Licitações-e BB, ComprasBR, BNC-busca), a Lei 14.133 OBRIGA publicar edital+ata+homologação no PNCP → baixar o doc de resultado (arquivo_blob) pela API pública do PNCP CONTORNA 100% o gate. NÃO contornar reCAPTCHA do portal. Só fica gated o que existe SÓ no portal (legado 8.666, ou estado que não empurra ata ao PNCP).",
 };
 // Os 5 ARQUÉTIPOS de acesso — todo portal do país cai num deles; a receita reusa nacionalmente:
 export const ARQUETIPOS = {
@@ -97,38 +98,46 @@ export const PORTAIS = {
     notas: "Federal (SIASG/comprasnet). Ata 'Proposta adjudicada/Marca/Fabricante/Valor' = doc. ~96 procs SC já no acervo → confere_marca_comprasnet (trava dupla). API dados-abertos NÃO tem marca. Resto: SIASG por UASG (só 2.289 têm UASG limpa). idCompra=UASG(6)+modalidade(2)+numero(5)+ano(4).",
   },
   "ComprasBR (AZ)": {
-    detecta: /comprasbr|az inform/i,
-    acesso: "browser", marca: "B", status: "recon",
-    base: "https://comprasbr.com",
-    notas: "AZ Informática, plataforma comprasbr.com. Doc no padrão B (Item…Marca:Modelo:). AZ já tem ~37% dos resultados no PNCP → maioria da marca já capturável in-store.",
+    detecta: /comprasbr\.com\.br|app\.comprasbr/i,   // comprasbr.com (sem .br) está PARADO
+    tipo: "bolsa", entrada: "pncp_link", arquetipo: "arquivo_blob",   // via PNCP (portal próprio é gated por login)
+    acesso: "api_gated", marca: "B", status: "blocked_portal",
+    base: "https://app.comprasbr.com.br",   // Angular + Spring HATEOAS /hal/. comprasbr.com.br=WordPress institucional
+    notas: "AZ Informática. Portal próprio 100% GATED por login (servidor 302, sem consulta pública, sem swagger, /hal/public só cadastro). NÃO é reCAPTCHA — é auth pura. Crack real = PNCP (bolsa 14.133 publica arquivos lá → arquivo_blob via coletor PNCP-link). AZ já tem ~37% no PNCP.",
   },
   "Licitar Digital": {
-    detecta: /licitar ?digital/i,
-    acesso: "browser", marca: "V", status: "blocked",
-    base: "https://app2.licitardigital.com.br",
-    busca: "https://app2.licitardigital.com.br/pesquisa",
-    notas: "Atrás de Cloudflare ('Um momento…' 403); headless não passa. Precisa navegador real / sessão.",
+    detecta: /licitardigital\.com|licitar\.digital/i,
+    tipo: "bolsa", entrada: "api_lista", arquetipo: "arquivo_blob",
+    acesso: "api", marca: "B", status: "cracked",
+    base: "https://manager-api.licitardigital.com.br",   // ⭐ a API NÃO está atrás do Cloudflare (só o HTML app2/pesquisa está)
+    buscar: "POST /auction-notice/doSearchAuctionNotice {filter:{search,startDatePublication,endDatePublication},offset} → data[].id=auctionId (biddingStageId 11=finalizado)",
+    documentos: "POST /documents/generated/listPublicGeneratedDocuments {params:{auctionId}} → data[]{type,fileDescription,url}",
+    blob: "GET url (licitar-signed-documents.s3.sa-east-1.amazonaws.com) → PDF; filtrar fileDescription ~ ATA|CONTRATO|HOMOLOG|ADJUDIC",
+    notas: "CRACKED headless, SEM login/navegador (só Content-Type: application/json). PDF da ata TEM camada de texto (glyphs espaçados 'M A R C A' → pdftotext resolve, sem visão). Ancora item+valor. platform traz o ERP de origem (ex ammlicita). Homologated-proposals estruturado exige token (não precisa — preço vem do PNCP).",
   },
   "Licitanet": {
-    detecta: /licitanet/i,
-    acesso: "browser", marca: "B", status: "recon",
-    base: "https://licitanet.com.br",
-    sessao: (id)=>`https://licitanet.com.br/sessao/${id}`,
-    api: (id)=>`https://licitanet.com.br/api/dispute-room/${id}/batches`,
-    notas: "SPA. sessao-publica → /sessao/{id}; API dispute-room/{id}/batches + buyers. Falta achar endpoint dos documentos/ata. Volume baixo (~155) mas ENTRA (cauda não se descarta).",
+    detecta: /licitanet\.com/i,
+    tipo: "bolsa", entrada: "api_lista", arquetipo: "relatorio_gerado",   // + arquivo_blob (proposta do vencedor)
+    acesso: "api", marca: "B", status: "cracked",
+    base: "https://licitanet.com.br",   // Laravel+Inertia+Vue, roda SOBRE a plataforma do PCP. WAF exige UA de browser
+    lista: "GET /sessao-publica?limit=&page=&status=4 (4=Homologado; uf/modalidade/objeto) → props.publications[]",
+    sessao: (cod)=>`https://licitanet.com.br/sessao/${cod}`,   // props.disputeRoom: supplierFiles (proposta vencedor, blob CloudFront) + reports[]
+    gerarAta: "GET /sessao/{cod} → extrai <meta csrf-token> + gera X-Client-Token (base64 '{unix}|…', módulo clientToken-*.js) → POST /report/{cod} {relatorio:'RELATORIO_ATA_FINAL_COMPLETO',dados:'{\"tipoAta\":1,\"ata\":N}'} → {identifier} → GET /report/{identifier}/download/{type} → {url html}",
+    doc: "dv7rs78smtpx8.cloudfront.net/reports/pregao/{cod}/..._{identifier}.html (público, tem Marca/Modelo/Fornecedor/CNPJ/valor)",
+    notas: "CRACKED ao vivo (ata baixada c/ Marca). reCAPTCHA v3 NÃO validado no servidor. Caminho barato alternativo: supplierFiles (proposta do vencedor, d2e4y9pc28eke4.cloudfront.net/.../habilitanet/…) = blob direto, às vezes já traz marca. dispute-room/{id}/batches = vencedor+preço SEM marca.",
   },
   "Licitações-E BB": {
     detecta: /licitacoes-e\.com/i,   // SÓ DOMÍNIO — 'banco do brasil' deu 99% falso-positivo (4.111→40)
-    tipo: "bolsa", entrada: "busca_gated", arquetipo: "gated",
-    acesso: "browser", marca: "V", status: "fila",
-    base: "https://www.licitacoes-e.com.br",
-    notas: "Portal do Banco do Brasil (Licitações-e). WebForms/ASP; sessão pública. Volume REAL em SC pequeno (~40, não 4k). Nacional. A crackar.",
+    tipo: "bolsa", entrada: "pncp_link", arquetipo: "gated",
+    acesso: "webforms", marca: "V", status: "blocked_portal",
+    base: "https://www.licitacoes-e.com.br",   // app /aop/ JSP/Struts (NÃO ASP.NET), ISO-8859-1
+    notas: "Portal nacional do Banco do Brasil. Detalhe/ata atrás de reCAPTCHA v2 (sitekey 6Lfa7KEs…); sem API JSON; numeroLicitação proprietário sem mapa PNCP. Busca pública existe mas drill=captcha. Rota limpa: 14.133 → PNCP contorna 100% o reCAPTCHA. Legado 8.666-só-no-BB = blocked (não gastar recurso).",
   },
   "BBMNET": {
-    detecta: /bbmnet|bolsa brasileira/i,
-    acesso: "browser", marca: "B", status: "fila",
-    base: "https://bbmnetlicitacoes.com.br",
-    notas: "Novo BBMNET. ~416 procs. A crackar.",
+    detecta: /bbmnet(licitacoes)?\.com/i,
+    tipo: "bolsa", entrada: "pncp_link", arquetipo: "relatorio_gerado",   // portal gerado mas gated → via PNCP
+    acesso: "browser", marca: "B", status: "blocked_portal",
+    base: "https://www2.bbmnet.com.br/BBMNET",   // legado ASP.NET (consulta pública). Novo: sistema.bbmnet.com.br (Angular+Keycloak, 100% gated)
+    notas: "Bolsa Brasileira de Mercadorias. Legado tem consulta pública → DetalharEdital.aspx?chaveEdital → VisualizarRelatorioVencedores.aspx (relatorio_gerado: VisualizadorDocumentoHandler.ashx tipoModelo=10). MAS travado por reCAPTCHA por edital (ConfirmarCaptchaDetalharEdital) — NÃO contornar. Rota limpa = PNCP (bundle tem CONTRATACAO_PNCP; publica ata lá). Legado 8.666-só-no-www2 = blocked.",
   },
   "Estado de Santa Catarina (e-lic)": {
     detecta: /e-?lic\.sc\.gov\.br|compras\.sc\.gov\.br/i,   // SÓ DOMÍNIO — nome/'SEA'/'\belic\b' deu 87% falso-positivo
@@ -145,13 +154,25 @@ export const PORTAIS = {
     notas: "⚠️ ATENDE.NET é ERP do IPM que PUBLICA (transparência municipal {municipio}.atende.net) — NÃO é bolsa. O domínio aparece no edital como publicação; a disputa roda em ALGUMA bolsa (PCP/outra). Só ~1,4k (de 8,5k que o nome sugeria) têm a URL em contexto de DISPUTA (módulo pregão próprio do IPM). Rota: bolsa SEMPRE vence; atende só quando co-cita disputa e nenhuma bolsa. Prova viva do bolsa_vs_erp.",
   },
   "ECustomize": {
-    detecta: /ecustomize|e-customize/i,
-    acesso: "browser", marca: "B", status: "fila",
-    notas: "Plataforma ECustomize (rótulo aparece muito no confere_marca_lote). A reconhecer endpoints.",
+    detecta: /portaldecompraspublicas\.com/i,   // ⭐ ECustomize Consultoria OPERA o Portal de Compras Públicas — É O PCP (não portal separado)
+    tipo: "bolsa", entrada: "pncp_link", arquetipo: "relatorio_gerado", status: "cracked",
+    api_documentada: "https://apipcp.portaldecompraspublicas.com.br/publico/ (precisa publicKey/API-key): obterAtas?publicKey&idLicitacao&tipoAta (8=Ata Vencedores,11=Total,12=Adjudicação,13=Homologação; gera+poll→link PDF) · obteranexoslicitacao (blob). fluxo: listarProcessos→obterProcesso(idLicitacao)→obterAtas",
+    notas: "= o PRÓPRIO PCP. Caminho documentado com API-key, alternativo ao relatório conteudo.api já crackeado. DEDUP: rotear como 'Portal de Compras Públicas'.",
   },
-  "Contrata+Brasil": { detecta:/contrata\+ ?brasil|contratamais/i, acesso:"browser", marca:"B", status:"fila", notas:"Fila. A reconhecer." },
-  "Licita+Brasil":   { detecta:/licita\+ ?brasil|licitamais/i,     acesso:"browser", marca:"B", status:"fila", notas:"Fila. A reconhecer." },
-  "StartGov":        { detecta:/startgov|start gov/i,               acesso:"browser", marca:"B", status:"fila", notas:"Fila. A reconhecer." },
+  "Licita+Brasil":   {
+    detecta: /licitamaisbrasil\.com/i,
+    tipo: "bolsa", entrada: "api_lista", arquetipo: "arquivo_blob", acesso:"api_gated", marca:"B", status:"blocked_auth",
+    base: "https://api.licitamaisbrasil.com.br",   // SaaS PRIVADO (Node/Express, Postgres); front licitamaisbrasil.com.br (Vue)
+    notas: "Bolsa privada (Lei 14.133). arquivo_blob (POST /app/auction/documents/list → /app/document/download) mas /app/* atrás de LOGIN + CORS Origin. Vitrine pública /editais-publicados,/formalizacoes-publicadas (não confirmado se expõe blob sem auth). Rota limpa provável = PNCP.",
+  },
+  "StartGov":        {
+    detecta: /startgov\.com|bid\.startgov/i,
+    tipo: "erp", entrada: "pncp_link", arquetipo: "gated", acesso:"api_gated", marca:"B", status:"blocked_portal",
+    base: "https://api-bid.startgov.com.br/v1",   // Laravel; app bid.startgov.com.br (Vue)
+    notas: "ERP interno de gestão de compras (integra PNCP), NÃO marketplace de disputa. Tudo Bearer/token; rotas públicas só token-gated (/public/quotations/:token). Tem /desenvolvedor/plataforma-pregao (disputa externa). Rota = PNCP (publisher/relay).",
+  },
+  // FORA DE ESCOPO (sem doc de resultado com marca):
+  "Contrata+Brasil": { detecta:/contratamaisbrasil\.sistema\.gov/i, tipo:"federal", arquetipo:"gated", status:"fora_escopo", notas:"Federal (MGI+AGU), contratação DIRETA de MEI (art.95, teto R$12.545) — sem disputa, sem ata de vencedor+marca. gov.br SSO. Se estruturado, aparece no PNCP como contratação direta. NÃO gastar recurso." },
 };
 
 // ---- ERPs: NÃO têm portal próprio — RELAY. ROTEIAM PARA QUALQUER PORTAL ----
@@ -160,11 +181,13 @@ export const PORTAIS = {
 // outro no seguinte). Logo: detectar o ERP NÃO diz onde está a marca — só o edital diz. Rotear sempre
 // pelo edital, nunca assumir um portal por causa do ERP. 'sem_rota' = edital ainda não lido/sem marcador,
 // NÃO "sem portal".
+// ⭐ CONFIRMADO (jul/2026, investigação ao vivo): os 4 são PUBLISHER/RELAY, NÃO bolsas — nenhum tem sala de disputa
+// própria com lances online. Publicam+integram; a disputa roda numa BOLSA externa citada no edital. NÃO são destino.
 export const ERPS = {
-  "IPM":         { detecta:/ipm sistemas|atende\.net|\bipm\b/i,      publica:"atende.net por município", pncp_resultado:"~1,6%",  roteia_para:"QUALQUER portal (definido no edital)" },
-  "Betha":       { detecta:/betha/i,                                  publica:"betha cloud/transparência por município", pncp_resultado:"~13,3%", roteia_para:"QUALQUER portal — integra com todos; doc sai no formato do portal (padrão B)" },
-  "Pública":     { detecta:/p[uú]blica tecnologia|publicacloud/i,    publica:"por município", pncp_resultado:"~18,4% (melhor dos ERPs)", roteia_para:"QUALQUER portal (definido no edital)" },
-  "Governança":  { detecta:/governan[çc]a ?brasil|gestao publica/i,  publica:"por município", pncp_resultado:"~1,1%",  roteia_para:"QUALQUER portal (definido no edital)" },
+  "IPM":         { detecta:/[a-z0-9-]+\.atende\.net/i,                publica:"{municipio}.atende.net (transparência)", pncp_resultado:"~1,6%",  disputa_propria:"não (raro módulo próprio)", roteia_para:"QUALQUER bolsa (definido no edital)" },
+  "Betha":       { detecta:/betha\.com|betha\.cloud/i,                publica:"e-gov.betha.com.br/transparencia (con_licitacoes.faces PÚBLICO, tem ATA/download) · transparencia.betha.cloud", pncp_resultado:"~13,3%", disputa_propria:"não (faz presencial + INTEGRA eletrônico externo; AutoCotação=coleta, não sala)", roteia_para:"QUALQUER bolsa" },
+  "Pública":     { detecta:/publicatecnologia\.com|publicacloud/i,    publica:"Portal da Transparência por município", pncp_resultado:"~18,4%", disputa_propria:"não (módulos Compras+Transparência, SEM disputa eletrônica)", roteia_para:"QUALQUER bolsa" },
+  "Governança":  { detecta:/govbr\.cloud|governancabrasil\.com|transparencia\.cloud/i, publica:"govbr.cloud (Pronim/Cidade360), transparencia.cloud (WAF anti-bot)", pncp_resultado:"~1,1%", disputa_propria:"não — texto explícito 'integração automática ao Portal de Compras Públicas'", roteia_para:"QUALQUER bolsa (evidência mais literal: disputa no PCP)" },
 };
 // Regra de roteamento do ERP: para todo processo de ERP, LER O EDITAL → detectaPortal(texto) → portal real.
 // O ERP NÃO restringe o conjunto de portais possíveis; TODOS os portais do registro são candidatos.
