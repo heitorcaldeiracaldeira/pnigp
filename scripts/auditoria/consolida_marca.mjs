@@ -23,7 +23,7 @@ const t = Date.now();
 // 1 QUERY: une as vias cruas → ancora ao item por valor (homologação ATUAL) → 1 marca por item (por prioridade de via)
 await q(`
   BEGIN;
-  DELETE FROM ${CONF};
+  DELETE FROM ${CONF} WHERE portal='consolidado';   -- só as PRÓPRIAS: preserva a via comprasnet (trava dupla, gravada por confere_marca_comprasnet)
   INSERT INTO ${CONF}(cnpj,ano,seq,numero,marca,modelo,fornecedor_cnpj,valor,marca_generica,cnpj_ok,valor_ok,portal,fonte_titulo,atualizado)
   SELECT DISTINCT ON (i.cnpj,i.ano,i.seq,i.numero)
     i.cnpj,i.ano,i.seq, i.numero::text, s.marca, nullif(btrim(s.modelo),''), i.cnpj_fornecedor, i.unit_homologado,
@@ -43,7 +43,8 @@ await q(`
       OR (s.num IS NULL AND s.v IS NOT NULL AND abs(s.v - i.unit_homologado) < 0.02) )  -- A/B, colunar: por VALOR
   WHERE s.marca IS NOT NULL AND length(btrim(s.marca))>=2
     AND s.marca !~* '^(servi|material|pe[çc]a|diversos|v[aá]rios|nacional|importad|pr[oó]pri|sem marca|conforme|generic|n/?c|n/?a|fabricante|n[aã]o inform|engenharia|obra)'
-  ORDER BY i.cnpj,i.ano,i.seq,i.numero, s.pri, length(s.marca) DESC;
+  ORDER BY i.cnpj,i.ano,i.seq,i.numero, s.pri, length(s.marca) DESC
+  ON CONFLICT (cnpj,ano,seq,numero) DO NOTHING;   -- item já conferido pela via comprasnet (trava dupla) tem precedência
   COMMIT;`);
 
 const r = (await q(`SELECT count(*) itens, count(distinct (cnpj,ano,seq)) procs FROM ${CONF} WHERE portal='consolidado'`)).rows[0];

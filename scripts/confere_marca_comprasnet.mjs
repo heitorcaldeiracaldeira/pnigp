@@ -38,7 +38,7 @@ function parse(txt){
 }
 
 async function main(){
-  const db = new pg.Pool({ connectionString: DB, ssl:{rejectUnauthorized:false}, max: 3, statement_timeout: 120000 });
+  const db = new pg.Pool({ connectionString: DB, ssl:{rejectUnauthorized:false}, max: 3, statement_timeout: 590000 });
   db.on("error",()=>{});
   await ddl(db);
   const lim = LIMIT>0 ? `limit ${LIMIT}` : "";
