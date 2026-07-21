@@ -32,13 +32,35 @@ export function extraiMarcas(texto){
   return out;
 }
 
+// ============================================================================
+// ⭐ PADRÃO NACIONAL — LEIS e ARQUÉTIPOS que valem p/ QUALQUER portal do Brasil.
+// (independem da UF; o VOLUME em SC é irrelevante — o que reusa é a RECEITA por padrão.)
+// ============================================================================
+export const LEIS_PORTAL = {
+  marca_e_doc:      "A MARCA é fato de DOCUMENTO, nunca campo de API. Provado em PNCP e Compras.gov dados-abertos: as APIs dão vencedor+preço, NUNCA marca (art.41 veda no edital → nunca virou campo). Coletar marca = SEMPRE baixar+parsear o doc de resultado.",
+  bolsa_vs_erp:     "BOLSA roda a disputa e guarda o doc de resultado. ERP (IPM/atende, Betha, Pública, Governança) só PUBLICA/RELATA — o domínio dele aparece no edital como publicação, mas a disputa roda em ALGUMA bolsa. Rota: bolsa SEMPRE vence o ERP; ERP só é 'portal' se tem módulo próprio de disputa E a URL vem em contexto de disputa (pregão/lance/sessão).",
+  detecta_dominio:  "Rotear pelo DOMÍNIO de disputa no doc (portaldecompraspublicas.com, bllcompras.com…), NUNCA pelo NOME solto (aparece em boilerplate/CRC → falso-positivo; 'e-lic' deu 87% falso, 'banco do brasil' 99% falso).",
+  entrada_universal:"PNCP linkSistemaOrigem dá a URL do portal por processo — mas só p/ PARTE (PCP sempre; BLL subconjunto; VAZIO p/ BNC, Compras.gov, e-lic). Vazio → busca nativa do portal (quase sempre reCAPTCHA/WebForms).",
+};
+// Os 5 ARQUÉTIPOS de acesso — todo portal do país cai num deles; a receita reusa nacionalmente:
+export const ARQUETIPOS = {
+  relatorio_gerado: { portais:["Portal de Compras Públicas"], receita:"marca vive num RELATÓRIO GERADO sob demanda (não arquivo): POST job + POLL até pronto → PDF → parser colunar. Ex: conteudo.api.portaldecompraspublicas.com.br/v1/arquivo/download {parametros:'Vencedor,{id}'}.", status:"cracked headless · nacional" },
+  arquivo_blob:     { portais:["BLL","BNC"], receita:"lista de arquivos (ProcessFiles) → download direto em blob azure; ata em atas.zip. Software 'Lance Eletrônico' — MESMA receita p/ BLL+BNC+white-labels ({nome}compras.com).", status:"cracked (entrada via linkSistemaOrigem/ProcessView; busca própria = reCAPTCHA)" },
+  api_sem_marca:    { portais:["Compras.gov","PNCP"], receita:"API estruturada dá vencedor+preço mas NÃO marca. Serve p/ ANCORAR (trava dupla cnpj+valor), não p/ obter marca.", status:"marca precisa do DOC (SIASG por UASG), não da API" },
+  doc_no_acervo:    { portais:["Compras.gov","qualquer"], receita:"parte das atas JÁ está espelhada no PNCP → parser sobre arquivo_texto, sem tocar portal. Ex: Comprasnet 'Proposta adjudicada/Marca/Fabricante'. Cobertura varia (é o ganho grátis; SC: 96 procs).", status:"grátis onde o portal empurrou a ata ao PNCP" },
+  gated:            { portais:["Estado/e-lic","BNC(busca)","Licitar Digital","compras.sc.gov.br"], receita:"download atrás de reCAPTCHA/Cloudflare/WebForms(__VIEWSTATE) → só navegador; não escala headless.", status:"bloqueado p/ automação simples" },
+};
+// Prioridade de rota (menor vence): bolsa real 1..10 SEMPRE acima de ERP; ERP (atende) só com contexto de disputa.
+export const PRIORIDADE = ["Portal de Compras Públicas","BLL","BNC","ComprasBR (AZ)","Licitar Digital","Licitanet","BBMNET","Licitações-E BB","Estado de Santa Catarina (e-lic)","Compras.gov","Atende.net (IPM)"];
+
 // ---- REGISTRO: comportamento de cada portal ----
-// campos: detecta(regex p/ achar no edital) · acesso(api|lance_eletronico|browser|webforms) · marca(A|B|V) ·
-//         status(cracked|recon|blocked|fila) · fetch(recipe) · notas
+// campos: detecta(DOMÍNIO no doc — nunca nome) · tipo(bolsa|erp) · entrada(pncp_link|busca_gated|uasg|acervo) ·
+//         arquetipo · marca(A|B|V padrão do doc) · status(cracked|recon|blocked|fila) · fetch(recipe) · notas
 export const PORTAIS = {
   "Portal de Compras Públicas": {
-    detecta: /portaldecompraspublicas|portal de compras p[uú]b/i,
-    acesso: "api", marca: "A", status: "cracked",
+    detecta: /portaldecompraspublicas\.com/i,   // DOMÍNIO (nunca 'portal de compras p' — casa outros)
+    tipo: "bolsa", entrada: "pncp_link", arquetipo: "relatorio_gerado",
+    acesso: "api", marca: "colunar", status: "cracked",
     base: "https://compras.api.portaldecompraspublicas.com.br",
     uf_sc: "100142",
     listar: (uf, status, pag=1)=>`https://compras.api.portaldecompraspublicas.com.br/v2/licitacao/processos?limitePagina=50&pagina=${pag}&codigoUf=${uf}&codigoStatus=${status}&codigoRealizacao=1`,
@@ -47,7 +69,8 @@ export const PORTAIS = {
     notas: "API pública sem navegador. /documentos/processo (sufixo essencial). Docs tipados (Edital/Relatorio/…). Ata de resultado tem marca no padrão A ou colunar.",
   },
   "BLL": {
-    detecta: /\bbll\b|bolsa de licita|bllcompras/i,
+    detecta: /bllcompras\.com/i,   // DOMÍNIO (nunca \bbll\b/'bolsa de licita' — inflou 3.685→1.516)
+    tipo: "bolsa", entrada: "pncp_link", arquetipo: "arquivo_blob",
     acesso: "lance_eletronico", marca: "V", status: "cracked",
     base: "https://bllcompras.com",
     busca: "https://bllcompras.com/Process/ProcessSearchPublic",   // reCAPTCHA → só no navegador
@@ -56,7 +79,8 @@ export const PORTAIS = {
     notas: "Software 'Lance Eletrônico'. Busca usa reCAPTCHA (navegador). Ata de homologação vem em atas.zip. Doc costuma ser IMAGEM → visão/OCR.",
   },
   "BNC": {
-    detecta: /\bbnc\b|bolsa nacional de compras|bnccompras/i,
+    detecta: /bnccompras\.com|bnc\.org\.br/i,   // DOMÍNIO
+    tipo: "bolsa", entrada: "busca_gated", arquetipo: "arquivo_blob",
     acesso: "lance_eletronico", marca: "V", status: "cracked",
     base: "https://bnccompras.com",
     busca: "https://bnccompras.com/Process/ProcessSearchPublic",
@@ -65,10 +89,12 @@ export const PORTAIS = {
     notas: "MESMO software da BLL (Lance Eletrônico). Receita idêntica; só muda o host do blob. bnc.org.br é só WordPress institucional.",
   },
   "Compras.gov": {
-    detecta: /compras\.gov|comprasnet|cnetmobile|gov\.br\/compras/i,
-    acesso: "api", marca: "A", status: "recon",
+    detecta: /comprasnet\.gov|compras\.gov\.br|gov\.br\/compras/i,   // DOMÍNIO
+    tipo: "bolsa", entrada: "uasg", arquetipo: "doc_no_acervo",   // parte da ata Comprasnet vem no acervo PNCP; resto = SIASG por UASG
+    acesso: "api", marca: "comprasnet", status: "parcial",
     base: "https://cnetmobile.estaleiro.serpro.gov.br",
-    notas: "Federal (comprasnet). Vencedor+preço já vem por API PNCP. Marca no Termo (padrão A, texto — sem OCR). idCompra=UASG(6)+modalidade(2)+numero(5)+ano(4). Busca tem hCaptcha. TJSC=UASG 925045.",
+    dados_abertos: "https://dadosabertos.compras.gov.br/v3/api-docs (77 endpoints; /modulo-contratacoes/3_consultarResultadoItensContratacoes_PNCP_14133 dá vencedor+preço SEM marca — arquétipo api_sem_marca)",
+    notas: "Federal (SIASG/comprasnet). Ata 'Proposta adjudicada/Marca/Fabricante/Valor' = doc. ~96 procs SC já no acervo → confere_marca_comprasnet (trava dupla). API dados-abertos NÃO tem marca. Resto: SIASG por UASG (só 2.289 têm UASG limpa). idCompra=UASG(6)+modalidade(2)+numero(5)+ano(4).",
   },
   "ComprasBR (AZ)": {
     detecta: /comprasbr|az inform/i,
@@ -92,10 +118,11 @@ export const PORTAIS = {
     notas: "SPA. sessao-publica → /sessao/{id}; API dispute-room/{id}/batches + buyers. Falta achar endpoint dos documentos/ata. Volume baixo (~155) mas ENTRA (cauda não se descarta).",
   },
   "Licitações-E BB": {
-    detecta: /licita[cç][oõ]es-?e|licitacoes-e\.com|banco do brasil/i,
+    detecta: /licitacoes-e\.com/i,   // SÓ DOMÍNIO — 'banco do brasil' deu 99% falso-positivo (4.111→40)
+    tipo: "bolsa", entrada: "busca_gated", arquetipo: "gated",
     acesso: "browser", marca: "V", status: "fila",
     base: "https://www.licitacoes-e.com.br",
-    notas: "Portal do Banco do Brasil (Licitações-e). ~770 procs. WebForms/ASP; sessão pública. A crackar. Cauda cobrada pelo Heitor — não esquecer.",
+    notas: "Portal do Banco do Brasil (Licitações-e). WebForms/ASP; sessão pública. Volume REAL em SC pequeno (~40, não 4k). Nacional. A crackar.",
   },
   "BBMNET": {
     detecta: /bbmnet|bolsa brasileira/i,
@@ -103,12 +130,19 @@ export const PORTAIS = {
     base: "https://bbmnetlicitacoes.com.br",
     notas: "Novo BBMNET. ~416 procs. A crackar.",
   },
-  "Estado SC (e-lic)": {
-    detecta: /e-?lic\.sc\.gov|portaldecompras\.sc|portal de compras.*santa catarina|secretaria de estado da administra|\belic\b/i,
-    acesso: "webforms", marca: "V", status: "fila",
+  "Estado de Santa Catarina (e-lic)": {
+    detecta: /e-?lic\.sc\.gov\.br|compras\.sc\.gov\.br/i,   // SÓ DOMÍNIO — nome/'SEA'/'\belic\b' deu 87% falso-positivo
+    tipo: "bolsa", entrada: "busca_gated", arquetipo: "gated",
+    acesso: "webforms", marca: "V", status: "blocked",
     base: "https://e-lic.sc.gov.br",
-    busca: "https://e-lic.sc.gov.br/WBCPublic/Publico",
-    notas: "Portal do ESTADO de SC (WebForms/ASP.NET, __VIEWSTATE). ~202 procs. Foi IGNORADO antes (Heitor cobrou) — ENTRA na rota. Estado-específico (não nacional), mas a receita WebForms serve outros portais estaduais.",
+    portal_novo: "https://compras.sc.gov.br (SPA + API Spring /api/editais; download de doc atrás de reCAPTCHA)",
+    notas: "PORTAL ESTADUAL (SEA-SC) — específico da UF, NÃO nacional. e-lic velho=WebForms(__VIEWSTATE) rejeita headless; compras.sc.gov.br novo=SPA c/ API mas doc gated por reCAPTCHA. Nossos procs municipais em maioria só CITAM e-lic p/ CRC (não é a disputa). Cada UF tem seu portal estadual (SP=BEC…) — o PADRÃO 'portal estadual gated' reusa, o domínio muda por UF.",
+  },
+  "Atende.net (IPM)": {
+    detecta: /[a-z0-9-]+\.atende\.net/i,   // ⚠️ ERP-PUBLISHER, não bolsa — ver tipo
+    tipo: "erp", entrada: "n/a", arquetipo: "gated",
+    acesso: "browser", marca: "B", status: "erp_relay",
+    notas: "⚠️ ATENDE.NET é ERP do IPM que PUBLICA (transparência municipal {municipio}.atende.net) — NÃO é bolsa. O domínio aparece no edital como publicação; a disputa roda em ALGUMA bolsa (PCP/outra). Só ~1,4k (de 8,5k que o nome sugeria) têm a URL em contexto de DISPUTA (módulo pregão próprio do IPM). Rota: bolsa SEMPRE vence; atende só quando co-cita disputa e nenhuma bolsa. Prova viva do bolsa_vs_erp.",
   },
   "ECustomize": {
     detecta: /ecustomize|e-customize/i,
