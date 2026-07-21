@@ -1976,17 +1976,19 @@ export async function getInteligenciaItem(q: string): Promise<{
           ORDER BY (confianca='alta') DESC, length(descricao_documento) DESC LIMIT 3`, [likeProd]).catch(() => [])
     : [];
   // 3) MARCAS — banco de sucesso. Se marca detectada, filtra por ela (e por produto, se houver); senão todas do produto
-  const where: string[] = ["c.marca IS NOT NULL", "coalesce(c.marca_generica,false)=false"];
+  // usa marca_norm (normalizada) e filtra pela ALLOWLIST do dicionário (só marca real: alta/media confiança)
+  const where: string[] = ["c.marca_norm IS NOT NULL"];
   const params: unknown[] = [];
   if (prodTermo) { params.push(likeProd); where.push(`i.descricao ILIKE $${params.length}`); }
-  if (marcaDetectada) { params.push(marcaDetectada + "%"); where.push(`c.marca ILIKE $${params.length}`); }
+  if (marcaDetectada) { params.push(marcaDetectada + "%"); where.push(`c.marca_norm ILIKE $${params.length}`); }
   const marcas = (prodTermo || marcaDetectada)
     ? await query<Record<string, unknown>>(
-        `SELECT c.marca, count(*)::int n, min(c.valor) menor, round(avg(c.valor)::numeric,2) medio
+        `SELECT c.marca_norm marca, count(*)::int n, min(c.valor) menor, round(avg(c.valor)::numeric,2) medio
            FROM app.item_marca_conferida_sc c
            JOIN itens_sc i ON i.cnpj=c.cnpj AND i.ano=c.ano AND i.seq=c.seq AND i.numero::text=c.numero
+           JOIN app.marca_dicionario_sc d ON d.marca=c.marca_norm AND d.confianca IN ('alta','media')
           WHERE ${where.join(" AND ")}
-          GROUP BY c.marca ORDER BY n DESC LIMIT 8`, params).catch(() => [])
+          GROUP BY c.marca_norm ORDER BY n DESC LIMIT 8`, params).catch(() => [])
     : [];
   // 4) PERFIL DO PRODUTO — dados estruturados da API (100% preenchidos): como o item costuma ser disputado + preço
   const perfilRows = prodTermo
