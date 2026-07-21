@@ -65,13 +65,13 @@ export function ConstrutorProcesso({ nome }: { nome: string }) {
   const itensDoLote = (loteId: string | null) => dados.itens.filter((i) => (i.loteId ?? null) === loteId);
 
   // ── JUNÇÃO — inteligência por item (spec real + banco de sucesso); busca ciente de marca ──
-  type IntelData = { produto: string; marcaDetectada: string | null; specs: { texto: string; confianca: string | null; fonte: string | null }[]; marcas: { marca: string; n: number; menor: number | null; medio: number | null }[] };
+  type IntelData = { produto: string; marcaDetectada: string | null; specs: { texto: string; confianca: string | null; fonte: string | null }[]; marcas: { marca: string; n: number; menor: number | null; medio: number | null }[]; perfil: { n: number; criterio: string | null; beneficio: string | null; nExclusiva: number; nCota: number; estimado: number | null; homologado: number | null } | null };
   const [intel, setIntel] = useState<Record<string, IntelData | "loading">>({});
   async function buscarIntel(it: ItemProcesso) {
     const q = it.descricao.trim(); if (q.length < 2) return;
     setIntel((s) => ({ ...s, [it.id]: "loading" }));
     try { const r = await fetch("/api/inteligencia-item?q=" + encodeURIComponent(q)); const d = (await r.json()) as IntelData; setIntel((s) => ({ ...s, [it.id]: d })); }
-    catch { setIntel((s) => ({ ...s, [it.id]: { produto: q, marcaDetectada: null, specs: [], marcas: [] } })); }
+    catch { setIntel((s) => ({ ...s, [it.id]: { produto: q, marcaDetectada: null, specs: [], marcas: [], perfil: null } })); }
   }
 
   const total = useMemo(() => valorTotal(dados.itens), [dados.itens]);
@@ -156,6 +156,16 @@ export function ConstrutorProcesso({ nome }: { nome: string }) {
                 return (
                   <div className="mt-1.5 space-y-1.5 rounded-lg border border-indigo-100 bg-indigo-50/40 p-2 text-[10.5px]">
                     {d.marcaDetectada && <div className="text-indigo-700">Marca detectada: <b>{d.marcaDetectada}</b>{d.produto ? <> · produto: <b>{d.produto}</b></> : null}</div>}
+                    {/* PERFIL do produto — dados estruturados da API (como costuma ser disputado + preço) */}
+                    {d.perfil && d.perfil.n > 0 && (
+                      <div className="text-slate-600">
+                        <b className="text-indigo-700">Perfil da API ({d.perfil.n} compras):</b>{" "}
+                        {d.perfil.beneficio && <>disputa <b>{d.perfil.beneficio}</b>{d.perfil.criterio ? " · " : ""}</>}
+                        {d.perfil.criterio && <>{d.perfil.criterio}</>}
+                        {(d.perfil.estimado || d.perfil.homologado) && <> · preço {d.perfil.estimado ? fmtBRL(d.perfil.estimado) : "?"}{d.perfil.homologado ? <> → pago <b>{fmtBRL(d.perfil.homologado)}</b></> : null}</>}
+                        {(d.perfil.nExclusiva > 0 || d.perfil.nCota > 0) && <div className="text-[10px] text-slate-500">histórico ME/EPP: {d.perfil.nExclusiva} exclusiva · {d.perfil.nCota} cota reservada</div>}
+                      </div>
+                    )}
                     {d.specs.length > 0 ? d.specs.map((s, i) => (
                       <div key={i} className="flex items-start gap-1.5">
                         <button type="button" onClick={() => updItem(it.id, { espec: s.texto })} className="shrink-0 rounded bg-teal-600 px-1.5 py-0.5 text-[9px] font-semibold text-white hover:bg-teal-700">usar</button>

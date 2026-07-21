@@ -1953,8 +1953,9 @@ export async function getInteligenciaItem(q: string): Promise<{
   produto: string; marcaDetectada: string | null;
   specs: { texto: string; confianca: string | null; fonte: string | null }[];
   marcas: { marca: string; n: number; menor: number | null; medio: number | null }[];
+  perfil: { n: number; criterio: string | null; beneficio: string | null; nExclusiva: number; nCota: number; estimado: number | null; homologado: number | null } | null;
 }> {
-  const termo = (q || "").trim(); if (termo.length < 2) return { produto: termo, marcaDetectada: null, specs: [], marcas: [] };
+  const termo = (q || "").trim(); if (termo.length < 2) return { produto: termo, marcaDetectada: null, specs: [], marcas: [], perfil: null };
   const tokens = termo.split(/\s+/).filter((t) => t.length >= 2);
   // 1) detecta quais tokens são MARCA no nosso corpus (conferida)
   const corp = tokens.length
@@ -1987,10 +1988,24 @@ export async function getInteligenciaItem(q: string): Promise<{
           WHERE ${where.join(" AND ")}
           GROUP BY c.marca ORDER BY n DESC LIMIT 8`, params).catch(() => [])
     : [];
+  // 4) PERFIL DO PRODUTO — dados estruturados da API (100% preenchidos): como o item costuma ser disputado + preço
+  const perfilRows = prodTermo
+    ? await query<Record<string, unknown>>(
+        `SELECT count(*)::int n,
+                mode() WITHIN GROUP (ORDER BY criterio_julgamento_nome) criterio,
+                mode() WITHIN GROUP (ORDER BY tipo_beneficio_nome) beneficio,
+                count(*) FILTER (WHERE tipo_beneficio_nome ILIKE '%exclusiva%')::int n_excl,
+                count(*) FILTER (WHERE tipo_beneficio_nome ILIKE '%cota%')::int n_cota,
+                round(avg(unit_estimado) FILTER (WHERE unit_estimado>0))::numeric est,
+                round(avg(unit_homologado) FILTER (WHERE unit_homologado>0))::numeric hom
+           FROM itens_sc WHERE descricao ILIKE $1`, [likeProd]).catch(() => [])
+    : [];
+  const pf = perfilRows[0];
   return {
     produto: prodTermo, marcaDetectada,
     specs: specs.map((r) => ({ texto: String(r.t || ""), confianca: r.confianca ? String(r.confianca) : null, fonte: r.fonte_documento ? String(r.fonte_documento) : null })),
     marcas: marcas.map((r) => ({ marca: String(r.marca || ""), n: num(r.n), menor: r.menor != null ? num(r.menor) : null, medio: r.medio != null ? num(r.medio) : null })),
+    perfil: pf ? { n: num(pf.n), criterio: pf.criterio ? String(pf.criterio) : null, beneficio: pf.beneficio ? String(pf.beneficio) : null, nExclusiva: num(pf.n_excl), nCota: num(pf.n_cota), estimado: pf.est != null ? num(pf.est) : null, homologado: pf.hom != null ? num(pf.hom) : null } : null,
   };
 }
 
