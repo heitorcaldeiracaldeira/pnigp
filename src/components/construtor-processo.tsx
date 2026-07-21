@@ -214,14 +214,14 @@ export function ConstrutorProcesso({ nome }: { nome: string }) {
           <div className="flex items-center gap-1.5 text-[12px] font-semibold text-slate-700"><Package className="h-3.5 w-3.5 text-teal-600" /> Objeto da compra {dados.itens.length > 0 && <span className="text-slate-400">({dados.itens.length} {dados.itens.length === 1 ? "item" : "itens"})</span>}</div>
           {total > 0 && <span className="rounded-full bg-teal-700 px-2.5 py-0.5 text-[12px] font-bold text-white">Total estimado: {fmtBRL(total)}</span>}
         </div>
-        {/* ADJUDICAÇÃO por item OU por lote (não se mistura) */}
-        <div className="mt-2 flex items-center gap-2 text-[11px]">
-          <span className="font-medium text-slate-600">Adjudicação:</span>
-          <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 font-medium">
-            <button onClick={() => setAgrup("item")} className={`rounded-md px-3 py-1 ${agrup === "item" ? "bg-teal-700 text-white" : "text-slate-600 hover:bg-slate-50"}`}>Por item</button>
-            <button onClick={() => setAgrup("lote")} className={`rounded-md px-3 py-1 ${agrup === "lote" ? "bg-teal-700 text-white" : "text-slate-600 hover:bg-slate-50"}`}>Por lote</button>
+        {/* JULGAMENTO por item OU por lote (excludente — não se mistura) */}
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+          <span className="font-semibold text-slate-700">Julgamento:</span>
+          <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 font-semibold">
+            <button onClick={() => setAgrup("item")} className={`rounded-md px-3 py-1 ${agrup === "item" ? "bg-teal-700 text-white" : "text-slate-600 hover:bg-slate-50"}`}>Julgamento por ITEM</button>
+            <button onClick={() => setAgrup("lote")} className={`rounded-md px-3 py-1 ${agrup === "lote" ? "bg-teal-700 text-white" : "text-slate-600 hover:bg-slate-50"}`}>Julgamento por LOTE</button>
           </div>
-          <span className="text-slate-400">{agrup === "item" ? "cada item é disputado e adjudicado a item." : "itens agrupados em lotes; um vencedor por lote."}</span>
+          <span className="text-slate-500">{agrup === "item" ? "cada item é julgado e adjudicado separadamente (um vencedor por item)." : "cada lote é julgado como um todo (um único vencedor para o lote inteiro)."}</span>
         </div>
 
         {/* busca de preço */}
