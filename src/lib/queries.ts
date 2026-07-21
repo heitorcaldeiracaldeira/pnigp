@@ -1945,6 +1945,55 @@ export async function getBancoPrecosSC(q: string): Promise<{ item: string; unida
   return [...a, ...b].filter((x) => x.mediana > 0).slice(0, 20);
 }
 
+// JUNÇÃO — inteligência do item p/ o Construtor: SPEC real (do TR/Edital de quem já comprou) + BANCO DE SUCESSO
+// (marcas que VENCERAM, com preço). Deriva do módulo Auditoria (item_enriquecimento + item_marca_conferida).
+// INOVAÇÃO: o gestor escreve PRODUTO, PRODUTO + MARCA, ou só o PRODUTO — a busca detecta a marca (nosso corpus),
+// separa do produto e adapta o resultado. Marca é referência do gestor (banco de sucesso), NUNCA vai ao edital.
+export async function getInteligenciaItem(q: string): Promise<{
+  produto: string; marcaDetectada: string | null;
+  specs: { texto: string; confianca: string | null; fonte: string | null }[];
+  marcas: { marca: string; n: number; menor: number | null; medio: number | null }[];
+}> {
+  const termo = (q || "").trim(); if (termo.length < 2) return { produto: termo, marcaDetectada: null, specs: [], marcas: [] };
+  const tokens = termo.split(/\s+/).filter((t) => t.length >= 2);
+  // 1) detecta quais tokens são MARCA no nosso corpus (conferida)
+  const corp = tokens.length
+    ? await query<Record<string, unknown>>(`SELECT DISTINCT upper(marca) m FROM app.item_marca_conferida_sc WHERE marca ILIKE ANY($1)`, [tokens]).catch(() => [])
+    : [];
+  const marcaSet = new Set(corp.map((r) => String(r.m).toUpperCase()));
+  const marcaTokens = tokens.filter((t) => marcaSet.has(t.toUpperCase()));
+  const prodTokens = tokens.filter((t) => !marcaSet.has(t.toUpperCase()));
+  const marcaDetectada = marcaTokens.length ? marcaTokens.join(" ").toUpperCase() : null;
+  const prodTermo = prodTokens.join(" ").trim() || (marcaDetectada ? "" : termo);
+  const likeProd = "%" + (prodTermo || termo).replace(/\s+/g, "%") + "%";
+
+  // 2) SPEC — só quando há produto (marca não entra no edital, então spec é do produto)
+  const specs = prodTermo
+    ? await query<Record<string, unknown>>(
+        `SELECT descricao_documento t, confianca, fonte_documento FROM app.item_enriquecimento
+          WHERE descricao_e_spec AND descricao_documento IS NOT NULL AND descricao_api ILIKE $1
+          ORDER BY (confianca='alta') DESC, length(descricao_documento) DESC LIMIT 3`, [likeProd]).catch(() => [])
+    : [];
+  // 3) MARCAS — banco de sucesso. Se marca detectada, filtra por ela (e por produto, se houver); senão todas do produto
+  const where: string[] = ["c.marca IS NOT NULL", "coalesce(c.marca_generica,false)=false"];
+  const params: unknown[] = [];
+  if (prodTermo) { params.push(likeProd); where.push(`i.descricao ILIKE $${params.length}`); }
+  if (marcaDetectada) { params.push(marcaDetectada + "%"); where.push(`c.marca ILIKE $${params.length}`); }
+  const marcas = (prodTermo || marcaDetectada)
+    ? await query<Record<string, unknown>>(
+        `SELECT c.marca, count(*)::int n, min(c.valor) menor, round(avg(c.valor)::numeric,2) medio
+           FROM app.item_marca_conferida_sc c
+           JOIN itens_sc i ON i.cnpj=c.cnpj AND i.ano=c.ano AND i.seq=c.seq AND i.numero::text=c.numero
+          WHERE ${where.join(" AND ")}
+          GROUP BY c.marca ORDER BY n DESC LIMIT 8`, params).catch(() => [])
+    : [];
+  return {
+    produto: prodTermo, marcaDetectada,
+    specs: specs.map((r) => ({ texto: String(r.t || ""), confianca: r.confianca ? String(r.confianca) : null, fonte: r.fonte_documento ? String(r.fonte_documento) : null })),
+    marcas: marcas.map((r) => ({ marca: String(r.marca || ""), n: num(r.n), menor: r.menor != null ? num(r.menor) : null, medio: r.medio != null ? num(r.medio) : null })),
+  };
+}
+
 // Salário-Educação (cota municipal) + total FNDE, por município. Fonte: SICONFI DCA I-C (salario_educacao_sc).
 export async function getSalarioEducacaoSC(cod: string): Promise<{ ano: number; salarioEducacao: number | null; fndeTotal: number | null; pctFnde: number | null; serie: { ano: number; se: number | null; fnde: number | null }[]; extraido: string | null } | null> {
   const rows = await query<Record<string, unknown>>(`SELECT ano, salario_educacao, fnde_total, atualizado FROM salario_educacao_sc WHERE cod_ibge=$1 ORDER BY ano`, [cod]).catch(() => []);

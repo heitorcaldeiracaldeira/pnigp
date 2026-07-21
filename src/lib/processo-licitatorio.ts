@@ -19,7 +19,15 @@ export type ItemProcesso = {
   precoUnit: number;        // valor unitário de referência (mediana — IN 65/2021)
   fonte: string | null;     // fonte do preço (Banco de Preços)
   espec: string;            // especificação técnica do item (onde a redação abre/fecha a disputa)
+  loteId?: string | null;   // LOTE a que o item pertence (null/undefined = item avulso, disputado a item)
+  participacao?: TipoParticipacao;  // disputa geral (ampla) · exclusiva ME/EPP · cota reservada (art. 48)
+  cotaReservadaPct?: number;        // % reservado a ME/EPP quando cota_reservada (default 25; art. 48, III)
 };
+
+// ADJUDICAÇÃO: por ITEM ou por LOTE — excludente, NÃO se mistura (o edital define um dos dois para todo o objeto).
+export type Agrupamento = "item" | "lote";
+// LOTE — agrupa itens disputados JUNTOS (adjudicação por lote). Pode ter critério de julgamento próprio (art. 33).
+export type Lote = { id: string; nome: string; criterio?: CriterioJulgamentoId };
 
 export type DadosProcesso = {
   orgao: string;            // secretaria/setor demandante
@@ -30,7 +38,18 @@ export type DadosProcesso = {
   local: string;            // local de entrega
   dotacao: string;          // dotação orçamentária / fonte
   prioridade: string;       // grau de prioridade / data pretendida (DFD)
+  // OBJETO — começa aqui. Adjudicação é POR ITEM **ou** POR LOTE (não se mistura): `agrupamento` decide.
+  agrupamento?: Agrupamento;                        // "item" (cada item disputado a item) | "lote" (itens em grupos)
   itens: ItemProcesso[];
+  lotes?: Lote[];                                   // usado só quando agrupamento="lote" (item.loteId aponta pra cá)
+  // ENQUADRAMENTO — modalidade × critério/modo × instrumentos auxiliares × SRP (separados)
+  modalidade?: ModalidadeId;                        // modalidade (art. 28) — default = recomendada por valor/objeto
+  forma?: Forma;                                    // eletrônica | presencial (dentro das admitidas)
+  criterio?: CriterioJulgamentoId;                  // critério de julgamento (art. 33)
+  modoDisputa?: ModoDisputaId;                      // modo de disputa (art. 56)
+  ordemFases?: OrdemFases;                          // habilitação após julgamento (padrão) ou invertida (art. 17)
+  instrumentosAuxiliares?: InstrumentoAuxiliarId[]; // art. 78 — opcionais, marcáveis
+  srp?: boolean;                                    // SRP (art. 82) — flag SEPARADA; depende da modalidade base
 };
 
 export const novoItem = (seed = ""): ItemProcesso =>
@@ -58,7 +77,7 @@ export function aberturaCesta(itens: ItemProcesso[]): number {
 // ─────────────────────────────────────────────────────────────────────────────
 // CATÁLOGO DOS ARTEFATOS (ordem do processo + base legal)
 // ─────────────────────────────────────────────────────────────────────────────
-export type ArtefatoId = "dfd" | "etp" | "tr" | "edital" | "contrato";
+export type ArtefatoId = "dfd" | "etp" | "tr" | "edital" | "ato" | "contrato" | "ata_rp";
 export type Artefato = { id: ArtefatoId; sigla: string; nome: string; base: string; fase: "interna" | "externa"; desc: string };
 
 export const ARTEFATOS: Artefato[] = [
@@ -66,8 +85,145 @@ export const ARTEFATOS: Artefato[] = [
   { id: "etp", sigla: "ETP", nome: "Estudo Técnico Preliminar", base: "Lei 14.133/2021, art. 18, §1º e §2º", fase: "interna", desc: "Demonstra a viabilidade da contratação: necessidade, mercado, quantidades, valor e resultados pretendidos." },
   { id: "tr", sigla: "TR", nome: "Termo de Referência", base: "Lei 14.133/2021, art. 6º, XXIII", fase: "interna", desc: "Especifica o objeto para licitar: requisitos, execução, medição, preço e critério de julgamento." },
   { id: "edital", sigla: "Edital", nome: "Minuta de Edital", base: "Lei 14.133/2021, art. 25", fase: "externa", desc: "Convoca o mercado: participação, propostas, julgamento, habilitação e recursos." },
+  { id: "ato", sigla: "Ato CD", nome: "Aviso / Ato de Contratação Direta", base: "Lei 14.133/2021, art. 72", fase: "externa", desc: "Instrumento da contratação direta (dispensa/inexigibilidade): fundamento legal, justificativa de preço e da escolha, ratificação." },
   { id: "contrato", sigla: "Contrato", nome: "Minuta de Contrato", base: "Lei 14.133/2021, art. 89–92", fase: "externa", desc: "Formaliza a contratação: obrigações, vigência, pagamento, fiscalização e sanções." },
+  { id: "ata_rp", sigla: "Ata RP", nome: "Ata de Registro de Preços", base: "Lei 14.133/2021, art. 82–86", fase: "externa", desc: "SRP: registra o preço do vencedor por prazo determinado (até 1 ano + prorrogação). A contratação vem depois, por contrato/empenho derivado da Ata." },
 ];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODALIDADE × FORMA — o catálogo que conecta modalidade → formas admitidas → conjunto de peças
+// A lei é a régua: cada modalidade tem forma(s) admitida(s) e um instrumento convocatório próprio
+// (Edital nas licitações; Ato/Aviso de Contratação Direta na dispensa/inexigibilidade — art. 72).
+// ─────────────────────────────────────────────────────────────────────────────
+export type Forma = "eletronica" | "presencial";
+export const FORMA_LABEL: Record<Forma, string> = { eletronica: "Eletrônica", presencial: "Presencial" };
+export type ModalidadeId = "pregao" | "concorrencia" | "concurso" | "leilao" | "dialogo_competitivo" | "dispensa" | "inexigibilidade" | "credenciamento";
+export type ModalidadeDef = {
+  id: ModalidadeId; nome: string; base: string;
+  formas: Forma[]; formaPadrao: Forma;
+  pecas: ArtefatoId[];             // conjunto exigido (fase interna + externa) — o que MONTAR
+  instrumento: "edital" | "ato";   // instrumento convocatório
+  notaForma: string;               // orientação legal sobre a forma
+};
+export const MODALIDADES: ModalidadeDef[] = [
+  { id: "pregao", nome: "Pregão", base: "art. 6º, XLI; art. 17, §2º", formas: ["eletronica", "presencial"], formaPadrao: "eletronica",
+    pecas: ["dfd", "etp", "tr", "edital", "contrato"], instrumento: "edital",
+    notaForma: "Regra: forma ELETRÔNICA (art. 17, §2º). A presencial exige justificativa da inviabilidade do meio eletrônico registrada nos autos." },
+  { id: "concorrencia", nome: "Concorrência", base: "art. 6º, XXXVIII; art. 17, §2º", formas: ["eletronica", "presencial"], formaPadrao: "eletronica",
+    pecas: ["dfd", "etp", "tr", "edital", "contrato"], instrumento: "edital",
+    notaForma: "Regra: forma ELETRÔNICA (art. 17, §2º). Presencial apenas com justificativa nos autos." },
+  { id: "concurso", nome: "Concurso", base: "art. 28, III; art. 30", formas: ["eletronica", "presencial"], formaPadrao: "presencial",
+    pecas: ["dfd", "etp", "tr", "edital", "contrato"], instrumento: "edital",
+    notaForma: "Escolha de trabalho técnico, científico ou artístico (art. 30), com prêmio ou remuneração ao vencedor. Julgamento por comissão especial; critério de melhor técnica ou conteúdo artístico. O edital traz o regulamento próprio." },
+  { id: "leilao", nome: "Leilão", base: "art. 28, IV; art. 31", formas: ["eletronica", "presencial"], formaPadrao: "eletronica",
+    pecas: ["dfd", "edital", "contrato"], instrumento: "edital",
+    notaForma: "ALIENAÇÃO de bens (venda), NÃO aquisição. Critério maior lance (art. 31). Exige avaliação prévia dos bens; preferência pela forma eletrônica (art. 31, §4º). Fluxo distinto do de compras." },
+  { id: "dialogo_competitivo", nome: "Diálogo Competitivo", base: "art. 28, V; art. 32", formas: ["eletronica", "presencial"], formaPadrao: "eletronica",
+    pecas: ["dfd", "etp", "tr", "edital", "contrato"], instrumento: "edital",
+    notaForma: "Restrito a inovação tecnológica/técnica ou objeto de grande complexidade (art. 32). Fases de pré-seleção, diálogo com licitantes e competitiva. Instrumento: Edital." },
+  { id: "dispensa", nome: "Dispensa de Licitação", base: "art. 72; art. 75", formas: ["eletronica", "presencial"], formaPadrao: "eletronica",
+    pecas: ["dfd", "etp", "tr", "ato", "contrato"], instrumento: "ato",
+    notaForma: "Dispensa ELETRÔNICA é a regra (art. 75, §3º c/c regulamento). O instrumento é o Ato/Aviso de Contratação Direta (art. 72), não o Edital." },
+  { id: "inexigibilidade", nome: "Inexigibilidade", base: "art. 72; art. 74", formas: ["eletronica", "presencial"], formaPadrao: "eletronica",
+    pecas: ["dfd", "etp", "tr", "ato", "contrato"], instrumento: "ato",
+    notaForma: "Inviável a competição (art. 74). Exige razão da escolha do fornecedor e justificativa do preço (art. 72, II e III). Instrumento: Ato de Contratação Direta." },
+  { id: "credenciamento", nome: "Credenciamento", base: "art. 79", formas: ["eletronica", "presencial"], formaPadrao: "eletronica",
+    pecas: ["dfd", "tr", "edital", "contrato"], instrumento: "edital",
+    notaForma: "Contratação paralela e não excludente (art. 79). O instrumento é o Edital de chamamento público; dispensa disputa por não haver competição." },
+];
+export const modalidadeDef = (id: ModalidadeId) => MODALIDADES.find((m) => m.id === id)!;
+// mapeia a recomendação por valor/objeto (tr-modelo) para um ModalidadeId do catálogo
+export function modalidadeIdRecomendada(tipo: TipoObjeto, total: number): ModalidadeId {
+  const nome = recomendarModalidade(tipo, total).modalidade.toLowerCase();
+  if (nome.includes("dispensa")) return "dispensa";
+  if (nome.includes("inexig")) return "inexigibilidade";
+  if (nome.includes("concorrência") || nome.includes("concorrencia")) return "concorrencia";
+  if (nome.includes("credenc")) return "credenciamento";
+  return "pregao";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INSTRUMENTOS AUXILIARES (art. 78) — OPCIONAIS, marcáveis. Precedem/apoiam a licitação.
+// (credenciamento é auxiliar — art. 78, I —, não modalidade.) SRP fica SEPARADO abaixo.
+// ─────────────────────────────────────────────────────────────────────────────
+export type InstrumentoAuxiliarId = "credenciamento" | "pre_qualificacao" | "pmi" | "registro_cadastral";
+export type InstrumentoAuxiliarDef = { id: InstrumentoAuxiliarId; nome: string; base: string; desc: string };
+export const INSTRUMENTOS_AUXILIARES: InstrumentoAuxiliarDef[] = [
+  { id: "credenciamento", nome: "Credenciamento", base: "art. 78, I; art. 79",
+    desc: "Contratação paralela e não excludente de todos os interessados que atendam às condições — não há disputa. Instrumento: edital de chamamento." },
+  { id: "pre_qualificacao", nome: "Pré-qualificação", base: "art. 78, II; art. 80",
+    desc: "Seleção prévia de licitantes ou de bens que atendam a requisitos, válida por até 1 ano." },
+  { id: "pmi", nome: "Procedimento de Manifestação de Interesse (PMI)", base: "art. 78, III; art. 81",
+    desc: "Chamamento para a iniciativa privada apresentar estudos, investigações, levantamentos ou projetos." },
+  { id: "registro_cadastral", nome: "Registro Cadastral", base: "art. 78, V; art. 87",
+    desc: "Registro atualizado de fornecedores habilitados, para uso nas contratações." },
+];
+export const instrumentoAuxiliarDef = (id: InstrumentoAuxiliarId) => INSTRUMENTOS_AUXILIARES.find((i) => i.id === id)!;
+
+// SRP — Sistema de Registro de Preços (art. 78, IV; art. 82-86). SEPARADO: auxiliar que DEPENDE da modalidade base
+// (Pregão/Concorrência "para Registro de Preços"; Dispensa nos casos do regulamento). Com SRP a peça de resultado
+// é a ATA DE REGISTRO DE PREÇOS (não o Contrato direto).
+export const SRP_BASE = "art. 78, IV; art. 82";
+export const SRP_MODALIDADES: ModalidadeId[] = ["pregao", "concorrencia", "dispensa"];
+export const srpAdmitido = (id: ModalidadeId) => SRP_MODALIDADES.includes(id);
+
+// CRITÉRIO DE JULGAMENTO (art. 33) e MODO DE DISPUTA (art. 56) — separados da modalidade
+export type CriterioJulgamentoId = "menor_preco" | "maior_desconto" | "melhor_tecnica" | "tecnica_e_preco" | "maior_lance" | "maior_retorno";
+export const CRITERIOS_JULGAMENTO: { id: CriterioJulgamentoId; nome: string; base: string }[] = [
+  { id: "menor_preco", nome: "Menor preço", base: "art. 33, I" },
+  { id: "maior_desconto", nome: "Maior desconto", base: "art. 33, II" },
+  { id: "melhor_tecnica", nome: "Melhor técnica ou conteúdo artístico", base: "art. 33, III" },
+  { id: "tecnica_e_preco", nome: "Técnica e preço", base: "art. 33, IV" },
+  { id: "maior_lance", nome: "Maior lance", base: "art. 33, V" },
+  { id: "maior_retorno", nome: "Maior retorno econômico", base: "art. 33, VI" },
+];
+export type ModoDisputaId = "aberto" | "fechado" | "aberto_fechado" | "fechado_aberto";
+export const MODOS_DISPUTA: { id: ModoDisputaId; nome: string; base: string }[] = [
+  { id: "aberto", nome: "Aberto", base: "art. 56, I" },
+  { id: "fechado", nome: "Fechado", base: "art. 56, II" },
+  { id: "aberto_fechado", nome: "Aberto e fechado", base: "art. 56, §1º" },
+  { id: "fechado_aberto", nome: "Fechado e aberto", base: "art. 56" },
+];
+
+// ORDEM DAS FASES (art. 17) — regra: julgamento ANTES da habilitação; inversão é exceção justificada (art. 17, §1º)
+export type OrdemFases = "normal" | "invertida";
+export const ORDENS_FASES: { id: OrdemFases; nome: string; base: string }[] = [
+  { id: "normal", nome: "Julgamento → Habilitação (regra)", base: "art. 17, caput" },
+  { id: "invertida", nome: "Habilitação → Julgamento (invertida, justificar)", base: "art. 17, §1º" },
+];
+
+// PARTICIPAÇÃO ME/EPP (art. 48; LC 123/2006) — por ITEM/LOTE: disputa geral, exclusiva, ou cota reservada
+export type TipoParticipacao = "ampla" | "exclusiva_me" | "cota_reservada";
+export const PARTICIPACAO: { id: TipoParticipacao; nome: string; base: string; desc: string }[] = [
+  { id: "ampla", nome: "Disputa geral (ampla concorrência)", base: "—", desc: "Qualquer licitante pode disputar." },
+  { id: "exclusiva_me", nome: "Exclusiva ME/EPP", base: "art. 48, I", desc: "Disputa restrita a ME/EPP. Obrigatória em itens de contratação até R$ 80.000,00." },
+  { id: "cota_reservada", nome: "Cota reservada ME/EPP (divide o quantitativo)", base: "art. 48, III", desc: "Reserva até 25% do quantitativo para ME/EPP; o restante vai à ampla concorrência. Aplicável a itens divisíveis." },
+];
+export const LIMITE_EXCLUSIVA_ME = 80000; // art. 48, I
+
+// DIVISÃO DOS QUANTITATIVOS — expande cada item com cota reservada em duas LINHAS (ampla + cota ME/EPP)
+export type ItemDividido = ItemProcesso & { cota: "principal" | "reservada" | null; rotulo: string };
+export function itensComCota(itens: ItemProcesso[]): ItemDividido[] {
+  const out: ItemDividido[] = [];
+  for (const i of itens) {
+    if (i.participacao === "cota_reservada" && (Number(i.quantidade) || 0) > 0) {
+      const pct = Math.min(25, Math.max(1, Number(i.cotaReservadaPct) || 25));
+      const qReserva = Math.round((Number(i.quantidade) * pct) / 100);
+      const qPrincipal = Number(i.quantidade) - qReserva;
+      out.push({ ...i, quantidade: qPrincipal, cota: "principal", rotulo: `${i.descricao} — cota principal (ampla, ${100 - pct}%)` });
+      out.push({ ...i, id: i.id + "-r", quantidade: qReserva, cota: "reservada", rotulo: `${i.descricao} — cota reservada ME/EPP (${pct}%)` });
+    } else {
+      out.push({ ...i, cota: null, rotulo: i.descricao });
+    }
+  }
+  return out;
+}
+// rótulo curto da participação (pra tabela do documento)
+export const participacaoLabel = (i: ItemProcesso, total = valorItem(i)): string =>
+  i.participacao === "exclusiva_me" ? "Exclusiva ME/EPP (art. 48, I)"
+  : i.participacao === "cota_reservada" ? `Cota reservada ${Math.min(25, Number(i.cotaReservadaPct) || 25)}% ME/EPP (art. 48, III)`
+  : total > 0 && total <= LIMITE_EXCLUSIVA_ME ? "Ampla — atenção: item ≤ R$80k tende a exclusiva ME/EPP (art. 48, I)"
+  : "Ampla concorrência";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GERAÇÃO DE DOCUMENTO — helpers comuns
@@ -146,6 +302,29 @@ const blocoAlertas = (dados: DadosProcesso): string => {
     : `<div class="ok"><b>Especificação sem termos restritivos detectados</b> — boa abertura à concorrência (${ab}/100).</div>`;
 };
 
+// resolve a modalidade × forma efetiva (escolha explícita do gestor, ou a recomendada por valor/objeto)
+export type ModalidadeResolvida = { def: ModalidadeDef; forma: Forma; nome: string; criterio: string; justificativa: string; base: string; eletronico: boolean; srp: boolean };
+export function resolverModalidade(dados: DadosProcesso, total: number): ModalidadeResolvida {
+  const id = dados.modalidade ?? modalidadeIdRecomendada(dados.tipo, total);
+  const def = modalidadeDef(id);
+  const forma = dados.forma && def.formas.includes(dados.forma) ? dados.forma : def.formaPadrao;
+  const rec = recomendarModalidade(dados.tipo, total);
+  const criterio = def.id === "credenciamento" ? "não há disputa (contratação de todos os habilitados)" : def.id === "inexigibilidade" ? "inviável a competição" : rec.criterio;
+  const nome = def.instrumento === "ato" ? def.nome : `${def.nome} — forma ${FORMA_LABEL[forma].toLowerCase()}`;
+  const srp = !!dados.srp && srpAdmitido(def.id);
+  const nomeCompleto = srp ? `${nome} · para REGISTRO DE PREÇOS (SRP)` : nome;
+  return { def, forma, nome: nomeCompleto, criterio, justificativa: rec.justificativa, base: def.base, eletronico: forma === "eletronica", srp };
+}
+
+// PEÇAS EFETIVAS do processo — reagem ao SRP: com SRP a peça de resultado é a ATA DE REGISTRO DE PREÇOS (não o Contrato).
+// (o Edital passa a ser "Edital de RP" na prática; a troca estrutural é Contrato → Ata de RP.) É o que MONTAR.
+export function pecasDoProcesso(dados: DadosProcesso, total: number): ArtefatoId[] {
+  const { def, srp } = resolverModalidade(dados, total);
+  const pecas = [...def.pecas];
+  if (srp) return pecas.map((p) => (p === "contrato" ? "ata_rp" : p));
+  return pecas;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 1) DFD — Documento de Formalização da Demanda
 // ─────────────────────────────────────────────────────────────────────────────
@@ -167,7 +346,7 @@ function gerarDFD(dados: DadosProcesso, nomeEnte: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 function gerarETP(dados: DadosProcesso, nomeEnte: string): string {
   const total = valorTotal(dados.itens);
-  const rec = recomendarModalidade(dados.tipo, total);
+  const m = resolverModalidade(dados, total);
   const parcelavel = dados.itens.length > 1;
   const s = [
     secao(1, "Descrição da necessidade", "art. 18, §1º, I", `<p>${campo(dados.necessidade, "problema a ser resolvido sob a perspectiva do interesse público")}</p>`),
@@ -177,7 +356,7 @@ function gerarETP(dados: DadosProcesso, nomeEnte: string): string {
     secao(5, "Estimativa do valor da contratação", "art. 18, §1º, VI · IN 65/2021", `<p>Valor total estimado: <b>${brl(total)}</b>, obtido pela mediana dos preços de referência por item (medida robusta a outliers, IN SEGES/ME 65/2021). As memórias de cálculo e as fontes integram os autos.</p>`),
     secao(6, "Justificativa do parcelamento", "art. 18, §1º, VIII", `<p>${parcelavel ? "A contratação é divisível em itens/lotes, favorecendo a ampliação da competitividade; adota-se o julgamento por item, salvo justificativa técnica para agrupamento." : "Objeto único/indivisível — não se aplica o parcelamento, mantendo-se a integridade técnica da contratação."} <span class="lb">(Súmula TCU 247)</span></p>`),
     secao(7, "Resultados pretendidos", "art. 18, §1º, VIII", `<p>Atendimento da necessidade descrita, com economicidade (preço aderente à mediana de mercado), regularidade do processo e ampla disputa. <i class="mf">[Complementar com metas/benefícios esperados.]</i></p>`),
-    secao(8, "Posicionamento conclusivo sobre a viabilidade", "art. 18, §1º, XIII", `<p>Diante do exposto, a contratação mostra-se <b>tecnicamente viável, econômica e vantajosa</b> para a Administração, recomendando-se o prosseguimento por <b>${esc(rec.modalidade)}</b> (critério: ${esc(rec.criterio)}). ${esc(rec.justificativa)}</p>`),
+    secao(8, "Posicionamento conclusivo sobre a viabilidade", "art. 18, §1º, XIII", `<p>Diante do exposto, a contratação mostra-se <b>tecnicamente viável, econômica e vantajosa</b> para a Administração, recomendando-se o prosseguimento por <b>${esc(m.nome)}</b> (critério: ${esc(m.criterio)}). ${esc(m.justificativa)} <span class="lb">(${esc(m.base)})</span></p>`),
   ].join("");
   return docShell("Estudo Técnico Preliminar (ETP)", "Lei nº 14.133/2021, art. 18", s, nomeEnte, ["Equipe de planejamento", "Autoridade competente"]);
 }
@@ -187,7 +366,7 @@ function gerarETP(dados: DadosProcesso, nomeEnte: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 function gerarTR(dados: DadosProcesso, nomeEnte: string): string {
   const total = valorTotal(dados.itens);
-  const rec = recomendarModalidade(dados.tipo, total);
+  const m = resolverModalidade(dados, total);
   const s = [
     secao(1, "Definição do objeto", "art. 6º, XXIII, 'a'", `<p>${esc(resumoObjeto(dados))}, nos termos da tabela de itens abaixo, conforme condições e exigências estabelecidas neste instrumento.</p>${tabelaItens(dados.itens)}`),
     secao(2, "Fundamentação da contratação", "art. 6º, XXIII, 'b'", `<p>${campo(dados.necessidade, "necessidade pública, referenciada ao ETP e ao PCA")}</p>`),
@@ -195,7 +374,7 @@ function gerarTR(dados: DadosProcesso, nomeEnte: string): string {
     secao(4, "Requisitos da contratação", "art. 6º, XXIII, 'd' · art. 41", `<p>Especificação técnica por item (tabela acima), descrita por desempenho/função. Admite-se produto equivalente; eventual indicação de marca é excepcional, justificada nos autos e seguida de “ou equivalente”.</p>${blocoAlertas(dados)}`),
     secao(5, "Modelo de execução e local de entrega", "art. 6º, XXIII, 'e'/'f'", `<p>Prazo de entrega/execução: ${campo(dados.prazoEntrega, "prazo em dias")}. Local: ${campo(dados.local, "local de entrega")}. A execução será acompanhada e fiscalizada por servidor(es) formalmente designado(s).</p>`),
     secao(6, "Critérios de medição e pagamento", "art. 6º, XXIII, 'g'", `<p>O pagamento será efetuado após o recebimento definitivo do objeto, mediante atesto do fiscal do contrato e apresentação da nota fiscal, no prazo e nas condições da minuta de contrato.</p>`),
-    secao(7, "Forma de seleção e critério de julgamento", "art. 6º, XXIII, 'h'", `<p>Modalidade: <b>${esc(rec.modalidade)}</b> — critério de julgamento: ${esc(rec.criterio)}.<br><span style="color:#475569">${esc(rec.justificativa)} (${esc(rec.base)})</span></p>`),
+    secao(7, "Forma de seleção e critério de julgamento", "art. 6º, XXIII, 'h'", `<p>Modalidade: <b>${esc(m.nome)}</b> — critério de julgamento: ${esc(m.criterio)}.<br><span style="color:#475569">${esc(m.justificativa)} (${esc(m.base)})</span></p>`),
     secao(8, "Estimativa do valor (preço de referência)", "art. 6º, XXIII, 'i' · IN 65/2021", `<p>Valor total estimado: <b>${brl(total)}</b>. Valores unitários de referência = mediana das compras de municípios de SC (Banco de Preços — PNCP). Fonte e memórias de cálculo nos autos.</p>`),
     secao(9, "Adequação orçamentária", "art. 6º, XXIII, 'k' · LRF art. 16", `<p>${campo(dados.dotacao, "dotação orçamentária / fonte de recursos que suporta a despesa")}</p>`),
   ].join("");
@@ -207,13 +386,14 @@ function gerarTR(dados: DadosProcesso, nomeEnte: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 function gerarEdital(dados: DadosProcesso, nomeEnte: string): string {
   const total = valorTotal(dados.itens);
-  const rec = recomendarModalidade(dados.tipo, total);
-  const eletronico = /pregão|concorrência/i.test(rec.modalidade);
+  const m = resolverModalidade(dados, total);
+  const eletronico = m.eletronico;
+  const cred = m.def.id === "credenciamento";
   const s = [
-    secao(1, "Preâmbulo", "art. 25", `<p>O Município de ${esc(nomeEnte)}, por meio da ${campo(dados.orgao, "secretaria/unidade")}, torna público que realizará <b>${esc(rec.modalidade)}</b>, do tipo <b>${esc(rec.criterio)}</b>, ${eletronico ? "na forma eletrônica, " : ""}regido pela Lei nº 14.133/2021, na data e horário indicados em <i class="mf">[plataforma / portal de contratações]</i>. Sessão pública em <i class="mf">[data e hora]</i>.</p>`),
+    secao(1, "Preâmbulo", "art. 25", `<p>O Município de ${esc(nomeEnte)}, por meio da ${campo(dados.orgao, "secretaria/unidade")}, torna público que realizará <b>${esc(m.def.nome)}</b> ${eletronico ? "<b>na forma eletrônica</b>" : "<b>na forma presencial</b>"}${cred ? "" : `, do tipo <b>${esc(m.criterio)}</b>`}, regido pela Lei nº 14.133/2021, na data e horário indicados em <i class="mf">[${eletronico ? "plataforma / portal de contratações" : "endereço da sessão presencial"}]</i>. Sessão pública em <i class="mf">[data e hora]</i>.${eletronico ? "" : ` <span class="lb">(forma presencial: art. 17, §2º — justificar nos autos a inviabilidade do meio eletrônico)</span>`}</p>`),
     secao(2, "Do objeto", "art. 25", `<p>${esc(resumoObjeto(dados))}, conforme especificações do <b>Termo de Referência (Anexo I)</b>. Valor total estimado: <b>${brl(total)}</b>.</p>${tabelaItens(dados.itens)}`),
-    secao(3, "Das condições de participação", "art. 9º; LC 123/2006", `<p>Poderão participar os interessados do ramo pertinente ao objeto que atendam às exigências deste Edital. Será assegurado tratamento diferenciado às microempresas e empresas de pequeno porte (LC 123/2006), inclusive o direito de preferência e a regularização fiscal tardia.</p>`),
-    secao(4, "Da apresentação e do julgamento das propostas", "art. 34; art. 56–57", `<p>As propostas serão julgadas pelo critério de <b>${esc(rec.criterio)}</b>. ${eletronico ? "Haverá fase de lances." : ""} Será verificada a exequibilidade e a conformidade da proposta com o Termo de Referência.</p>`),
+    secao(3, "Das condições de participação", "art. 9º; LC 123/2006", `<p>Poderão participar os interessados do ramo pertinente ao objeto que atendam às exigências deste Edital. Será assegurado tratamento diferenciado às microempresas e empresas de pequeno porte (LC 123/2006), inclusive o direito de preferência e a regularização fiscal tardia.${cred ? " No credenciamento, serão contratados TODOS os interessados que preencherem os requisitos — não há disputa entre eles (art. 79)." : ""}</p>`),
+    secao(4, "Da apresentação e do julgamento das propostas", "art. 34; art. 56–57", `<p>${cred ? "Não há julgamento competitivo: a habilitação é a condição do credenciamento; o preço é fixado pela Administração ou tabelado." : `As propostas serão julgadas pelo critério de <b>${esc(m.criterio)}</b>. ${eletronico ? "Haverá fase de lances." : "As propostas serão apresentadas e abertas em sessão presencial."} Será verificada a exequibilidade e a conformidade da proposta com o Termo de Referência.`}</p>`),
     secao(5, "Da habilitação", "art. 62–70", `<p>Habilitação jurídica, fiscal/social/trabalhista, econômico-financeira e técnica, restrita ao necessário ao cumprimento do objeto. <b>É vedada a exigência cumulativa de capital social mínimo e patrimônio líquido</b> (Súmula TCU 275) — exige-se apenas um dos parâmetros, quando cabível.</p>`),
     secao(6, "Dos recursos", "art. 165–168", `<p>Caberá recurso no prazo legal, dirigido à autoridade competente, franqueada vista dos autos.</p>`),
     secao(7, "Da adjudicação e homologação", "art. 71", `<p>Encerrado o julgamento e a habilitação, o objeto será adjudicado ao licitante vencedor e o procedimento homologado pela autoridade competente.</p>`),
@@ -243,6 +423,44 @@ function gerarContrato(dados: DadosProcesso, nomeEnte: string): string {
   return docShell("Minuta de Contrato Administrativo", "Lei nº 14.133/2021, art. 89–92", s, nomeEnte, ["Pelo CONTRATANTE", "Pela CONTRATADA"]);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 4b) ATO / AVISO DE CONTRATAÇÃO DIRETA — dispensa/inexigibilidade (art. 72)
+// ─────────────────────────────────────────────────────────────────────────────
+function gerarAto(dados: DadosProcesso, nomeEnte: string): string {
+  const total = valorTotal(dados.itens);
+  const m = resolverModalidade(dados, total);
+  const inexig = m.def.id === "inexigibilidade";
+  const fundamento = inexig ? "INEXIGIBILIDADE de licitação (art. 74)" : "DISPENSA de licitação (art. 75)";
+  const s = [
+    secao(1, "Objeto e fundamento da contratação direta", "art. 72, I", `<p>${esc(resumoObjeto(dados))} — contratação por <b>${esc(fundamento)}</b>, ${m.eletronico ? "na forma eletrônica" : "na forma presencial"}, regida pela Lei nº 14.133/2021.</p>${tabelaItens(dados.itens)}`),
+    secao(2, "Justificativa da contratação e da escolha do fornecedor", "art. 72, II", `<p>${inexig
+      ? `Inviável a competição (art. 74): <i class="mf">[fornecedor exclusivo / notória especialização / credenciamento — indicar a hipótese e comprovar]</i>. A escolha recai sobre <i class="mf">[fornecedor]</i> por <i class="mf">[razão da escolha]</i>.`
+      : `Enquadramento da dispensa (art. 75): <i class="mf">[indicar o inciso — valor (I/II), emergência, licitação deserta, etc.]</i>. ${total > 0 ? `Valor total (${brl(total)}) compatível com a hipótese.` : ""}`}</p>`),
+    secao(3, "Justificativa do preço", "art. 72, III", `<p>Preço aderente à mediana de mercado (Banco de Preços — PNCP); memórias de cálculo e fontes nos autos. Valor total estimado: <b>${brl(total)}</b>.</p>${blocoAlertas(dados)}`),
+    secao(4, "Adequação orçamentária", "art. 72; LRF art. 16", `<p>${campo(dados.dotacao, "dotação orçamentária / fonte de recursos")}</p>`),
+    secao(5, "Ratificação pela autoridade competente", "art. 72, parágrafo único", `<p>Autorizo e <b>ratifico</b> a presente contratação direta, com fundamento no ${esc(fundamento)}, determinando sua publicação no PNCP para eficácia (art. 72, parágrafo único, c/c art. 94).</p>`),
+  ];
+  return docShell("Aviso / Ato de Contratação Direta", "Lei nº 14.133/2021, art. 72", s.join(""), nomeEnte, ["Agente/setor responsável", "Autoridade competente — ratificação"]);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5) ATA DE REGISTRO DE PREÇOS — peça de resultado quando há SRP (art. 82–86), no lugar do Contrato
+// ─────────────────────────────────────────────────────────────────────────────
+function gerarAtaRP(dados: DadosProcesso, nomeEnte: string): string {
+  const total = valorTotal(dados.itens);
+  const m = resolverModalidade(dados, total);
+  const s = [
+    secao(1, "Do órgão gerenciador e participantes", "art. 82; art. 86", `<p><b>Órgão gerenciador:</b> Município de ${esc(nomeEnte)}, por meio da ${campo(dados.orgao, "secretaria/unidade")}.<br><b>Órgãos participantes:</b> <i class="mf">[listar, se houver]</i>. Adesões posteriores (“caronas”) observarão os limites do art. 86.</p>`),
+    secao(2, "Do objeto e dos preços registrados", "art. 82, §1º", `<p>Registro de preços para eventual e futura contratação de ${esc(resumoObjeto(dados))}, resultante da ${esc(m.nome)}, conforme o Edital e a proposta vencedora.</p>${tabelaItens(dados.itens)}`),
+    secao(3, "Do fornecedor e do cadastro de reserva", "art. 82, §4º", `<p><b>Fornecedor registrado:</b> <i class="mf">[razão social, CNPJ do vencedor]</i>. <b>Cadastro de reserva:</b> <i class="mf">[demais licitantes que aceitaram cotar ao preço do 1º colocado, na ordem de classificação]</i>.</p>`),
+    secao(4, "Da vigência", "art. 84", `<p>A Ata vigora por <b>1 (um) ano</b>, podendo ser prorrogada por igual período desde que comprovada a vantajosidade (art. 84), limitada a 2 anos no total.</p>`),
+    secao(5, "Das condições de contratação", "art. 83", `<p>A existência de preços registrados <b>não obriga</b> a Administração a contratar; a contratação far-se-á por <b>contrato ou instrumento equivalente</b> (empenho), respeitada a ordem de classificação e as quantidades registradas.</p>`),
+    secao(6, "Do controle e da revisão dos preços", "art. 82, §1º; art. 86", `<p>Os preços registrados serão acompanhados e poderão ser revistos em caso de alteração das condições de mercado, na forma do regulamento.</p>${blocoAlertas(dados)}`),
+    secao(7, "Das obrigações e sanções", "art. 156", `<p>O fornecedor registrado sujeita-se às sanções do art. 156 pelo descumprimento das condições da Ata, assegurados o contraditório e a ampla defesa.</p>`),
+  ];
+  return docShell("Ata de Registro de Preços", "Lei nº 14.133/2021, art. 82–86 (SRP)", s.join(""), nomeEnte, ["Órgão gerenciador", "Fornecedor registrado"]);
+}
+
 // dispatcher
 export function gerarArtefato(id: ArtefatoId, dados: DadosProcesso, nomeEnte: string): string {
   switch (id) {
@@ -250,7 +468,9 @@ export function gerarArtefato(id: ArtefatoId, dados: DadosProcesso, nomeEnte: st
     case "etp": return gerarETP(dados, nomeEnte);
     case "tr": return gerarTR(dados, nomeEnte);
     case "edital": return gerarEdital(dados, nomeEnte);
+    case "ato": return gerarAto(dados, nomeEnte);
     case "contrato": return gerarContrato(dados, nomeEnte);
+    case "ata_rp": return gerarAtaRP(dados, nomeEnte);
   }
 }
 
@@ -261,7 +481,7 @@ export function prontoPara(id: ArtefatoId, dados: DadosProcesso): { ok: boolean;
   if (!temItem) falta.push("ao menos um item na cesta");
   if (!dados.necessidade.trim() && (id === "dfd" || id === "etp" || id === "tr")) falta.push("a justificativa da necessidade");
   const temQtdPreco = dados.itens.some((i) => (Number(i.quantidade) || 0) > 0 && (Number(i.precoUnit) || 0) > 0);
-  if (!temQtdPreco && (id === "etp" || id === "tr" || id === "edital" || id === "contrato")) falta.push("quantidade e preço de referência dos itens");
+  if (!temQtdPreco && (id === "etp" || id === "tr" || id === "edital" || id === "ato" || id === "contrato")) falta.push("quantidade e preço de referência dos itens");
   return { ok: falta.length === 0, falta };
 }
 
