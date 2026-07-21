@@ -39,7 +39,7 @@ export function extraiMarcas(texto){
 export const LEIS_PORTAL = {
   marca_e_doc:      "A MARCA é fato de DOCUMENTO, nunca campo de API. Provado em PNCP e Compras.gov dados-abertos: as APIs dão vencedor+preço, NUNCA marca (art.41 veda no edital → nunca virou campo). Coletar marca = SEMPRE baixar+parsear o doc de resultado.",
   bolsa_vs_erp:     "BOLSA roda a disputa e guarda o doc de resultado. ERP (IPM/atende, Betha, Pública, Governança) só PUBLICA/RELATA — o domínio dele aparece no edital como publicação, mas a disputa roda em ALGUMA bolsa. Rota: bolsa SEMPRE vence o ERP; ERP só é 'portal' se tem módulo próprio de disputa E a URL vem em contexto de disputa (pregão/lance/sessão).",
-  detecta_dominio:  "Rotear pelo DOMÍNIO de disputa no doc (portaldecompraspublicas.com, bllcompras.com…), NUNCA pelo NOME solto (aparece em boilerplate/CRC → falso-positivo; 'e-lic' deu 87% falso, 'banco do brasil' 99% falso).",
+  detecta_dominio:  "O portal é ESCOLHA da entidade, sabida SÓ pelo DOMÍNIO de disputa no doc — nunca pelo NOME (boilerplate/CRC: 'e-lic' 87% falso, 'banco do brasil' 99% falso), nunca pela GEOGRAFIA/UF (ex: Governo de SP usa compras.gov federal, não portal próprio; ter portal estadual é exceção — SC tem), nunca pelo ERP (relata, não define). Cada portal tem SEU padrão; casar sempre pelo domínio, por processo.",
   entrada_universal:"PNCP linkSistemaOrigem dá a URL do portal por processo — mas só p/ PARTE (PCP sempre; BLL subconjunto; VAZIO p/ BNC, Compras.gov, e-lic). Vazio → busca nativa do portal (quase sempre reCAPTCHA/WebForms).",
 };
 // Os 5 ARQUÉTIPOS de acesso — todo portal do país cai num deles; a receita reusa nacionalmente:
@@ -136,7 +136,7 @@ export const PORTAIS = {
     acesso: "webforms", marca: "V", status: "blocked",
     base: "https://e-lic.sc.gov.br",
     portal_novo: "https://compras.sc.gov.br (SPA + API Spring /api/editais; download de doc atrás de reCAPTCHA)",
-    notas: "PORTAL ESTADUAL (SEA-SC) — específico da UF, NÃO nacional. e-lic velho=WebForms(__VIEWSTATE) rejeita headless; compras.sc.gov.br novo=SPA c/ API mas doc gated por reCAPTCHA. Nossos procs municipais em maioria só CITAM e-lic p/ CRC (não é a disputa). Cada UF tem seu portal estadual (SP=BEC…) — o PADRÃO 'portal estadual gated' reusa, o domínio muda por UF.",
+    notas: "Portal PRÓPRIO do Governo de SC (SEA-SC). e-lic velho=WebForms(__VIEWSTATE) rejeita headless; compras.sc.gov.br novo=SPA c/ API mas doc gated por reCAPTCHA. Nossos procs municipais em maioria só CITAM e-lic p/ CRC (não é a disputa). ⚠️ NÃO assumir 'cada UF tem portal próprio': é ESCOLHA da entidade — ex. Governo de SP usa compras.gov (federal), não portal próprio; muitos entes usam PCP/bolsa. O portal só se sabe pelo DOMÍNIO no doc, nunca pela geografia. Ter portal estadual próprio é EXCEÇÃO (SC tem), não regra.",
   },
   "Atende.net (IPM)": {
     detecta: /[a-z0-9-]+\.atende\.net/i,   // ⚠️ ERP-PUBLISHER, não bolsa — ver tipo
