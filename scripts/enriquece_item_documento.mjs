@@ -11,6 +11,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url)); const ROOT = pat
 const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const LIMIT = Number(process.env.LIMIT || 0);
 const CONC = Number(process.env.CONC || 4);
+// PARALELISMO POR NÚCLEO: cada processo pega uma FATIA disjunta (shard) por hash do processo. NSHARD=nº de cores.
+const NSHARD = Number(process.env.NSHARD || 1);
+const SHARD = Number(process.env.SHARD || 0);
 const RANK = { alta: 3, media: 2, baixa: 1 };
 // ORDEM DA CONSTRUÇÃO (fase preparatória → publicação) — o "primeiro ao último documento"
 const FASE = { 10: "DFD", 7: "ETP", 5: "Anteprojeto", 6: "Projeto Básico", 8: "Projeto Executivo", 4: "TR",
@@ -36,9 +39,23 @@ function bloco(docNorm, off, offs, cap = 600) {
 const consolida = (n, base) => (n === 0 ? "ausente" : n >= 3 ? "alta" : (n >= 2 && RANK[base] >= 2) ? "alta" : base);
 
 async function main() {
-  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 4, statement_timeout: 120000 });
+  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 3, statement_timeout: 120000 });
   db.on("error", () => {});
   const q = async (s, p) => { let u; for (let i = 0; i < 5; i++) { try { return await db.query(s, p); } catch (e) { u = e; if (["22P05", "23502", "42703", "42P10"].includes(e.code)) throw e; await sleep(1000 * (i + 1)); } } throw new Error(`db: ${u?.message}`); };
+  // INSERT EM LOTE (multi-row) — 1 round-trip por bloco em vez de 1 por linha (destrava o Neon)
+  const bulk = async (table, cols, rows, conflict, upd) => {
+    if (!rows.length) return;
+    const CH = 500;
+    for (let s = 0; s < rows.length; s += CH) {
+      const chunk = rows.slice(s, s + CH); const vals = [];
+      const ph = chunk.map((r, ri) => `(${cols.map((_, ci) => `$${ri * cols.length + ci + 1}`).join(",")})`).join(",");
+      chunk.forEach((r) => cols.forEach((c) => vals.push(r[c])));
+      const setC = upd.map((c) => `${c}=EXCLUDED.${c}`).join(",");
+      await q(`INSERT INTO ${table} (${cols.join(",")}) VALUES ${ph} ON CONFLICT (${conflict}) DO UPDATE SET ${setC}, atualizado=now()`, vals);
+    }
+  };
+  const COLS_EV = ["cnpj","ano","seq","numero","cod_ibge","ordem","fase","tipo_id","sequencial_documento","descricao_no_documento","eh_spec","spec_score","score","conf"];
+  const COLS_EN = ["cnpj","ano","seq","numero","cod_ibge","material_servico","descricao_api","unidade_api","catalogo_api","descricao_documento","descricao_e_spec","catalogo_codigo","confianca","fonte_documento","fonte_tipo_id","n_docs","docs","metodo","trecho_ancora"];
 
   await q(`CREATE SCHEMA IF NOT EXISTS app`);
   await q(`CREATE TABLE IF NOT EXISTS app.item_enriquecimento (
@@ -60,14 +77,15 @@ async function main() {
   await q(`CREATE INDEX IF NOT EXISTS ix_ienr_conf ON app.item_enriquecimento (confianca)`);
   await q(`CREATE INDEX IF NOT EXISTS ix_iev_item ON app.item_documento_evidencia (cnpj,ano,seq,numero)`);
 
+  // FILA MATERIALIZADA (app.fila_enriquecimento) — construída 1× por scripts/constroi_fila_enriquecimento.mjs.
+  // Aqui é só um SELECT LEVE numa tabela pequena (231k linhas) + anti-join no pkey; nada de varrer os 344MB de texto.
   const lim = LIMIT ? `LIMIT ${LIMIT}` : "";
+  const shardW = NSHARD > 1 ? `AND (abs(hashtext(f.cnpj||'-'||f.ano||'-'||f.seq)) % ${NSHARD}) = ${SHARD}` : "";
   const procs = (await q(`
-    SELECT t.cnpj, t.ano, t.seq, count(DISTINCT a.tipo_documento_id) nfases FROM arquivo_texto_sc t
-    JOIN arquivos_sc a USING (cnpj, ano, seq, sequencial_documento)
-    WHERE t.chars > 500 AND t.excluido_em IS NULL AND a.tipo_documento_id = ANY($1)
-      AND NOT EXISTS (SELECT 1 FROM app.item_enriquecimento e WHERE e.cnpj=t.cnpj AND e.ano=t.ano AND e.seq=t.seq)
-    GROUP BY t.cnpj, t.ano, t.seq ORDER BY nfases DESC ${lim}`, [CRIACAO])).rows;
-  console.log(`enriquecer: ${procs.length.toLocaleString()} processos (do mais rico em documentos p/ o mais pobre) · conc ${CONC}`);
+    SELECT f.cnpj, f.ano, f.seq, f.nfases FROM app.fila_enriquecimento f
+    WHERE NOT EXISTS (SELECT 1 FROM app.item_enriquecimento e WHERE e.cnpj=f.cnpj AND e.ano=f.ano AND e.seq=f.seq) ${shardW}
+    ORDER BY f.nfases DESC ${lim}`)).rows;
+  console.log(`[shard ${SHARD}/${NSHARD}] enriquecer: ${procs.length.toLocaleString()} processos · conc ${CONC}`);
 
   let i = 0, done = 0, itensOk = 0, comDesc = 0;
   await Promise.all(Array.from({ length: CONC }, async () => {
@@ -85,6 +103,7 @@ async function main() {
         if (!docs.length) continue;
         const cod_ibge = docs[0].cod_ibge;
         const porDoc = docs.map((d) => ({ tid: d.tid, sd: d.sd, ...casa(itens, d.texto) }));
+        const evidRows = [], enrRows = [];   // acumula tudo do processo p/ gravar EM LOTE (1 ida ao banco por tabela)
 
         for (let k = 0; k < itens.length; k++) {
           // EVIDÊNCIA POR DOCUMENTO — a descrição do item em CADA doc (1º ao último); DEDUPE por texto (obras têm
@@ -99,11 +118,7 @@ async function main() {
             vistos.add(key);
             const cls = ehEspecificacao(desc);
             evid.push({ tid: D.tid, sd: D.sd, ordem: ORDER.indexOf(D.tid), fase: FASE[D.tid] || `tipo ${D.tid}`, desc, score: r.score ?? null, conf: r.conf, docNorm: D.docNorm, off: r.off, ehSpec: cls.ok, specScore: cls.score });
-            await q(`INSERT INTO app.item_documento_evidencia (cnpj,ano,seq,numero,cod_ibge,ordem,fase,tipo_id,sequencial_documento,descricao_no_documento,eh_spec,spec_score,score,conf)
-              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-              ON CONFLICT (cnpj,ano,seq,numero,tipo_id,sequencial_documento) DO UPDATE SET
-                descricao_no_documento=EXCLUDED.descricao_no_documento, eh_spec=EXCLUDED.eh_spec, spec_score=EXCLUDED.spec_score, score=EXCLUDED.score, conf=EXCLUDED.conf, ordem=EXCLUDED.ordem, fase=EXCLUDED.fase, atualizado=now()`,
-              [p.cnpj, p.ano, p.seq, itens[k].numeroItem, cod_ibge, ORDER.indexOf(D.tid), FASE[D.tid] || `tipo ${D.tid}`, D.tid, D.sd, desc, cls.ok, cls.score, r.score ?? null, r.conf]);
+            evidRows.push({ cnpj: p.cnpj, ano: p.ano, seq: p.seq, numero: itens[k].numeroItem, cod_ibge, ordem: ORDER.indexOf(D.tid), fase: FASE[D.tid] || `tipo ${D.tid}`, tipo_id: D.tid, sequencial_documento: D.sd, descricao_no_documento: desc, eh_spec: cls.ok, spec_score: cls.score, score: r.score ?? null, conf: r.conf });
           }
           // CONSOLIDADO — PREFERE um bloco que É especificação (portão); convergência eleva a confiança
           const specs = evid.filter((e) => e.ehSpec);
@@ -116,21 +131,18 @@ async function main() {
           const trecho = best ? best.docNorm.slice(Math.max(0, best.off - 12), best.off + 48).replace(/\s+/g, " ").trim() : null;
           const fasesDistintas = [...new Set(evid.slice().sort((a, b) => a.ordem - b.ordem).map((e) => e.fase))].join(" → ");
 
-          await q(`INSERT INTO app.item_enriquecimento
-            (cnpj,ano,seq,numero,cod_ibge,material_servico, descricao_api,unidade_api,catalogo_api,
-             descricao_documento,descricao_e_spec,catalogo_codigo, confianca,fonte_documento,fonte_tipo_id,n_docs,docs,metodo,trecho_ancora)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
-            ON CONFLICT (cnpj,ano,seq,numero) DO UPDATE SET
-              descricao_api=EXCLUDED.descricao_api, unidade_api=EXCLUDED.unidade_api, catalogo_api=EXCLUDED.catalogo_api,
-              descricao_documento=EXCLUDED.descricao_documento, descricao_e_spec=EXCLUDED.descricao_e_spec, catalogo_codigo=EXCLUDED.catalogo_codigo,
-              confianca=EXCLUDED.confianca, fonte_documento=EXCLUDED.fonte_documento, fonte_tipo_id=EXCLUDED.fonte_tipo_id,
-              n_docs=EXCLUDED.n_docs, docs=EXCLUDED.docs, metodo=EXCLUDED.metodo, trecho_ancora=EXCLUDED.trecho_ancora, atualizado=now()`,
-            [p.cnpj, p.ano, p.seq, itens[k].numeroItem, cod_ibge, itens[k].material_ou_servico,
-             itens[k].descricao, itens[k].unidade, itens[k].catmat,
-             best ? best.desc : null, best ? best.ehSpec : null, cat, conf, best ? best.fase : null, best ? best.tid : null, evid.length,
-             fasesDistintas, metodo, trecho]);
+          enrRows.push({ cnpj: p.cnpj, ano: p.ano, seq: p.seq, numero: itens[k].numeroItem, cod_ibge, material_servico: itens[k].material_ou_servico,
+            descricao_api: itens[k].descricao, unidade_api: itens[k].unidade, catalogo_api: itens[k].catmat,
+            descricao_documento: best ? best.desc : null, descricao_e_spec: best ? best.ehSpec : null, catalogo_codigo: cat,
+            confianca: conf, fonte_documento: best ? best.fase : null, fonte_tipo_id: best ? best.tid : null, n_docs: evid.length,
+            docs: fasesDistintas, metodo, trecho_ancora: trecho });
           itensOk++; if (best && best.ehSpec) comDesc++;
         }
+        // GRAVA EM LOTE. A DESCRIÇÃO (item_enriquecimento, 1 linha/item) é o objetivo — grava sempre.
+        // A evidência (item×doc, ~milhares de linhas/processo) é auditoria — só grava se EVID=1 (senão estrangula o banco).
+        await bulk("app.item_enriquecimento", COLS_EN, enrRows, "cnpj,ano,seq,numero", ["descricao_api","unidade_api","catalogo_api","descricao_documento","descricao_e_spec","catalogo_codigo","confianca","fonte_documento","fonte_tipo_id","n_docs","docs","metodo","trecho_ancora"]);
+        if (process.env.EVID === "1")
+          await bulk("app.item_documento_evidencia", COLS_EV, evidRows, "cnpj,ano,seq,numero,tipo_id,sequencial_documento", ["descricao_no_documento","eh_spec","spec_score","score","conf","ordem","fase"]);
       } catch { /* deixa p/ o próximo run */ }
       if (++done % 20 === 0) process.stdout.write(`  ${done}/${procs.length} · ${itensOk} itens · ${comDesc} c/descrição\r`);
     }
