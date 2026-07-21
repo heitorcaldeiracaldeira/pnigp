@@ -24,16 +24,16 @@ const t = Date.now();
 await q(`
   BEGIN;
   DELETE FROM ${CONF};
-  INSERT INTO ${CONF}(cnpj,ano,seq,numero,marca,fornecedor_cnpj,valor,marca_generica,cnpj_ok,valor_ok,portal,fonte_titulo,atualizado)
+  INSERT INTO ${CONF}(cnpj,ano,seq,numero,marca,modelo,fornecedor_cnpj,valor,marca_generica,cnpj_ok,valor_ok,portal,fonte_titulo,atualizado)
   SELECT DISTINCT ON (i.cnpj,i.ano,i.seq,i.numero)
-    i.cnpj,i.ano,i.seq, i.numero::text, s.marca, i.cnpj_fornecedor, i.unit_homologado,
+    i.cnpj,i.ano,i.seq, i.numero::text, s.marca, nullif(btrim(s.modelo),''), i.cnpj_fornecedor, i.unit_homologado,
     false, false, true, 'consolidado', s.via, now()
   FROM (
-    SELECT cnpj,ano,seq, marca, valor::numeric v, 'C:colunar' via, 1 pri FROM ${COLUNAR}
+    SELECT cnpj,ano,seq, marca, modelo, valor::numeric v, 'C:colunar' via, 1 pri FROM ${COLUNAR}
     UNION ALL
-    SELECT cnpj,ano,seq, marca, valor::numeric v, 'AB:'||coalesce(padrao,'?') via, 2 pri FROM ${PADRAO}
+    SELECT cnpj,ano,seq, marca, NULL::text modelo, valor::numeric v, 'AB:'||coalesce(padrao,'?') via, 2 pri FROM ${PADRAO}
     UNION ALL
-    SELECT cnpj,ano,seq, marca,
+    SELECT cnpj,ano,seq, marca, modelo,
       (CASE WHEN replace(replace(valor_unitario::text,'.',''),',','.') ~ '^[0-9]+(\\.[0-9]+)?$'
             THEN replace(replace(valor_unitario::text,'.',''),',','.')::numeric END) v, 'V:visao' via, 3 pri FROM ${VISAO}
   ) s
