@@ -193,6 +193,44 @@ export const ERPS = {
 // O ERP NÃO restringe o conjunto de portais possíveis; TODOS os portais do registro são candidatos.
 
 // ============================================================================
+// UNIVERSO NACIONAL (jul/2026) — portal = bolsa (a MESMA coisa: onde a disputa roda e o doc vive).
+// Todos publicam no PNCP (Lei 14.133) → a coleta universal é sempre via PNCP; receita direta só onde cracked.
+// ============================================================================
+// ⛔ NÃO SÃO PORTAIS — buscadores/monitoramento de editais; NÃO conduzem pregão, NÃO têm doc de resultado.
+// EXCLUIR da rota (senão o domínio deles no edital vira falso-positivo):
+export const NAO_PORTAL = /effecti\.com|sigapregao\.com|elicitacao\.com|conlicitacao\.com|alertalicitacao\.com|licitaja\.com/i;
+
+// Bolsas PRIVADAS nacionais (além das do registro principal):
+export const BOLSAS_EXTRAS = {
+  "Publinexo (Bionexo)":  { detecta:/publinexo\.bionexo\.com|publinexo/i, tipo:"bolsa", abrangencia:"nacional (SAÚDE)", entrada:"pncp_link", status:"recon", notas:"maior comunidade de fornecedores hospitalares; login/credenciamento; doc via PNCP." },
+  "LicitaConnect":        { detecta:/licitaconnect\.com/i,                tipo:"bolsa", abrangencia:"nacional", entrada:"pncp_link", status:"recon" },
+  "AMM Licita":           { detecta:/ammlicita\.org/i,                    tipo:"bolsa", abrangencia:"MG (853 munis)", entrada:"api_lista", status:"cracked", reusa:"Licitar Digital (MESMO motor)", notas:"⭐ roda na plataforma do Licitar Digital → REUSA a receita RECEITA['Licitar Digital'] (manager-api), só muda o subdomínio." },
+};
+// Portais ESTADUAIS próprios (o Estado que tem sistema próprio; a MAIORIA dos entes usa portal nacional — ter próprio é minoria).
+// Caminho: quase todos publicam no PNCP → viaPNCP. 'consulta pública SIM' mas doc de resultado gralmente gated (reCAPTCHA/login).
+export const PORTAIS_ESTADUAIS = {
+  "BEC-SP":            { uf:"SP", detecta:/bec\.sp\.gov\.br/i },
+  "Compras SP (estado)": { uf:"SP", detecta:/compras\.sp\.gov\.br|compras\.prefeitura\.sp\.gov\.br/i },
+  "Comprasnet BA":     { uf:"BA", detecta:/comprasnet\.ba\.gov\.br/i },
+  "Portal Compras CE": { uf:"CE", detecta:/portalcompras\.ce\.gov\.br/i },
+  "Compras ES":        { uf:"ES", detecta:/compras\.es\.gov\.br/i },
+  "SIGA-RJ":           { uf:"RJ", detecta:/compras\.rj\.gov\.br/i },
+  "SIGA-MA":           { uf:"MA", detecta:/compras\.ma\.gov\.br/i },
+  "SIAG-MT":           { uf:"MT", detecta:/aquisicoes\.seplag\.mt\.gov\.br/i },
+  "Central Compras MS":{ uf:"MS", detecta:/servicos\.ms\.gov\.br\/central_compras/i },
+  "Compras RS/CELIC":  { uf:"RS", detecta:/compras\.rs\.gov\.br|celic\.rs\.gov\.br|pregaoonlinebanrisul\.com|pregaobanrisul\.com/i },
+  "e-Compras DF":      { uf:"DF", detecta:/compras\.df\.gov\.br/i },
+  "e-Compras AM":      { uf:"AM", detecta:/e-compras\.am\.gov\.br|compras\.manaus\.am\.gov\.br/i },
+  "Compras PA":        { uf:"PA", detecta:/compraspara\.pa\.gov\.br/i },
+  "Central Compras PB":{ uf:"PB", detecta:/centraldecompras\.pb\.gov\.br/i },
+  "Comprasnet SE":     { uf:"SE", detecta:/comprasnet\.se\.gov\.br/i },
+  "Compras PR (GMS)":  { uf:"PR", detecta:/compras\.pr\.gov\.br/i },
+  "Compras MG (SIAD)": { uf:"MG", detecta:/compras\.mg\.gov\.br/i },
+  "e-lic SC":          { uf:"SC", detecta:/e-?lic\.sc\.gov\.br|compras\.sc\.gov\.br/i },   // já no registro principal
+  "Caixa":             { uf:"federal", detecta:/licitacoes\.caixa\.gov\.br/i, notas:"compras DA Caixa, não bolsa aberta a terceiros" },
+};
+
+// ============================================================================
 // COMPORTAMENTO POR MODALIDADE × FORMA (Lei 14.133/2021 e 8.666/1993)
 // Para CADA modalidade: instrumento convocatório, documento de RESULTADO (onde a
 // homologação/adjudicação registra o vencedor) e ONDE vive a MARCA + qual padrão.
