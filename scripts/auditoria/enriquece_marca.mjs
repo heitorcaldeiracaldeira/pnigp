@@ -12,7 +12,9 @@
 // node scripts/auditoria/enriquece_marca.mjs   (LIMIT=N leva · ARQ=<arquetipo> só um · PORTAL=<nome> só um)
 import fs from "fs"; import pg from "pg"; import { execSync } from "child_process";
 import { extractText, getDocumentProxy } from "unpdf";
-import { PORTAIS, limpaMarca, parseBR, extraiMarcas } from "../portais_comportamento.mjs";
+import { limpaMarca, parseBR, extraiMarcas } from "../portais_comportamento.mjs";
+import { buscaDoPortal, buscaPeloLink, RECEITA } from "./receitas_portais.mjs";
+const USAR_LINK = process.env.USAR_LINK === "1";   // usa linkSistemaOrigem do PNCP (rate-limited) p/ descobrir a origem
 const U = fs.readFileSync("./.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }, max: 3, statement_timeout: 590000 });
 const UF = (process.env.UF || "sc").toLowerCase();
@@ -24,22 +26,16 @@ const FILTRO_ARQ = process.env.ARQ || null, FILTRO_PORTAL = process.env.PORTAL |
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const RES_REGEX = "(homolog|ata de|ata final|adjudica|resultado|vencedor|registro de pre|proposta)";
 
-// arquétipo do portal (o motor central: portal → arquétipo). Fallback = via PNCP (universal p/ bolsa gated).
-function arquetipoDe(portal) {
-  const p = PORTAIS[portal];
-  if (!p || p.tipo === "erp" || p.tipo === "federal") return null;   // ERP nunca é destino; federal fora de escopo
-  return p.arquetipo || "gated";
+// ---------- FONTES do doc de resultado (texto) — 3 níveis, do mais barato ao direto ----------
+// 1) ACERVO: doc de resultado com texto já extraído (grátis) + texto amplo p/ resolver id do portal
+async function textoAcervo(p) {
+  const r = await db.query(`select a.titulo, t.texto, t.chars from ${ARQ} a join ${TXT} t using(cnpj,ano,seq,sequencial_documento)
+    where a.cnpj=$1 and a.ano=$2 and a.seq=$3 and t.chars>400 order by t.chars desc limit 8`, [p.cnpj, p.ano, p.seq]);
+  const resultado = r.rows.filter((x) => new RegExp(RES_REGEX, "i").test(x.titulo || "") || /Proposta adjudicada|Marca\/Fabricante/i.test(x.texto)).map((x) => x.texto).join("\n");
+  const todo = r.rows.map((x) => x.texto).join("\n");   // p/ extrair a URL/id do portal no edital
+  return { resultado, todo };
 }
-
-// ---------- HANDLERS por arquétipo (retornam TEXTO do doc de resultado) ----------
-// doc já no acervo (o mais barato — grátis): pega o doc de resultado com texto já extraído
-async function docNoAcervo(p) {
-  const r = await db.query(`select t.texto from ${ARQ} a join ${TXT} t using(cnpj,ano,seq,sequencial_documento)
-    where a.cnpj=$1 and a.ano=$2 and a.seq=$3 and (a.titulo ~* '${RES_REGEX}' or t.texto ~* 'Proposta adjudicada|Marca/Fabricante')
-      and t.chars>500 order by t.chars desc limit 3`, [p.cnpj, p.ano, p.seq]);
-  return r.rows.map((x) => x.texto).join("\n");
-}
-// via PNCP (universal p/ bolsa gated): baixa o doc de resultado hospedado no PNCP (arquivos_sc.uri) e extrai texto
+// 3) PNCP UNIVERSAL: baixa o doc de resultado hospedado no PNCP (arquivos_sc.uri) — tudo veio de algum lugar e ESTÁ no PNCP
 async function viaPNCP(p) {
   const r = await db.query(`select uri from ${ARQ} where cnpj=$1 and ano=$2 and seq=$3 and titulo ~* '${RES_REGEX}' and uri is not null order by sequencial_documento desc limit 3`, [p.cnpj, p.ano, p.seq]);
   let txt = "";
@@ -49,14 +45,6 @@ async function viaPNCP(p) {
   }
   return txt;
 }
-// relatorio_gerado / arquivo_blob: por ora delegam aos coletores CRACKED específicos (PCP, BLL, Licitar Digital,
-// Licitanet) — cada um tem sua receita headless; aqui só marcamos que o despacho é por eles (a ser fiado no wiring).
-const HANDLER = {
-  doc_no_acervo: docNoAcervo,
-  gated:         viaPNCP,       // bolsa gated → a ata está no PNCP
-  arquivo_blob:  docNoAcervo,   // TODO wiring direto (BLL ProcessFiles / Licitar Digital S3); acervo/PNCP cobre o grosso
-  relatorio_gerado: viaPNCP,    // TODO wiring direto (PCP report / Licitanet); PNCP cobre onde a ata foi publicada
-};
 
 // ---------- EXTRAÇÃO de marca (A/B/colunar) — reusa extraiMarcas + colunar do doc ----------
 function parseColunar(txt) {
@@ -72,41 +60,56 @@ function extraiMarca(txt) {
 
 async function main() {
   await db.query(`create table if not exists ${FEITAS}(cnpj text,ano int,seq int,portal text,arquetipo text,status text,n int,atualizado timestamptz default now(),primary key(cnpj,ano,seq))`);
-  // ESTÁGIO 1+2: FILA = procs homologados, roteados (portal real), sem marca conferida, não feitos
+  // ESTÁGIO 1+2: FILA = TODO proc homologado sem marca (tudo veio de algum lugar e ESTÁ no PNCP → sempre alcançável).
+  // A origem (portal_real) escolhe a RECEITA DIRETA quando conhecida; onde não conheço, via PNCP universal (o doc está lá).
   const lim = LIM > 0 ? `limit ${LIM}` : "";
   const procs = (await db.query(`
-    select distinct p.cnpj,p.ano,p.seq,p.portal_real
-    from ${PPR} p
-    where p.portal_real is not null ${FILTRO_PORTAL ? `and p.portal_real=$1` : ""}
-      and exists(select 1 from ${ITENS} i where i.cnpj=p.cnpj and i.ano=p.ano and i.seq=p.seq and i.unit_homologado is not null)
-      and not exists(select 1 from ${CONF} c where c.cnpj=p.cnpj and c.ano=p.ano and c.seq=p.seq)
-      and not exists(select 1 from ${FEITAS} f where f.cnpj=p.cnpj and f.ano=p.ano and f.seq=p.seq)
+    select distinct i.cnpj,i.ano,i.seq, p.portal_real
+    from ${ITENS} i
+    left join ${PPR} p using(cnpj,ano,seq)
+    where i.unit_homologado is not null ${FILTRO_PORTAL ? `and p.portal_real=$1` : ""}
+      and not exists(select 1 from ${CONF} c where c.cnpj=i.cnpj and c.ano=i.ano and c.seq=i.seq)
+      and not exists(select 1 from ${FEITAS} f where f.cnpj=i.cnpj and f.ano=i.ano and f.seq=i.seq)
     ${lim}`, FILTRO_PORTAL ? [FILTRO_PORTAL] : [])).rows;
-  console.log(`FILA: ${procs.length} procs · dispatch por arquétipo`);
-  let comMarca = 0, paresTot = 0; const porArq = {};
+  console.log(`FILA: ${procs.length} procs homologados (TODOS — cada um veio de algum lugar e ESTÁ no PNCP)`);
+  let comMarca = 0, paresTot = 0; const porFonte = {};
   for (const p of procs) {
-    const portal = p.portal_real, arq = arquetipoDe(portal);
-    porArq[arq || "erp/fora"] = (porArq[arq || "erp/fora"] || 0) + 1;
-    if (!arq) { await marcaFeito(p, portal, "erp_ou_fora", "sem_destino", 0); continue; }
-    if (FILTRO_ARQ && arq !== FILTRO_ARQ) continue;
-    let status = "sem_doc", n = 0;
+    const portal = p.portal_real; let status = "sem_marca", n = 0, fonte = "-";
     try {
-      const txt = await (HANDLER[arq] || viaPNCP)(p);
-      const pares = extraiMarca(txt);
+      const ac = await textoAcervo(p);
+      // 1) ACERVO — doc de resultado com texto já extraído (grátis, já veio do PNCP)
+      let pares = extraiMarca(ac.resultado); if (pares.length) fonte = "acervo";
+      // 2) PNCP — baixa a ata hospedada no PNCP (arquivos_sc.uri). Tudo DEVERIA estar aqui
+      if (!pares.length) {
+        const tx = await viaPNCP(p);
+        const pp = extraiMarca(tx); if (pp.length) { pares = pp; fonte = "pncp"; }
+      }
+      // 3) NÃO achou no PNCP → traz ONDE FOI FEITO (origem já roteada) e BUSCA o doc no portal
+      if (!pares.length && RECEITA[portal]) {
+        const tx = await buscaDoPortal(portal, ac.todo, p.cnpj, p.ano, p.seq, { usarPNCP: false });
+        const pp = extraiMarca(tx); if (pp.length) { pares = pp; fonte = "portal:" + portal; }
+      }
+      // 3b) origem NÃO roteada e PNCP falhou → descobre onde foi feito pelo linkSistemaOrigem e busca lá
+      if (!pares.length && USAR_LINK && !RECEITA[portal]) {
+        const r = await buscaPeloLink(p.cnpj, p.ano, p.seq);
+        const pp = extraiMarca(r.texto); if (pp.length) { pares = pp; fonte = "link:" + r.portal; }
+      }
       if (pares.length) {
+        const via = portal || "pncp";
         const vals = []; const ph = pares.map((r, i) => `($${i * 5 + 1},$${i * 5 + 2},$${i * 5 + 3},$${i * 5 + 4},$${i * 5 + 5})`).join(",");
         pares.forEach((r) => vals.push(p.cnpj, p.ano, p.seq, r.marca, r.valor));
-        await db.query(`delete from ${PADRAO} where cnpj=$1 and ano=$2 and seq=$3 and padrao=$4`, [p.cnpj, p.ano, p.seq, portal]);
+        await db.query(`delete from ${PADRAO} where cnpj=$1 and ano=$2 and seq=$3 and padrao=$4`, [p.cnpj, p.ano, p.seq, via]);
         await db.query(`insert into ${PADRAO}(cnpj,ano,seq,marca,valor) values ${ph}`, vals);
-        await db.query(`update ${PADRAO} set padrao=$4 where cnpj=$1 and ano=$2 and seq=$3 and padrao is null`, [p.cnpj, p.ano, p.seq, portal]);
+        await db.query(`update ${PADRAO} set padrao=$4 where cnpj=$1 and ano=$2 and seq=$3 and padrao is null`, [p.cnpj, p.ano, p.seq, via]);
         n = pares.length; paresTot += n; comMarca++; status = "ok";
-      } else status = txt ? "sem_marca_no_doc" : "sem_doc";
+      }
     } catch (e) { status = "erro:" + e.message.slice(0, 40); }
-    await marcaFeito(p, portal, arq, status, n);
+    porFonte[fonte] = (porFonte[fonte] || 0) + 1;
+    await marcaFeito(p, portal || "(sem rota)", fonte, status, n);
     process.stdout.write(`  ${comMarca} com marca · ${paresTot} pares\r`);
   }
   console.log(`\n✔ ${comMarca}/${procs.length} procs com marca · ${paresTot} pares`);
-  console.log("dispatch por arquétipo:", JSON.stringify(porArq));
+  console.log("por fonte:", JSON.stringify(porFonte));
   await db.end();
   console.log("→ rode consolida_marca.mjs p/ ancorar por valor (trava dupla) → conferida");
 }
