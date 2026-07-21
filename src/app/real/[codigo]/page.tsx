@@ -408,9 +408,12 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       <div className="mt-4"><BaseMetodologica area="compras" /></div>
     </> },
     ...(padroesCompras ? [{ id: "padroes-compras", label: "Planejamento de Compras", content: <><AssuntoPadroesCompras dados={padroesCompras} contratos={contratosResumo} pca={pcaResumo} economia={economicidade} nome={ente.nome} /><div className="mt-4"><CatalogoBoasPraticas area="compras" /></div></> }] : []),
-    { id: "construtor-tr", label: "Processo Licitatório", content: <>
-      <CabecalhoArea titulo="Construtor de Processo Licitatório" intro="Monte a licitação do jeito certo, de ponta a ponta: a partir de uma cesta de itens (com CATMAT e preço de referência do Banco de Preços) e um checador que evita a superespecificação, a plataforma gera todo o encadeamento da Lei 14.133/2021 — DFD → ETP → TR → Edital → Contrato — reaproveitando os mesmos dados. Cole também um documento pronto para uma análise de conformidade." links={[{ label: "Lei 14.133/2021 — Nova Lei de Licitações", href: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" }, { label: "IN SEGES/ME 65/2021 — pesquisa de preços", href: "https://www.gov.br/compras/pt-br" }, { label: "TCE-SC", href: "https://www.tcesc.tc.br" }]} />
+    { id: "processo-fases", label: "Processo Licitatório", content: <>
+      <CabecalhoArea titulo="Processo Licitatório — acompanhamento das fases" intro="Como o processo caminha: as fases da Lei 14.133/2021 (DFD → ETP → TR → Edital → Contrato) e onde cada contratação do município está." links={[{ label: "Lei 14.133/2021 — Nova Lei de Licitações", href: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" }, { label: "TCE-SC", href: "https://www.tcesc.tc.br" }]} />
       <div className="mb-4"><ProcessoFases codigo={ente.cod_ibge} /></div>
+    </> },
+    { id: "criador-documentos", label: "Criador de Documentos para Compras", content: <>
+      <CabecalhoArea titulo="Criador de Documentos para Compras" intro="Monte a compra de ponta a ponta: defina o OBJETO (itens ou lotes, com participação ME/EPP), o ENQUADRAMENTO (modalidade · critério · modo de disputa · SRP · instrumentos auxiliares) e gere os documentos da Lei 14.133/2021 — DFD → ETP → TR → Edital → Contrato (ou Ata de RP no SRP) — já pré-preenchidos com a inteligência real de cada item (especificação, banco de sucesso e perfil da API). Cole também um documento pronto para uma análise de conformidade." links={[{ label: "Lei 14.133/2021 — Nova Lei de Licitações", href: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" }, { label: "IN SEGES/ME 65/2021 — pesquisa de preços", href: "https://www.gov.br/compras/pt-br" }, { label: "TCE-SC", href: "https://www.tcesc.tc.br" }]} />
       <ConstrutorProcesso nome={ente.nome} />
       <div className="mt-4"><AnalisadorDocumentos /></div>
     </> },
