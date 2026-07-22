@@ -38,3 +38,17 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_contratos_ano ON contratos_sc (ano_co
 -- (o count casa o predicado → Index Only Scan, sempre atual, sem materializar tabela):
 CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_itens_sobrepreco ON itens_sc (ano) WHERE unit_homologado > unit_estimado AND unit_estimado > 0;
 -- + scripts/backup_neon.mjs: paginação OFFSET (O(n²), 26s/página na arquivo_texto de 12GB) → KEYSET por ctid (O(n)).
+
+-- ─── 3ª leva: manutenção (avaliação completa de DBA) ───
+DROP INDEX CONCURRENTLY IF EXISTS public.ix_arquivos_tipo;          -- duplicata de ix_arq_tipo
+DROP INDEX CONCURRENTLY IF EXISTS app.ix_marcapadrao_proc_sc;      -- duplicata de ix_marcapadrao_proc
+ANALYZE itens_sc;                                                   -- stats 5 dias velhas (204k mods) → planner cego na tabela quente
+VACUUM (ANALYZE) mi_social_serie_sc;                               -- autovacuum travado 3 semanas (16% morto)
+-- afinar autovacuum das tabelas churny (dispara a 5% em vez do default 20% → menos bloat daqui pra frente):
+ALTER TABLE app.item_enriquecimento  SET (autovacuum_vacuum_scale_factor=0.05, autovacuum_analyze_scale_factor=0.02);
+ALTER TABLE itens_sc                 SET (autovacuum_vacuum_scale_factor=0.05, autovacuum_analyze_scale_factor=0.02);
+ALTER TABLE mi_social_serie_sc       SET (autovacuum_vacuum_scale_factor=0.05, autovacuum_analyze_scale_factor=0.02);
+ALTER TABLE arquivos_sc              SET (autovacuum_vacuum_scale_factor=0.05, autovacuum_analyze_scale_factor=0.02);
+ALTER TABLE app.item_marca_padrao_sc SET (autovacuum_vacuum_scale_factor=0.05, autovacuum_analyze_scale_factor=0.02);
+-- CONCLUSÃO GLOBAL: melhoria #1 = COMPUTE (cache hit 49,5%; hot set ~8GB vs shared_buffers 233MB).
+-- Recomendação: autoscaling do Neon máx ~4 CU (16GB) → hot set cabe no LFC sob carga, escala pra baixo ocioso.
