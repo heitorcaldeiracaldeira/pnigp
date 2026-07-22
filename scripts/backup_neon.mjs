@@ -13,12 +13,14 @@ const LOTE = 10000;
 async function dumpTabela(tab, dir) {
   const file = path.join(dir, `${tab}.jsonl.gz`);
   const ws = fs.createWriteStream(file); const gz = zlib.createGzip(); gz.pipe(ws);
-  let off = 0, total = 0;
+  // paginação KEYSET por ctid — O(n). OFFSET era O(n²): na arquivo_texto_sc (12GB/628k) a última página
+  // relia 620k linhas (26s/página no pg_stat_statements). Keyset só avança: WHERE ctid > último.
+  let last = null, total = 0;
   for (;;) {
-    const rows = await q(`SELECT * FROM "${tab}" ORDER BY ctid LIMIT ${LOTE} OFFSET ${off}`);
+    const rows = await q(`SELECT ctid::text _ct, * FROM "${tab}" ${last ? `WHERE ctid > '${last}'::tid` : ""} ORDER BY ctid LIMIT ${LOTE}`);
     if (!rows.length) break;
-    for (const r of rows) gz.write(JSON.stringify(r) + "\n");
-    total += rows.length; off += rows.length;
+    for (const r of rows) { last = r._ct; delete r._ct; gz.write(JSON.stringify(r) + "\n"); }
+    total += rows.length;
     if (rows.length < LOTE) break;
   }
   gz.end(); await new Promise((res) => ws.on("finish", res));

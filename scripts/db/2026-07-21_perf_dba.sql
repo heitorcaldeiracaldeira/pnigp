@@ -30,3 +30,11 @@ CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 -- Achado do pg_stat_statements: a query nº1 de custo era o count(*) FILTER de progresso do
 -- enriquece_item_documento (960 chamadas × 12s, full-scan de 2,1M) → corrigido no script (só conta se houve trabalho)
 -- + task "PNIGP Enriquece Item Documento" (15min) DESABILITADA (coberta pela cadeia diária).
+
+-- ─── 2ª leva (mais melhoria, via pg_stat_statements) ───
+-- max(ano_compra) FROM contratos_sc (94x, full-scan 2M) → index scan:
+CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_contratos_ano ON contratos_sc (ano_compra);
+-- sobrepreço KPI (validacao_continua, 286x, full-scan 4GB): índice PARCIAL com predicado cross-column
+-- (o count casa o predicado → Index Only Scan, sempre atual, sem materializar tabela):
+CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_itens_sobrepreco ON itens_sc (ano) WHERE unit_homologado > unit_estimado AND unit_estimado > 0;
+-- + scripts/backup_neon.mjs: paginação OFFSET (O(n²), 26s/página na arquivo_texto de 12GB) → KEYSET por ctid (O(n)).
