@@ -86,6 +86,7 @@ async function main() {
     ${lim}`, params)).rows;
   console.log(`FILA: ${procs.length} procs homologados (TODOS — cada um veio de algum lugar e ESTÁ no PNCP) · CONC ${CONC}`);
   let comMarca = 0, paresTot = 0, feitos = 0; const porFonte = {};
+  const padraoRows = [], feitasRows = [], reconciliar = [];   // ACUMULA p/ gravar EM LOTE (nunca linha-a-linha no Neon)
   async function processa(p) {
     const portal = p.portal_real; let status = "sem_marca", n = 0, fonte = "-";
     try {
@@ -110,23 +111,38 @@ async function main() {
       }
       if (pares.length) {
         const via = portal || "pncp";
-        const vals = []; const ph = pares.map((r, i) => `($${i * 5 + 1},$${i * 5 + 2},$${i * 5 + 3},$${i * 5 + 4},$${i * 5 + 5})`).join(",");
-        pares.forEach((r) => vals.push(p.cnpj, p.ano, p.seq, r.marca, r.valor));
-        await db.query(`delete from ${PADRAO} where cnpj=$1 and ano=$2 and seq=$3 and padrao=$4`, [p.cnpj, p.ano, p.seq, via]);
-        await db.query(`insert into ${PADRAO}(cnpj,ano,seq,marca,valor) values ${ph}`, vals);
-        await db.query(`update ${PADRAO} set padrao=$4 where cnpj=$1 and ano=$2 and seq=$3 and padrao is null`, [p.cnpj, p.ano, p.seq, via]);
+        reconciliar.push({ cnpj: p.cnpj, ano: p.ano, seq: p.seq, via });               // acumula (delete em lote depois)
+        pares.forEach((r) => padraoRows.push([p.cnpj, p.ano, p.seq, r.marca, r.valor, via]));
         n = pares.length; paresTot += n; comMarca++; status = "ok";
       }
     } catch (e) { status = "erro:" + e.message.slice(0, 40); }
     porFonte[fonte] = (porFonte[fonte] || 0) + 1;
-    await marcaFeito(p, portal || "(sem rota)", fonte, status, n);
+    feitasRows.push([p.cnpj, p.ano, p.seq, portal || "(sem rota)", fonte, status, n]);   // acumula (bulk depois)
     process.stdout.write(`  ${++feitos}/${procs.length} · ${comMarca} com marca · ${paresTot} pares\r`);
   }
   // pool de CONC workers
   let idx = 0;
   async function worker(w) { await sleep(w * 300); while (idx < procs.length) { const p = procs[idx++]; try { await processa(p); } catch {} } }
   await Promise.all(Array.from({ length: CONC }, (_, w) => worker(w)));
-  console.log(`\n✔ ${comMarca}/${procs.length} procs com marca · ${paresTot} pares`);
+
+  // ─── GRAVAÇÃO EM LOTE (set-based, unnest) — nunca linha-a-linha no Neon ───
+  if (reconciliar.length) {   // reconcile: apaga as linhas da via desses procs em UMA query
+    await db.query(`delete from ${PADRAO} d using unnest($1::text[],$2::int[],$3::int[],$4::text[]) as t(cnpj,ano,seq,via)
+      where d.cnpj=t.cnpj and d.ano=t.ano and d.seq=t.seq and d.padrao=t.via`,
+      [reconciliar.map(r=>r.cnpj), reconciliar.map(r=>r.ano), reconciliar.map(r=>r.seq), reconciliar.map(r=>r.via)]);
+  }
+  if (padraoRows.length) {    // insere TODAS as marcas de TODOS os procs em UMA query
+    await db.query(`insert into ${PADRAO}(cnpj,ano,seq,marca,valor,padrao)
+      select * from unnest($1::text[],$2::int[],$3::int[],$4::text[],$5::numeric[],$6::text[])`,
+      [padraoRows.map(r=>r[0]),padraoRows.map(r=>r[1]),padraoRows.map(r=>r[2]),padraoRows.map(r=>r[3]),padraoRows.map(r=>r[4]),padraoRows.map(r=>r[5])]);
+  }
+  if (feitasRows.length) {    // feitas de TODOS os procs em UMA query
+    await db.query(`insert into ${FEITAS}(cnpj,ano,seq,portal,arquetipo,status,n)
+      select * from unnest($1::text[],$2::int[],$3::int[],$4::text[],$5::text[],$6::text[],$7::int[])
+      on conflict(cnpj,ano,seq) do update set portal=excluded.portal,arquetipo=excluded.arquetipo,status=excluded.status,n=excluded.n,atualizado=now()`,
+      [feitasRows.map(r=>r[0]),feitasRows.map(r=>r[1]),feitasRows.map(r=>r[2]),feitasRows.map(r=>r[3]),feitasRows.map(r=>r[4]),feitasRows.map(r=>r[5]),feitasRows.map(r=>r[6])]);
+  }
+  console.log(`\n✔ ${comMarca}/${procs.length} procs com marca · ${paresTot} pares · gravado EM LOTE (${padraoRows.length} marcas + ${feitasRows.length} feitas em 3 queries)`);
   console.log("por fonte:", JSON.stringify(porFonte));
   if (INCREMENTAL) {   // avança o watermark p/ o último evento visto → a próxima rodada só pega o novo
     const novo = (await db.query(`select max(data_atualizacao) m from ${ITENS}`)).rows[0].m;
@@ -135,9 +151,5 @@ async function main() {
   }
   await db.end();
   console.log("→ rode consolida_marca.mjs p/ ancorar por valor (trava dupla) → conferida");
-}
-async function marcaFeito(p, portal, arq, status, n) {
-  await db.query(`insert into ${FEITAS}(cnpj,ano,seq,portal,arquetipo,status,n) values($1,$2,$3,$4,$5,$6,$7)
-    on conflict(cnpj,ano,seq) do update set portal=$4,arquetipo=$5,status=$6,n=$7,atualizado=now()`, [p.cnpj, p.ano, p.seq, portal, arq, status, n]);
 }
 main().catch((e) => { console.error("ERRO:", e.message); process.exit(1); });
