@@ -17531,3 +17531,27 @@ supervisor: 4 shards · CONC 3 cada · universo=todos
   shard 0/4 saiu (code 3221225786)
 supervisor: todos os shards concluíram.
 ^Csupervisor: 4 shards · CONC 3 cada · universo=todos
+  shard 3/4 saiu (code 3221225786)
+  shard 2/4 saiu (code 3221225786)
+  shard 1/4 saiu (code 3221225786)
+  shard 0/4 saiu (code 3221225786)
+supervisor: todos os shards concluíram.
+^Csupervisor: 4 shards · CONC 3 cada · universo=todos
+  shard 1/4 saiu (code 0)
+  shard 2/4 saiu (code 0)
+  shard 3/4 saiu (code 0)
+  shard 0/4 saiu (code 0)
+supervisor: todos os shards concluíram.
+supervisor: 4 shards · CONC 3 cada · universo=todos
+  shard 2/4 saiu (code 0)
+  shard 1/4 saiu (code 0)
+  shard 0/4 saiu (code 0)
+  shard 3/4 saiu (code 0)
+supervisor: todos os shards concluíram.
+supervisor: 4 shards · CONC 3 cada · universo=todos
+  shard 3/4 saiu (code 3221225786)
+  shard 2/4 saiu (code 3221225786)
+  shard 1/4 saiu (code 3221225786)
+  shard 0/4 saiu (code 3221225786)
+supervisor: todos os shards concluíram.
+^C
