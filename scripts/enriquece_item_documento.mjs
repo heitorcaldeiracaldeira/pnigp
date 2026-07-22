@@ -149,11 +149,14 @@ async function main() {
     }
   }));
 
-  const s = (await q(`SELECT count(*)::int n, count(*) FILTER (WHERE descricao_documento IS NOT NULL)::int d,
-    count(*) FILTER (WHERE descricao_e_spec)::int sp, count(*) FILTER (WHERE confianca='alta')::int a FROM app.item_enriquecimento`)).rows[0];
-  const e = (await q(`SELECT count(*)::int n FROM app.item_documento_evidencia`)).rows[0];
-  console.log(`\n✔ item_enriquecimento: ${s.n.toLocaleString()} itens · ${s.d.toLocaleString()} c/ descrição do doc · ${s.sp.toLocaleString()} que É especificação · ${s.a.toLocaleString()} conf alta`);
-  console.log(`✔ item_documento_evidencia: ${e.n.toLocaleString()} linhas (item × documento, ordem da construção)`);
+  // SUMÁRIO CARO (count FILTER full-scaneia 2,1M) — SÓ quando houve trabalho. Sem isso a task de 15min gastava ~12s/rodada à toa.
+  if (procs.length > 0) {
+    const s = (await q(`SELECT count(*)::int n, count(*) FILTER (WHERE descricao_documento IS NOT NULL)::int d,
+      count(*) FILTER (WHERE descricao_e_spec)::int sp, count(*) FILTER (WHERE confianca='alta')::int a FROM app.item_enriquecimento`)).rows[0];
+    const e = (await q(`SELECT count(*)::int n FROM app.item_documento_evidencia`)).rows[0];
+    console.log(`\n✔ item_enriquecimento: ${s.n.toLocaleString()} itens · ${s.d.toLocaleString()} c/ descrição do doc · ${s.sp.toLocaleString()} que É especificação · ${s.a.toLocaleString()} conf alta`);
+    console.log(`✔ item_documento_evidencia: ${e.n.toLocaleString()} linhas (item × documento, ordem da construção)`);
+  } else console.log(`\n✔ nada novo p/ enriquecer (0 procs) — sem sumário caro`);
   await db.end();
 }
 main().catch((e) => { console.error("ERRO:", e.message); process.exit(1); });
