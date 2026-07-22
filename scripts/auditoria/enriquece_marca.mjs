@@ -23,6 +23,8 @@ const PADRAO = `app.item_marca_padrao_${UF}`, CONF = `app.item_marca_conferida_$
 const PPR = "app.processo_portal_real";
 const LIM = process.env.LIMIT != null ? Number(process.env.LIMIT) : 50;
 const CONC = Number(process.env.CONC || 4);   // workers concorrentes
+const INCREMENTAL = process.env.INCREMENTAL === "1";   // só o que homologou desde o watermark (evento), não varre o passado
+const WM_KEY = `enriquece_marca_${UF}`;
 const FILTRO_ARQ = process.env.ARQ || null, FILTRO_PORTAL = process.env.PORTAL || null;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const RES_REGEX = "(homolog|ata de|ata final|adjudica|resultado|vencedor|registro de pre|proposta)";
@@ -64,14 +66,24 @@ async function main() {
   // ESTÁGIO 1+2: FILA = TODO proc homologado sem marca (tudo veio de algum lugar e ESTÁ no PNCP → sempre alcançável).
   // A origem (portal_real) escolhe a RECEITA DIRETA quando conhecida; onde não conheço, via PNCP universal (o doc está lá).
   const lim = LIM > 0 ? `limit ${LIM}` : "";
+  // watermark (incremental): só procs que (des)homologaram desde a última rodada — NÃO varre o resíduo exausto
+  let wm = null;
+  if (INCREMENTAL) {
+    await db.query(`create table if not exists app.auditoria_watermark(chave text primary key, ts timestamptz)`);
+    wm = (await db.query(`select ts from app.auditoria_watermark where chave=$1`, [WM_KEY])).rows[0]?.ts || null;
+    console.log(`INCREMENTAL desde watermark = ${wm || "(início)"}`);
+  }
+  const params = []; let cond = "i.unit_homologado is not null";
+  if (INCREMENTAL && wm) { params.push(wm); cond += ` and i.data_atualizacao > $${params.length}`; }
+  if (FILTRO_PORTAL) { params.push(FILTRO_PORTAL); cond += ` and p.portal_real = $${params.length}`; }
   const procs = (await db.query(`
     select distinct i.cnpj,i.ano,i.seq, p.portal_real
     from ${ITENS} i
     left join ${PPR} p using(cnpj,ano,seq)
-    where i.unit_homologado is not null ${FILTRO_PORTAL ? `and p.portal_real=$1` : ""}
+    where ${cond}
       and not exists(select 1 from ${CONF} c where c.cnpj=i.cnpj and c.ano=i.ano and c.seq=i.seq)
       and not exists(select 1 from ${FEITAS} f where f.cnpj=i.cnpj and f.ano=i.ano and f.seq=i.seq)
-    ${lim}`, FILTRO_PORTAL ? [FILTRO_PORTAL] : [])).rows;
+    ${lim}`, params)).rows;
   console.log(`FILA: ${procs.length} procs homologados (TODOS — cada um veio de algum lugar e ESTÁ no PNCP) · CONC ${CONC}`);
   let comMarca = 0, paresTot = 0, feitos = 0; const porFonte = {};
   async function processa(p) {
@@ -116,6 +128,11 @@ async function main() {
   await Promise.all(Array.from({ length: CONC }, (_, w) => worker(w)));
   console.log(`\n✔ ${comMarca}/${procs.length} procs com marca · ${paresTot} pares`);
   console.log("por fonte:", JSON.stringify(porFonte));
+  if (INCREMENTAL) {   // avança o watermark p/ o último evento visto → a próxima rodada só pega o novo
+    const novo = (await db.query(`select max(data_atualizacao) m from ${ITENS}`)).rows[0].m;
+    if (novo) await db.query(`insert into app.auditoria_watermark(chave,ts) values($1,$2) on conflict(chave) do update set ts=excluded.ts`, [WM_KEY, novo]);
+    console.log(`watermark avançado p/ ${novo}`);
+  }
   await db.end();
   console.log("→ rode consolida_marca.mjs p/ ancorar por valor (trava dupla) → conferida");
 }
