@@ -1109,7 +1109,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     ["Resumo", ["placar", "visao", "panorama", "diagnostico", "geolocalizacao"]],
     ["Finanças", ["financas", "acompanhamento", "receitas", "despesas", "execucao", "planejamento", "captacao", "folha", "previdencia", "metas", "simulador"]],
     ["Emendas", ["emendas", "emendas-estaduais"]],
-    ["Compras & Contratos", ["compras", "padroes-compras", "construtor-tr", "atas", "contratos", "planejamento", "compras-sc"]],
+    ["Compras & Contratos", ["compras", "padroes-compras", "processo-fases", "criador-documentos", "atas", "contratos", "compras-sc"]],
     ["Saúde", ["saude", "previne-ficha", "mac", "repasses-saude", "fns-historico", "accountability-aps", "equipamentos-saude"]],
     ["Educação", ["educacao", "educacao-cruz", "equipamentos", "indicadores"]],
     ["Assistência", ["assistencia", "equipamentos-assistencia"]],
