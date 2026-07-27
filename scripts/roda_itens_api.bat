@@ -1,14 +1,13 @@
 @echo off
-REM ITENS + TODOS OS RESULTADOS por item (API do PNCP) — Tarefa Agendada do Windows.
-REM POR QUE tarefa e nao background: node longo lancado pelo harness MORRE quando o shell volta. Tentei nohup e
-REM run_in_background em 2026-07-15: as duas vezes o processo sumiu sem gravar nada. A tarefa sobrevive.
-REM RESUMIVEL: itens_proc_feitos.versao (ingest_versao.mjs). Relanca a cada 15 min ate zerar a fila.
-REM
-REM VELOCIDADE: o gargalo e HTTP (~1,1 milhao de GETs em /resultados, um por item premiado), NAO o Neon
-REM (medido: 3 conexoes de 901, 0 query ativa, 0 lock; INSERT ja e 1 por processo em lote).
-REM CONC=8 processos x CONC_RES=12 GETs = ~96 requisicoes em voo. O backoff de 429 (ate ~32s, 8 tentativas) segura.
-REM Se o PNCP comecar a 429 em massa, baixar CONC primeiro (nao CONC_RES).
+REM CONSUMIDOR DE EVENTO (pncp_evento) — Tarefa "PNIGP - Itens API", resumivel, session-independent.
+REM SUBSTITUIU o scan ingest_itens_sc.mjs (APOSENTADO 22/jul): o scan varria contratacoes_sc inteira e usava a
+REM maquina de estado itens_proc_feitos; agora o consumidor busca SO a fatia que o evento aponta
+REM (item/resultado/contratacao) e marca consumido_dado. Drena o backlog E mantem itens_sc fresco entre as
+REM rodadas da cadeia diaria. contratacoes_sc segue populada por ingest_contratacoes_sc (o scan so LIA, nao INSERIA).
+REM POR QUE tarefa e nao background: node longo lancado pelo harness MORRE quando o shell volta (medido 15 e 22/jul).
+REM Resumivel pela flag consumido_dado (posicao no log, nao maquina de estado). IgnoreNew evita sobreposicao.
+REM Fix 22/jul: cat 1 (contratacao) usa a API /consulta (a /pncp devolvia 301 morto e travava a fila).
 cd /d C:\Users\PC\pnigp
-set CONC=8
-set CONC_RES=12
-node scripts\ingest_itens_sc.mjs >> "%TEMP%\pnigp_itens_api.log" 2>&1
+set LOTE=25000
+set CONC=6
+node scripts\consome_evento_dado.mjs >> "%TEMP%\pnigp_consome_eventos.log" 2>&1

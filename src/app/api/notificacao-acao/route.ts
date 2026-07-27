@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { checkAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -23,6 +24,7 @@ export async function GET(req: Request) {
 
 // POST {cod, resolver:id, tipo_impacto?, valor?} → marca resolvido + (opcional) registra impacto (ROI).
 export async function POST(req: Request) {
+  const negado = checkAdmin(req); if (negado) return negado;
   try {
     const b = await req.json();
     const cod = String(b.cod || "").replace(/\D/g, "").slice(0, 7);

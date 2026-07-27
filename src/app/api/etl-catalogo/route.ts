@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { checkAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -24,6 +25,7 @@ export async function GET() {
 
 // Botão "Buscar novos dados" — marca a fonte como solicitada; o orquestrador (a cada 15 min) atende.
 export async function POST(req: Request) {
+  const negado = checkAdmin(req); if (negado) return negado;
   try {
     const { id } = await req.json();
     if (!id || typeof id !== "string") return NextResponse.json({ ok: false, erro: "id ausente" }, { status: 400 });

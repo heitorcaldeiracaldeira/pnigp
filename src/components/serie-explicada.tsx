@@ -6,6 +6,7 @@ import { BookMarked, Info, Plus } from "lucide-react";
 import { EVENTOS_FNS, analisarSerieFns, type Camada } from "@/lib/fns-eventos";
 import type { FnsSerieSC } from "@/lib/queries";
 import { fmtBRLCompact } from "@/lib/ui";
+import { adminHeaders, ensureAdminToken } from "@/lib/admin-client";
 
 const CAMADA: Record<Camada, { tag: string; cor: string; borda: string; chip: string }> = {
   fato: { tag: "Fato", cor: "text-sky-700", borda: "border-l-sky-400", chip: "bg-sky-100 text-sky-700" },
@@ -43,7 +44,8 @@ export function SerieExplicada({ serie, escopo, cod, nome }: { serie: FnsSerieSC
     if (!form || !form.texto.trim() || !form.ano) return;
     setSalvando(true);
     try {
-      await fetch("/api/serie-anotacao", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ escopo, cod, ano: Number(form.ano), texto: form.texto.trim() }) });
+      if (!ensureAdminToken()) return;
+      await fetch("/api/serie-anotacao", { method: "POST", headers: adminHeaders(), body: JSON.stringify({ escopo, cod, ano: Number(form.ano), texto: form.texto.trim() }) });
       setAnots((a) => [...a, { ano: Number(form.ano), texto: form.texto.trim() }]);
       setForm(null);
     } catch {}

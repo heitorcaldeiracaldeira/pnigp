@@ -101,9 +101,15 @@ async function main() {
   // Consultar: raw->>'linkProcessoEletronico' · raw->'fontesOrcamentarias' · raw->'orgaoEntidade'->>'poderId'
   await q(`CREATE INDEX IF NOT EXISTS ix_contr_raw ON contratacoes_sc USING gin (raw)`);
 
+  // ⚠️ O mês CORRENTE e o ANTERIOR nunca são "fechados": processos são publicados/atualizados o mês todo e o PNCP
+  // aceita retificação depois. Pular a janela do mês corrente (o que o resume fazia) CONGELA contratacoes_sc no 1º
+  // dia em que rodou — foi o bug que deixou a base parada em 15/jul. Só meses JÁ FECHADOS usam o resume _raiox_janela.
+  const _now = new Date(); const _cy = _now.getUTCFullYear(), _cm = _now.getUTCMonth() + 1;
+  const mesesAtras = (a, m) => (_cy - a) * 12 + (_cm - m);
   const js = janelas(); let totGrav = 0, jaFeitas = 0;
   for (const mod of MODALIDADES) for (const j of js) {
-    if ((await q(`SELECT 1 FROM _raiox_janela WHERE uf=$4 AND mod=$1 AND ano=$2 AND mes=$3`, [mod, j.ano, j.mes, UF])).rowCount) { jaFeitas++; continue; }
+    const recente = mesesAtras(j.ano, j.mes) <= 1;   // mês corrente (0) e anterior (1) SEMPRE re-buscam
+    if (!recente && (await q(`SELECT 1 FROM _raiox_janela WHERE uf=$4 AND mod=$1 AND ano=$2 AND mes=$3`, [mod, j.ano, j.mes, UF])).rowCount) { jaFeitas++; continue; }
     let pagina = 1, tp = 1, nJanela = 0;
     do {
       const r = await getBulk(mod, j.ini, j.fim, pagina).catch(() => ({ data: [], totalPaginas: 0 }));

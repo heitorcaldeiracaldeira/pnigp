@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, Clock, Database, RefreshCw } from "lucide-react";
+import { adminHeaders, ensureAdminToken } from "@/lib/admin-client";
 
 type Fonte = {
   id: string; label: string; api: string; max_ano: number | null;
@@ -36,7 +37,7 @@ export default function EtlPage() {
   }, []);
   const solicitar = useCallback(async (id: string) => {
     setPedindo((p) => ({ ...p, [id]: true }));
-    try { await fetch("/api/etl-catalogo", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id }) }); } catch {}
+    try { if (!ensureAdminToken()) return; await fetch("/api/etl-catalogo", { method: "POST", headers: adminHeaders(), body: JSON.stringify({ id }) }); } catch {}
     await carregar();
   }, [carregar]);
   useEffect(() => { carregar(); const t = setInterval(carregar, POLL); return () => clearInterval(t); }, [carregar]);

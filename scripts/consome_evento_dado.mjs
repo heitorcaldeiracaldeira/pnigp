@@ -131,14 +131,11 @@ await Promise.all(Array.from({ length: CONC }, async () => {
              o.dataAtualizacao ? String(o.dataAtualizacao).slice(0, 19) : null]);
         feito.item++;
       }
-      // ── cat 1: CONTRATAÇÃO → carimba a data que o incremental usa p/ pular na próxima
+      // ── cat 1: CONTRATAÇÃO → só marca o evento consumido, NÃO escreve contratacoes_sc.
+      //    `data_atualizacao` é o ESPELHO FIEL do campo oficial `dataAtualizacao` do PNCP (LEI 1), dono = ingest_contratacoes_sc.
+      //    Escrever aqui o `ocorrido_em` (proxy) contamina o espelho; buscar o valor oficial trava (/pncp=301 morto, /consulta=429).
+      //    O dado da contratação já vem fiel do ingest_contratacoes_sc — o evento cat 1 aqui só limpa a fila.
       else if (e.categoria === 1) {
-        const c = await get(`${base}`);
-        if (c === null) { feito.erro++; continue; }
-        const o = Array.isArray(c) ? c[0] : c;
-        if (o && !DRY)
-          await q(`UPDATE contratacoes_sc SET data_atualizacao=$4 WHERE cnpj=$1 AND ano=$2 AND seq=$3`,
-            [e.cnpj, e.ano, e.seq, o.dataAtualizacao ? String(o.dataAtualizacao).slice(0, 19) : null]);
         feito.contr++;
       }
       if (!DRY) await q(`UPDATE pncp_evento SET consumido_dado=now() WHERE ctid=$1`, [e.ctid]);

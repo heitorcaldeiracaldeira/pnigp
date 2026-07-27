@@ -5,6 +5,7 @@ import { ArrowRight, BadgeCheck, CalendarClock, CircleDollarSign, ClipboardList,
 import type { PrevineFichaSC, CaucSC } from "@/lib/queries";
 import { PREVINE_SABER, nivelPrevine } from "@/lib/previne-saber";
 import { fmtBRLCompact } from "@/lib/ui";
+import { adminHeaders, ensureAdminToken } from "@/lib/admin-client";
 
 type Prev = NonNullable<PrevineFichaSC>;
 
@@ -32,7 +33,8 @@ export function AccountabilityAPS({ previne, apsValor, apsAno, saudePct, cauc, n
   }, [cod]);
   async function salvar() {
     if (!form || !form.trim()) return;
-    await fetch("/api/serie-anotacao", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ escopo: "acc-aps", cod, ano: apsAno || 2025, texto: form.trim() }) }).catch(() => {});
+    if (!ensureAdminToken()) return;
+    await fetch("/api/serie-anotacao", { method: "POST", headers: adminHeaders(), body: JSON.stringify({ escopo: "acc-aps", cod, ano: apsAno || 2025, texto: form.trim() }) }).catch(() => {});
     setResp((a) => [...a, { ano: apsAno || 2025, texto: form.trim() }]); setForm(null);
   }
 

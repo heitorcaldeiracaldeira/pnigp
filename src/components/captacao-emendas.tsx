@@ -5,6 +5,7 @@ import { Landmark, Users, Wallet, CalendarClock, FileText, Copy, Download, Star,
 import type { CaptacaoEmendasSC, PerfilNecessidade, CadernoPrograma } from "@/lib/queries";
 import { gerarCaderno, cadernoParaTexto, cadernoParaHtml, htmlDoc, rotuloAreaPub, CARDAPIOS_EMENDAS_2026, CARDAPIO_HUB_2026, CARDAPIOS_ESTADUAIS, criarDemandaManual, AREAS_CADERNO, ACOES_FEDERAIS_CURADAS, MODALIDADES_EMENDA, labelModalidade, type SugestaoEmenda } from "@/lib/caderno-emendas";
 import { Plus, X } from "lucide-react";
+import { adminHeaders, ensureAdminToken } from "@/lib/admin-client";
 
 const brl = (n: number) => n >= 1e6 ? "R$ " + (n / 1e6).toLocaleString("pt-BR", { maximumFractionDigits: 1 }) + " mi" : "R$ " + n.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
 const casaLabel = (c: string) => (c === "senado" ? "Senador(a)" : "Dep. Federal");
@@ -224,9 +225,10 @@ export function CadernoSugestoes({ necessidade, nome, programas, escopo = "feder
   }, [cod, escopo]);
   const salvarCaderno = async () => {
     if (!cod) return;
+    if (!ensureAdminToken()) return;
     setSalvando(true);
     try {
-      await fetch(`/api/caderno-emendas`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cod, escopo, valores, objetos, manuais, pedidos }) });
+      await fetch(`/api/caderno-emendas`, { method: "POST", headers: adminHeaders(), body: JSON.stringify({ cod, escopo, valores, objetos, manuais, pedidos }) });
       setSalvoEm(new Date().toISOString().slice(0, 16));
       setResumoSalvo(calcResumo(pedidos, valores, manuais)); // conta por parlamentar só no salvar
     } catch { /* ignore */ }

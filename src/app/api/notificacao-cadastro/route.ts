@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { checkAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -16,6 +17,7 @@ async function ensure() {
 
 // Cadastro de servidores para notificação, por município. GET lista; POST cria/edita; POST {inativar:id} desativa.
 export async function GET(req: Request) {
+  const negado = checkAdmin(req); if (negado) return negado; // GET devolve PII (email/celular) → exige token
   try {
     await ensure();
     const cod = (new URL(req.url).searchParams.get("cod") || "").replace(/\D/g, "").slice(0, 7);
@@ -31,6 +33,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  const negado = checkAdmin(req); if (negado) return negado;
   try {
     await ensure();
     const b = await req.json();

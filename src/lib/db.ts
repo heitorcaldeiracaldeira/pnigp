@@ -9,7 +9,9 @@ export const pool =
   new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: { rejectUnauthorized: false },
-    max: 5,
+    // Endpoint é o -pooler (pgBouncer, multiplexa) → subir a concorrência por instância é seguro
+    // e dá vazão às ~150 queries que a página /real/[codigo] dispara no cold-start (menos filas de acquire).
+    max: 8,
   });
 
 if (process.env.NODE_ENV !== "production") globalForPg.pgPool = pool;
@@ -18,6 +20,15 @@ export async function query<T = Record<string, unknown>>(
   text: string,
   params?: unknown[],
 ): Promise<T[]> {
-  const res = await pool.query(text, params);
-  return res.rows as T[];
+  try {
+    const res = await pool.query(text, params);
+    return res.rows as T[];
+  } catch (err) {
+    // NÃO engolir em silêncio: logar antes de propagar. Os `.catch(() => [])` nos chamadores
+    // continuam devolvendo o fallback, mas agora a falha fica VISÍVEL no log (Vercel/servidor).
+    // Sem isso, uma query que falha vira "dado vazio" exibido como verdade — bug que já zerou KPI aqui.
+    const sql = text.replace(/\s+/g, " ").trim().slice(0, 200);
+    console.error(`[db.query] ${(err as Error)?.message ?? err} | SQL: ${sql}${params?.length ? ` | params=${params.length}` : ""}`);
+    throw err;
+  }
 }

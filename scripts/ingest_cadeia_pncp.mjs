@@ -46,6 +46,22 @@ const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthoriz
 db.on("error", () => {});
 const FATAL = new Set(["22P05", "22021", "23502", "42703", "42P10"]);
 const q = async (sql, p) => { let u; for (let i = 0; i < 10; i++) { try { return await db.query(sql, p); } catch (e) { u = e; if (FATAL.has(e.code)) throw e; await sleep(1500 * (i + 1)); } } throw new Error(`db: ${u?.message}`); };
+
+// ═══ LOTE: 1 INSERT por chunk, NUNCA 1 por linha ═══ [[feedback-banco-e-o-gargalo]]
+// SQL gerado do mapa [nome,tipo] (não posicional à mão, como ingest_itens); `raw` vai como ::jsonb[] (provado lá).
+// unnest => só N params (as arrays), independente da qtd de linhas — sem estourar o teto de 65k params.
+async function insereLote(tabela, COLS, linhas, conflito, setCols) {
+  const CH = 1000;
+  for (let off = 0; off < linhas.length; off += CH) {
+    const parte = linhas.slice(off, off + CH);
+    const arrays = COLS.map((_, ci) => parte.map((r) => r[ci]));
+    const unnests = COLS.map(([, t], i) => `$${i + 1}::${t}[]`).join(",");
+    const nomes = COLS.map(([c]) => c).join(",");
+    const sets = setCols.map((c) => `${c}=EXCLUDED.${c}`).join(",");
+    await q(`INSERT INTO ${tabela} (${nomes}) SELECT * FROM unnest(${unnests}) AS t(${nomes})
+             ON CONFLICT (${conflito}) DO UPDATE SET ${sets}, atualizado=now()`, arrays);
+  }
+}
 // ═══ 🔴 FALHA NUNCA VIRA ZERO ═══════════════════════════════════════════════════════════════════════════════
 // O que estava aqui: `if (!r.ok) return []`. O PNCP me BLOQUEOU (429 + página HTML de WAF, com Support ID e SEM
 // cabeçalho Retry-After) e o código devolveu lista vazia. Reportei "0 empenhos, 0 notas fiscais" com convicção —
@@ -122,14 +138,10 @@ await q(`CREATE TABLE IF NOT EXISTS empenho_sc (
   numero_empenho TEXT, valor NUMERIC, data_emissao DATE, raw JSONB, atualizado timestamptz DEFAULT now(),
   PRIMARY KEY (cnpj, ano, seq, sequencial_empenho))`);
 
-// 🔑 A NOTA FISCAL — 71 campos, o maior objeto da cadeia. É o PAGAMENTO.
-await q(`CREATE TABLE IF NOT EXISTS instrumento_cobranca_sc (
-  cnpj TEXT, ano INT, sequencial_contrato INT, sequencial_instrumento INT, cod_ibge TEXT, uf TEXT,
-  tipo_id INT, tipo TEXT, numero TEXT, valor NUMERIC,
-  data_emissao DATE, data_inclusao TIMESTAMPTZ, data_atualizacao TIMESTAMPTZ,
-  raw JSONB, atualizado timestamptz DEFAULT now(),
-  PRIMARY KEY (cnpj, ano, sequencial_contrato, sequencial_instrumento))`);
-await q(`CREATE INDEX IF NOT EXISTS ix_nf_contrato ON instrumento_cobranca_sc (cnpj, ano, sequencial_contrato)`);
+// 🔑 A NOTA FISCAL fica 100% com `ingest_nf_sc.mjs` — ele é o DONO da tabela `instrumento_cobranca_sc`
+// (schema NFe de 25 col: valor_nota/chave_nfe/fonte_nfe/n_itens). ingest_cadeia cuida só de contrato+empenho.
+// (removidas daqui a criação e a coleta da NF, que miravam um schema simples divergente e não escreviam — dupla-dono
+//  = [[pnigp-costura-departamentos-risco]]; a limpeza segue [[pnigp-divida-tecnica-limpar]]).
 
 const hoje = new Date(), ini = new Date(); ini.setDate(hoje.getDate() - DIAS);
 const D0 = ymd(ini), D1 = ymd(hoje);
@@ -139,76 +151,61 @@ console.log(`CADEIA · ${UF} · ${D0}→${D1}${DRY ? " · DRY" : ""}\n`);
 const ctrs = (await todas(`${CONS}/contratos/atualizacao?dataInicial=${D0}&dataFinal=${D1}`))
   .filter((c) => c.unidadeOrgao?.ufSigla === UF);
 console.log(`contratos ${UF}: ${ctrs.length}`);
-let nC = 0;
-for (const c of ctrs) {
-  if (DRY) { nC++; continue; }
-  const nc = String(c.numeroControlePncpCompra || c.numeroControlePNCPCompra || "");
-  const m = /^(\d{14})-\d-(\d{6})\/(\d{4})$/.exec(nc);   // a compra que gerou este contrato
-  await q(`INSERT INTO contrato_sc (cnpj,ano,seq,cod_ibge,uf,municipio_nome,numero_controle_pncp,numero_controle_compra,
-      cnpj_compra,ano_compra,seq_compra,tipo_contrato_id,tipo_contrato,numero_contrato_empenho,ni_fornecedor,
-      nome_fornecedor,ni_fornecedor_subcontratado,valor_inicial,valor_global,valor_parcela,numero_parcelas,
-      data_assinatura,data_vigencia_inicio,data_vigencia_fim,data_publicacao,data_atualizacao,fruto_adesao,objeto,raw)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29)
-    ON CONFLICT (cnpj,ano,seq) DO UPDATE SET valor_global=EXCLUDED.valor_global, data_vigencia_fim=EXCLUDED.data_vigencia_fim,
-      data_atualizacao=EXCLUDED.data_atualizacao, raw=EXCLUDED.raw, atualizado=now()`,
-    [c.orgaoEntidade?.cnpj, num(c.anoContrato), num(c.sequencialContrato),
-     s(c.unidadeOrgao?.codigoIbge, 7), c.unidadeOrgao?.ufSigla || null, s(c.unidadeOrgao?.municipioNome, 80),
-     s(c.numeroControlePNCP, 60), s(nc, 60) || null,
-     m?.[1] || null, m ? Number(m[3]) : null, m ? Number(m[2]) : null,
-     num(c.tipoContrato?.id), s(c.tipoContrato?.nome, 60), s(c.numeroContratoEmpenho, 60),
-     s(c.niFornecedor, 20), s(c.nomeRazaoSocialFornecedor, 160), s(c.niFornecedorSubContratado, 20),
-     num(c.valorInicial), num(c.valorGlobal), num(c.valorParcela), num(c.numeroParcelas),
-     dt(c.dataAssinatura), dt(c.dataVigenciaInicio), dt(c.dataVigenciaFim),
-     dt(c.dataPublicacaoPncp), dt(c.dataAtualizacao), c.frutoAdesao === true,
-     s(c.objetoContrato, 2000), JSON.stringify(c)]);
-  nC++;
+const CTR_COLS = [["cnpj", "text"], ["ano", "int"], ["seq", "int"], ["cod_ibge", "text"], ["uf", "text"], ["municipio_nome", "text"],
+  ["numero_controle_pncp", "text"], ["numero_controle_compra", "text"], ["cnpj_compra", "text"], ["ano_compra", "int"], ["seq_compra", "int"],
+  ["tipo_contrato_id", "int"], ["tipo_contrato", "text"], ["numero_contrato_empenho", "text"], ["ni_fornecedor", "text"],
+  ["nome_fornecedor", "text"], ["ni_fornecedor_subcontratado", "text"], ["valor_inicial", "numeric"], ["valor_global", "numeric"],
+  ["valor_parcela", "numeric"], ["numero_parcelas", "int"], ["data_assinatura", "date"], ["data_vigencia_inicio", "date"],
+  ["data_vigencia_fim", "date"], ["data_publicacao", "timestamptz"], ["data_atualizacao", "timestamptz"], ["fruto_adesao", "boolean"],
+  ["objeto", "text"], ["raw", "jsonb"]];
+let nC = ctrs.length;
+if (!DRY) {
+  const linhas = ctrs.map((c) => {
+    const nc = String(c.numeroControlePncpCompra || c.numeroControlePNCPCompra || "");
+    const m = /^(\d{14})-\d-(\d{6})\/(\d{4})$/.exec(nc);   // a compra que gerou este contrato
+    return [c.orgaoEntidade?.cnpj, num(c.anoContrato), num(c.sequencialContrato),
+      s(c.unidadeOrgao?.codigoIbge, 7), c.unidadeOrgao?.ufSigla || null, s(c.unidadeOrgao?.municipioNome, 80),
+      s(c.numeroControlePNCP, 60), s(nc, 60) || null,
+      m?.[1] || null, m ? Number(m[3]) : null, m ? Number(m[2]) : null,
+      num(c.tipoContrato?.id), s(c.tipoContrato?.nome, 60), s(c.numeroContratoEmpenho, 60),
+      s(c.niFornecedor, 20), s(c.nomeRazaoSocialFornecedor, 160), s(c.niFornecedorSubContratado, 20),
+      num(c.valorInicial), num(c.valorGlobal), num(c.valorParcela), num(c.numeroParcelas),
+      dt(c.dataAssinatura), dt(c.dataVigenciaInicio), dt(c.dataVigenciaFim),
+      dt(c.dataPublicacaoPncp), dt(c.dataAtualizacao), c.frutoAdesao === true,
+      s(c.objetoContrato, 2000), JSON.stringify(c)];
+  });
+  await insereLote("contrato_sc", CTR_COLS, linhas, "cnpj,ano,seq",
+    ["valor_global", "data_vigencia_fim", "data_atualizacao", "raw"]);
 }
 
 // ─── 2) EMPENHOS — por contrato. Usa o cnpj/ano/seq DO CONTRATO (não o da compra: 404) ────────────────────────
+const EMP_COLS = [["cnpj", "text"], ["ano", "int"], ["seq", "int"], ["sequencial_empenho", "int"], ["cod_ibge", "text"],
+  ["numero_empenho", "text"], ["valor", "numeric"], ["data_emissao", "date"], ["raw", "jsonb"]];
 let nE = 0, i = 0;
+const empRows = [];
 await Promise.all(Array.from({ length: CONC }, async () => {
   while (i < ctrs.length) {
     const c = ctrs[i++];
     const cn = c.orgaoEntidade?.cnpj, an = c.anoContrato, sq = c.sequencialContrato;
     const es = await get(`${PNCP}/orgaos/${cn}/contratos/${an}/${sq}/empenhos?pagina=1&tamanhoPagina=50`);
-    if (!Array.isArray(es) || !es.length || DRY) { nE += es?.length || 0; continue; }
-    for (const e of es) {
-      await q(`INSERT INTO empenho_sc (cnpj,ano,seq,sequencial_empenho,cod_ibge,numero_empenho,valor,data_emissao,raw)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-        ON CONFLICT (cnpj,ano,seq,sequencial_empenho) DO UPDATE SET valor=EXCLUDED.valor, raw=EXCLUDED.raw, atualizado=now()`,
-        [cn, num(an), num(sq), num(e.sequencialEmpenho) || 1, s(c.unidadeOrgao?.codigoIbge, 7),
-         s(e.numeroEmpenho, 60), num(e.valorEmpenho ?? e.valor), dt(e.dataEmissao), JSON.stringify(e)]);
-      nE++;
-    }
+    if (!Array.isArray(es) || !es.length) continue;
+    nE += es.length;
+    if (DRY) continue;
+    for (const e of es) empRows.push([cn, num(an), num(sq), num(e.sequencialEmpenho) || 1, s(c.unidadeOrgao?.codigoIbge, 7),
+      s(e.numeroEmpenho, 60), num(e.valorEmpenho ?? e.valor), dt(e.dataEmissao), JSON.stringify(e)]);
   }
 }));
+// 1 INSERT em lote com o que TODOS os workers colheram (antes: 1 INSERT por empenho, com CONC>pool = contenção)
+if (empRows.length) await insereLote("empenho_sc", EMP_COLS, empRows, "cnpj,ano,seq,sequencial_empenho", ["valor", "raw"]);
 
-// ─── 3) NOTA FISCAL — o único elo com filtro de UF na origem: é o caminho barato ──────────────────────────────
-const nfs = await todas(`${CONS}/instrumentoscobranca/inclusao?dataInicial=${D0}&dataFinal=${D1}&uf=${UF}`);
-let nN = 0;
-for (const n of nfs) {
-  if (DRY) { nN++; continue; }
-  await q(`INSERT INTO instrumento_cobranca_sc (cnpj,ano,sequencial_contrato,sequencial_instrumento,cod_ibge,uf,
-      tipo_id,tipo,numero,valor,data_emissao,data_inclusao,data_atualizacao,raw)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
-    ON CONFLICT (cnpj,ano,sequencial_contrato,sequencial_instrumento) DO UPDATE SET
-      valor=EXCLUDED.valor, data_atualizacao=EXCLUDED.data_atualizacao, raw=EXCLUDED.raw, atualizado=now()`,
-    [n.cnpj, num(n.ano), num(n.sequencialContrato), num(n.sequencialInstrumentoCobranca) || 1,
-     s(n.unidadeOrgao?.codigoIbge, 7), n.unidadeOrgao?.ufSigla || UF,
-     num(n.tipoInstrumentoCobranca?.id), s(n.tipoInstrumentoCobranca?.nome, 80),
-     s(n.numeroInstrumentoCobranca, 60), num(n.valorInstrumentoCobranca ?? n.valor),
-     dt(n.dataEmissao), dt(n.dataInclusao), dt(n.dataAtualizacao), JSON.stringify(n)]);
-  nN++;
-}
+// ─── 3) NOTA FISCAL — removida daqui: dona de `ingest_nf_sc.mjs` (ver nota acima). ────────────────────────────
 
 console.log(`\n${"═".repeat(70)}`);
 console.log(`  contratos:      ${String(nC).padStart(6)}`);
 console.log(`  empenhos:       ${String(nE).padStart(6)}`);
-console.log(`  notas fiscais:  ${String(nN).padStart(6)}   ← o PAGAMENTO`);
 console.log(`${"═".repeat(70)}`);
 if (!DRY) {
-  const t = (await q(`SELECT (SELECT count(*) FROM contrato_sc) c, (SELECT count(*) FROM empenho_sc) e,
-    (SELECT count(*) FROM instrumento_cobranca_sc) n`)).rows[0];
-  console.log(`\n  no banco: ${Number(t.c).toLocaleString("pt-BR")} contratos · ${Number(t.e).toLocaleString("pt-BR")} empenhos · ${Number(t.n).toLocaleString("pt-BR")} NFs`);
+  const t = (await q(`SELECT (SELECT count(*) FROM contrato_sc) c, (SELECT count(*) FROM empenho_sc) e`)).rows[0];
+  console.log(`\n  no banco: ${Number(t.c).toLocaleString("pt-BR")} contratos · ${Number(t.e).toLocaleString("pt-BR")} empenhos`);
 }
 await db.end();

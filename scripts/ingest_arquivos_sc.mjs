@@ -54,13 +54,24 @@ async function main() {
       const arqs = await getArq(e.cnpj, e.ano, e.seq);
       if (arqs === null) continue;   // falha de fetch → não marca, retenta no re-run
       try {
-        for (const a of arqs) {
-          await q(`INSERT INTO arquivos_sc (cnpj,ano,seq,sequencial_documento,cod_ibge,tipo_documento_id,tipo_documento,titulo,uri,status_ativo,data_publicacao)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        // LOTE: 1 INSERT com TODOS os docs do processo (antes: 1 INSERT por doc) — [[feedback-banco-e-o-gargalo]].
+        // Padrão do ingest_itens: prefixo fixo $1..$4 + unnest do resto. `numero_controle` é GENERATED: fora do INSERT.
+        if (arqs.length) {
+          const sd = [], tdi = [], td = [], ti = [], uri = [], sa = [], dp = [];
+          for (const a of arqs) {
+            sd.push(Number(a.sequencialDocumento) || 0);
+            tdi.push(a.tipoDocumentoId != null ? Number(a.tipoDocumentoId) : null);
+            td.push(String(a.tipoDocumentoNome || a.tipoDocumentoDescricao || "") || null);
+            ti.push(String(a.titulo || "").slice(0, 300) || null);
+            uri.push(a.uri || a.url || null);
+            sa.push(a.statusAtivo === true);
+            dp.push(a.dataPublicacaoPncp ? String(a.dataPublicacaoPncp).slice(0, 19) : null);
+          }
+          await q(`INSERT INTO arquivos_sc (cnpj,ano,seq,cod_ibge,sequencial_documento,tipo_documento_id,tipo_documento,titulo,uri,status_ativo,data_publicacao)
+            SELECT $1,$2,$3,$4, t.* FROM unnest($5::int[],$6::int[],$7::text[],$8::text[],$9::text[],$10::bool[],$11::text[])
+              AS t(sequencial_documento,tipo_documento_id,tipo_documento,titulo,uri,status_ativo,data_publicacao)
             ON CONFLICT (cnpj,ano,seq,sequencial_documento) DO UPDATE SET tipo_documento=EXCLUDED.tipo_documento, titulo=EXCLUDED.titulo, uri=EXCLUDED.uri, status_ativo=EXCLUDED.status_ativo, atualizado=now()`,
-            [e.cnpj, e.ano, e.seq, Number(a.sequencialDocumento) || 0, e.cod_ibge, a.tipoDocumentoId != null ? Number(a.tipoDocumentoId) : null,
-             String(a.tipoDocumentoNome || a.tipoDocumentoDescricao || "") || null, String(a.titulo || "").slice(0, 300) || null,
-             a.uri || a.url || null, a.statusAtivo === true, a.dataPublicacaoPncp ? String(a.dataPublicacaoPncp).slice(0, 19) : null]);
+            [e.cnpj, e.ano, e.seq, e.cod_ibge, sd, tdi, td, ti, uri, sa, dp]);
         }
         // marca feito (uma contratação pode legitimamente ter 0 arquivos? raro; mas registramos n p/ visibilidade)
         await q(`INSERT INTO arquivos_proc_feitos (numero_controle,n) VALUES ($1,$2) ON CONFLICT (numero_controle) DO UPDATE SET n=EXCLUDED.n, feito_em=now()`, [e.numero_controle, arqs.length]);

@@ -4,6 +4,7 @@
 // recurso destravado/captado). Grava resolvido_em + alimenta o notificacao_impacto → o painel de ROI ganha vida.
 import { useEffect, useState, useCallback } from "react";
 import { CheckCircle2, ArrowUpCircle, Loader2, X } from "lucide-react";
+import { adminHeaders, ensureAdminToken } from "@/lib/admin-client";
 
 type Alerta = { id: number; alerta_id: string; severidade: string; titulo: string | null; secretaria: string | null; natureza: string | null; detectado: string; escalonado: boolean };
 const NAT: Record<string, string> = { regularizacao: "🔴", oportunidade: "💰", obrigacao: "📅", risco: "⚠️", transparencia: "📄", positivo: "✅" };
@@ -27,7 +28,8 @@ export function ResolverAlertas({ codigo }: { codigo: string }) {
     const body: Record<string, unknown> = { cod: codigo, resolver: id, tipo_impacto: tipo };
     const v = Number(valor.replace(/\./g, "").replace(",", "."));
     if (v > 0) body.valor = v;
-    await fetch(`/api/notificacao-acao`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).catch(() => {});
+    if (!ensureAdminToken()) return;
+    await fetch(`/api/notificacao-acao`, { method: "POST", headers: adminHeaders(), body: JSON.stringify(body) }).catch(() => {});
     setSalvando(false); setAberto(null); setValor(""); setTipo("resolvido");
     setLista((l) => l.filter((a) => a.id !== id));
   };

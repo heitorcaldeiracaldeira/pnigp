@@ -24,7 +24,7 @@ const PPR = "app.processo_portal_real";
 const LIM = process.env.LIMIT != null ? Number(process.env.LIMIT) : 50;
 const CONC = Number(process.env.CONC || 4);   // workers concorrentes
 const INCREMENTAL = process.env.INCREMENTAL === "1";   // só o que homologou desde o watermark (evento), não varre o passado
-const WM_KEY = `enriquece_marca_${UF}`;
+const WM_KEY = `enriquece_marca_${UF}`, WM_KEY_R = `enriquece_marca_res_${UF}`, RES = `item_resultado_${UF}`;
 const FILTRO_ARQ = process.env.ARQ || null, FILTRO_PORTAL = process.env.PORTAL || null;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const RES_REGEX = "(homolog|ata de|ata final|adjudica|resultado|vencedor|registro de pre|proposta)";
@@ -32,15 +32,16 @@ const RES_REGEX = "(homolog|ata de|ata final|adjudica|resultado|vencedor|registr
 // ---------- FONTES do doc de resultado (texto) — 3 níveis, do mais barato ao direto ----------
 // 1) ACERVO: doc de resultado com texto já extraído (grátis) + texto amplo p/ resolver id do portal
 async function textoAcervo(p) {
-  const r = await db.query(`select a.titulo, t.texto, t.chars from ${ARQ} a join ${TXT} t using(cnpj,ano,seq,sequencial_documento)
+  const r = await db.query(`select a.titulo, a.tipo_documento_id tdi, t.texto, t.chars from ${ARQ} a join ${TXT} t using(cnpj,ano,seq,sequencial_documento)
     where a.cnpj=$1 and a.ano=$2 and a.seq=$3 and t.chars>400 order by t.chars desc limit 8`, [p.cnpj, p.ano, p.seq]);
-  const resultado = r.rows.filter((x) => new RegExp(RES_REGEX, "i").test(x.titulo || "") || /Proposta adjudicada|Marca\/Fabricante/i.test(x.texto)).map((x) => x.texto).join("\n");
+  // a ATA mora em "Outros Documentos" (tipo 16) — inclui tipo 16 além do regex de título e dos marcadores de texto.
+  const resultado = r.rows.filter((x) => x.tdi === 16 || new RegExp(RES_REGEX, "i").test(x.titulo || "") || /Proposta adjudicada|Marca\/Fabricante/i.test(x.texto)).map((x) => x.texto).join("\n");
   const todo = r.rows.map((x) => x.texto).join("\n");   // p/ extrair a URL/id do portal no edital
   return { resultado, todo };
 }
 // 3) PNCP UNIVERSAL: baixa o doc de resultado hospedado no PNCP (arquivos_sc.uri) — tudo veio de algum lugar e ESTÁ no PNCP
 async function viaPNCP(p) {
-  const r = await db.query(`select uri from ${ARQ} where cnpj=$1 and ano=$2 and seq=$3 and titulo ~* '${RES_REGEX}' and uri is not null order by sequencial_documento desc limit 3`, [p.cnpj, p.ano, p.seq]);
+  const r = await db.query(`select uri from ${ARQ} where cnpj=$1 and ano=$2 and seq=$3 and (titulo ~* '${RES_REGEX}' or tipo_documento_id = 16) and uri is not null order by sequencial_documento desc limit 3`, [p.cnpj, p.ano, p.seq]);
   let txt = "";
   for (const { uri } of r.rows) {
     try { const buf = new Uint8Array(await (await fetch(uri, { signal: AbortSignal.timeout(30000) })).arrayBuffer());
@@ -67,14 +68,22 @@ async function main() {
   // A origem (portal_real) escolhe a RECEITA DIRETA quando conhecida; onde não conheço, via PNCP universal (o doc está lá).
   const lim = LIM > 0 ? `limit ${LIM}` : "";
   // watermark (incremental): só procs que (des)homologaram desde a última rodada — NÃO varre o resíduo exausto
-  let wm = null;
+  let wm = null, wmR = null;
   if (INCREMENTAL) {
     await db.query(`create table if not exists app.auditoria_watermark(chave text primary key, ts timestamptz)`);
     wm = (await db.query(`select ts from app.auditoria_watermark where chave=$1`, [WM_KEY])).rows[0]?.ts || null;
-    console.log(`INCREMENTAL desde watermark = ${wm || "(início)"}`);
+    wmR = (await db.query(`select ts from app.auditoria_watermark where chave=$1`, [WM_KEY_R])).rows[0]?.ts || null;
+    console.log(`INCREMENTAL desde wm data_atualizacao=${wm || "(início)"} · resultado ingerido=${wmR || "(início)"}`);
   }
   const params = []; let cond = "i.unit_homologado is not null";
-  if (INCREMENTAL && wm) { params.push(wm); cond += ` and i.data_atualizacao > $${params.length}`; }
+  // DOIS sinais: data_atualizacao (PNCP mudou) OU resultado recém-INGERIDO (homologação via drenagem — o cat 5 do
+  // consumidor NÃO bumpa data_atualizacao). Sem o 2º, ~41% das homologações drenadas ficam mudas na marca também.
+  if (INCREMENTAL && (wm || wmR)) {
+    const c = [];
+    if (wm) { params.push(wm); c.push(`i.data_atualizacao > $${params.length}`); }
+    if (wmR) { params.push(wmR); c.push(`exists(select 1 from ${RES} r where r.cnpj=i.cnpj and r.ano=i.ano and r.seq=i.seq and r.atualizado > $${params.length})`); }
+    cond += ` and (${c.join(" or ")})`;
+  }
   if (FILTRO_PORTAL) { params.push(FILTRO_PORTAL); cond += ` and p.portal_real = $${params.length}`; }
   const procs = (await db.query(`
     select distinct i.cnpj,i.ano,i.seq, p.portal_real
@@ -144,10 +153,12 @@ async function main() {
   }
   console.log(`\n✔ ${comMarca}/${procs.length} procs com marca · ${paresTot} pares · gravado EM LOTE (${padraoRows.length} marcas + ${feitasRows.length} feitas em 3 queries)`);
   console.log("por fonte:", JSON.stringify(porFonte));
-  if (INCREMENTAL) {   // avança o watermark p/ o último evento visto → a próxima rodada só pega o novo
+  if (INCREMENTAL) {   // avança os DOIS watermarks → a próxima rodada só pega o novo
     const novo = (await db.query(`select max(data_atualizacao) m from ${ITENS}`)).rows[0].m;
+    const novoR = (await db.query(`select max(atualizado) m from ${RES}`)).rows[0].m;
     if (novo) await db.query(`insert into app.auditoria_watermark(chave,ts) values($1,$2) on conflict(chave) do update set ts=excluded.ts`, [WM_KEY, novo]);
-    console.log(`watermark avançado p/ ${novo}`);
+    if (novoR) await db.query(`insert into app.auditoria_watermark(chave,ts) values($1,$2) on conflict(chave) do update set ts=excluded.ts`, [WM_KEY_R, novoR]);
+    console.log(`watermarks avançados: data_atualizacao→${novo} · resultado→${novoR}`);
   }
   await db.end();
   console.log("→ rode consolida_marca.mjs p/ ancorar por valor (trava dupla) → conferida");

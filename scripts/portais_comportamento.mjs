@@ -47,7 +47,8 @@ export const LEIS_PORTAL = {
 export const ARQUETIPOS = {
   relatorio_gerado: { portais:["Portal de Compras Públicas"], receita:"marca vive num RELATÓRIO GERADO sob demanda (não arquivo): POST job + POLL até pronto → PDF → parser colunar. Ex: conteudo.api.portaldecompraspublicas.com.br/v1/arquivo/download {parametros:'Vencedor,{id}'}.", status:"cracked headless · nacional" },
   arquivo_blob:     { portais:["BLL","BNC"], receita:"lista de arquivos (ProcessFiles) → download direto em blob azure; ata em atas.zip. Software 'Lance Eletrônico' — MESMA receita p/ BLL+BNC+white-labels ({nome}compras.com).", status:"cracked (entrada via linkSistemaOrigem/ProcessView; busca própria = reCAPTCHA)" },
-  api_sem_marca:    { portais:["Compras.gov","PNCP"], receita:"API estruturada dá vencedor+preço mas NÃO marca. Serve p/ ANCORAR (trava dupla cnpj+valor), não p/ obter marca.", status:"marca precisa do DOC (SIASG por UASG), não da API" },
+  api_sem_marca:    { portais:["PNCP","Compras.gov/modulo-contratacoes"], receita:"API estruturada dá vencedor+preço mas NÃO marca. Serve p/ ANCORAR (trava dupla cnpj+valor). ⚠️ VALE SÓ para o espelho PNCP (/modulo-contratacoes/*_ResultadoItens). NÃO vale para /modulo-pesquisa-preco → ver api_com_marca.", status:"marca precisa do DOC nesses endpoints" },
+  api_com_marca:    { portais:["Compras.gov/modulo-pesquisa-preco"], receita:"⭐ dadosabertos.compras.gov.br/v3 /modulo-pesquisa-preco/1_consultarMaterial (e /3_consultarServico) EXPÕE campo 'marca' estruturado + precoUnitario + niFornecedor(CNPJ) + estado (NACIONAL). Param OBRIGATÓRIO codigoItemCatalogo(CATMAT) → só serve item que TENHA CATMAT. Ancora por valor+CNPJ.", status:"cracked, publico, nacional — BLOQUEADO pela falta de CATMAT em itens_sc (a ponte = motor CATMAT [[pnigp-catmat-classificacao]])" },
   doc_no_acervo:    { portais:["Compras.gov","qualquer"], receita:"parte das atas JÁ está espelhada no PNCP → parser sobre arquivo_texto, sem tocar portal. Ex: Comprasnet 'Proposta adjudicada/Marca/Fabricante'. Cobertura varia (é o ganho grátis; SC: 96 procs).", status:"grátis onde o portal empurrou a ata ao PNCP" },
   gated:            { portais:["Estado/e-lic","BNC(busca)","Licitar Digital","compras.sc.gov.br"], receita:"download atrás de reCAPTCHA/Cloudflare/WebForms(__VIEWSTATE) → só navegador; não escala headless.", status:"bloqueado p/ automação simples" },
 };
@@ -94,15 +95,15 @@ export const PORTAIS = {
     tipo: "bolsa", entrada: "uasg", arquetipo: "doc_no_acervo",   // parte da ata Comprasnet vem no acervo PNCP; resto = SIASG por UASG
     acesso: "api", marca: "comprasnet", status: "parcial",
     base: "https://cnetmobile.estaleiro.serpro.gov.br",
-    dados_abertos: "https://dadosabertos.compras.gov.br/v3/api-docs (77 endpoints; /modulo-contratacoes/3_consultarResultadoItensContratacoes_PNCP_14133 dá vencedor+preço SEM marca — arquétipo api_sem_marca)",
-    notas: "Federal (SIASG/comprasnet). Ata 'Proposta adjudicada/Marca/Fabricante/Valor' = doc. ~96 procs SC já no acervo → confere_marca_comprasnet (trava dupla). API dados-abertos NÃO tem marca. Resto: SIASG por UASG (só 2.289 têm UASG limpa). idCompra=UASG(6)+modalidade(2)+numero(5)+ano(4).",
+    dados_abertos: "https://dadosabertos.compras.gov.br/v3/api-docs (77 endpoints, 15 módulos). ⭐ /modulo-pesquisa-preco/1_consultarMaterial + /3_consultarServico TÊM campo 'marca' (api_com_marca). /modulo-contratacoes/*_ResultadoItens = vencedor+preço SEM marca (api_sem_marca). ALICE (/alice/*) = red-flags c/ fundamentação legal mas AUTH-GATED (conta comprasnet). Ver [[pnigp-comprasgov-api-referencia]].",
+    notas: "Federal (SIASG/comprasnet). CORREÇÃO (23/jul): a API dados-abertos TEM marca no módulo pesquisa-preco (banco de preços por CATMAT, nacional). MURALHA: itens_sc tem ZERO CATMAT útil → endpoint exige codigoItemCatalogo → destrava só com o motor CATMAT classificando os itens. Ata 'Proposta adjudicada/Marca/Fabricante/Valor' = doc; ~96 procs SC no acervo → confere_marca_comprasnet. idCompra=UASG(6)+modalidade(2)+numero(5)+ano(4); uasg casa unidade_codigo(6díg). Coletor: coletor_compras_gov.mjs.",
   },
   "ComprasBR (AZ)": {
     detecta: /comprasbr\.com\.br|app\.comprasbr/i,   // comprasbr.com (sem .br) está PARADO
     tipo: "bolsa", entrada: "pncp_link", arquetipo: "arquivo_blob",   // via PNCP (portal próprio é gated por login)
     acesso: "api_gated", marca: "B", status: "blocked_portal",
     base: "https://app.comprasbr.com.br",   // Angular + Spring HATEOAS /hal/. comprasbr.com.br=WordPress institucional
-    notas: "AZ Informática. Portal próprio 100% GATED por login (servidor 302, sem consulta pública, sem swagger, /hal/public só cadastro). NÃO é reCAPTCHA — é auth pura. Crack real = PNCP (bolsa 14.133 publica arquivos lá → arquivo_blob via coletor PNCP-link). AZ já tem ~37% no PNCP.",
+    notas: "AZ Informática. Portal próprio 100% GATED por login (302, auth pura, não reCAPTCHA). CRACK REAL (23/jul, RENDEU 4.447 marcas SC): a Ata 'Resultados' JÁ está no acervo PNCP local (arquivo_texto_sc), layout COLUNAR 'CNPJ Nome Marca Modelo Situação Valor' na linha do Vencedor → ancora trava dupla CNPJ+valor. ~23% das atas usam esse layout (resto é narrativo sem marca). Coletor: coletor_comprasbr_az.mjs. status_efetivo=via_pncp_acervo (não blocked).",
   },
   "Licitar Digital": {
     detecta: /licitardigital\.com|licitar\.digital/i,
@@ -145,7 +146,7 @@ export const PORTAIS = {
     acesso: "webforms", marca: "V", status: "blocked",
     base: "https://e-lic.sc.gov.br",
     portal_novo: "https://compras.sc.gov.br (SPA + API Spring /api/editais; download de doc atrás de reCAPTCHA)",
-    notas: "Portal PRÓPRIO do Governo de SC (SEA-SC). e-lic velho=WebForms(__VIEWSTATE) rejeita headless; compras.sc.gov.br novo=SPA c/ API mas doc gated por reCAPTCHA. Nossos procs municipais em maioria só CITAM e-lic p/ CRC (não é a disputa). ⚠️ NÃO assumir 'cada UF tem portal próprio': é ESCOLHA da entidade — ex. Governo de SP usa compras.gov (federal), não portal próprio; muitos entes usam PCP/bolsa. O portal só se sabe pelo DOMÍNIO no doc, nunca pela geografia. Ter portal estadual próprio é EXCEÇÃO (SC tem), não regra.",
+    notas: "Portal PRÓPRIO do Governo de SC (SEA-SC). e-lic velho=WebForms(__VIEWSTATE) rejeita headless. CRACK PARCIAL (23/jul, RENDEU 892 marcas): compras.sc.gov.br novo tem API Spring PÚBLICA sem login/captcha (GET /api/editais?ano=&pagina=&tamanhoPagina=500 → GET /{id}/arquivos) — a Ata de Sessão por item (tipo 16) é colunar c/ marca entre lance e 'Válido'; só rende quando o órgão ANEXA a ata (~17% dos pregões; resto fica no visualizador de sessão gated). ⚠️ TODOS os procs são ESTADUAIS (não municipal — [[feedback-estado-municipio-separados]]). Coletor: coletor_estado_de_santa_catarina_e_lic.mjs. ⚠️ NÃO assumir 'cada UF tem portal próprio': é ESCOLHA da entidade — ex. Governo de SP usa compras.gov (federal), não portal próprio; muitos entes usam PCP/bolsa. O portal só se sabe pelo DOMÍNIO no doc, nunca pela geografia. Ter portal estadual próprio é EXCEÇÃO (SC tem), não regra.",
   },
   "Atende.net (IPM)": {
     detecta: /[a-z0-9-]+\.atende\.net/i,   // ⚠️ ERP-PUBLISHER, não bolsa — ver tipo

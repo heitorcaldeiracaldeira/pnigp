@@ -6,6 +6,7 @@ import { BarChart3, ClipboardCheck, Database, Gauge, LineChart as LineIcon } fro
 import type { PrevineFichaSC } from "@/lib/queries";
 import { PREVINE_SABER, nivelPrevine } from "@/lib/previne-saber";
 import { PrevineFicha } from "@/components/previne-ficha";
+import { adminHeaders, ensureAdminToken } from "@/lib/admin-client";
 
 type Dados = NonNullable<PrevineFichaSC>;
 type Visao = "estrategico" | "tatico" | "operacional" | "tecnico";
@@ -35,7 +36,8 @@ export function AssuntoAtencaoPrimaria({ dados, nome, cod }: { dados: Dados; nom
   async function salvarCausa(label: string) {
     if (!txt.trim()) return;
     const texto = `${label} — ${txt.trim()}`;
-    await fetch("/api/serie-anotacao", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ escopo: "causa-aps", cod, ano: 2024, texto }) }).catch(() => {});
+    if (!ensureAdminToken()) return;
+    await fetch("/api/serie-anotacao", { method: "POST", headers: adminHeaders(), body: JSON.stringify({ escopo: "causa-aps", cod, ano: 2024, texto }) }).catch(() => {});
     setCausas((c) => [...c, { ano: 2024, texto }]); setFormEv(null); setTxt("");
   }
   const inds = dados.indicadores.filter((i) => PREVINE_SABER[i.codigo]);

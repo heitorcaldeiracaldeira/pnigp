@@ -58,3 +58,9 @@ logs/
 scripts/marca_tpl/
 etl.log
 *.log
+
+# scratchpad / temporários de sessão (nunca versionar)
+scratchpad_*
+tmp_*
+scripts/_*
+UsersPCAppDataLocalTempclaudecnet/

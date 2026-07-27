@@ -43,7 +43,7 @@ export type IndicadorRow = {
   media: number;
 };
 
-const num = (v: unknown) => (v == null ? 0 : Number(v));
+const num = (v: unknown) => { const n = v == null ? 0 : Number(v); return Number.isFinite(n) ? n : 0; }; // guarda NaN: string não-numérica não deve virar NaN e contaminar somas/%
 
 export async function getMunicipios(): Promise<Municipio[]> {
   const rows = await query<Municipio>(
@@ -1048,15 +1048,22 @@ export async function resolverLocalidadesCNPJ(cnpjs: string[]): Promise<Record<s
   const lista = [...new Set(cnpjs.filter((c) => c && c.length === 14))];
   if (!lista.length) return {};
   const map = await getLocalidadesCNPJ(lista);
-  const faltam = lista.filter((c) => !map[c]);
-  for (const c of faltam.slice(0, 8)) { // teto por requisição
-    const loc = await fetchLocalidadeReceita(c);
+  const faltam = lista.filter((c) => !map[c]).slice(0, 8); // teto por requisição
+  // Fetches em PARALELO (antes: 8 em série × 15s = até 120s → estourava o timeout serverless).
+  const resolvidos = await Promise.all(faltam.map((c) => fetchLocalidadeReceita(c).then((loc) => ({ c, loc }))));
+  const okc: string[] = [], razao: (string | null)[] = [], muni: (string | null)[] = [], uf: (string | null)[] = [], sit: (string | null)[] = [];
+  for (const { c, loc } of resolvidos) {
     if (loc && (loc.uf || loc.municipio)) {
       map[c] = { uf: loc.uf, municipio: loc.municipio };
-      await query(`INSERT INTO cnpj_loc (cnpj,razao_social,municipio,uf,situacao) VALUES ($1,$2,$3,$4,$5)
-                   ON CONFLICT (cnpj) DO UPDATE SET municipio=COALESCE(cnpj_loc.municipio,EXCLUDED.municipio), uf=COALESCE(cnpj_loc.uf,EXCLUDED.uf), situacao=COALESCE(EXCLUDED.situacao,cnpj_loc.situacao), atualizado=now()`,
-        [c, loc.razao, loc.municipio, loc.uf, loc.situacao]).catch(() => {});
+      okc.push(c); razao.push(loc.razao); muni.push(loc.municipio); uf.push(loc.uf); sit.push(loc.situacao);
     }
+  }
+  // 1 INSERT em lote (antes: 1 ida ao banco por CNPJ) — [[feedback-banco-e-o-gargalo]].
+  if (okc.length) {
+    await query(`INSERT INTO cnpj_loc (cnpj,razao_social,municipio,uf,situacao)
+                 SELECT * FROM unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[])
+                 ON CONFLICT (cnpj) DO UPDATE SET municipio=COALESCE(cnpj_loc.municipio,EXCLUDED.municipio), uf=COALESCE(cnpj_loc.uf,EXCLUDED.uf), situacao=COALESCE(EXCLUDED.situacao,cnpj_loc.situacao), atualizado=now()`,
+      [okc, razao, muni, uf, sit]).catch(() => {});
   }
   return map;
 }
@@ -1067,9 +1074,11 @@ export type DiagGestor = { ano: number; grupo: string; nAlertas: number; pontos:
 
 const _faixa = (p: number) => (!p ? "sem população" : p >= 100000 ? "acima de 100 mil hab" : p >= 50000 ? "50–100 mil hab" : p >= 20000 ? "20–50 mil hab" : p >= 10000 ? "10–20 mil hab" : "até 10 mil hab");
 const _fk = (p: number) => (!p ? "x" : p >= 100000 ? "a" : p >= 50000 ? "b" : p >= 20000 ? "c" : p >= 10000 ? "d" : "e");
-const _median = (a: number[]) => { const s = a.filter((x) => isFinite(x)).sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : 0; };
+const _median = (a: number[]) => { const s = a.filter((x) => isFinite(x)).sort((x, y) => x - y); if (!s.length) return 0; const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 const _pc = (n: number) => (n * 100).toFixed(1) + "%";
 const _br = (n: number) => "R$ " + Math.round(n).toLocaleString("pt-BR");
+// divisão segura: divisor 0/ausente → 0 (evita Infinity/NaN se propagando em % e per-capita exibidos)
+const _div = (a: number, b: number) => (b ? a / b : 0);
 
 export async function getDiagnosticoGestorSC(cod: string): Promise<DiagGestor> {
   const fin = await query<Record<string, unknown>>(
@@ -1082,10 +1091,10 @@ export async function getDiagnosticoGestorSC(cod: string): Promise<DiagGestor> {
   if (!alvo) return null; // só municípios (Estado tem limites próprios — roadmap)
 
   const ratios = (x: Record<string, unknown>) => ({
-    auto: num(x.tributaria) / num(x.receita),
-    dep: num(x.transferencias) / num(x.receita),
+    auto: _div(num(x.tributaria), num(x.receita)),
+    dep: _div(num(x.transferencias), num(x.receita)),
     inv: num(x.despesa) > 0 ? num(x.investimento) / num(x.despesa) : 0,
-    eq: num(x.resultado) / num(x.receita),
+    eq: _div(num(x.resultado), num(x.receita)),
     rig: num(x.despesa) > 0 ? (num(x.pessoal) + num(x.custeio)) / num(x.despesa) : 0,
   });
   const gk = _fk(num(alvo.populacao));
@@ -1230,9 +1239,9 @@ export async function getCruzamentosSC(cod: string): Promise<Cruzamentos> {
   const pibRows = await query<Record<string, unknown>>(`SELECT DISTINCT ON (cod_ibge) cod_ibge, valor FROM indicadores_sc WHERE codigo='pib_per_capita' ORDER BY cod_ibge, ano DESC`).catch(() => []);
   const pibMap = new Map(pibRows.map((r) => [String(r.cod_ibge), num(r.valor)]));
   const fiscal = fa ? {
-    autonomia: num(fa.tributaria) / num(fa.receita) * 100,
+    autonomia: _div(num(fa.tributaria), num(fa.receita)) * 100,
     autonomiaPares: _median(finG.map((x) => num(x.tributaria) / num(x.receita) * 100)),
-    dependencia: num(fa.transferencias) / num(fa.receita) * 100,
+    dependencia: _div(num(fa.transferencias), num(fa.receita)) * 100,
     dependenciaPares: _median(finG.map((x) => num(x.transferencias) / num(x.receita) * 100)),
     pib: pibMap.get(cod) || null,
     pibPares: _median([...pibMap.entries()].filter(([c]) => noGrupo(c)).map(([, v]) => v).filter((v) => v > 0)),
@@ -2871,10 +2880,10 @@ export async function getOtimizadorReceitaSC(cod: string): Promise<OtimizadorRec
   for (const t of ["IPTU", "ISS", "ITBI"]) {
     const meu = all.find((r) => String(r.cod_ibge) === cod && String(r.item) === t);
     const valor = meu ? num(meu.valor) : 0;
-    const pc = valor / pop;
-    const paresPc = all.filter((r) => String(r.item) === t && _fk(num(r.populacao)) === faixa).map((r) => num(r.valor) / num(r.populacao)).filter((v) => v > 0).sort((a, b) => a - b);
+    const pc = _div(valor, pop);
+    const paresPc = all.filter((r) => String(r.item) === t && _fk(num(r.populacao)) === faixa).map((r) => _div(num(r.valor), num(r.populacao))).filter((v) => v > 0).sort((a, b) => a - b);
     nPares = paresPc.length;
-    const medianaPc = paresPc.length ? paresPc[Math.floor(paresPc.length / 2)] : 0;
+    const medianaPc = _median(paresPc);
     const potencial = Math.max(0, medianaPc - pc) * pop;
     const abaixoN = paresPc.filter((v) => v < pc).length;
     potencialTotal += potencial;
@@ -4883,5 +4892,104 @@ export async function getAgropecuariaSC(cod: string): Promise<AgropecuariaSC> {
     caf: caf.length ? { fisica: num(caf[0].caf_fisica), rural: num(caf[0].caf_rural), juridica: num(caf[0].caf_juridica), competencia: (caf[0].comp as string) || null } : null,
     car: car.length ? { total: num(car[0].imoveis_total), ativos: num(car[0].imoveis_ativos) } : null,
     pronaf: pr ? { anoMax: num(pr.ano), vlTotal: num(pr.vl_total), vlCusteio: num(pr.vl_custeio), vlInvestimento: num(pr.vl_investimento), serie: pronaf.map((p) => ({ ano: num(p.ano), vl: num(p.vl_total) })) } : null,
+  };
+}
+
+// ── Custo da Merenda Escolar (módulo replicável) ─────────────────────────────
+// Núcleo que sai das bases NACIONAIS `_sc` (todas por cod_ibge → replica a todo
+// município): rede física (INEP), PNAE federal recebido (FNDE/SIMAD), agricultura
+// familiar (PNAE-agri) e compras de merenda identificadas no PNCP. A camada de
+// aprofundamento (anatomia do contrato, equipe, execução) NÃO está aqui — vem do
+// garimpo local, em src/lib/merenda-floripa.ts.
+//
+// Regras cravadas (ver memória): cod_ibge GEOLOCALIZA o órgão e contamina com
+// estadual/federal → compras filtram esfera='M'; valor_homologado de SRP é TETO,
+// não gasto → excluir srp. O gasto municipal residual (folha terceirizada, gêneros
+// pagos) NÃO está na base nacional; por isso "compras identificadas" é PARCIAL.
+export type MerendaSC = {
+  rede: { escolas: number; comRefeitorio: number; matriculas: number; ano: number } | null;
+  pnaeSerie: { ano: number; valor: number }[];
+  pnaeAno: number | null;
+  pnaePorEtapa: { etapa: string; valor: number }[];
+  agri: { percentual: number; valorTransferido: number; valorAgri: number; ano: string; cumpre: boolean } | null;
+  compras: { ano: number; n: number; valor: number }[];
+  comprasTop: { ano: number; objeto: string; valor: number; fornecedor: string }[];
+  dotacaoAlim: { ano: number; dotacao: number; empenhado: number }[];
+} | null;
+
+const MERENDA_ETAPAS: [RegExp, string][] = [
+  [/creche/i, "Creche"],
+  [/pr[eé]|pnaep/i, "Pré-escola"],
+  [/fundamental|pnaef|fund/i, "Ensino Fundamental"],
+  [/m[eé]dio|pnaem/i, "Ensino Médio"],
+  [/eja/i, "EJA"],
+  [/aee|especial/i, "Educação Especial (AEE)"],
+];
+function etapaMerenda(programa: string): string {
+  for (const [re, label] of MERENDA_ETAPAS) if (re.test(programa)) return label;
+  return "Outros";
+}
+
+export async function getMerendaSC(cod: string): Promise<MerendaSC> {
+  const [redeRows, pnaeRows, agriRow, comprasRows, comprasTopRows, dotRows] = await Promise.all([
+    query<Record<string, unknown>>(
+      `SELECT ano, count(*)::int AS escolas, count(*) FILTER (WHERE tem_refeitorio)::int AS refeit, coalesce(sum(matriculas),0)::int AS mat
+       FROM escolas_sc WHERE cod_ibge=$1 AND dependencia=3 GROUP BY ano ORDER BY ano DESC LIMIT 1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(
+      `SELECT ano, programa, sum(valor) AS v FROM fnde_simad_sc
+       WHERE cod_ibge=$1 AND programa ~* 'pnae|aliment' GROUP BY ano, programa ORDER BY ano`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(
+      `SELECT percentual, valor_transferido, valor_agri, ano FROM pnae_agri_sc WHERE cod_ibge=$1`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(
+      `SELECT ano, count(*)::int AS n, coalesce(sum(valor_homologado),0) AS val FROM contratacoes_sc
+       WHERE cod_ibge=$1 AND esfera='M' AND srp IS NOT TRUE AND situacao !~* 'anulad|revogad|fracass|desert'
+         AND objeto ~* 'merenda|alimenta[çc][ãa]o escolar|g[êe]neros? aliment|hortifruti|cozinheir'
+       GROUP BY ano ORDER BY ano DESC`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(
+      `SELECT ano, objeto, valor_homologado AS val, '' AS fornecedor FROM contratacoes_sc
+       WHERE cod_ibge=$1 AND esfera='M' AND srp IS NOT TRUE AND valor_homologado > 0
+         AND objeto ~* 'merenda|alimenta[çc][ãa]o escolar|g[êe]neros? aliment|hortifruti|cozinheir'
+       ORDER BY valor_homologado DESC NULLS LAST LIMIT 8`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(
+      `SELECT ano, coalesce(dotacao,0) AS dot, coalesce(empenhado,0) AS emp FROM despesa_subfuncao_sc
+       WHERE cod_ibge=$1 AND subfuncao ~* 'aliment' ORDER BY ano DESC LIMIT 5`, [cod]).catch(() => []),
+  ]);
+
+  // PNAE federal: série anual + quebra por etapa do último ano
+  const porAno = new Map<number, number>();
+  for (const r of pnaeRows) porAno.set(num(r.ano), (porAno.get(num(r.ano)) || 0) + num(r.v));
+  const pnaeSerie = [...porAno.entries()].map(([ano, valor]) => ({ ano, valor })).sort((a, b) => a.ano - b.ano);
+  // último ano COMPLETO: se o último ano parece parcial (valor << ano anterior), usa o anterior
+  let pnaeAno = pnaeSerie.length ? pnaeSerie[pnaeSerie.length - 1].ano : null;
+  if (pnaeSerie.length >= 2) {
+    const last = pnaeSerie[pnaeSerie.length - 1], prev = pnaeSerie[pnaeSerie.length - 2];
+    if (last.valor < prev.valor * 0.75) pnaeAno = prev.ano;
+  }
+  const etapaMap = new Map<string, number>();
+  if (pnaeAno != null) for (const r of pnaeRows.filter((x) => num(x.ano) === pnaeAno)) {
+    const e = etapaMerenda(String(r.programa || ""));
+    etapaMap.set(e, (etapaMap.get(e) || 0) + num(r.v));
+  }
+  const pnaePorEtapa = [...etapaMap.entries()].map(([etapa, valor]) => ({ etapa, valor })).sort((a, b) => b.valor - a.valor);
+
+  const rede = redeRows.length && num(redeRows[0].mat)
+    ? { escolas: num(redeRows[0].escolas), comRefeitorio: num(redeRows[0].refeit), matriculas: num(redeRows[0].mat), ano: num(redeRows[0].ano) }
+    : null;
+  const a = agriRow[0];
+  const agri = a && num(a.valor_transferido)
+    ? { percentual: num(a.percentual), valorTransferido: num(a.valor_transferido), valorAgri: num(a.valor_agri), ano: String(a.ano || ""), cumpre: num(a.percentual) >= 30 }
+    : null;
+
+  if (!rede && !pnaeSerie.length) return null;
+
+  return {
+    rede,
+    pnaeSerie,
+    pnaeAno,
+    pnaePorEtapa,
+    agri,
+    compras: comprasRows.map((r) => ({ ano: num(r.ano), n: num(r.n), valor: num(r.val) })),
+    comprasTop: comprasTopRows.map((r) => ({ ano: num(r.ano), objeto: String(r.objeto || ""), valor: num(r.val), fornecedor: String(r.fornecedor || "") })),
+    dotacaoAlim: dotRows.map((r) => ({ ano: num(r.ano), dotacao: num(r.dot), empenhado: num(r.emp) })),
   };
 }

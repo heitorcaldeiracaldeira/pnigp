@@ -3,7 +3,8 @@
 // Ficha cadastral do servidor para notificação — quem recebe o quê (secretaria + perfil + área), por qual canal,
 // com validade (expira ao fim do mandato/nomeação) e consentimento LGPD obrigatório. Grava em notificacao_cadastro.
 import { useEffect, useState, useCallback } from "react";
-import { UserPlus, Trash2, ShieldCheck, AlertTriangle, Loader2 } from "lucide-react";
+import { UserPlus, Trash2, ShieldCheck, AlertTriangle, Loader2, Lock } from "lucide-react";
+import { adminHeaders, ensureAdminToken, getAdminToken } from "@/lib/admin-client";
 
 const SECRETARIAS = ["fazenda", "saude", "educacao", "assistencia", "compras", "previdencia", "planejamento", "obras", "agricultura", "cultura", "ambiente", "gabinete"];
 const PERFIS = [{ v: "servidor", l: "Servidor (recebe alerta do tipo/área)" }, { v: "secretario", l: "Secretário (recebe o bloco da pasta)" }, { v: "prefeito", l: "Prefeito/Gabinete (recebe o consolidado)" }];
@@ -29,22 +30,29 @@ export function CadastroServidor({ codigo, nome }: { codigo: string; nome: strin
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
   const [aberto, setAberto] = useState(false);
+  const [precisaToken, setPrecisaToken] = useState(false); // dado pessoal: GET exige token de admin
 
   const carregar = useCallback(() => {
-    fetch(`/api/notificacao-cadastro?cod=${codigo}`).then((r) => r.json()).then((d) => setLista(d.servidores || [])).catch(() => {});
+    // Não pede senha no mount (quebraria o acesso público); só marca que precisa e mostra o botão.
+    if (!getAdminToken()) { setPrecisaToken(true); setLista([]); return; }
+    fetch(`/api/notificacao-cadastro?cod=${codigo}`, { headers: adminHeaders() })
+      .then((r) => { if (r.status === 401) { setPrecisaToken(true); return { servidores: [] }; } setPrecisaToken(false); return r.json(); })
+      .then((d) => setLista(d.servidores || [])).catch(() => {});
   }, [codigo]);
   useEffect(() => { carregar(); }, [carregar]);
+  const destravar = () => { if (ensureAdminToken()) carregar(); };
 
   const salvar = async () => {
     setErro(""); if (!f.nome.trim()) { setErro("Informe o nome."); return; }
     if (!f.consentimento_lgpd) { setErro("O consentimento LGPD é obrigatório."); return; }
+    if (!ensureAdminToken()) { setErro("Senha de administrador necessária para gravar."); return; }
     setSalvando(true);
-    const r = await fetch(`/api/notificacao-cadastro`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cod: codigo, ...f, areas }) }).then((x) => x.json()).catch(() => ({ ok: false, erro: "rede" }));
+    const r = await fetch(`/api/notificacao-cadastro`, { method: "POST", headers: adminHeaders(), body: JSON.stringify({ cod: codigo, ...f, areas }) }).then((x) => x.json()).catch(() => ({ ok: false, erro: "rede" }));
     setSalvando(false);
     if (r.ok) { setF({ ...VAZIO }); setAreas([]); setAberto(false); carregar(); } else setErro(r.erro || "Falha ao salvar.");
   };
-  const inativar = async (id: number) => { await fetch(`/api/notificacao-cadastro`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cod: codigo, inativar: id }) }); carregar(); };
-  const verificar = async (id: number) => { await fetch(`/api/notificacao-cadastro`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ cod: codigo, verificar: id }) }); carregar(); };
+  const inativar = async (id: number) => { if (!ensureAdminToken()) return; await fetch(`/api/notificacao-cadastro`, { method: "POST", headers: adminHeaders(), body: JSON.stringify({ cod: codigo, inativar: id }) }); carregar(); };
+  const verificar = async (id: number) => { if (!ensureAdminToken()) return; await fetch(`/api/notificacao-cadastro`, { method: "POST", headers: adminHeaders(), body: JSON.stringify({ cod: codigo, verificar: id }) }); carregar(); };
 
   const Campo = ({ k, label, tipo = "text", ph = "" }: { k: keyof typeof VAZIO; label: string; tipo?: string; ph?: string }) => (
     <label className="flex flex-col gap-0.5 text-[11px] font-medium text-slate-600">{label}
@@ -59,6 +67,12 @@ export function CadastroServidor({ codigo, nome }: { codigo: string; nome: strin
         <button onClick={() => setAberto(!aberto)} className="rounded-lg bg-teal-600 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-teal-700">{aberto ? "Fechar" : "+ Novo servidor"}</button>
       </div>
       <p className="mt-1 text-[11px] text-slate-500">Cada servidor recebe conforme a <b>secretaria</b> (roteia) e o <b>perfil</b> (servidor/secretário/prefeito). A <b>validade</b> expira o cadastro ao fim do mandato/nomeação. Dado pessoal com <b>consentimento LGPD</b>.</p>
+      {precisaToken && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-800">
+          <Lock className="h-4 w-4 shrink-0" /> Dado pessoal protegido (LGPD). Informe a senha de administrador para ver e editar o cadastro.
+          <button onClick={destravar} className="ml-auto rounded-lg bg-amber-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-amber-700">Informar senha</button>
+        </div>
+      )}
 
       {aberto && (
         <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50/50 p-3">
