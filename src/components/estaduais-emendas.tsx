@@ -74,7 +74,7 @@ export function EstaduaisEmendas({ data, nome, necessidade, cod, programas = [] 
           }).map((s) => {
             const deficit = (necessidade as Record<string, { deficit: boolean } | null> | null | undefined)?.[s.area]?.deficit;
             return (
-              <div key={s.area} className={`rounded-lg border p-2.5 ${deficit ? "border-rose-200 bg-rose-50/40" : "border-slate-200 bg-slate-50/40"}`}>
+              <div key={s.orgao} className={`rounded-lg border p-2.5 ${deficit ? "border-rose-200 bg-rose-50/40" : "border-slate-200 bg-slate-50/40"}`}>
                 <div className="flex items-center gap-1 text-[12px] font-semibold text-slate-800">{rotuloAreaPub(s.area)} {deficit && <span className="rounded-full bg-rose-100 px-1.5 py-0.5 text-[9px] font-semibold text-rose-700">déficit no município</span>}</div>
                 <div className="text-[11px] text-slate-600">{s.orgao}</div>
                 <div className="mt-0.5 text-[11px] text-slate-500">{s.finalidades}</div>

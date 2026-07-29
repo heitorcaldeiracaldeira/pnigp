@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Loader2, Search } from "lucide-react";
 import { fmtBRL } from "@/lib/ui";
 
-type Item = { item: string; unidade: string; mediana: number; p25: number; p75: number; nMuns: number; nCompras: number; min: number; max: number };
+type Item = { item: string; unidade: string; mediana: number; p25: number; p75: number; nMuns: number; nItens: number; cv: number };
 
 // Pesquisa de preço de referência (Lei 14.133): o gestor digita o item e recebe o preço justo (mediana SC + faixa)
 // para montar a pesquisa de preços do edital e se proteger no TCE. Fonte: PNCP (preços homologados em SC).
@@ -45,7 +45,7 @@ export function PesquisaPreco() {
             <thead><tr className="border-b border-slate-200 text-left text-slate-500">
               <th className="p-2 font-medium">Item (unidade)</th><th className="p-2 text-right font-medium">P25</th>
               <th className="p-2 text-right font-medium">Mediana (referência)</th><th className="p-2 text-right font-medium">P75</th>
-              <th className="p-2 text-right font-medium">Faixa</th><th className="p-2 text-right font-medium">Base</th></tr></thead>
+              <th className="p-2 text-right font-medium">Dispersão</th><th className="p-2 text-right font-medium">Base</th></tr></thead>
             <tbody>
               {res.map((it, i) => (
                 <tr key={i} className="border-b border-slate-50 last:border-0">
@@ -53,15 +53,15 @@ export function PesquisaPreco() {
                   <td className="p-2 text-right tabular-nums text-slate-500">{fmtBRL(it.p25)}</td>
                   <td className="p-2 text-right tabular-nums font-bold text-teal-700">{fmtBRL(it.mediana)}</td>
                   <td className="p-2 text-right tabular-nums text-slate-500">{fmtBRL(it.p75)}</td>
-                  <td className="p-2 text-right tabular-nums text-[10px] text-slate-400">{fmtBRL(it.min)}–{fmtBRL(it.max)}</td>
-                  <td className="p-2 text-right tabular-nums text-slate-400">{it.nMuns} mun · {it.nCompras}×</td>
+                  <td className="p-2 text-right tabular-nums text-[10px] text-slate-400">CV {Math.round(it.cv * 100)}%</td>
+                  <td className="p-2 text-right tabular-nums text-slate-400">{it.nMuns} mun · {it.nItens} itens</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       ))}
-      <p className="mt-2 text-[11px] text-slate-400">Fonte: PNCP — preços <b>homologados</b> em compras efetivadas de municípios de SC (itens equivalentes por descrição + unidade, ≥5 municípios). A <b>mediana</b> é a referência sugerida; <b>P25–P75</b> é a faixa usual. Confirme a especificação do item. Apoia, não substitui, a pesquisa de preços formal.</p>
+      <p className="mt-2 text-[11px] text-slate-400">Fonte: PNCP — preços <b>homologados</b> em compras efetivadas de municípios de SC (itens equivalentes por descrição + unidade, ≥5 municípios). A <b>mediana</b> é a referência sugerida; <b>P25–P75</b> é a faixa usual e o <b>CV</b> (coeficiente de variação) indica o quanto os preços se dispersam — CV alto = item heterogêneo, confira a especificação. Confirme a especificação do item. Apoia, não substitui, a pesquisa de preços formal.</p>
     </section>
   );
 }
