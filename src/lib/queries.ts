@@ -2257,16 +2257,16 @@ export async function getAnaliseComprasItensSC(cod: string): Promise<AnaliseComp
         SELECT ${_NORM_ITEM} k, unidade, sum(quantidade*unit_homologado) valor, sum(quantidade) qtd, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) preco_mun
         FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND quantidade*unit_homologado<=200000000 AND descricao IS NOT NULL AND NOT ${_ATA}
         GROUP BY 1,2 ORDER BY valor DESC NULLS LAST LIMIT 30)
-      SELECT mi.k, mi.unidade, mi.valor, mi.qtd, mi.preco_mun, r.mediana, r.n_muns,
+      SELECT mi.k, mi.unidade, mi.valor, mi.qtd, mi.preco_mun, r.mediana, r.n_munis n_muns,
         round((((mi.preco_mun-r.mediana)/NULLIF(r.mediana,0))*100)::numeric) variacao
-      FROM mi LEFT JOIN precos_referencia_sc r ON r.k=mi.k AND r.unidade=mi.unidade ORDER BY mi.valor DESC`, [cod]).catch(() => []),
+      FROM mi LEFT JOIN precos_referencia_sc r ON r.chave=mi.k AND r.unidade=mi.unidade ORDER BY mi.valor DESC`, [cod]).catch(() => []),
     // sobrepreço — efetivadas acima do p75 dos pares
     query<Record<string, unknown>>(`WITH mi AS (
         SELECT ${_NORM_ITEM} k, unidade, sum(quantidade) qtd, sum(quantidade*unit_homologado)/NULLIF(sum(quantidade),0) preco_mun
         FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND quantidade*unit_homologado<=200000000 AND descricao IS NOT NULL AND NOT ${_ATA} GROUP BY 1,2)
-      SELECT mi.k item, mi.unidade, mi.qtd, mi.preco_mun, r.mediana, r.n_muns,
+      SELECT mi.k item, mi.unidade, mi.qtd, mi.preco_mun, r.mediana, r.n_munis n_muns,
         round((((mi.preco_mun-r.mediana)/NULLIF(r.mediana,0))*100)::numeric) acima_pct, ((mi.preco_mun-r.mediana)*mi.qtd) economia
-      FROM mi JOIN precos_referencia_sc r ON r.k=mi.k AND r.unidade=mi.unidade
+      FROM mi JOIN precos_referencia_sc r ON r.chave=mi.k AND r.unidade=mi.unidade
       WHERE mi.preco_mun > r.p75 AND (mi.preco_mun-r.mediana)*mi.qtd > 1000
       ORDER BY economia DESC NULLS LAST LIMIT 25`, [cod]).catch(() => []),
     // atas — registro de preço (grupo "não certa")
@@ -2281,9 +2281,9 @@ export async function getAnaliseComprasItensSC(cod: string): Promise<AnaliseComp
     query<Record<string, unknown>>(`SELECT extract(month from assinatura)::int mes, count(*) n, coalesce(sum(valor_global),0) valor
       FROM contratos_sc WHERE cod_ibge=$1 AND assinatura IS NOT NULL GROUP BY 1 ORDER BY 1`, [cod]).catch(() => []),
     // tempo do processo: publicação (processos_sc.data_pub) → contrato (contratos_sc.assinatura), por modalidade
-    query<Record<string, unknown>>(`SELECT p.modalidade, round(avg(c.assinatura - p.data_pub)) dias, count(*) n
+    query<Record<string, unknown>>(`SELECT p.modalidade, round(avg(c.assinatura - p.data_pub::date)) dias, count(*) n
       FROM contratos_sc c JOIN processos_sc p ON p.numero_controle=c.numero_controle_compra
-      WHERE c.cod_ibge=$1 AND c.assinatura IS NOT NULL AND p.data_pub IS NOT NULL AND c.assinatura >= p.data_pub AND (c.assinatura - p.data_pub) < 730
+      WHERE c.cod_ibge=$1 AND c.assinatura IS NOT NULL AND p.data_pub IS NOT NULL AND c.assinatura >= p.data_pub::date AND (c.assinatura - p.data_pub::date) < 730
       GROUP BY 1 ORDER BY n DESC`, [cod]).catch(() => []),
   ]);
   if (!mais.length && !sobre.length && !comp.length) return null;
@@ -2461,8 +2461,8 @@ export async function getComprasExtraSC(cod: string): Promise<ComprasExtra> {
       FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND quantidade*unit_homologado<=200000000 AND descricao IS NOT NULL AND NOT ${_ATA}
       GROUP BY 1 ORDER BY valor DESC NULLS LAST`, [cod]).catch(() => []),
     query<Record<string, unknown>>(`WITH mi AS (SELECT ${_NORM_ITEM} k, unidade FROM itens_sc i WHERE cod_ibge=$1 AND unit_homologado>0 AND quantidade>0 AND NOT ${_ATA} GROUP BY 1,2)
-      SELECT mi.k item, mi.unidade, r.p25, r.mediana, r.p75, r.n_muns, round((r.p75/NULLIF(r.p25,0))::numeric,1) ratio
-      FROM mi JOIN precos_referencia_sc r ON r.k=mi.k AND r.unidade=mi.unidade WHERE r.p25>0 AND r.p75/r.p25 >= 1.5
+      SELECT mi.k item, mi.unidade, r.p25, r.mediana, r.p75, r.n_munis n_muns, round((r.p75/NULLIF(r.p25,0))::numeric,1) ratio
+      FROM mi JOIN precos_referencia_sc r ON r.chave=mi.k AND r.unidade=mi.unidade WHERE r.p25>0 AND r.p75/r.p25 >= 1.5
       ORDER BY r.p75/NULLIF(r.p25,0) DESC NULLS LAST LIMIT 15`, [cod]).catch(() => []),
   ]);
   let abc = null;

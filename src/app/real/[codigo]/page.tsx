@@ -592,8 +592,8 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       : []),
     ...(pcaResumo
       ? [{
-          id: "planejamento",
-          label: "Planejamento",
+          id: "planejamento-compras",
+          label: "Planejamento (PCA)",
           content: (
             <>
               <div className="rounded-2xl border border-slate-200 bg-white p-5">
@@ -1117,7 +1117,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     ["Resumo", ["placar", "visao", "panorama", "diagnostico", "geolocalizacao", "alertas"]],
     ["Finanças", ["financas", "acompanhamento", "receitas", "despesas", "execucao", "planejamento", "captacao", "folha", "previdencia", "radar-crp", "metas", "simulador"]],
     ["Emendas", ["emendas", "emendas-estaduais"]],
-    ["Compras & Contratos", ["compras", "padroes-compras", "processo-fases", "criador-documentos", "atas", "contratos", "compras-sc"]],
+    ["Compras & Contratos", ["compras", "planejamento-compras", "padroes-compras", "processo-fases", "criador-documentos", "atas", "contratos", "compras-sc"]],
     ["Saúde", ["saude", "previne-ficha", "mac", "repasses-saude", "fns-historico", "accountability-aps", "equipamentos-saude"]],
     ["Educação", ["educacao", "custo-merenda", "educacao-cruz", "equipamentos", "indicadores"]],
     ["Assistência", ["assistencia", "equipamentos-assistencia"]],
