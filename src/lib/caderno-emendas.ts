@@ -3,6 +3,7 @@
 // Compõe sugestões a partir dos déficits DIAGNOSTICADOS do município (PerfilNecessidade), mapeando cada área
 // ao ministério e ODS corretos. Conteúdo curado, apartidário; valores são REFERÊNCIA (ajustar ao projeto local).
 import type { PerfilNecessidade } from "@/lib/queries";
+import { hojeBR } from "@/lib/ui";
 
 export type SugestaoEmenda = {
   area: string; ods: string; odsNum: number;
@@ -156,7 +157,7 @@ export function cadernoParaTexto(sugestoes: SugestaoEmenda[], nome: string, prog
   const rotFonte = escopo === "estadual" ? "e do catálogo real de emendas estaduais de SC (SEF-SC)" : "e da base de programas federais";
   const brl = (n: number) => "R$ " + n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const total = sugestoes.reduce((s, x) => s + x.valorRef, 0);
-  const hoje = new Date().toLocaleDateString("pt-BR");
+  const hoje = hojeBR(); // data de Brasília — o documento não pode sair carimbado com o dia seguinte (servidor em UTC)
   let t = `CADERNO DE SUGESTÕES DE EMENDAS PARLAMENTARES\nMunicípio de ${nome} — ${hoje}\n\n`;
   t += `Documento de apoio à articulação com a ${rotBancada}. Cada demanda indica o órgão executor (${rotOrgao}), a categoria de despesa, o valor pretendido e a justificativa, com base no diagnóstico do município.\n`;
   t += `Total de referência (projetos estruturais): ${brl(total)} em ${sugestoes.length} demandas.\n`;
@@ -211,7 +212,7 @@ export function cadernoParaHtml(sugestoes: SugestaoEmenda[], nome: string, progr
   const brl = (n: number) => "R$ " + n.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const esc = (s: string) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const total = sugestoes.reduce((s, x) => s + x.valorRef, 0);
-  const hoje = new Date().toLocaleDateString("pt-BR");
+  const hoje = hojeBR(); // data de Brasília — o documento não pode sair carimbado com o dia seguinte (servidor em UTC)
   let b = `<h1 style="font-size:16pt;color:#1e3a8a">Caderno de Sugestões de Emendas Parlamentares</h1>`;
   b += `<p><b>Município de ${esc(nome)}</b> — ${hoje}</p>`;
   b += `<p>Documento de apoio à articulação com a ${rotBancada}. Cada demanda indica o órgão executor (${rotOrgao}), a categoria de despesa, o valor pretendido e a justificativa, com base no diagnóstico do município.</p>`;

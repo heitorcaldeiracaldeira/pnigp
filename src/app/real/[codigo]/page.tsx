@@ -117,7 +117,7 @@ import { planosAusentes } from "@/lib/planos-ausentes";
 import AssuntoMerenda from "@/components/assunto-merenda";
 import { merendaCurado } from "@/lib/merenda-floripa";
 import { ProjetosElegiveis } from "@/components/projetos-elegiveis";
-import { fmtBRL, fmtBRLCompact, fmtPop, fmtData } from "@/lib/ui";
+import { fmtBRL, fmtBRLCompact, fmtPop, fmtData, hojeISOBR } from "@/lib/ui";
 
 export const metadata = { title: "i10 Gov 360 — Santa Catarina (dados oficiais SICONFI)" };
 export const dynamic = "force-dynamic";
@@ -802,7 +802,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       <p className="mt-3 text-[11px] text-slate-400">A Central de Alertas cruza CRP (previdência), CAUC, convênios, assistência social e fornecedores para revelar o que trava recursos ou expõe o município a risco — o &quot;ponto cego&quot; do gestor. Fontes oficiais; cada alerta traz a ação recomendada.</p>
       <div className="mt-4"><PainelImpacto resumo={notifResumo} /></div>
       <div className="mt-4"><ResolverAlertas codigo={codigo} /></div>
-      <div className="mt-4"><CalendarioObrigacoes hoje={new Date().toISOString().slice(0, 10)} crpValidade={crpInfo?.validade ?? null} contratos={contratosVenc?.aVencer.map((c) => ({ objeto: c.objeto, vigFim: c.vigFim, dias: c.dias }))} /></div>
+      <div className="mt-4"><CalendarioObrigacoes hoje={hojeISOBR()} crpValidade={crpInfo?.validade ?? null} contratos={contratosVenc?.aVencer.map((c) => ({ objeto: c.objeto, vigFim: c.vigFim, dias: c.dias }))} /></div>
       <div className="mt-4"><BoletimGestao nome={ente.nome} alertas={alertas} resumo={notifResumo} /></div>
       <div className="mt-4"><AlertasNotificacao alertas={alertas} nome={ente.nome} /></div>
       <div className="mt-4"><CadastroServidor codigo={codigo} nome={ente.nome} /></div>

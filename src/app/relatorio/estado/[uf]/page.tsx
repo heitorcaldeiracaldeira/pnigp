@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Relatorio } from "@/components/relatorio";
+import { hojeExtensoBR } from "@/lib/ui";
 import { analisarAuditoria } from "@/lib/audit";
 import { gerarInsights } from "@/lib/insights";
 import {
@@ -69,11 +70,8 @@ export default async function RelatorioEstado({
     .filter((a) => (planoInvest[a.area] ?? 0) > 0)
     .map((a) => ({ label: a.label, rs: planoInvest[a.area], ganho: sim.deltasArea[a.area] ?? 0 }));
 
-  const dataGeracao = new Date().toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
+  // data de Brasília (o servidor roda em UTC: depois das 21h o relatório sairia datado de amanhã)
+  const dataGeracao = hojeExtensoBR();
 
   return (
     <Relatorio

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { query } from "@/lib/db";
 import { gerarDocx } from "@/lib/docx";
 import { gerarBlocos, MODELOS, type ModeloTipo } from "@/lib/modelos-captacao";
+import { hojeBR } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export async function GET(req: NextRequest) {
     ? (await query<Record<string, unknown>>(`SELECT nome AS nome_programa, orgao, modalidade, dt_fim_vol AS dt_fim_prop FROM programas_transferegov WHERE id_programa=$1`, [idPrograma]).catch(() => []))[0]
     : null;
 
-  const hoje = new Date().toLocaleDateString("pt-BR");
+  const hoje = hojeBR(); // fuso de Brasília: a Vercel roda em UTC e carimbaria AMANHÃ depois das 21h
   const blocos = gerarBlocos(tipo, { nome: String(e.nome || "Município"), tipo: String(e.tipo || "M"), populacao: Number(e.populacao || 0) }, prog ? { nome_programa: String(prog.nome_programa || ""), orgao: String(prog.orgao || ""), modalidade: String(prog.modalidade || "") } : null, hoje);
   const buf = gerarDocx(blocos);
   const slug = String(e.nome || "municipio").replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase();

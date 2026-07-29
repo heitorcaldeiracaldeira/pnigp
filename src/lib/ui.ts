@@ -86,6 +86,39 @@ export function fmtData(v: string | Date | null | undefined): string {
   return s;
 }
 
+// FUSO: o servidor (Vercel/Node) roda em UTC e o usuário está em UTC−3. Duas consequências, ambas já
+// morderam este projeto: (1) `new Date("2026-07-29")` vira meia-noite UTC e, formatado em horário local,
+// exibe 28/07 — um dia a MENOS (use fmtData acima, que lê a string); (2) entre 21h e 24h no Brasil o
+// servidor já está no dia seguinte, então "hoje" calculado no servidor carimba a data de AMANHÃ.
+// As funções abaixo resolvem (2): a data é sempre a de Brasília, não importa o fuso de quem executa.
+const _fmtSP = (opts: Intl.DateTimeFormatOptions, locale = "pt-BR") =>
+  new Intl.DateTimeFormat(locale, { timeZone: "America/Sao_Paulo", ...opts });
+
+/** HOJE em Brasília no formato ISO (AAAA-MM-DD) — independente do fuso do servidor. */
+export function hojeISOBR(): string {
+  return _fmtSP({ year: "numeric", month: "2-digit", day: "2-digit" }, "en-CA").format(new Date());
+}
+
+/** HOJE em Brasília no formato DD/MM/AAAA — independente do fuso do servidor. */
+export function hojeBR(): string {
+  const [a, m, d] = hojeISOBR().split("-");
+  return `${d}/${m}/${a}`;
+}
+
+/** Formata um INSTANTE (timestamp com hora, ex.: "coletado em") na data de Brasília. Diferente de fmtData,
+ *  que é para data pura (AAAA-MM-DD) e não deve sofrer conversão de fuso nenhuma. */
+export function fmtDataInstante(v: string | Date | null | undefined): string {
+  if (!v) return "—";
+  const d = v instanceof Date ? v : new Date(String(v));
+  if (isNaN(d.getTime())) return "—";
+  return _fmtSP({ year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
+}
+
+/** HOJE em Brasília por extenso ("29 de julho de 2026") — para o rodapé de documentos oficiais. */
+export function hojeExtensoBR(): string {
+  return _fmtSP({ day: "2-digit", month: "long", year: "numeric" }).format(new Date());
+}
+
 /** Formata CNPJ (XX.XXX.XXX/XXXX-XX) ou CPF (XXX.XXX.XXX-XX). Mantém o valor original se não for 11/14 dígitos. */
 export function fmtCNPJ(v: string | null | undefined): string {
   if (!v) return "—";

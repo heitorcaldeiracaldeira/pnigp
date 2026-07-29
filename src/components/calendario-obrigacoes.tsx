@@ -3,6 +3,7 @@
 // Calendário de obrigações — a camada PROATIVA das notificações: avisa ANTES dos prazos legais recorrentes
 // (RREO/RGF/MSC/DCA) e dos vencimentos do próprio município (CRP, contratos). "faltam N dias" prioriza a agenda.
 import { CalendarClock, FileText, ShieldAlert, FileSignature } from "lucide-react";
+import { fmtData } from "@/lib/ui";
 
 // prazos legais recorrentes (mês 1-12, dia). Aproximados — confirmar no calendário do TCE-SC.
 const RECORRENTES = [
@@ -65,7 +66,7 @@ export function CalendarioObrigacoes({ hoje, crpValidade, contratos }: { hoje: s
             {contr.map((c, i) => (
               <div key={i} className={`flex items-center justify-between rounded-lg border px-3 py-1.5 text-[11px] ${cor(c.dias)}`}>
                 <span className="line-clamp-1 pr-2">{c.objeto}</span>
-                <span className="shrink-0 font-semibold tabular-nums">{c.dias} dias · {c.vigFim ? new Date(c.vigFim).toLocaleDateString("pt-BR") : ""}</span>
+                <span className="shrink-0 font-semibold tabular-nums">{c.dias} dias · {c.vigFim ? fmtData(c.vigFim) : ""}</span>
               </div>
             ))}
           </div>

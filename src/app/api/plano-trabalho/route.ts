@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { query } from "@/lib/db";
 import { gerarDocx, type Bloco } from "@/lib/docx";
+import { hojeBR } from "@/lib/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export async function GET(req: NextRequest) {
   const pop = Number(e.populacao || 0).toLocaleString("pt-BR");
   const nomePrograma = prog ? String(prog.nome_programa) : "_____________________________________";
   const orgao = prog ? String(prog.orgao) : "_____________________________________";
-  const hoje = new Date().toLocaleDateString("pt-BR");
+  const hoje = hojeBR(); // fuso de Brasília: a Vercel roda em UTC e carimbaria AMANHÃ depois das 21h
 
   const L = (texto: string): Bloco => ({ tipo: "label", texto });
   const P = (texto: string): Bloco => ({ tipo: "p", texto });

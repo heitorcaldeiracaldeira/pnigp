@@ -3,12 +3,13 @@
 import type { AcessoFinanceiroSC } from "@/lib/queries";
 import { Landmark, Users, Store, ArrowLeftRight, Info, Coins, Wheat, Home, PiggyBank } from "lucide-react";
 import { BaixarCsv } from "@/components/baixar-csv";
+import { fmtDataInstante } from "@/lib/ui";
 
 const n0 = (v: number) => Math.round(v).toLocaleString("pt-BR");
 const brlMi = (v: number) => (v >= 1e9 ? `R$ ${(v / 1e9).toFixed(1)} bi` : v >= 1e6 ? `R$ ${(v / 1e6).toFixed(0)} mi` : `R$ ${(v / 1e3).toFixed(0)} mil`);
 const MES_ABBR = ["", "jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const mesLabel = (am: number) => { const s = String(am); return `${MES_ABBR[Number(s.slice(4, 6))] || s.slice(4, 6)}/${s.slice(0, 4)}`; };
-const dataBR = (ts: string) => { if (!ts) return "—"; const d = new Date(ts); return isNaN(+d) ? "—" : d.toLocaleDateString("pt-BR"); };
+const dataBR = (ts: string) => fmtDataInstante(ts); // no fuso de Brasília: renderizado no servidor, que roda em UTC
 const competLabel = (c: string) => { const m = c.match(/(\d{4})-(\d{2})/); return m ? `${MES_ABBR[Number(m[2])] || m[2]}/${m[1]}` : c; }; // 2026-07 → jul/2026
 
 function Comparativo({ v, med, menorMelhor = false }: { v: number; med: number; menorMelhor?: boolean }) {

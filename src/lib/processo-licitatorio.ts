@@ -6,6 +6,7 @@
 import {
   type TipoObjeto, TIPO_OBJETO_LABEL, recomendarModalidade, checarEspecificacao, escoreAbertura, LIMITE_DISPENSA,
 } from "./tr-modelo";
+import { hojeExtensoBR } from "@/lib/ui";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CESTA DE ITENS + DADOS DO PROCESSO (estado compartilhado pelos 5 artefatos)
@@ -232,7 +233,7 @@ const brl = (v: number) => "R$ " + (Number(v) || 0).toLocaleString("pt-BR", { mi
 const esc = (s: unknown) => String(s ?? "").replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c] || c));
 const nl = (s: string) => esc(s).replace(/\n/g, "<br>");
 const campo = (s: string, dica: string) => (s && s.trim() ? nl(s) : `<i class="mf">[${esc(dica)}]</i>`);
-const hoje = () => new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
+const hoje = () => hojeExtensoBR(); // data de Brasília: documento oficial não pode sair com a data de amanhã
 
 // tabela de itens padrão AGU (ITEM | ESPECIFICAÇÃO | CATMAT | UNIDADE | QUANTIDADE | VALOR UNIT. | VALOR TOTAL)
 function tabelaItens(itens: ItemProcesso[], comPreco = true): string {
