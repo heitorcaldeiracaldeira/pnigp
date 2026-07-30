@@ -2171,10 +2171,19 @@ export async function getEconomicidadeSC(cod: string): Promise<EconomicidadeSC> 
      FROM itens_sc i WHERE i.cod_ibge=$1 AND ${COND}`, [cod]).catch(() => []))[0];
   if (!g || num(g.n) === 0) return null;
   const out = (await query<Record<string, unknown>>(`SELECT COUNT(*) n FROM itens_sc i WHERE i.cod_ibge=$1 AND i.unit_homologado IS NOT NULL AND i.unit_estimado>0 AND (i.unit_homologado>i.unit_estimado OR (i.unit_estimado-i.unit_homologado)/NULLIF(i.unit_estimado,0)>0.95)`, [cod]).catch(() => [{ n: 0 }]))[0];
+  // AS MATERIALIZED não é enfeite: obriga o lado dos ITENS a ser calculado primeiro, invertendo a direção do JOIN.
+  // Sem ele o planner entrava por contratacoes_sc (os 245k processos de SC) e sondava itens_sc processo a processo —
+  // 245.634 Index Searches e um Memoize com Hits: 0 (a chave (cnpj,ano,seq) vinha de um scan onde cada linha é única,
+  // então o cache não podia acertar NUNCA). Partindo dos itens do município a chave passa a repetir: 19.376 buscas,
+  // 86% de acerto no cache. Medido 30/jul: 6.599 ms → 745,9 ms (8,8×), 1.240.585 → 141.699 buffers. Zero índice novo.
   const mod = await query<Record<string, unknown>>(
-    `SELECT p.modalidade, percentile_cont(0.5) WITHIN GROUP (ORDER BY (i.unit_estimado-i.unit_homologado)/i.unit_estimado*100) mediana, COUNT(*) n
-     FROM itens_sc i JOIN processos_sc p ON p.cnpj_orgao=i.cnpj AND p.ano=i.ano AND p.sequencial=i.seq
-     WHERE i.cod_ibge=$1 AND ${COND} GROUP BY p.modalidade HAVING COUNT(*)>=20 ORDER BY COUNT(*) DESC`, [cod]).catch(() => []);
+    `WITH it AS MATERIALIZED (
+       SELECT i.cnpj, i.ano, i.seq, i.unit_estimado, i.unit_homologado
+       FROM itens_sc i WHERE i.cod_ibge=$1 AND ${COND}
+     )
+     SELECT p.modalidade, percentile_cont(0.5) WITHIN GROUP (ORDER BY (i.unit_estimado-i.unit_homologado)/i.unit_estimado*100) mediana, COUNT(*) n
+     FROM it i JOIN processos_sc p ON p.cnpj_orgao=i.cnpj AND p.ano=i.ano AND p.sequencial=i.seq
+     GROUP BY p.modalidade HAVING COUNT(*)>=20 ORDER BY COUNT(*) DESC`, [cod]).catch(() => []);
   return {
     economiaMediana: g.mediana != null ? num(g.mediana) : null,
     nItens: num(g.n), nOutliers: num(out?.n),
