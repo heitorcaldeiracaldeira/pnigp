@@ -5743,3 +5743,82 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 [ORQ 18:40:50]   ok       rpps_crp       max_ano=0
 ^C 
 ===== INICIO 01/08/2026  1:59:44,21 (MODO=run) ===== 
+(node:10124) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[ORQ 05:00:22] MODO=run | ano fechado=2025 | corrente=2026
+[ORQ 05:00:23]   ok       financas       max_ano=2025
+[ORQ 05:00:23]   ok       metas          max_ano=2025
+[ORQ 05:00:24]   ok       desp_subfuncao max_ano=2025
+[ORQ 05:00:24]   ok       receitas_det   max_ano=2025
+[ORQ 05:00:25]   ok       rreo_const     max_ano=2025
+[ORQ 05:00:26]   ok       rgf            max_ano=2025
+[ORQ 05:00:27]   ok       rpps           max_ano=2025
+[ORQ 05:00:28]   ok       rpps_atuarial  max_ano=0
+[ORQ 05:00:29]   ok       pdde           max_ano=2024
+[ORQ 05:00:29]   ok       pnld           max_ano=2025
+[ORQ 05:00:31]   RODA     acesso_financeiro max_ano=0
+[ORQ 05:00:33]   RODA     estban         max_ano=0
+[ORQ 05:00:33]   ok       bndes          max_ano=2026
+[ORQ 05:00:34]   ok       cfem           max_ano=2022
+[ORQ 05:00:34]   ok       queimadas      max_ano=2026
+[ORQ 05:00:35]   ok       anp            max_ano=2021
+[ORQ 05:00:36]   RODA     bolsa_atleta   max_ano=2025
+[ORQ 05:00:36]   RODA     estatisticas_vitais max_ano=2023
+[ORQ 05:00:37]   ok       ans_cobertura  max_ano=2026
+[ORQ 05:00:37]   ok       caged          max_ano=2026
+[ORQ 05:00:38]   ok       rais           max_ano=2024
+[ORQ 05:00:39]   ok       prodes         max_ano=2024
+[ORQ 05:00:40]   ok       desastres      max_ano=0
+[ORQ 05:00:41]   ok       sinisa         max_ano=2024
+[ORQ 05:00:41]   ok       sinan_dengue   max_ano=2025
+[ORQ 05:00:43]   ok       aneel_gd       max_ano=0
+[ORQ 05:00:45]   ok       anatel_bl      max_ano=0
+[ORQ 05:00:45]   ok       senatran_frota max_ano=2025
+[ORQ 05:00:46]   RODA     pronaf         max_ano=2025
+[ORQ 05:00:47]   ok       ibama_autos    max_ano=0
+[ORQ 05:00:49]   ok       sinesp         max_ano=0
+[ORQ 05:00:50]   ok       incra_assentamentos max_ano=0
+[ORQ 05:00:52]   ok       icmbio_uc      max_ano=0
+[ORQ 05:00:54]   ok       ana_outorgas   max_ano=0
+[ORQ 05:00:55]   ok       ibge_producao  max_ano=0
+[ORQ 05:00:56]   ok       arboviroses    max_ano=2025
+[ORQ 05:00:56]   ok       datatran       max_ano=2025
+[ORQ 05:00:57]   ok       anp_vendas     max_ano=2024
+[ORQ 05:00:59]   ok       capag          max_ano=0
+[ORQ 05:00:59]   ok       rfb_arrecadacao max_ano=2025
+[ORQ 05:01:00]   ok       sim            max_ano=2024
+[ORQ 05:01:02]   ok       sia_producao   max_ano=0
+[ORQ 05:01:04]   ok       medicamentos_alto_custo max_ano=0
+[ORQ 05:01:04]   ok       cnes_equipes   max_ano=2024
+[ORQ 05:01:05]   ok       cnes_equipamentos max_ano=2024
+[ORQ 05:01:05]   ok       cnes_leitos    max_ano=2024
+[ORQ 05:01:06]   ok       cnes_profissionais max_ano=2024
+[ORQ 05:01:07]   ok       apac           max_ano=0
+[ORQ 05:01:09]   ok       raas_saude_mental max_ano=0
+[ORQ 05:01:10]   ok       cobertura_vacinal max_ano=2026
+[ORQ 05:01:10]   ok       sinan_agravos  max_ano=2024
+[ORQ 05:01:11]   ok       sinasc         max_ano=2022
+[ORQ 05:01:11]   ok       sih            max_ano=2025
+[ORQ 05:01:12]   ok       producao_aps   max_ano=2025
+[ORQ 05:01:12]   ok       indicadores_previne max_ano=2025
+[ORQ 05:01:13]   ok       qualidade_siaps max_ano=2025
+[ORQ 05:01:15]   ok       igdm           max_ano=0
+[ORQ 05:01:15]   ok       suas_saldo     max_ano=2025
+[ORQ 05:01:16]   ok       pdde_saldo     max_ano=2025
+[ORQ 05:01:16]   ok       pnae_agri      max_ano=2025
+[ORQ 05:01:17]   ok       barragens      max_ano=2025
+[ORQ 05:01:17]   ok       paa            max_ano=2025
+[ORQ 05:01:18]   ok       lpg            max_ano=2025
+[ORQ 05:01:19]   ok       salic          max_ano=2025
+[ORQ 05:01:19]   ok       obras          max_ano=2025
+[ORQ 05:01:20]   ok       novopac        max_ano=2025
+[ORQ 12:42:19]   ok       censo_corraca  max_ano=0
+ 
+===== INICIO 02/08/2026  2:00:05,28 (MODO=run) ===== 
