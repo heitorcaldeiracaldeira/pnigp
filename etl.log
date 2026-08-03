@@ -5822,3 +5822,144 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 [ORQ 12:42:19]   ok       censo_corraca  max_ano=0
  
 ===== INICIO 02/08/2026  2:00:05,28 (MODO=run) ===== 
+(node:18652) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[ORQ 05:00:59] MODO=run | ano fechado=2025 | corrente=2026
+[ORQ 05:01:00]   ok       financas       max_ano=2025
+[ORQ 05:01:01]   ok       metas          max_ano=2025
+[ORQ 05:01:02]   ok       desp_subfuncao max_ano=2025
+[ORQ 05:01:03]   ok       receitas_det   max_ano=2025
+[ORQ 05:01:03]   ok       rreo_const     max_ano=2025
+[ORQ 05:01:04]   ok       rgf            max_ano=2025
+[ORQ 05:01:05]   ok       rpps           max_ano=2025
+[ORQ 05:01:06]   ok       rpps_atuarial  max_ano=0
+[ORQ 05:01:07]   ok       pdde           max_ano=2024
+[ORQ 05:01:07]   ok       pnld           max_ano=2025
+[ORQ 05:01:09]   RODA     acesso_financeiro max_ano=0
+[ORQ 05:01:10]   RODA     estban         max_ano=0
+[ORQ 05:01:11]   ok       bndes          max_ano=2026
+[ORQ 05:01:11]   ok       cfem           max_ano=2022
+[ORQ 05:01:12]   ok       queimadas      max_ano=2026
+[ORQ 05:01:13]   ok       anp            max_ano=2021
+[ORQ 05:01:13]   RODA     bolsa_atleta   max_ano=2025
+[ORQ 05:01:14]   RODA     estatisticas_vitais max_ano=2023
+[ORQ 05:01:15]   ok       ans_cobertura  max_ano=2026
+[ORQ 05:01:15]   ok       caged          max_ano=2026
+[ORQ 05:01:16]   ok       rais           max_ano=2024
+[ORQ 05:01:16]   ok       prodes         max_ano=2024
+[ORQ 05:01:18]   ok       desastres      max_ano=0
+[ORQ 05:01:18]   ok       sinisa         max_ano=2024
+[ORQ 05:01:19]   ok       sinan_dengue   max_ano=2025
+[ORQ 05:01:20]   ok       aneel_gd       max_ano=0
+[ORQ 05:01:22]   ok       anatel_bl      max_ano=0
+[ORQ 05:01:23]   ok       senatran_frota max_ano=2025
+[ORQ 05:01:23]   RODA     pronaf         max_ano=2025
+[ORQ 05:01:25]   ok       ibama_autos    max_ano=0
+[ORQ 05:01:27]   ok       sinesp         max_ano=0
+[ORQ 05:01:29]   ok       incra_assentamentos max_ano=0
+[ORQ 05:01:30]   ok       icmbio_uc      max_ano=0
+[ORQ 05:01:31]   ok       ana_outorgas   max_ano=0
+[ORQ 05:01:34]   ok       ibge_producao  max_ano=0
+[ORQ 05:01:35]   ok       arboviroses    max_ano=2025
+[ORQ 05:01:35]   ok       datatran       max_ano=2025
+[ORQ 05:01:36]   ok       anp_vendas     max_ano=2024
+[ORQ 05:01:37]   ok       capag          max_ano=0
+[ORQ 05:01:38]   ok       rfb_arrecadacao max_ano=2025
+[ORQ 05:01:38]   ok       sim            max_ano=2024
+[ORQ 05:01:40]   ok       sia_producao   max_ano=0
+[ORQ 05:01:41]   ok       medicamentos_alto_custo max_ano=0
+[ORQ 05:01:42]   ok       cnes_equipes   max_ano=2024
+[ORQ 05:01:43]   ok       cnes_equipamentos max_ano=2024
+[ORQ 05:01:43]   ok       cnes_leitos    max_ano=2024
+[ORQ 05:01:44]   ok       cnes_profissionais max_ano=2024
+[ORQ 05:01:46]   ok       apac           max_ano=0
+[ORQ 05:01:47]   ok       raas_saude_mental max_ano=0
+[ORQ 05:01:48]   ok       cobertura_vacinal max_ano=2026
+[ORQ 05:01:48]   ok       sinan_agravos  max_ano=2024
+[ORQ 05:01:49]   ok       sinasc         max_ano=2022
+[ORQ 05:01:49]   ok       sih            max_ano=2025
+[ORQ 05:01:50]   ok       producao_aps   max_ano=2025
+[ORQ 05:01:51]   ok       indicadores_previne max_ano=2025
+[ORQ 05:01:51]   ok       qualidade_siaps max_ano=2025
+[ORQ 05:01:53]   ok       igdm           max_ano=0
+[ORQ 05:01:53]   ok       suas_saldo     max_ano=2025
+[ORQ 05:01:54]   ok       pdde_saldo     max_ano=2025
+[ORQ 05:01:54]   ok       pnae_agri      max_ano=2025
+[ORQ 05:01:55]   ok       barragens      max_ano=2025
+[ORQ 05:01:55]   ok       paa            max_ano=2025
+[ORQ 05:01:56]   ok       lpg            max_ano=2025
+[ORQ 05:01:56]   ok       salic          max_ano=2025
+[ORQ 05:01:57]   ok       obras          max_ano=2025
+[ORQ 05:01:58]   ok       novopac        max_ano=2025
+[ORQ 05:01:58]   ok       censo_corraca  max_ano=2025
+[ORQ 05:01:59]   ok       populacao_faixa max_ano=2025
+[ORQ 05:01:59]   ok       pib_municipal  max_ano=2025
+[ORQ 05:02:00]   ok       idhm           max_ano=2025
+[ORQ 05:02:00]   ok       cemaden        max_ano=2025
+[ORQ 05:02:01]   ok       domicilios     max_ano=2025
+[ORQ 05:02:01]   ok       ranking_tesouro max_ano=2025
+[ORQ 05:02:02]   ok       escola_turmas  max_ano=2025
+[ORQ 05:02:02]   ok       evasao_escolar max_ano=2025
+[ORQ 05:02:03]   ok       salario_educacao max_ano=2025
+[ORQ 05:02:03]   ok       saeb           max_ano=2025
+[ORQ 05:02:04]   ok       cnpj_municipal max_ano=2025
+[ORQ 05:02:05]   ok       transferencias_cgu max_ano=2025
+[ORQ 05:02:05]   ok       alfabetizacao  max_ano=2025
+[ORQ 05:02:06]   ok       setores        max_ano=2025
+[ORQ 05:02:07]   ok       setores_geo    max_ano=2025
+[ORQ 05:02:07]   ok       setores_idade  max_ano=2025
+[ORQ 05:02:08]   ok       setores_criancas max_ano=2025
+[ORQ 05:02:08]   ok       museus         max_ano=2025
+[ORQ 05:02:10]   ok       ibama_embargos max_ano=0
+[ORQ 05:02:11]   ok       quilombos      max_ano=0
+[ORQ 05:02:13]   ok       equipamentos_esporte max_ano=0
+[ORQ 05:02:13]   ok       censo_especial max_ano=2025
+[ORQ 05:02:14]   ok       fundeb_oficial max_ano=2026
+[ORQ 05:02:14]   ok       fundeb_parametros max_ano=2026
+[ORQ 05:02:15]   ok       indicadores_inep max_ano=2025
+[ORQ 05:02:15]   ok       indicadores_inep_escola max_ano=2025
+[ORQ 05:02:17]   ok       rpps_crp       max_ano=0
+[ORQ 05:02:19]   ok       cadprev_full   max_ano=0
+[ORQ 05:02:21]   RODA     crp_alertas    max_ano=0
+[ORQ 05:02:21]   ok       siops          max_ano=2025
+[ORQ 05:02:23]   RODA     compras        max_ano=2026
+[ORQ 05:02:24]   RODA     incremental    max_ano=2025
+[ORQ 05:02:24]   RODA     eventos_dado   max_ano=2025
+[ORQ 05:02:25]   ok       rederiva       max_ano=2025
+[ORQ 05:02:26]   ok       contratos      max_ano=2027
+[ORQ 05:02:27]   ok       pca            max_ano=0
+[ORQ 05:02:28]   RODA     processos      max_ano=2025
+[ORQ 05:02:28]   ok       itens          max_ano=2025
+[ORQ 05:02:30]   ok       catalogo_govbr max_ano=0
+[ORQ 05:02:31]   ok       classificacao_itens max_ano=0
+[ORQ 05:02:32]   ok       indicadores    max_ano=2024
+[ORQ 05:02:33]   ok       geo_entes      max_ano=2025
+[ORQ 05:02:34]   ok       transferencias max_ano=0
+[ORQ 05:02:34]   ok       cnes           max_ano=2026
+[ORQ 05:02:35]   ok       sih            max_ano=2025
+[ORQ 05:02:35]   ok       sia            max_ano=2025
+[ORQ 05:02:37]   RODA     previne        max_ano=0
+[ORQ 05:02:38]   ok       indigena       max_ano=0
+[ORQ 05:02:39]   ok       fns            max_ano=2026
+[ORQ 05:02:40]   RODA     cnpj_loc       max_ano=0
+[ORQ 14:01:46] ERRO FATAL: Error: Connection terminated unexpectedly
+ 
+===== INICIO 03/08/2026  2:54:06,54 (MODO=run) ===== 
+(node:23836) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[ORQ 05:54:11] ERRO FATAL: Error: getaddrinfo ENOTFOUND ep-noisy-butterfly-atdmtc4k-pooler.c-9.us-east-1.aws.neon.tech
+===== FIM 03/08/2026  2:54:11,24 ===== 
