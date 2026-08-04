@@ -5004,3 +5004,116 @@ export async function getMerendaSC(cod: string): Promise<MerendaSC> {
     dotacaoAlim: dotRows.map((r) => ({ ano: num(r.ano), dotacao: num(r.dot), empenhado: num(r.emp) })),
   };
 }
+
+// ─── APONTAMENTOS DO TCE/SC (e-Sfinge) ────────────────────────────────────────────────────────────────────────
+// Trilhas de auditoria que o PRÓPRIO Tribunal marcou: 22 tipologias sobre o participante da licitação, 23 sobre o
+// contratado e 14 tipos de ocorrência do processo. Fonte: painéis públicos do TCE/SC ([[pnigp-tcesc-esfinge-qlik]]).
+// Exibição NEUTRA e comparando o município COM ELE MESMO (apontamentos por 100 processos, ano a ano) — nunca
+// ranqueando municípios entre si ([[feedback-nao-abrir-disputa-municipios]], [[feedback-relatorio-municipio-puro]]).
+export type TceApontamentos = {
+  total: number;
+  porOrigem: { origem: string; apontamentos: number; tipologias: number }[];
+  itens: { origem: string; tipologia: string; apontamentos: number; valor: number; ultimo: string | null; observacao: string | null }[];
+  intensidade: { ano: number; processos: number; apontamentos: number; ocorrencias: number; por100: number }[];
+  tendencia: "subindo" | "estavel" | "caindo" | null;
+} | null;
+
+export async function getTceApontamentos(cod: string): Promise<TceApontamentos> {
+  const [itens, serie] = await Promise.all([
+    query<Record<string, unknown>>(
+      `SELECT origem, tipologia, sum(apontamentos) apontamentos, sum(valor) valor,
+              max(ultimo) ultimo, min(observacao) observacao
+         FROM app.tce_apontamento_municipio WHERE cod_ibge=$1
+        GROUP BY origem, tipologia ORDER BY sum(apontamentos) DESC`, [cod]).catch(() => []),
+    query<Record<string, unknown>>(
+      `SELECT ano, processos, apontamentos, ocorrencias, por_100_processos
+         FROM app.tce_intensidade_municipio WHERE cod_ibge=$1 AND processos>0 ORDER BY ano`, [cod]).catch(() => []),
+  ]);
+  if (!itens.length) return null;
+  const lista = itens.map((x) => ({
+    origem: String(x.origem || ""), tipologia: String(x.tipologia || ""),
+    apontamentos: num(x.apontamentos), valor: num(x.valor),
+    ultimo: x.ultimo ? String(x.ultimo).slice(0, 10) : null,
+    observacao: x.observacao ? String(x.observacao).slice(0, 300) : null,
+  }));
+  const intensidade = serie.map((x) => ({ ano: num(x.ano), processos: num(x.processos), apontamentos: num(x.apontamentos), ocorrencias: num(x.ocorrencias), por100: num(x.por_100_processos) }));
+  // tendência = média dos 2 últimos anos contra os 2 anteriores (do município com ele mesmo, nunca contra vizinhos)
+  let tendencia: TceApontamentos extends null ? never : "subindo" | "estavel" | "caindo" | null = null;
+  if (intensidade.length >= 4) {
+    const u = intensidade.slice(-2), a = intensidade.slice(-4, -2);
+    const mu = u.reduce((s, x) => s + x.por100, 0) / u.length;
+    const ma = a.reduce((s, x) => s + x.por100, 0) / a.length;
+    tendencia = mu > ma * 1.15 ? "subindo" : mu < ma * 0.85 ? "caindo" : "estavel";
+  }
+  const porOrigemMap = new Map<string, { apontamentos: number; tipologias: number }>();
+  for (const i of lista) {
+    const c = porOrigemMap.get(i.origem) || { apontamentos: 0, tipologias: 0 };
+    c.apontamentos += i.apontamentos; c.tipologias += 1; porOrigemMap.set(i.origem, c);
+  }
+  return {
+    total: lista.reduce((s, i) => s + i.apontamentos, 0),
+    porOrigem: [...porOrigemMap].map(([origem, v]) => ({ origem, ...v })).sort((a, b) => b.apontamentos - a.apontamentos),
+    itens: lista, intensidade, tendencia,
+  };
+}
+
+// Processos NOSSOS (PNCP) tocados por cada apontamento do TCE — o que transforma "13 contratados sem funcionário"
+// em "QUAIS contratos". Caminho: apontamento → identificador_sfi do TCE → app.processo_tce_pncp → contratacoes_sc.
+export type TceProcessoApontado = { confianca: string; notaVerificacao: string | null; tipologia: string; origem: string; cnpj: string; ano: number; seq: number; numeroCompra: string; objeto: string; modalidade: string; valorEstimado: number; valorHomologado: number; dataPublicacao: string | null; situacao: string; entidade: string | null; documento: string | null };
+
+export async function getTceProcessosApontados(cod: string, tipologia?: string): Promise<TceProcessoApontado[]> {
+  const r = await query<Record<string, unknown>>(
+    `SELECT confianca, nota_verificacao, tipologia, origem, cnpj, ano, seq, numero_compra, objeto, modalidade,
+            valor_estimado, valor_homologado, data_publicacao, situacao, entidade, documento
+       FROM app.tce_apontamento_processo
+      WHERE cod_ibge=$1 ${tipologia ? "AND tipologia=$2" : ""}
+      ORDER BY (confianca <> 'confirmado') DESC, valor_homologado DESC NULLS LAST, data_publicacao DESC
+      LIMIT 300`, tipologia ? [cod, tipologia] : [cod]).catch(() => []);
+  return r.map((x) => ({
+    confianca: String(x.confianca || "confirmado"),
+    notaVerificacao: x.nota_verificacao ? String(x.nota_verificacao) : null,
+    tipologia: String(x.tipologia || ""), origem: String(x.origem || ""),
+    cnpj: String(x.cnpj || ""), ano: num(x.ano), seq: num(x.seq),
+    numeroCompra: String(x.numero_compra || ""), objeto: String(x.objeto || ""),
+    modalidade: String(x.modalidade || ""), valorEstimado: num(x.valor_estimado), valorHomologado: num(x.valor_homologado),
+    dataPublicacao: x.data_publicacao ? String(x.data_publicacao).slice(0, 10) : null,
+    situacao: String(x.situacao || ""), entidade: x.entidade ? String(x.entidade) : null, documento: x.documento ? String(x.documento) : null,
+  }));
+}
+
+// Apontamentos do TCE de UM processo — o mesmo dado do quadro do município, no grão da compra que o gestor abriu.
+export type TceApontamentoDoProcesso = { origem: string; tipologia: string; entidade: string | null; documento: string | null; observacao: string | null; confianca: string; notaVerificacao: string | null };
+
+export async function getTceApontamentosDoProcesso(cnpj: string, ano: number, seq: number): Promise<TceApontamentoDoProcesso[]> {
+  // ⚠️ SÓ o que é do PROCESSO: trilha de participante e ocorrência. A tipologia de CONTRATO é chaveada por
+  // idcontrato e pertence ao CONTRATO — trazê-la para cá empilhava as marcações de todos os contratos da
+  // licitação (caso real: 263 numa compra de Itajaí, sendo 12× o número real). Ver getTceApontamentosDoContrato.
+  const r = await query<Record<string, unknown>>(
+    `SELECT DISTINCT origem, tipologia, entidade, documento, observacao, confianca, nota_verificacao
+       FROM app.tce_apontamento_processo WHERE cnpj=$1 AND ano=$2 AND seq=$3 AND origem <> 'contrato'
+      ORDER BY origem, tipologia`, [cnpj, ano, seq]).catch(() => []);
+  return r.map((x) => ({
+    origem: String(x.origem || ""), tipologia: String(x.tipologia || ""),
+    entidade: x.entidade ? String(x.entidade) : null, documento: x.documento ? String(x.documento) : null,
+    observacao: x.observacao ? String(x.observacao).slice(0, 300) : null,
+    confianca: String(x.confianca || "confirmado"),
+    notaVerificacao: x.nota_verificacao ? String(x.nota_verificacao) : null,
+  }));
+}
+
+// Apontamentos do TCE no grão do CONTRATO — a tipologia de contratado pertence ao contrato, não ao processo.
+// Chave: CNPJ do fornecedor, que é o que a lista de contratos assinados já exibe.
+export type TceApontamentoDoContrato = { ni: string; tipologia: string; documento: string | null; observacao: string | null; confianca: string };
+
+export async function getTceApontamentosDoContrato(cnpj: string, ano: number, seq: number): Promise<TceApontamentoDoContrato[]> {
+  const r = await query<Record<string, unknown>>(
+    `SELECT DISTINCT ni_fornecedor, tipologia, documento, observacao, confianca
+       FROM app.tce_apontamento_contrato WHERE cnpj=$1 AND ano=$2 AND seq=$3
+      ORDER BY tipologia`, [cnpj, ano, seq]).catch(() => []);
+  return r.map((x) => ({
+    ni: String(x.ni_fornecedor || ""), tipologia: String(x.tipologia || ""),
+    documento: x.documento ? String(x.documento) : null,
+    observacao: x.observacao ? String(x.observacao).slice(0, 300) : null,
+    confianca: String(x.confianca || "confirmado"),
+  }));
+}

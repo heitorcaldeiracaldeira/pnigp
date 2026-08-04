@@ -27,6 +27,7 @@ const FORMATOS = [
 ];
 
 async function main() {
+  const falhasParser = new Map();   // formato -> nº de documentos em que o parser estourou
   const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }, max: 3, statement_timeout: 180000 });
   db.on("error", () => {});
   const q = async (s, p) => { let u; for (let i = 0; i < 6; i++) { try { return await db.query(s, p); } catch (e) { u = e; if (["22P05", "23502", "42703", "42P10", "21000"].includes(e.code)) throw e; await sleep(1200 * (i + 1)); } } throw new Error(`db: ${u?.message}`); };
@@ -47,7 +48,8 @@ async function main() {
         // roda o parser em TODOS os docs do processo (a marca da dispensa vive no termo/proposta, nem sempre o maior)
         const docs = (await q(`SELECT texto FROM arquivo_texto_sc WHERE cnpj=$1 AND ano=$2 AND seq=$3 AND chars BETWEEN 300 AND 80000 ORDER BY chars DESC LIMIT 12`, [e.cnpj, e.ano, e.seq])).rows;
         let recs = [];
-        for (const d of docs) { try { const rr = F.parse(d.texto || "") || []; for (const r of rr) if (r && r.descricao) recs.push(r); } catch {} }
+        // falha DETERMINÍSTICA do parser (mesmo doc → mesmo erro): marcar feito é correto, o que faltava era visibilidade
+        for (const d of docs) { try { const rr = F.parse(d.texto || "") || []; for (const r of rr) if (r && r.descricao) recs.push(r); } catch (err) { falhasParser.set(F.id, (falhasParser.get(F.id) || 0) + 1); } }
         { const seen = new Set(); recs = recs.filter((r) => { const k = (r.descricao || "").slice(0, 80) + "|" + (r.marca || ""); if (seen.has(k)) return false; seen.add(k); return true; }); }
         if (recs.length) {
           const api = (await q(`SELECT numero, descricao, cnpj_fornecedor, situacao FROM itens_sc WHERE cnpj=$1 AND ano=$2 AND seq=$3`, [e.cnpj, e.ano, e.seq])).rows
@@ -85,6 +87,10 @@ async function main() {
     console.log(`\n[${F.id}] concluído: ${feitas} atas · ${comMarca} com marca`);
   }
   console.log(`\n✔ total de itens com marca gravados nesta rodada: ${totMarca.toLocaleString()}`);
+  if (falhasParser.size) {
+    console.log("\n⚠ PARSERS QUE ESTOURARAM (falha determinística — processo marcado feito; conserte e limpe marca_ata_feitas):");
+    for (const [id, n] of [...falhasParser].sort((a, b) => b[1] - a[1])) console.log(`   ${String(n).padStart(6)} documento(s) · ${id}`);
+  }
   await db.end();
 }
 main().catch((e) => { console.error("ERRO:", e.message); process.exit(1); });

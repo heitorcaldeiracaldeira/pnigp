@@ -4,6 +4,7 @@
 // instrumento, valor ESTIMADO × HOMOLOGADO (economia real), datas, situação. Grava contratacoes_sc (cnpj/ano/seq),
 // idempotente (UPSERT) e RESUMÍVEL por janela (mês×modalidade) em _raiox_janela. Backoff em 429. node scripts/ingest_raiox_pncp_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { upsertContratacao } from "./lib_contratacao_upsert.mjs";   // mapeamento único, compartilhado com o incremental
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const CONS = "https://pncp.gov.br/api/consulta/v1/contratacoes/publicacao";
@@ -27,14 +28,24 @@ function janelas() {
   }
   return out;
 }
+// ⚠️ "VAZIO" E "NÃO CONSEGUI FALAR" NÃO SÃO A MESMA COISA.
+// Antes, 503/timeout/429 persistente devolviam `{data: [], totalPaginas: 0}` — idêntico a uma janela legitimamente
+// vazia. O laço então gravava a janela em `_raiox_janela` como FEITA e imprimia "✔ 0 compras gravadas". Em mês
+// fechado isso é PERDA SILENCIOSA E PERMANENTE: o resume passa a acreditar que o mês foi coletado e nunca volta lá.
+// Aconteceu duas vezes em 04/ago/2026 com o PNCP instável — só foi notado porque estranhei o zero e conferi na API.
+// Agora toda resposta carrega `erro`: quem chama decide, e janela com erro NÃO é marcada como feita.
 async function getBulk(mod, ini, fim, pagina) {
   const url = `${CONS}?dataInicial=${ini}&dataFinal=${fim}&codigoModalidadeContratacao=${mod}&uf=${UF}&pagina=${pagina}&tamanhoPagina=50`;
+  let ultimo = "";
   for (let t = 0; ; t++) {
-    let r; try { r = await fetch(url, { signal: AbortSignal.timeout(25000) }); } catch (e) { if (t >= 5) throw e; await sleep(3000 * (t + 1)); continue; }
-    if (r.status === 429) { if (t >= 8) throw new Error("429 persistente"); await sleep(8000 * (t + 1)); continue; }
-    if (r.status === 204) return { data: [], totalPaginas: 0 };
-    if (!r.ok) { if (t >= 3) return { data: [], totalPaginas: 0 }; await sleep(2000 * (t + 1)); continue; }
-    return await r.json();
+    let r;
+    try { r = await fetch(url, { signal: AbortSignal.timeout(25000) }); }
+    catch (e) { ultimo = e.message; if (t >= 5) return { data: [], totalPaginas: 0, erro: `rede: ${ultimo}` }; await sleep(3000 * (t + 1)); continue; }
+    if (r.status === 429) { ultimo = "429"; if (t >= 8) return { data: [], totalPaginas: 0, erro: "429 persistente" }; await sleep(8000 * (t + 1)); continue; }
+    if (r.status === 204) return { data: [], totalPaginas: 0, erro: null };   // vazio LEGÍTIMO: a API respondeu
+    if (!r.ok) { ultimo = `HTTP ${r.status}`; if (t >= 3) return { data: [], totalPaginas: 0, erro: ultimo }; await sleep(2000 * (t + 1)); continue; }
+    try { const j = await r.json(); return { ...j, erro: null }; }
+    catch (e) { return { data: [], totalPaginas: 0, erro: `json: ${e.message}` }; }
   }
 }
 
@@ -106,56 +117,41 @@ async function main() {
   // dia em que rodou — foi o bug que deixou a base parada em 15/jul. Só meses JÁ FECHADOS usam o resume _raiox_janela.
   const _now = new Date(); const _cy = _now.getUTCFullYear(), _cm = _now.getUTCMonth() + 1;
   const mesesAtras = (a, m) => (_cy - a) * 12 + (_cm - m);
-  const js = janelas(); let totGrav = 0, jaFeitas = 0;
+  const js = janelas(); let totGrav = 0, jaFeitas = 0; const janelasComErro = [];
   for (const mod of MODALIDADES) for (const j of js) {
     const recente = mesesAtras(j.ano, j.mes) <= 1;   // mês corrente (0) e anterior (1) SEMPRE re-buscam
     if (!recente && (await q(`SELECT 1 FROM _raiox_janela WHERE uf=$4 AND mod=$1 AND ano=$2 AND mes=$3`, [mod, j.ano, j.mes, UF])).rowCount) { jaFeitas++; continue; }
-    let pagina = 1, tp = 1, nJanela = 0;
+    let pagina = 1, tp = 1, nJanela = 0, erroJanela = null;
     do {
-      const r = await getBulk(mod, j.ini, j.fim, pagina).catch(() => ({ data: [], totalPaginas: 0 }));
+      const r = await getBulk(mod, j.ini, j.fim, pagina).catch((e) => ({ data: [], totalPaginas: 0, erro: `exceção: ${e.message}` }));
+      if (r.erro) { erroJanela = r.erro; break; }   // não engole: a janela fica SEM marca e volta na próxima rodada
       tp = r.totalPaginas || 0; const lista = r.data || [];
       for (const o of lista) {
-        const cnpj = o.orgaoEntidade?.cnpj; if (!cnpj) continue;
-        const est = num(o.valorTotalEstimado), hom = num(o.valorTotalHomologado);
-        const econ = est && hom && est > 0 ? Math.round((1 - hom / est) * 1000) / 10 : null;
-        await q(`INSERT INTO contratacoes_sc (cod_ibge,cnpj,ano,seq,esfera,plataforma,modalidade_id,modalidade,modo_disputa,srp,instrumento,
-            valor_estimado,valor_homologado,economia_pct,numero_compra,processo,objeto,situacao,emenda_parlamentar,amparo_legal,
-            data_publicacao,data_abertura,data_encerramento,
-            municipio_nome,unidade_codigo,unidade_nome,orgao_razao_social,uf,numero_controle_pncp,
-            link_sistema_origem,justificativa_presencial,data_atualizacao,raw)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33)
-          ON CONFLICT (cnpj,ano,seq) DO UPDATE SET plataforma=EXCLUDED.plataforma, modalidade=EXCLUDED.modalidade, modo_disputa=EXCLUDED.modo_disputa,
-            srp=EXCLUDED.srp, valor_estimado=EXCLUDED.valor_estimado, valor_homologado=EXCLUDED.valor_homologado, economia_pct=EXCLUDED.economia_pct,
-            situacao=EXCLUDED.situacao, cod_ibge=COALESCE(EXCLUDED.cod_ibge, contratacoes_sc.cod_ibge),
-            municipio_nome=EXCLUDED.municipio_nome, unidade_codigo=EXCLUDED.unidade_codigo, unidade_nome=EXCLUDED.unidade_nome,
-            orgao_razao_social=EXCLUDED.orgao_razao_social, uf=EXCLUDED.uf, numero_controle_pncp=EXCLUDED.numero_controle_pncp,
-            link_sistema_origem=EXCLUDED.link_sistema_origem, justificativa_presencial=EXCLUDED.justificativa_presencial,
-            data_atualizacao=EXCLUDED.data_atualizacao, raw=EXCLUDED.raw, atualizado=now()`,
-          // cod_ibge: do PNCP (unidadeOrgao.codigoIbge); o mapa cnpj→ibge fica só de fallback
-          [o.unidadeOrgao?.codigoIbge || codByCnpj.get(cnpj) || null, cnpj, num(o.anoCompra), num(o.sequencialCompra), o.orgaoEntidade?.esferaId || null, o.usuarioNome || null,
-           num(o.modalidadeId), o.modalidadeNome || null, o.modoDisputaNome || null, o.srp === true, o.tipoInstrumentoConvocatorioNome || null,
-           est, hom, econ, o.numeroCompra || null, o.processo || null, String(o.objetoCompra || "").slice(0, 500), o.situacaoCompraNome || null,
-           o.emendaParlamentar === true, String(o.amparoLegal?.nome || o.amparoLegal?.descricao || "").slice(0, 160),
-           dt(o.dataPublicacaoPncp), dt(o.dataAberturaProposta), dt(o.dataEncerramentoProposta),
-           // espelho da unidadeOrgao/orgaoEntidade do PNCP (antes: descartados)
-           o.unidadeOrgao?.municipioNome || null, o.unidadeOrgao?.codigoUnidade || null,
-           String(o.unidadeOrgao?.nomeUnidade || "").slice(0, 160) || null,
-           String(o.orgaoEntidade?.razaoSocial || "").slice(0, 160) || null,
-           o.unidadeOrgao?.ufSigla || null, o.numeroControlePNCP || null,
-           // 🔑 linkSistemaOrigem: ONDE O PROCESSO REALMENTE MORA. Era descartado.
-           String(o.linkSistemaOrigem || "").slice(0, 500) || null,
-           String(o.justificativaPresencial || "").slice(0, 1000) || null,
-           dt(o.dataAtualizacao),
-           // o JSON CRU inteiro — nada descartado, nunca
-           JSON.stringify(o)]);
+        // MAPEAMENTO ÚNICO: as 33 colunas vivem em scripts/lib_contratacao_upsert.mjs, compartilhado com o
+        // coletor incremental (/contratacoes/atualizacao). Antes havia uma cópia aqui e outra lá — duas cópias
+        // significam que um campo novo entra por um caminho e some pelo outro. Inclui cod_ibge do PNCP
+        // (unidadeOrgao.codigoIbge) com o mapa cnpj→ibge só de fallback, linkSistemaOrigem e o `raw` íntegro.
+        if (!(await upsertContratacao(q, o, codByCnpj))) continue;
         totGrav++; nJanela++;
       }
       pagina++;
     } while (pagina <= tp);
+    if (erroJanela) {
+      janelasComErro.push(`mod ${mod} ${j.ano}-${String(j.mes).padStart(2, "0")}: ${erroJanela}`);
+      console.log(`\n  ⚠ mod ${mod} ${j.ano}-${String(j.mes).padStart(2, "0")} NÃO coletada (${erroJanela}) — janela não marcada, volta na próxima rodada`);
+      continue;   // sem INSERT em _raiox_janela: melhor re-buscar do que registrar coleta que não houve
+    }
     await q(`INSERT INTO _raiox_janela (uf,mod,ano,mes,n) VALUES ($5,$1,$2,$3,$4) ON CONFLICT (uf,mod,ano,mes) DO UPDATE SET n=EXCLUDED.n, feito_em=now()`, [mod, j.ano, j.mes, nJanela, UF]);
     if (nJanela) process.stdout.write(`  mod ${mod} ${j.ano}-${String(j.mes).padStart(2, "0")}: ${nJanela} · total ${totGrav}\r`);
   }
-  console.log(`\n✔ ${totGrav.toLocaleString()} compras gravadas (janelas já feitas puladas: ${jaFeitas})`);
+  console.log(`\n${janelasComErro.length ? "⚠" : "✔"} ${totGrav.toLocaleString()} compras gravadas (janelas já feitas puladas: ${jaFeitas})`);
+  if (janelasComErro.length) {
+    console.log(`\n⚠ ${janelasComErro.length} JANELA(S) NÃO COLETADA(S) — a API não respondeu. NÃO foram marcadas como feitas:`);
+    for (const x of janelasComErro.slice(0, 20)) console.log(`   · ${x}`);
+    if (janelasComErro.length > 20) console.log(`   · … e mais ${janelasComErro.length - 20}`);
+    console.log("   Rode de novo quando a API estiver estável; o resume volta exatamente nelas.");
+    process.exitCode = 2;   // exit != 0: o orquestrador não registra a fonte como 'ok'
+  }
   const s = (await q(`SELECT count(*) n, count(DISTINCT plataforma) plats, count(*) FILTER (WHERE economia_pct IS NOT NULL) c_econ FROM contratacoes_sc`)).rows[0];
   console.log(`ACUMULADO: ${Number(s.n).toLocaleString()} compras · ${s.plats} plataformas · ${Number(s.c_econ).toLocaleString()} com economia`);
   await db.end();

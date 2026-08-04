@@ -28,6 +28,7 @@ async function carregaParsers() {
 }
 
 async function main() {
+  const falhasParser = new Map();   // parser -> nº de documentos em que estourou (defeito de parser, não do dado)
   const parsers = await carregaParsers();
   console.log(`roteador de marca · ${parsers.length} parsers de template carregados` + (parsers.length ? ": " + parsers.map((p) => p.nome.replace(".mjs", "")).join(", ") : " (nenhum ainda — aguardando o fan-out)"));
   if (!parsers.length) { console.log("nada a rodar sem parsers."); return; }
@@ -62,7 +63,10 @@ async function main() {
       // roda TODOS os parsers em TODOS os docs; cada parser só casa o seu template. Best por item pela confiança.
       const best = new Map();
       for (const d of docs) for (const P of parsers) {
-        let out = []; try { out = P.parse(d.texto || "", itensApi) || []; } catch {}
+        // Aqui a falha é DETERMINÍSTICA, ao contrário do LLM/rede: o parser quebrou NESTE documento e vai quebrar
+        // de novo no próximo run. Não marcar feito criaria laço infinito — pior que o silêncio. O que faltava era
+        // VISIBILIDADE: parser que estoura em milhares de documentos é marca que nunca foi extraída, e nada indicava.
+        let out = []; try { out = P.parse(d.texto || "", itensApi) || []; } catch (err) { falhasParser.set(P.nome, (falhasParser.get(P.nome) || 0) + 1); }
         for (const r of out) {
           if (!r || r.numero == null || !r.marca) continue;
           const nm = norm(r.marca); if (nm.length < 2 || /^\d+$/.test(nm)) continue;
@@ -86,6 +90,11 @@ async function main() {
     if (++done % 50 === 0) process.stdout.write(`  ${done}/${procs.length} · ${itensMarca} marcas\r`);
   }
   console.log(`\n✔ roteador: ${itensMarca.toLocaleString()} marcas gravadas em ${done} processos`);
+  if (falhasParser.size) {
+    console.log("\n⚠ PARSERS QUE ESTOURARAM (marca possivelmente perdida — o processo FOI marcado feito porque a falha é determinística e reprocessar daria o mesmo erro):");
+    for (const [nome, n] of [...falhasParser].sort((a, b) => b[1] - a[1])) console.log(`   ${String(n).padStart(6)} documento(s) · ${nome}`);
+    console.log("   Conserte o parser e limpe marca_tpl_feitas das linhas afetadas para reprocessar.");
+  }
   await db.end();
 }
 main().catch((e) => { console.error("ERRO:", e.message); process.exit(1); });

@@ -119,7 +119,11 @@ async function main() {
   const feitos = new Set((await db.query(`SELECT cod_ibge FROM pca_sc_feitos`)).rows.map((r) => r.cod_ibge));
   const pend = entes.filter((e) => !feitos.has(e.cod_ibge));
   // CNPJs compartilhados entre municípios (atas de registro de preço / consórcios) — NÃO atribuir o PCA deles a um ente
-  const shared = new Set((await db.query(`SELECT cnpj_compra FROM contratos_sc GROUP BY cnpj_compra HAVING count(DISTINCT cod_ibge)>1`).catch(() => ({ rows: [] })).then((r) => r.rows || [])).map((r) => r.cnpj_compra));
+  // ⚠️ SEM `.catch(() => ({rows: []}))` AQUI. Este conjunto é uma EXCLUSÃO: são os CNPJs compartilhados entre
+  // municípios (consórcios, atas de registro de preço). Se a consulta falhar e o conjunto vier vazio, o PCA do
+  // consórcio é atribuído a UM município — o número aparece inflado na tela do prefeito, sem erro nenhum no log.
+  // Falha de exclusão não pode virar "não excluir nada": aborta e roda de novo. `q` já tem 6 tentativas com backoff.
+  const shared = new Set((await q(`SELECT cnpj_compra FROM contratos_sc GROUP BY cnpj_compra HAVING count(DISTINCT cod_ibge)>1`)).rows.map((r) => r.cnpj_compra));
   console.log(`PCA PNCP (${ANOS.join(",")}): ${pend.length} municípios pendentes de ${entes.length} | CNPJs compartilhados excluídos: ${shared.size}`);
   let comDados = 0;
   await pool(pend, 4, async (e) => {

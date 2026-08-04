@@ -46,6 +46,12 @@ const mede = async () => (await db.query(`
             left join app.item_marca_conferida_sc m on m.cnpj=i.cnpj and m.ano=i.ano and m.seq=i.seq and m.numero=i.numero::text
           where i.unit_homologado>0) no_acervo_sem_marca`)).rows[0];
 
+// mesmo lock da tarefa agendada (auditoria/pipeline.mjs) — `marca_ata_feitas` é por processo e duas
+// rodadas simultâneas fazem uma cegar a outra.
+const cli = await db.connect();
+if (!(await cli.query(`select pg_try_advisory_lock(918273645) ok`)).rows[0].ok) {
+  console.log("já há uma rodada da cadeia de marca em curso — saindo"); process.exit(0);
+}
 const antes = await mede();
 console.log("== BATERIA 2 · ANTES ==", JSON.stringify(antes));
 const log = [];

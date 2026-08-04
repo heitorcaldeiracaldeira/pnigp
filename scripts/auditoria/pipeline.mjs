@@ -1,24 +1,85 @@
-// AUDITORIA · pipeline — REFRESH do flag por evento → extração/reconcile da marca. Idempotente e LEVE.
-// Entra no ciclo de ingestão: a cada nova leva do PNCP, roda isto → processos que homolog/des-homolog voltam
-// sozinhos e a marca se re-transforma. Não toca o espelho. node scripts/auditoria/pipeline.mjs
+// AUDITORIA · pipeline — A CADEIA DA MARCA, dirigida por evento. É o que roda SOZINHO todo dia.
+//
+// O que estava errado até 04/ago/2026: este arquivo existia mas (a) NENHUM agendador o chamava — só rodava se
+// alguém digitasse o comando; (b) cobria 1 de 8 extratores (só o A/B inline); (c) NÃO rodava o `consolida_marca`,
+// então a marca crua que os extratores gravavam nunca chegava em `item_marca_conferida_sc`, que é a tabela que o
+// produto lê. Resultado: 20 mil itens de marca parados esperando consolidação ([[pnigp-gap-extracao-marca-nao-agendada]]).
+//
+// Agora cobre a cadeia inteira. Toda etapa é incremental e resumível por conta própria — numa rodada diária só
+// toca o que homologou/mudou desde a última, então o custo é pequeno; o caro foi só o passivo inicial.
+//
+// TRAVA: `az`/`betha`/`ecustomize`/`portal_vencedores` compartilham `marca_ata_feitas` chaveada por processo —
+// duas execuções simultâneas fazem uma cegar a outra. Lock de sessão no Postgres: se já houver rodada em curso
+// (inclusive uma bateria manual), sai limpo em vez de corromper a fila.
+//
+//   node scripts/auditoria/pipeline.mjs            # ciclo completo (é o que a tarefa agendada chama)
+//   SEM_LLM=1 node scripts/auditoria/pipeline.mjs  # pula visão/atas (as duas etapas que usam API)
 import { spawn } from "child_process"; import path from "path"; import { fileURLToPath } from "url";
+import fs from "fs"; import pg from "pg";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCRIPTS = path.join(__dirname, "..");
+const ROOT = path.join(SCRIPTS, "..");
 const UF = (process.env.UF || "sc").toLowerCase();
+const SEM_LLM = process.env.SEM_LLM === "1";
+const U = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
+const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }, max: 1, statement_timeout: 300000 });
+const LOCK = 918273645;   // chave do advisory lock da cadeia de marca
 
-function run(script, env = {}) {
-  return new Promise((res, rej) => {
-    const p = spawn(process.execPath, [path.join(SCRIPTS, script)], { env: { ...process.env, UF, ...env }, stdio: "inherit" });
-    p.on("exit", (c) => (c === 0 ? res() : rej(new Error(`${script} saiu ${c}`))));
-  });
+const ETAPAS = [
+  // 1) EVENTO — quem homologou/des-homologou desde o watermark; reabre o processo e enfileira o doc que falta
+  ["auditoria/ao_homologar.mjs",           {},                        "evento: homologou/des-homologou"],
+  // 2) FILA — quais documentos contêm padrão de marca (refresh incremental)
+  ["constroi_doc_tem_marca.mjs",           { REFRESH: "1" },          "fila de documentos com marca"],
+  // 3) EXTRAÇÃO determinística — cada família lê o seu template. Zero API.
+  ["extrai_marca_padrao.mjs",              { LIMIT: "0" },            "templates A/B inline"],
+  ["extrai_marca_router.mjs",              { LIMIT: "0" },            "templates de portal (marca_tpl)"],
+  ["extrai_marca_multi.mjs",               { LIMIT: "0" },            "Pública · LicitarDigital · Dispensa · IPM"],
+  ["extrai_az.mjs",                        { LIMIT: "0" },            "ComprasBR (AZ)"],
+  ["extrai_betha.mjs",                     { LIMIT: "0" },            "Betha"],
+  ["extrai_ecustomize.mjs",                { LIMIT: "0" },            "ECustomize"],
+  ["extrai_portal_vencedores.mjs",         { LIMIT: "0" },            "bloco Vencedores do PCP"],
+  ["auditoria/extrai_marca_proposta.mjs",  { LIMIT: "0" },            "marca na PROPOSTA (art.41)"],
+  ["extrai_marca_ancora.mjs",              { LIMIT: "0" },            "âncora de valor na linha do vencedor"],
+  // 4) CONFERÊNCIA — trava dupla (CNPJ+valor) e item+valor
+  ["confere_marca_comprasnet.mjs",         { LIMIT: "0" },            "Compras.gov · trava dupla"],
+  ["confere_marca_lote.mjs",               {},                        "confere item_marca_sc por item+valor"],
+  // 5) RESÍDUO com API — só onde o determinístico não leu
+  ["extrai_marca_visao.mjs",               { LIMIT: "0" },            "PDF-imagem → visão", true],
+  ["ingest_marca_atas_sc.mjs",             { LIMIT: "0", GATE_MARCA: "1" }, "atas no resíduo", true],
+  // 6) CONSOLIDA — sem isto nada chega ao produto
+  ["auditoria/consolida_marca.mjs",        {},                        "ancora por valor → item_marca_conferida"],
+  // 7) ESPECIFICAÇÃO — a visão por item (spec do documento + marca do dia). Base = itens_sc INTEIRA: a spec não
+  //    depende de marca, a marca é enriquecimento opcional. Troca atômica, então pode rodar com o app no ar.
+  ["constroi_especificacao_item.mjs",      {},                        "spec + marca por item → item_especificacao"],
+];
+
+const run = (script, env) => new Promise((res) => {
+  const t = Date.now();
+  const p = spawn(process.execPath, [path.join(SCRIPTS, script)], { cwd: ROOT, env: { ...process.env, UF, ...env }, stdio: "inherit" });
+  p.on("exit", (c) => res({ code: c, s: ((Date.now() - t) / 1000).toFixed(0) }));
+  p.on("error", () => res({ code: -1, s: "0" }));
+});
+const mede = async () => (await db.query(`select (select count(*) from app.item_marca_conferida_${UF}) conferida,
+  (select count(*) from item_marca_${UF}) cru`)).rows[0];
+
+const cli = await db.connect();
+const { rows: [{ ok }] } = await cli.query(`select pg_try_advisory_lock($1) ok`, [LOCK]);
+if (!ok) { console.log("já há uma rodada da cadeia de marca em curso — saindo sem tocar na fila"); cli.release(); await db.end(); process.exit(0); }
+
+console.log(`== CADEIA DA MARCA (UF=${UF}) · ${new Date().toISOString()} ==`);
+const antes = await mede();
+console.log("antes:", JSON.stringify(antes));
+const log = [];
+for (const [s, env, desc, usaLLM] of ETAPAS) {
+  if (usaLLM && SEM_LLM) { log.push({ etapa: s, saida: "pulado", seg: "0" }); continue; }
+  console.log(`\n── ${s} · ${desc}`);
+  const r = await run(s, env);
+  log.push({ etapa: s, saida: r.code, seg: r.s });
+  if (r.code !== 0) console.log(`   ! ${s} saiu ${r.code} — segue (o resumo dele retoma na próxima rodada)`);
 }
-
-console.log(`== AUDITORIA pipeline (UF=${UF}) ==`);
-// 0) EVENTO: detecta homologação/des-homologação (watermark) → reabre processos + enfileira fetch do que falta
-await run("auditoria/ao_homologar.mjs");
-// 1) REFRESH incremental do flag: reabre por doc novo OU item homolog/des-homolog (une com o passo 0)
-await run("constroi_doc_tem_marca.mjs", { REFRESH: "1" });
-// 2) extração/reconcile: apaga a marca antiga do processo reaberto e grava a atual (vencedor novo entra, antigo sai)
-await run("extrai_marca_padrao.mjs", { LIMIT: "0" });
-console.log("== auditoria: eventos processados + flag reconciliado + marca re-transformada ==");
-console.log("   (fetch dos docs fora do acervo fica em app.fetch_fila_* p/ o coletor de portal)");
+const depois = await mede();
+console.table(log);
+console.log(`antes ${JSON.stringify(antes)} → depois ${JSON.stringify(depois)}`);
+console.log(`Δ marca conferida: ${Number(depois.conferida) - Number(antes.conferida)} itens`);
+await cli.query(`select pg_advisory_unlock($1)`, [LOCK]);
+cli.release(); await db.end();

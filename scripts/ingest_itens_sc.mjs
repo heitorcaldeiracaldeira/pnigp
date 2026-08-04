@@ -73,12 +73,18 @@ async function fetchItens(cnpj, ano, seq) {
   // (compatibilidade com as queries de produção — não muda comportamento de quem já lê itens_sc).
   const resMap = new Map();     // numeroItem -> resultado[0]  (achatado em itens_sc, como antes)
   const resTodos = [];          // TODOS os resultados -> item_resultado_sc
+  let resFalhou = 0;            // quantos /resultados a API não conseguiu entregar (≠ de "não tem resultado")
   let i = 0;
   await Promise.all(Array.from({ length: CONC_RES }, async () => {
     while (i < alvo.length) {
       const it = alvo[i++];
       const r = await getMain(`${base}/${it.numeroItem}/resultados`).catch(() => null);
-      if (!Array.isArray(r) || !r.length) continue;
+      // ⚠️ `null` = getMain ESGOTOU as tentativas (429/timeout), NÃO é "item sem resultado". O contrato está escrito
+      // no próprio getMain ("o chamador NÃO deve marcar feito") e era ignorado aqui: o null caía no mesmo `continue`
+      // do array vazio, o item ficava sem vencedor e o processo era marcado FEITO — para sempre. E `unit_homologado`
+      // é justamente a âncora da marca, então o item virava indistinguível de um item não homologado.
+      if (r === null) { resFalhou++; continue; }
+      if (!Array.isArray(r) || !r.length) continue;   // vazio LEGÍTIMO: a API respondeu que não há resultado
       resMap.set(it.numeroItem, r[0]);
       for (const x of r) resTodos.push({ numeroItem: it.numeroItem, r: x });
     }
@@ -104,6 +110,7 @@ async function fetchItens(cnpj, ano, seq) {
     return linha;
   });
   saida.__resultados = resTodos;   // TODOS os resultados (espelho de /resultados) — anexado ao array RETORNADO
+  saida.__resFalhou = resFalhou;   // >0 → coleta INCOMPLETA: o chamador não deve marcar o processo como feito
   return saida;
 }
 
@@ -186,7 +193,7 @@ async function main() {
   await lst.end();
   const pend = procs.filter((p) => !feitos.has(p.numero_controle));
   console.log(`Itens: ${pend.length} processos pendentes (de ${procs.length} no PNCP/SC) · INGEST_VERSAO=${INGEST_VERSAO}`);
-  let comItens = 0;
+  let comItens = 0, resIncompletos = 0;
   await pool(pend, CONC, async (e) => {
     try {
       const itens = await fetchItens(e.cnpj, e.ano, e.seq);
@@ -241,14 +248,27 @@ async function main() {
             [e.cod_ibge, e.cnpj, e.ano, e.seq, B.num, B.sr, B.ni, B.nome, B.tp, B.qh, B.vu, B.vt, B.pd, B.porte, B.nj, B.ord, B.sit, B.sub, B.dr, B.dc, B.mc]);
         }
         // todo processo tem ≥1 item: só marca FEITO com n>0 (n=0 = fetch vazio/anomalia → fica pendente, retenta)
-        await q(`INSERT INTO itens_proc_feitos (numero_controle,n,versao) VALUES ($1,$2,$3)
-          ON CONFLICT (numero_controle) DO UPDATE SET n=EXCLUDED.n, versao=EXCLUDED.versao, feito_em=now()`,
-          [e.numero_controle, n, INGEST_VERSAO]); comItens++;
+        // E TAMBÉM só quando os /resultados vieram todos: `__resFalhou>0` significa que a API não entregou o
+        // vencedor de algum item. Marcar feito aí congela o item sem `unit_homologado` — a âncora da marca —
+        // e o processo nunca mais é revisitado. Melhor rebuscar do que registrar coleta incompleta como completa.
+        if (itens.__resFalhou > 0) {
+          resIncompletos++;
+          console.log(`  ⚠ ${e.numero_controle}: ${itens.__resFalhou} item(ns) sem /resultados (API não respondeu) — NÃO marcado feito, volta no próximo run`);
+        } else {
+          await q(`INSERT INTO itens_proc_feitos (numero_controle,n,versao) VALUES ($1,$2,$3)
+            ON CONFLICT (numero_controle) DO UPDATE SET n=EXCLUDED.n, versao=EXCLUDED.versao, feito_em=now()`,
+            [e.numero_controle, n, INGEST_VERSAO]); comItens++;
+        }
       }
     } catch (err) { console.log(`  ! falha ${e.numero_controle} (${String(err).slice(0, 35)})`); }
   });
   const c = await db.query(`SELECT count(*) n, count(DISTINCT (cnpj,ano,seq)) p FROM itens_sc`);
   console.log(`Concluído: ${comItens} processos c/ itens nesta rodada | total ${c.rows[0].n} itens em ${c.rows[0].p} processos`);
+  if (resIncompletos) {
+    console.log(`\n⚠ ${resIncompletos} processo(s) com /resultados INCOMPLETO — a API não entregou o vencedor de algum item.`);
+    console.log("   NÃO foram marcados como feitos: voltam no próximo run. Rode de novo com a API estável.");
+    process.exitCode = 2;   // exit != 0: o orquestrador não registra a fonte como 'ok'
+  }
   await db.end();
 }
 main().catch((e) => { console.error("ERRO:", e); process.exit(1); });

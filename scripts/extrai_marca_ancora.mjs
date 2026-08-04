@@ -34,7 +34,9 @@ async function haikuMarca(win, fornecedor) {
       return object;
     };
   }
-  try { return await _llm(win, fornecedor); } catch { return null; }
+  // ⚠️ falha do LLM é TRANSITÓRIA (rede/rate-limit/timeout) e NÃO é "não achei marca". Devolvo um objeto que
+  // distingue os dois: `{falhou:true}` sobe até o laço, que então NÃO marca o processo como feito.
+  try { return await _llm(win, fornecedor); } catch { return { __falhou: true }; }
 }
 
 const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
@@ -154,6 +156,7 @@ async function main() {
                   WHERE t.cnpj=i.cnpj AND t.ano=i.ano AND t.seq=i.seq AND a.tipo_documento_id IN (${tlist}) AND t.chars>300)
     ${LIMIT ? "LIMIT " + LIMIT : ""}`)).rows;
   console.log(`PRODUÇÃO tipos[${tlist}]${MODS ? " mod[" + MODS.join(",") + "]" : " TODAS mod"} · Haiku ${USA_HAIKU ? "ON" : "OFF"} · ${procs.length.toLocaleString()} processos`);
+  let procIncompletos = 0;
 
   let done = 0, itensMarca = 0, viaDet = 0, viaHk = 0, hkCalls = 0;
   for (const p of procs) {
@@ -166,7 +169,7 @@ async function main() {
         WHERE cnpj=$1 AND ano=$2 AND seq=$3 AND unit_homologado>0 AND situacao='Homologado'
           AND NOT EXISTS (SELECT 1 FROM item_marca_sc m WHERE m.cnpj=$1 AND m.ano=$2 AND m.seq=$3 AND m.numero=itens_sc.numero AND m.marca IS NOT NULL)`, [p.cnpj, p.ano, p.seq])).rows;
       const M = { num: [], desc: [], mar: [], mod: [], val: [] };
-      let usouHkProc = 0;
+      let usouHkProc = 0, hkFalhouProc = 0;
       for (const it of itens) {
         const cnpjV = it.cnpj_fornecedor ? String(it.cnpj_fornecedor).replace(/\D/g, "") : null;
         // 1) escolhe a OCORRÊNCIA certa do valor (sinais largos: CNPJ do vencedor, nº do item, quantidade por perto)
@@ -193,6 +196,7 @@ async function main() {
         if (!marca && USA_HAIKU && /marca/i.test(win)) {
           hkCalls++; usouHkProc++;
           const o = await haikuMarca(win, it.fornecedor);
+          if (o && o.__falhou) hkFalhouProc++;              // transitório: o processo NÃO pode ser dado por feito
           if (o && o.marca) { const nm = norm(o.marca); if (nm.length >= 2 && !LIXO.has(nm) && !/^\d+$/.test(nm)) { marca = o.marca.slice(0, 60); via = "haiku"; } }
         }
         if (marca) { M.num.push(it.numero); M.desc.push((it.descricao || "").slice(0, 200)); M.mar.push(marca); M.mod.push(null); M.val.push(it.unit_homologado); if (via === "haiku") viaHk++; else viaDet++; }
@@ -204,11 +208,20 @@ async function main() {
           [p.cnpj, p.ano, p.seq, p.cod_ibge, M.num, M.desc, M.mar, M.mod, M.val]);
         itensMarca += M.num.length;
       }
-      await q(`INSERT INTO marca_ancora_feitas (cnpj,ano,seq,n_marca,via_haiku) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (cnpj,ano,seq) DO UPDATE SET n_marca=EXCLUDED.n_marca, via_haiku=EXCLUDED.via_haiku, feito_em=now()`, [p.cnpj, p.ano, p.seq, M.num.length, usouHkProc]);
+      if (hkFalhouProc) {
+        procIncompletos++;
+        console.log(`  ⚠ ${p.cnpj}/${p.ano}/${p.seq}: Haiku falhou em ${hkFalhouProc} item(ns) — NAO marcado feito, volta no proximo run`);
+      } else {
+        await q(`INSERT INTO marca_ancora_feitas (cnpj,ano,seq,n_marca,via_haiku) VALUES ($1,$2,$3,$4,$5) ON CONFLICT (cnpj,ano,seq) DO UPDATE SET n_marca=EXCLUDED.n_marca, via_haiku=EXCLUDED.via_haiku, feito_em=now()`, [p.cnpj, p.ano, p.seq, M.num.length, usouHkProc]);
+      }
     } catch { /* deixa p/ o próximo run */ }
     if (++done % 25 === 0) process.stdout.write(`  ${done}/${procs.length} · ${itensMarca} marcas (${viaDet} det + ${viaHk} haiku) · ${hkCalls} chamadas Haiku\r`);
   }
   console.log(`\n✔ tipos[${tlist}]: ${itensMarca.toLocaleString()} marcas gravadas · ${viaDet} determinístico + ${viaHk} Haiku · ${hkCalls} chamadas Haiku`);
+  if (procIncompletos) {
+    console.log(`\n⚠ ${procIncompletos} processo(s) com Haiku indisponível — NÃO marcados como feitos, voltam no próximo run.`);
+    process.exitCode = 2;
+  }
   await db.end();
 }
 main().catch((e) => { console.error("ERRO:", e.message); process.exit(1); });

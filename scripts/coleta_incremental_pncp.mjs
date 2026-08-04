@@ -27,6 +27,7 @@
 // RECUPERAR BURACO: DIAS=90 node scripts/coleta_incremental_pncp.mjs
 // SÓ VER, SEM GRAVAR: DRY=1 node scripts/coleta_incremental_pncp.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { upsertContratacao } from "./lib_contratacao_upsert.mjs";   // mapeamento único, compartilhado com a varredura
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); const ROOT = path.join(__dirname, "..");
 const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const CONSULTA = "https://pncp.gov.br/api/consulta/v1";
@@ -121,8 +122,10 @@ for (const m of MODALIDADES) {
     const ibge = c.unidadeOrgao?.codigoIbge != null ? String(c.unidadeOrgao.codigoIbge) : null;
     // só MUNICIPAL: cod_ibge de 7 dígitos. Unidade do Estado vaza p/ o município-sede se não filtrar.
     if (!ibge || ibge.length !== 7) continue;
+    // guarda o PAYLOAD INTEIRO: ele já é a contratação completa (mesma forma de /publicacao). Sem isso, o processo
+    // novo era detectado e nunca gravado — só entrava na varredura de 20 em 20 dias.
     mudou.push({ nc: c.numeroControlePNCP, cnpj: c.orgaoEntidade?.cnpj, ano: c.anoCompra,
-      seq: c.sequencialCompra, ibge, dt: c.dataAtualizacao });
+      seq: c.sequencialCompra, ibge, dt: c.dataAtualizacao, raw: c });
   }
   if (rs.length) console.log(`  modalidade ${String(m).padStart(2)}: ${String(rs.length).padStart(5)} mudaram`);
 }
@@ -142,6 +145,22 @@ for (const x of mudou) {
   paraRefrescar.push(x);
 }
 console.log(`  ${novos.length} novos · ${paraRefrescar.length - novos.length} mudaram de verdade · ${iguais.length} iguais (PULADOS, 0 GET)`);
+
+// ─── 2b. GRAVA A CONTRATAÇÃO — o refetch incremental de verdade ────────────────────────────────────────────────
+// O payload de /contratacoes/atualizacao JÁ É a contratação completa: gravar aqui custa ZERO GET a mais.
+// Antes deste passo, contratacoes_sc só era alimentada pela varredura por janela (a cada 20 dias, `devido` do
+// etl_orquestrador) — e o consumidor de evento, na categoria 1, apenas marcava o evento como consumido sem
+// escrever. Resultado: processo novo levava até 20 dias para existir na base, enquanto seus itens e resultados
+// já chegavam de hora em hora. Mesmo mapeamento da varredura (lib_contratacao_upsert) para não divergirem.
+{
+  const codByCnpj = new Map((await q(`SELECT DISTINCT cnpj, cod_ibge FROM itens_sc WHERE cod_ibge IS NOT NULL`)).rows.map((r) => [r.cnpj, r.cod_ibge]));
+  let grav = 0, falhas = 0;
+  for (const x of paraRefrescar) {
+    if (!x.raw) continue;
+    try { if (await upsertContratacao(q, x.raw, codByCnpj)) grav++; } catch (e) { falhas++; if (falhas <= 3) console.log(`   ⚠ ${x.nc}: ${e.message.slice(0, 70)}`); }
+  }
+  console.log(`  contratações gravadas na hora: ${grav} (${novos.length} novas) · falhas ${falhas} · 0 GET extra`);
+}
 
 // ─── 3. O QUE mudou: 1 GET de /historico por processo diz onde mexer ──────────────────────────────────────────
 // Sem isto seria 1 GET por item p/ descobrir. Com isto, 1 por processo.

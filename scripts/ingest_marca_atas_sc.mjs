@@ -105,7 +105,7 @@ async function main() {
     GROUP BY d.cnpj,d.ano,d.seq,d.cod_ibge ${LIMIT ? "LIMIT " + LIMIT : ""}`)).rows;
   console.log(`${atas.length.toLocaleString()} atas a extrair (texto guardado) · conc ${CONC}`);
 
-  let comProp = 0, i = 0, done = 0;
+  let comProp = 0, i = 0, done = 0, atasIncompletas = 0;
   await Promise.all(Array.from({ length: CONC }, async () => {
     while (i < atas.length) {
       const e = atas[i++];
@@ -115,8 +115,13 @@ async function main() {
         const { nLances, nLicitantes } = disputa(text);
         // LLM por região → junta itens (dedup por código)
         const porItem = new Map();
+        let llmFalhou = 0;
         for (const reg of regioes(text)) {
-          let its = []; try { its = await llm(reg); } catch {}
+          // ⚠️ Falha do LLM NÃO é "ata sem propostas". Antes o catch vazio deixava `its` vazio, o fluxo seguia e a
+          // ata era marcada em `marca_ata_feitas` com n_propostas=0 — nunca mais reprocessada, mesmo tendo dado.
+          // O catch EXTERNO (abaixo) está certo e documentado ("não marca feito"), mas este aqui furava a proteção
+          // por dentro: o erro nunca chegava lá. Agora conta a falha e o marcador respeita.
+          let its = []; try { its = await llm(reg); } catch (err) { llmFalhou++; }
           for (const it of its) {
             const cod = parseInt(String(it.codigo).replace(/\D/g, ""), 10); if (!cod) continue;
             const cur = porItem.get(cod) || { descricao: it.descricao, propostas: [], lances: [] };
@@ -191,7 +196,12 @@ async function main() {
         await q(`INSERT INTO contratacao_disputa_sc (cnpj,ano,seq,cod_ibge,n_licitantes,n_lances,n_marcas,n_propostas) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
           ON CONFLICT (cnpj,ano,seq) DO UPDATE SET n_licitantes=EXCLUDED.n_licitantes, n_lances=EXCLUDED.n_lances, n_marcas=EXCLUDED.n_marcas, n_propostas=EXCLUDED.n_propostas, atualizado=now()`,
           [e.cnpj, e.ano, e.seq, e.cod_ibge, Math.max(nLicitantes, fornVistos.size), nLances, M.num.length, P.num.length]);
-        await q(`INSERT INTO marca_ata_feitas (cnpj,ano,seq,n_propostas) VALUES ($1,$2,$3,$4) ON CONFLICT (cnpj,ano,seq) DO UPDATE SET n_propostas=EXCLUDED.n_propostas, feito_em=now()`, [e.cnpj, e.ano, e.seq, P.num.length]);
+        if (llmFalhou) {
+          atasIncompletas++;
+          console.log(`  ⚠ ${e.cnpj}/${e.ano}/${e.seq}: LLM falhou em ${llmFalhou} regiao(oes) — NAO marcada feita, volta no proximo run`);
+        } else {
+          await q(`INSERT INTO marca_ata_feitas (cnpj,ano,seq,n_propostas) VALUES ($1,$2,$3,$4) ON CONFLICT (cnpj,ano,seq) DO UPDATE SET n_propostas=EXCLUDED.n_propostas, feito_em=now()`, [e.cnpj, e.ano, e.seq, P.num.length]);
+        }
         if (P.num.length) comProp++;
       } catch { /* deixa p/ o próximo run — não marca feito */ }
       if (++done % 25 === 0) { saveCache(); process.stdout.write(`  ${done}/${atas.length} · ${comProp} c/propostas\r`); }

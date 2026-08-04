@@ -387,6 +387,9 @@ function TopContratos({ top, ano }: { top: Contrato[]; ano: number }) {
 function ContratoRow({ c }: { c: Contrato }) {
   const [open, setOpen] = useState(false);
   const [itens, setItens] = useState<Item[] | null | undefined>(undefined);
+  // apontamentos do TCE DESTE processo — carregados junto do drill-down (mesmo padrão dos itens)
+  const [tce, setTce] = useState<TceApont[] | null | undefined>(undefined);
+  const [tceCtr, setTceCtr] = useState<TceApontCtr[] | null>(null);   // grão do CONTRATO, por CNPJ do fornecedor
   const podeDrill = !!(c.cnpj && c.ano && c.seq);
   function toggle() {
     if (!podeDrill) return;
@@ -398,6 +401,13 @@ function ContratoRow({ c }: { c: Contrato }) {
         .then((r) => r.json())
         .then((d) => setItens(Array.isArray(d) ? d : []))
         .catch(() => setItens([]));
+    }
+    if (novo && tce === undefined) {
+      setTce(null);
+      fetch(`/api/tce-processo/${c.cnpj}/${c.ano}/${c.seq}`)
+        .then((r) => r.json())
+        .then((d) => { setTce(Array.isArray(d?.processo) ? d.processo : []); setTceCtr(Array.isArray(d?.contratos) ? d.contratos : []); })
+        .catch(() => { setTce([]); setTceCtr([]); });
     }
   }
   const risco = riscoContrato(c);
@@ -434,7 +444,8 @@ function ContratoRow({ c }: { c: Contrato }) {
       {open && (
         <tr className="border-b border-slate-100 bg-slate-50/60">
           <td colSpan={5} className="p-3">
-            <ItensDetalhe c={c} itens={itens} />
+            <TceDoProcesso apont={tce} />
+            <ItensDetalhe c={c} itens={itens} tceCtr={tceCtr} />
           </td>
         </tr>
       )}
@@ -442,9 +453,85 @@ function ContratoRow({ c }: { c: Contrato }) {
   );
 }
 
+type TceApontCtr = { ni: string; tipologia: string; documento: string | null; observacao: string | null; confianca: string };
+type TceApont = { origem: string; tipologia: string; entidade: string | null; documento: string | null; observacao: string | null; confianca: string; notaVerificacao: string | null };
+
+const TCE_ORIGEM: Record<string, string> = {
+  participante: "no participante da licitação",
+  contrato: "no contratado",
+  processo: "desfecho do processo",
+};
+
+// O que o TCE/SC marcou NESTE processo. Aparece dentro da compra que o gestor abriu — é onde o dado vira ação.
+function TceDoProcesso({ apont }: { apont: TceApont[] | null | undefined }) {
+  if (apont === undefined || (Array.isArray(apont) && apont.length === 0)) return null;
+  if (apont === null) return <div className="mb-3 rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-500">carregando apontamentos do TCE…</div>;
+  // AGRUPA POR TIPOLOGIA: um processo com muitos contratados gera uma linha por contratado × tipologia
+  // (263 num caso real). A lista crua vira parede de texto; o gestor quer ver O QUE foi marcado e, só então,
+  // em quais empresas. Mesmo padrão de drill dos equipamentos da educação.
+  const grupos = new Map<string, { origem: string; tipologia: string; itens: TceApont[] }>();
+  for (const a of apont) {
+    const k = `${a.origem}|${a.tipologia}`;
+    const g = grupos.get(k) || { origem: a.origem, tipologia: a.tipologia, itens: [] };
+    g.itens.push(a); grupos.set(k, g);
+  }
+  const lista = [...grupos.values()].sort((a, b) => b.itens.length - a.itens.length);
+  const risco = lista.filter((g) => g.origem !== "processo");
+  const desfecho = lista.filter((g) => g.origem === "processo");
+  const nota = apont.find((a) => a.confianca !== "confirmado" && a.notaVerificacao)?.notaVerificacao;
+  return (
+    <div className="mb-3 rounded-lg border border-amber-300 bg-amber-50/60 p-3">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <TriangleAlert className="h-4 w-4 text-amber-600" aria-hidden />
+        <h5 className="text-sm font-semibold text-amber-900">O TCE/SC marcou este processo</h5>
+        <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-semibold text-amber-900">
+          {lista.length} {lista.length === 1 ? "tipologia" : "tipologias"} · {apont.length} {apont.length === 1 ? "registro" : "registros"}
+        </span>
+      </div>
+      <p className="mt-0.5 text-[11px] text-amber-800">
+        Trilha de auditoria do Tribunal — não é irregularidade comprovada. Apuração e contraditório são etapas seguintes.
+      </p>
+      <ul className="mt-2 space-y-1">
+        {risco.concat(desfecho).map((g) => (
+          <li key={`${g.origem}|${g.tipologia}`}>
+            <details className="group rounded border border-amber-200 bg-white/70">
+              <summary className="flex cursor-pointer list-none items-start gap-2 px-2 py-1.5 text-xs hover:bg-white">
+                <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-700 transition group-open:rotate-90" aria-hidden />
+                <span className="flex-1 font-medium text-slate-800">{g.tipologia}</span>
+                <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-amber-900">
+                  {g.itens.length}
+                </span>
+                <span className="hidden shrink-0 text-[10px] text-slate-500 sm:inline">{TCE_ORIGEM[g.origem] || g.origem}</span>
+              </summary>
+              <ul className="space-y-1 border-t border-amber-200 px-2 py-1.5">
+                {g.itens.slice(0, 20).map((a, i) => (
+                  <li key={i} className="text-[11px] text-slate-600">
+                    {(a.entidade || a.documento) && (
+                      <span className="font-medium text-slate-700">
+                        {a.entidade || "Empresa"}{a.documento ? ` · ${fmtCNPJ(a.documento)}` : ""}
+                      </span>
+                    )}
+                    {a.observacao && <span className="block">{a.observacao}</span>}
+                  </li>
+                ))}
+                {g.itens.length > 20 && <li className="text-[11px] text-slate-500">… e mais {g.itens.length - 20} registros</li>}
+              </ul>
+            </details>
+          </li>
+        ))}
+      </ul>
+      {nota && (
+        <p className="mt-2 rounded border border-amber-400 bg-white px-2 py-1.5 text-[11px] text-amber-900">
+          <strong>Oportunidade de verificação.</strong> {nota}
+        </p>
+      )}
+    </div>
+  );
+}
+
 type ContratoAssinado = { fornecedor: string; ni: string; valor: number; vigInicio: string | null; vigFim: string | null; assinatura: string | null; objeto: string };
 
-function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefined }) {
+function ItensDetalhe({ c, itens, tceCtr }: { c: Contrato; itens: Item[] | null | undefined; tceCtr?: TceApontCtr[] | null }) {
   const risco = riscoContrato(c);
   const rm = RISCO_META[risco.nivel];
   const [contratos, setContratos] = useState<ContratoAssinado[] | null>(null);
@@ -592,15 +679,41 @@ function ItensDetalhe({ c, itens }: { c: Contrato; itens: Item[] | null | undefi
                 </tr>
               </thead>
               <tbody>
-                {contratos.map((ct, i) => (
-                  <tr key={i} className="border-t border-slate-100 align-top">
-                    <td className="p-1 text-slate-700"><span className="line-clamp-1">{ct.fornecedor}</span></td>
+                {contratos.map((ct, i) => {
+                  // apontamentos do TCE DESTE contratado — casados no grão do contrato, não do processo
+                  const ap = (tceCtr || []).filter((a) => a.ni && ct.ni && a.ni.replace(/\D/g, "") === ct.ni.replace(/\D/g, ""));
+                  return (
+                  <tr key={i} className={`border-t border-slate-100 align-top ${ap.length ? "bg-amber-50/50" : ""}`}>
+                    <td className="p-1 text-slate-700">
+                      <span className="line-clamp-1">{ct.fornecedor}</span>
+                      {ap.length > 0 && (
+                        <details className="mt-1 rounded border border-amber-300 bg-white/70">
+                          <summary className="flex cursor-pointer list-none items-center gap-1 px-1.5 py-1 text-[10px] font-semibold text-amber-900">
+                            <TriangleAlert className="h-3 w-3 shrink-0" aria-hidden />
+                            TCE marcou este contratado · {ap.length} {ap.length === 1 ? "tipologia" : "tipologias"}
+                          </summary>
+                          <ul className="space-y-1 border-t border-amber-200 px-2 py-1.5">
+                            {ap.map((a, j) => (
+                              <li key={j} className="text-[10px] text-slate-600">
+                                <span className="font-medium text-slate-800">{a.tipologia}</span>
+                                {a.confianca !== "confirmado" && <span className="ml-1 rounded bg-amber-200 px-1 text-[9px] font-semibold text-amber-900">conferir</span>}
+                                {a.observacao && <span className="block">{a.observacao}</span>}
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="border-t border-amber-200 px-2 py-1 text-[9px] text-amber-800">
+                            Trilha de auditoria do TCE/SC — não é irregularidade comprovada.
+                          </p>
+                        </details>
+                      )}
+                    </td>
                     <td className="hidden p-1 tabular-nums text-slate-500 sm:table-cell">{fmtCNPJ(ct.ni)}</td>
                     <td className="p-1 text-right font-semibold tabular-nums text-slate-800">{fmtBRLCompact(ct.valor)}</td>
                     <td className="hidden p-1 text-slate-500 md:table-cell">{fmtData(ct.vigInicio)}{ct.vigFim ? ` → ${fmtData(ct.vigFim)}` : ""}</td>
                     <td className="hidden p-1 text-slate-500 lg:table-cell">{ct.assinatura || "—"}</td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

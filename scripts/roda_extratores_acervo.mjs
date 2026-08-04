@@ -42,6 +42,12 @@ const mede = async () => (await db.query(`
 // PULAR="a.mjs,b.mjs" — etapas já concluídas numa rodada anterior (cada extrator é resumível por conta própria,
 // mas re-rodar a fila de doc_tem_marca custa ~19min para achar nada).
 const PULAR = new Set((process.env.PULAR || "").split(",").map((s) => s.trim()).filter(Boolean));
+// mesmo lock da tarefa agendada (auditoria/pipeline.mjs): `marca_ata_feitas` é por processo, e duas rodadas
+// simultâneas fazem uma cegar a outra — a que chega marca "feito" e a outra pula um processo que não leu.
+const cli = await db.connect();
+if (!(await cli.query(`select pg_try_advisory_lock(918273645) ok`)).rows[0].ok) {
+  console.log("já há uma rodada da cadeia de marca em curso (tarefa agendada ou outra bateria) — saindo"); process.exit(0);
+}
 const antes = await mede();
 console.log("== ANTES ==", JSON.stringify(antes));
 const log = [];

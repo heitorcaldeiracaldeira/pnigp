@@ -32,12 +32,33 @@ console.table(await q(`select count(*) linhas, count(*) filter (where num_edital
 
 console.log("2) normalizando o nosso lado (PNCP)…");
 await db.query(`drop table if exists app.pncp_proc_norm`);
+// ⚠️ O município vem por DOIS caminhos e o casador só olhava um. `municipio_nome` está VAZIO em 65.864
+// contratações (27%) — quase todas de 2024–2026 —, mas 64.380 delas TÊM `cod_ibge`. Exigir o nome descartava
+// processo com município perfeitamente identificado: era a maior causa isolada do casamento de 46%.
+// Agora: nome quando existe, senão o nome canônico de entes_sc pelo cod_ibge.
+// ⚠️ O NÚMERO PRECISA SER PARSEADO IGUAL NOS DOIS LADOS. O lado do TCE separa número e ano ("24/2024 - PRE" →
+// 24 + 2024). O nosso juntava TODOS os dígitos num número só ("024/2024" → 242024), então só casava quando o
+// município escrevia o numeroCompra sem o ano ("54", "90065"). Medido na conferência à mão: Vitor Meireles
+// 024/2024 × 24/2024-PRE, S. Francisco do Sul 54/2024 × 54/2024-CNC e Treze Tílias eram o MESMO processo e
+// falharam aqui — foram recuperados só depois, por similaridade de texto. Mesma regra dos dois lados agora.
 await db.query(`
   create table app.pncp_proc_norm as
-  select c.cnpj, c.ano, c.seq, ${NORM("c.municipio_nome")} ente_norm, c.modalidade,
-    nullif(ltrim(regexp_replace(coalesce(c.numero_compra,''), '\\D', '', 'g'), '0'),'')::bigint num_compra
-  from contratacoes_sc c where c.municipio_nome is not null`);
+  with d as (
+    select c.cnpj, c.ano, c.seq,
+      coalesce(${NORM("c.municipio_nome")}, ${NORM("e.nome")}) ente_norm, c.modalidade,
+      regexp_replace(coalesce(c.numero_compra,''), '[^0-9]', '', 'g') dig
+    from contratacoes_sc c
+    left join entes_sc e on e.cod_ibge = c.cod_ibge and e.tipo='M'
+    where c.municipio_nome is not null or c.cod_ibge is not null)
+  select cnpj, ano, seq, ente_norm, modalidade,
+    case when length(dig) > 4 and right(dig,4) between '2000' and '2035'
+         then nullif(ltrim(left(dig, length(dig)-4),'0'),'')::bigint      -- "024/2024" → 24
+         else nullif(ltrim(dig,'0'),'')::bigint end num_compra,           -- "90065"    → 90065
+    case when length(dig) > 4 and right(dig,4) between '2000' and '2035'
+         then right(dig,4)::int else ano end ano_num                      -- ano escrito no número, se houver
+  from d`);
 await db.query(`create index ix_ppn on app.pncp_proc_norm(ente_norm, num_compra, ano)`);
+await db.query(`create index ix_ppn2 on app.pncp_proc_norm(ente_norm, num_compra, ano_num)`);
 console.table(await q(`select count(*) linhas, count(*) filter (where num_compra is not null) com_numero from app.pncp_proc_norm`));
 
 console.log("3) casando (município + número do edital + ano)…");
@@ -47,7 +68,8 @@ await db.query(`
   select distinct on (p.cnpj,p.ano,p.seq) p.cnpj, p.ano, p.seq, t.id identificador_sfi, t.numero_edital,
          t.ente_norm, 'ente+numero+ano' metodo
   from app.pncp_proc_norm p
-  join app.tce_proc_norm t on t.ente_norm=p.ente_norm and t.num_edital=p.num_compra and t.ano_edital=p.ano
+  join app.tce_proc_norm t on t.ente_norm=p.ente_norm and t.num_edital=p.num_compra
+       and t.ano_edital in (p.ano, p.ano_num)
   where p.num_compra is not null`);
 await db.query(`create index ix_ptp on app.processo_tce_pncp(cnpj,ano,seq)`);
 await db.query(`create index ix_ptp_sfi on app.processo_tce_pncp(identificador_sfi)`);
