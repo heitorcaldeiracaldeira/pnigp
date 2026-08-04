@@ -1,5 +1,5 @@
-import { ShieldAlert, TrendingDown, TrendingUp, Minus, Info } from "lucide-react";
-import type { TceApontamentos, TceProcessoApontado } from "@/lib/queries";
+import { ShieldAlert, TrendingDown, TrendingUp, Minus, Info, Scale } from "lucide-react";
+import type { TceApontamentos, TceProcessoApontado, TceDivergenciaValor } from "@/lib/queries";
 
 const fmt = (n: number) => n.toLocaleString("pt-BR");
 const fmtBRL = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
@@ -13,7 +13,7 @@ const ORIGEM: Record<string, { rotulo: string; desc: string }> = {
 // o TCE grava esta tipologia como identificador cru, sem rótulo legível; as outras 22 vêm em português
 const ROTULO_CRU: Record<string, string> = { contratado_divida_fgts: "Contratado com dívida de FGTS" };
 
-export function TceApontamentosCard({ dados, municipio, processos = [] }: { dados: TceApontamentos; municipio: string; processos?: TceProcessoApontado[] }) {
+export function TceApontamentosCard({ dados, municipio, processos = [], divergencias = [] }: { dados: TceApontamentos; municipio: string; processos?: TceProcessoApontado[]; divergencias?: TceDivergenciaValor[] }) {
   if (!dados) return null;
   const { total, porOrigem, itens, intensidade, tendencia } = dados;
   const risco = itens.filter((i) => i.origem !== "processo");
@@ -116,6 +116,8 @@ export function TceApontamentosCard({ dados, municipio, processos = [] }: { dado
           <Quadro titulo="Desfecho dos processos (contexto)" itens={desfecho} porTipologia={porTipologia} />
         )}
 
+        <FilaDivergencia itens={divergencias} municipio={municipio} />
+
         {/* ── metodologia visível, não escondida ── */}
         <details className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
           <summary className="cursor-pointer font-semibold text-slate-800">Ver cálculo e metodologia</summary>
@@ -138,6 +140,116 @@ export function TceApontamentosCard({ dados, municipio, processos = [] }: { dado
         </details>
       </div>
     </section>
+  );
+}
+
+// FILA DE AVERIGUAÇÃO — contratos cujo valor no PNCP e no TCE não fecham. É trabalho para a equipe conferir,
+// não acusação: pode ser ata contratada em parte, aditivo, remessa incompleta — ou o erro de origem conhecido
+// (o total lançado no campo do preço unitário), que marcamos na própria linha para não mandar ninguém caçar
+// aditivo que não existe.
+function FilaDivergencia({ itens, municipio }: { itens: TceDivergenciaValor[]; municipio: string }) {
+  if (!itens.length) return null;
+  // Os dois baldes não se misturam: mostrar a diferença do balde `remessa_a_corrigir` como se fosse do
+  // contrato é mentira aritmética — ali o número do TCE é o nosso multiplicado pela quantidade do item.
+  const fila = itens.filter((i) => i.situacao === "a_averiguar");
+  const multiplicados = itens.filter((i) => i.situacao === "remessa_a_corrigir");
+  if (!fila.length && !multiplicados.length) return null;
+  const somaDif = fila.reduce((s, i) => s + Math.abs(i.diferenca), 0);
+  const daRemessa = fila.filter((i) => i.remessa).length;
+  const p1 = fila.filter((i) => i.prioridade === 1).length;
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-2">
+        <Scale className="h-4 w-4 text-slate-700" aria-hidden />
+        <h3 className="font-semibold text-slate-800">Contratos para averiguação da equipe</h3>
+      </div>
+      <p className="mb-3 text-sm text-slate-600">
+        {fmt(fila.length)} contratos de {municipio} em que o valor registrado no PNCP e o registrado no TCE/SC
+        <strong> não fecham</strong> — diferença somada de {fmtBRL(somaDif)}.
+        {p1 > 0 && <> {fmt(p1)} {p1 === 1 ? "está" : "estão"} acima de R$ 1 milhão de diferença.</>}
+      </p>
+
+      {multiplicados.length > 0 && (
+        <div className="mb-3 flex gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <p>
+            Outros <strong>{fmt(multiplicados.length)} contratos ficaram fora desta lista</strong> de propósito:
+            neles o valor do TCE é exatamente o valor do contrato <strong>multiplicado pela quantidade do
+            item</strong> — sinal de que o total foi lançado no campo do preço unitário na remessa ao Tribunal.
+            O contrato tende a estar certo; o que precisa de correção é o registro. Contá-los como divergência
+            de valor inflaria o total sem nenhum contrato ter mudado.
+          </p>
+        </div>
+      )}
+
+      <div className="mb-3 flex gap-3 rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+        <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        <p>
+          Divergência de valor <strong>não é irregularidade</strong>. As causas comuns são legítimas: ata de
+          registro de preço contratada em parte, aditivo registrado em um sistema e não no outro, ou item não
+          informado na remessa ao Tribunal.
+          {daRemessa > 0 && <> Em <strong>{fmt(daRemessa)}</strong> destes contratos o indício aponta para a
+          forma como o valor foi <strong>lançado na remessa ao TCE</strong> (o total no campo do preço
+          unitário) — nesses, o contrato tende a estar certo e quem precisa de correção é o registro.</>}
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px] text-sm">
+          <thead>
+            <tr className="border-b border-slate-300 text-left text-xs uppercase tracking-wide text-slate-500">
+              <th className="py-2 pr-3 font-medium">Contrato</th>
+              <th className="py-2 pr-3 text-right font-medium">No PNCP</th>
+              <th className="py-2 pr-3 text-right font-medium">No TCE</th>
+              <th className="py-2 pr-3 text-right font-medium">Diferença</th>
+              <th className="py-2 font-medium">O que verificar</th>
+            </tr>
+          </thead>
+          <tbody>
+            {fila.slice(0, 50).map((i) => (
+              <tr key={`${i.cnpj}-${i.ano}-${i.seq}-${i.ni}-${i.valorPncp}`} className="border-b border-slate-200 align-top last:border-0">
+                <td className="py-2 pr-3 text-slate-700">
+                  {i.prioridade === 1 && (
+                    <span className="mr-1.5 inline-block rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                      ≥ R$ 1 mi
+                    </span>
+                  )}
+                  {i.objeto || "—"}
+                  <span className="mt-0.5 block text-xs text-slate-500">
+                    {i.fornecedor || "fornecedor não informado"}
+                    {i.assinatura && <> · assinado em {i.assinatura.split("-").reverse().join("/")}</>}
+                    {" · "}compra {i.seq}/{i.ano}
+                  </span>
+                </td>
+                <td className="py-2 pr-3 text-right tabular-nums text-slate-800">{fmtBRL(i.valorPncp)}</td>
+                <td className="py-2 pr-3 text-right tabular-nums text-slate-800">
+                  {fmtBRL(i.valorTce)}
+                  {i.remessa && (
+                    <span className="mt-0.5 block text-[11px] font-normal text-amber-700">
+                      valor reconstruído · o TCE registra {fmtBRL(i.valorTceDeclarado)}
+                    </span>
+                  )}
+                </td>
+                <td className="py-2 pr-3 text-right tabular-nums text-slate-900">
+                  {fmtBRL(Math.abs(i.diferenca))}
+                  <span className="mt-0.5 block text-[11px] font-normal text-slate-500">{Math.round(i.gap * 100)}%</span>
+                </td>
+                <td className="py-2 text-xs leading-snug text-slate-600">{i.causa}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {fila.length > 50 && (
+        <p className="pt-2 text-xs text-slate-500">Mostrando 50 de {fmt(fila.length)} contratos, os de maior diferença primeiro.</p>
+      )}
+      <p className="pt-2 text-xs text-slate-500">
+        Só entram contratos cujo vínculo entre os dois sistemas está <strong>confirmado</strong> por assinatura,
+        vigência ou valor. O valor do PNCP é o valor global do contrato publicado; o do TCE é a soma dos itens
+        contratados no e-Sfinge.
+      </p>
+    </div>
   );
 }
 

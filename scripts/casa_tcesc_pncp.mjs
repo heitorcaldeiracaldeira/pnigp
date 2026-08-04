@@ -66,11 +66,22 @@ await db.query(`drop table if exists app.processo_tce_pncp`);
 await db.query(`
   create table app.processo_tce_pncp as
   select distinct on (p.cnpj,p.ano,p.seq) p.cnpj, p.ano, p.seq, t.id identificador_sfi, t.numero_edital,
-         t.ente_norm, 'ente+numero+ano' metodo
+         t.ente_norm, 'ente+numero+ano' metodo,
+         -- Este script é o DONO da tabela: quem cria declara o schema inteiro, inclusive o que ele não
+         -- preenche. As colunas confianca/nota_verificacao existiam só por ALTER manual de uma sessão
+         -- anterior — e sumiam a cada reconstrução, derrubando constroi_tce_apontamento_processo com
+         -- "column m.confianca does not exist". Quem GRADUA é audita_casamento_tce.mjs; aqui nasce como
+         -- 'confirmado' porque casar por município + número de edital + ano é o sinal mais forte que temos.
+         'confirmado'::text confianca, null::text nota_verificacao
   from app.pncp_proc_norm p
   join app.tce_proc_norm t on t.ente_norm=p.ente_norm and t.num_edital=p.num_compra
        and t.ano_edital in (p.ano, p.ano_num)
-  where p.num_compra is not null`);
+  where p.num_compra is not null
+  -- ⚠️ DISTINCT ON SEM ORDER BY escolhe linha ARBITRÁRIA: o mesmo dado produzia casamento diferente a cada
+  -- rodada (fila de averiguação oscilou 3.143 → 3.238 → 3.280 sem nada mudar na base). Quando o município
+  -- tem mais de um edital com o mesmo número, prefiro o que casa o ANO exato e desempato pelo id do TCE —
+  -- critério explícito e estável, para a mesma base dar sempre o mesmo par.
+  order by p.cnpj, p.ano, p.seq, (t.ano_edital = p.ano) desc, t.id`);
 await db.query(`create index ix_ptp on app.processo_tce_pncp(cnpj,ano,seq)`);
 await db.query(`create index ix_ptp_sfi on app.processo_tce_pncp(identificador_sfi)`);
 console.table(await q(`select

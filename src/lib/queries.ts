@@ -5101,6 +5101,40 @@ export async function getTceApontamentosDoProcesso(cnpj: string, ano: number, se
   }));
 }
 
+// FILA DE AVERIGUAÇÃO — contratos em que o valor do PNCP e o do TCE/SC não fecham (app.tce_divergencia_valor,
+// construída por scripts/constroi_fila_divergencia_valor.mjs). É trabalho para a equipe da prefeitura conferir,
+// não conclusão nossa: divergir pode ser ata contratada em parte, aditivo, remessa incompleta ao Tribunal — ou
+// o erro de origem que já sabemos existir (total lançado no campo do preço unitário).
+// Só entra vínculo CONFIRMADO: divergência sobre casamento frágil é ruído, e ruído gasta o tempo do servidor.
+export type TceDivergenciaValor = { cnpj: string; ano: number; seq: number; fornecedor: string; ni: string;
+  objeto: string; assinatura: string | null; valorPncp: number; valorTce: number; valorTceDeclarado: number;
+  valorHomologado: number; diferenca: number; gap: number; prioridade: number; causa: string; remessa: boolean;
+  situacao: string };
+
+export async function getTceDivergenciasValor(cod: string): Promise<TceDivergenciaValor[]> {
+  // Traz os DOIS baldes: `a_averiguar` (trabalho de contrato) e `remessa_a_corrigir` (o número do TCE é o
+  // nosso multiplicado pela quantidade — trabalho de registro). Quem separa é a tela; misturar os dois
+  // mandaria a equipe conferir contrato por causa de uma multiplicação indevida na remessa ao Tribunal.
+  const r = await query<Record<string, unknown>>(
+    `SELECT cnpj, ano, seq, fornecedor, ni_fornecedor, objeto, assinatura, valor_pncp, valor_tce,
+            valor_tce_declarado, valor_homologado, diferenca, gap, prioridade, causa_provavel, situacao,
+            (itens_reinterpretados > 0) remessa
+       FROM app.tce_divergencia_valor
+      WHERE cod_ibge=$1 AND vinculo='confirmado'
+      ORDER BY (situacao <> 'a_averiguar'), prioridade, abs(diferenca) DESC
+      LIMIT 300`, [cod]).catch(() => []);
+  return r.map((x) => ({
+    cnpj: String(x.cnpj || ""), ano: num(x.ano), seq: num(x.seq),
+    fornecedor: String(x.fornecedor || ""), ni: String(x.ni_fornecedor || ""),
+    objeto: String(x.objeto || ""),
+    assinatura: x.assinatura ? String(x.assinatura).slice(0, 10) : null,
+    valorPncp: num(x.valor_pncp), valorTce: num(x.valor_tce), valorTceDeclarado: num(x.valor_tce_declarado),
+    valorHomologado: num(x.valor_homologado), diferenca: num(x.diferenca), gap: num(x.gap),
+    prioridade: num(x.prioridade), causa: String(x.causa_provavel || ""), remessa: Boolean(x.remessa),
+    situacao: String(x.situacao || "a_averiguar"),
+  }));
+}
+
 // Apontamentos do TCE no grão do CONTRATO — a tipologia de contratado pertence ao contrato, não ao processo.
 // Chave: CNPJ do fornecedor, que é o que a lista de contratos assinados já exibe.
 export type TceApontamentoDoContrato = { ni: string; tipologia: string; documento: string | null; observacao: string | null; confianca: string };

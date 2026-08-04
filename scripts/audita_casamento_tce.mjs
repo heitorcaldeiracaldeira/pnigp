@@ -19,18 +19,19 @@ const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }
 const PROMOVER = process.env.PROMOVER === "1";
 const t0 = Date.now();
 
-console.log("1) recalculando o valor do TCE SEM fan-out…");
+// 1) Duas correções empilhadas, e nenhuma delas se calcula aqui:
+//    - fan-out do VÍNCULO (o distinct em tcesc_link_contrato): multiplicava o valor por duplicata de vínculo;
+//    - total lançado no campo do UNITÁRIO (erro na fonte): ver scripts/sanea_valor_item_tcesc.mjs, dono do valor.
+// O valor por contrato vem pronto de app.tce_contrato_valor. Recalcular aqui a partir do cru traria o bug de volta.
+console.log("1) valor do TCE por processo — sem fan-out de vínculo e lendo o valor já saneado…");
+const temValor = (await db.query(`select to_regclass('app.tce_contrato_valor') r`)).rows[0].r;
+if (!temValor) { console.error("ERRO: app.tce_contrato_valor não existe — rode antes: node scripts/sanea_valor_item_tcesc.mjs"); process.exit(1); }
 await db.query(`drop table if exists app.tce_proc_valor_v2`);
 await db.query(`
   create table app.tce_proc_valor_v2 as
-  with item_unico as (   -- 1 linha por (contrato, item): o espelho tem repetição por causa do cubo associativo
-    select distinct idcontrato, id_item_contratado,
-           nullif(replace(replace(valor_total_contratado,'.',''),',','.'),'')::numeric v
-    from tcesc_item_contrato where valor_total_contratado is not null),
-  por_contrato as (select idcontrato, sum(v) valor from item_unico group by 1),
-  vinc as (select distinct identificador_sfi_processo_licitatorio sfi, idcontrato from tcesc_link_contrato)
+  with vinc as (select distinct identificador_sfi_processo_licitatorio sfi, idcontrato from tcesc_link_contrato)
   select v.sfi, sum(c.valor) valor, count(*) n_contratos
-  from vinc v join por_contrato c on c.idcontrato = v.idcontrato
+  from vinc v join app.tce_contrato_valor c on c.idcontrato = v.idcontrato
   group by 1`);
 await db.query(`create index ix_tpv2 on app.tce_proc_valor_v2(sfi)`);
 console.log("   comparação do valor ANTES × DEPOIS (máximos — o absurdo tem que sumir):");
@@ -79,6 +80,23 @@ console.table((await db.query(`select count(*) com_os_dois_valores,
 console.log("=== amostra dos REPROVADOS (o que sairia da tela) ===");
 console.table((await db.query(`select sim_objeto, datas_batem, valor_nosso, valor_tce_v2, gap_valor, left(veredito,42) veredito
   from app.tce_match_auditoria where veredito like 'REPROVADO%' order by random() limit 6`)).rows);
+
+// GRADUAR ≠ PROMOVER. Graduar é escrever no par o que a auditoria concluiu (é o que faz a tela mostrar o
+// selo "verificar" e a nota ao gestor); promover é REMOVER par reprovado do casamento, e isso continua
+// dependendo de PROMOVER=1. Sem esta escrita, `confianca` ficava só no ALTER manual de uma sessão e voltava
+// a 'confirmado' toda vez que casa_tcesc_pncp reconstruía a tabela — a tela dizia "confirmado" para par que
+// a própria auditoria tinha reprovado.
+console.log("\n3) graduando os pares auditados (escreve confiança e nota; NÃO remove nada)…");
+const grad = await db.query(`
+  update app.processo_tce_pncp p
+     set confianca = case when a.veredito like 'REPROVADO%' then 'divergente'
+                          when a.veredito like 'SUSPEITO%'  then 'a_verificar'
+                          else 'confirmado' end,
+         nota_verificacao = case when a.veredito like 'APROVADO%' then null else a.veredito end
+    from app.tce_match_auditoria a
+   where a.cnpj=p.cnpj and a.ano=p.ano and a.seq=p.seq and a.identificador_sfi=p.identificador_sfi`);
+console.table((await db.query(`select confianca, count(*) pares from app.processo_tce_pncp group by 1 order by 2 desc`)).rows);
+console.log(`   ${grad.rowCount} pares graduados`);
 
 if (PROMOVER) {
   const del = await db.query(`

@@ -1,0 +1,7 @@
+# Runners do Agendador do Windows PRECISAM de CRLF.
+# Com quebra LF o cmd.exe se perde ao processar "call", rótulo e "goto" — ele reposiciona a leitura por
+# offset de byte no arquivo — e passa a executar pedaço de comentário como comando. Sintoma real (04/ago/2026):
+# a cadeia do TCE abortava com "'IA' não é reconhecido como um comando interno ou externo".
+# Sem esta regra, o próximo checkout desfaz a correção e o defeito volta em silêncio.
+*.cmd text eol=crlf
+*.bat text eol=crlf

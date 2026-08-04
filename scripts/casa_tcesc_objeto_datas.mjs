@@ -102,12 +102,17 @@ await db.query(`
   where (b_ab + b_li + b_ho) >= 2
      or ((b_ab + b_li + b_ho) = 1 and sim >= 0.60)
      or ((b_ab + b_li + b_ho) = 0 and b_val = 1 and sim >= 0.45)
-  order by cnpj, ano, seq, (b_ab + b_li + b_ho) desc, b_val desc, sim desc`);
+  -- desempate final por sfi: sem ele, candidatos empatados em datas/valor/similaridade eram escolhidos ao
+  -- acaso e o casamento mudava de uma rodada para outra com a MESMA base.
+  order by cnpj, ano, seq, (b_ab + b_li + b_ho) desc, b_val desc, sim desc, sfi`);
 
 console.log("4) somando ao casamento (nunca sobrescreve o casamento por número)…");
 const ins = await db.query(`
-  insert into app.processo_tce_pncp (cnpj, ano, seq, identificador_sfi, numero_edital, ente_norm, metodo)
-  select m.cnpj, m.ano, m.seq, m.identificador_sfi, t.numero_edital, t.ente_norm, m.metodo
+  -- entra como 'a_verificar', NUNCA como confirmado: casar por objeto+datas é sinal mais fraco que o número
+  -- do edital, e quem GRADUA é audita_casamento_tce.mjs (ele promove a 'confirmado' o que aprovar). Deixar a
+  -- coluna de fora fazia o par nascer NULL — e NULL na tela não é nem "confira" nem "confirmado", é acaso.
+  insert into app.processo_tce_pncp (cnpj, ano, seq, identificador_sfi, numero_edital, ente_norm, metodo, confianca)
+  select m.cnpj, m.ano, m.seq, m.identificador_sfi, t.numero_edital, t.ente_norm, m.metodo, 'a_verificar'
   from app.tce_match_objeto m
   join app.tce_proc_norm t on t.id = m.identificador_sfi
   where not exists (select 1 from app.processo_tce_pncp x where x.cnpj=m.cnpj and x.ano=m.ano and x.seq=m.seq)`);

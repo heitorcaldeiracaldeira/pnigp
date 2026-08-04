@@ -23,16 +23,15 @@ const DT = (c) => `(case when ${c} ~ '^[0-9]{2}/[0-9]{2}/[0-9]{4}' then to_date(
 const DN = (c) => `(case when (${c})::text ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}' then to_date(left((${c})::text,10),'YYYY-MM-DD') end)`;
 const NUM = (c) => `nullif(ltrim(regexp_replace(coalesce(${c},''), '[^0-9]', '', 'g'),'0'),'')::bigint`;
 
-console.log("1) valor por CONTRATO no TCE (item distinto — sem o fan-out do vínculo)…");
-await db.query(`drop table if exists app.tce_contrato_valor`);
-await db.query(`
-  create table app.tce_contrato_valor as
-  with iu as (select distinct idcontrato, id_item_contratado,
-                nullif(replace(replace(valor_total_contratado,'.',''),',','.'),'')::numeric v
-              from tcesc_item_contrato where valor_total_contratado is not null)
-  select idcontrato, sum(v) valor, count(*) n_itens from iu group by 1`);
-await db.query(`create index ix_tcv on app.tce_contrato_valor(idcontrato)`);
+// 1) O valor do TCE NÃO se calcula aqui. Ele tem dono: scripts/sanea_valor_item_tcesc.mjs.
+// Antes este passo somava `valor_total_contratado` cru — e o cru traz o total lançado no campo do unitário,
+// multiplicado pela quantidade outra vez (chegava a R$ 3,1 quatrilhões num contrato municipal). Recalcular
+// aqui significaria SOBRESCREVER o saneamento com o bug de volta.
+console.log("1) valor por CONTRATO no TCE (lendo o saneado — este script não recalcula)…");
+const temValor = (await db.query(`select to_regclass('app.tce_contrato_valor') r`)).rows[0].r;
+if (!temValor) { console.error("ERRO: app.tce_contrato_valor não existe — rode antes: node scripts/sanea_valor_item_tcesc.mjs"); process.exit(1); }
 console.table((await db.query(`select count(*) contratos, max(valor)::numeric(20,2) maior,
+  max(valor_bruto)::numeric(30,2) maior_declarado, count(*) filter (where itens_reinterpretados > 0) com_releitura,
   percentile_disc(0.5) within group (order by valor)::numeric(18,2) mediana from app.tce_contrato_valor`)).rows);
 
 console.log("2) candidatos: contratos do TCE dentro de processo JÁ casado…");
@@ -72,7 +71,15 @@ await db.query(`
     select n.id, n.cod_ibge, n.cnpj, n.ano, n.seq, t.idcontrato,
       (n.assinatura is not null and t.assinatura is not null and abs(n.assinatura - t.assinatura) <= ${TOL})::int b_ass,
       (n.vencimento is not null and t.vencimento is not null and abs(n.vencimento - t.vencimento) <= ${TOL})::int b_ven,
-      (n.valor_global > 0 and t.valor > 0 and abs(n.valor_global - t.valor) <= 0.01 * greatest(n.valor_global, t.valor))::int b_val,
+      -- ⚠️ os guardas IS NOT NULL não são decoração: sem eles o b_val vira NULL quando falta valor
+      -- (110.630 candidatos do TCE não têm valor), a soma b_ass+b_ven+b_val vira NULL, o par cai no
+      -- filtro de sinais (>= 1) e some SEM APARECER EM LUGAR NENHUM. Medi: 70.231 pares com a DATA batendo eram
+      -- descartados só por isso; elegíveis 142.409 → 212.640.
+      (n.valor_global is not null and t.valor is not null and n.valor_global > 0 and t.valor > 0
+       and abs(n.valor_global - t.valor) <= 0.01 * greatest(n.valor_global, t.valor))::int b_val,
+      -- valor ausente ≠ valor divergente: sem esta marca, b_val=0 confunde "o TCE não informou" com
+      -- "o TCE informou outro valor", e o veredito mente sobre o que foi conferido.
+      (n.valor_global is null or t.valor is null or n.valor_global <= 0 or t.valor <= 0)::int valor_ausente,
       n.valor_global, t.valor valor_tce, qn.n_nosso, qt.n_tce
     from app.pncp_contrato_norm n
     join app.tce_contrato_cand t on t.cnpj=n.cnpj and t.ano=n.ano and t.seq=n.seq
@@ -90,7 +97,7 @@ await db.query(`
   -- ⚠️ MÚTUO MELHOR: distinct só de um lado deixava VÁRIOS contratos nossos casarem com o MESMO do TCE
   -- (fan-out invertido: 3.987 apontamentos para 1.807 reais, inflado 2,2×). Agora cada par é o melhor
   -- para os DOIS lados; quem não é, fica de fora.
-  select id, cod_ibge, cnpj, ano, seq, idcontrato, b_ass, b_ven, b_val, sinais, valor_global, valor_tce,
+  select id, cod_ibge, cnpj, ano, seq, idcontrato, b_ass, b_ven, b_val, valor_ausente, sinais, valor_global, valor_tce,
     case when b_val=1 and b_ass=1 then 'assinatura+valor'
          when b_ass=1 and b_ven=1 then 'assinatura+vencimento'
          when b_val=1 then 'valor' when b_ass=1 then 'assinatura'
@@ -102,6 +109,12 @@ await db.query(`
 await db.query(`create unique index ix_ctp on app.contrato_tce_pncp(id)`);
 await db.query(`create unique index ix_ctp_idc on app.contrato_tce_pncp(idcontrato)`);
 console.table((await db.query(`select metodo, confianca, count(*) contratos from app.contrato_tce_pncp group by 1,2 order by 3 desc`)).rows);
+console.log("   o valor foi conferido ou estava ausente? (b_val=0 não quer dizer que negou):");
+console.table((await db.query(`select
+  count(*) filter (where valor_ausente=1) sem_valor_no_tce,
+  count(*) filter (where valor_ausente=0 and b_val=1) valor_confere,
+  count(*) filter (where valor_ausente=0 and b_val=0) valor_diverge
+  from app.contrato_tce_pncp`)).rows);
 console.log("   prova da correção — nenhum contrato do TCE pode aparecer duas vezes:");
 console.table((await db.query(`select count(*) pares, count(distinct id) nossos_distintos,
   count(distinct idcontrato) tce_distintos from app.contrato_tce_pncp`)).rows);
@@ -126,8 +139,15 @@ console.log(`\nconstruído em ${((Date.now() - t0) / 1000).toFixed(0)}s`);
 console.table((await db.query(`select count(*) apontamentos, count(distinct contrato_id) contratos,
   count(distinct (cnpj,ano,seq)) processos, count(distinct tipologia) tipologias,
   count(distinct cod_ibge) municipios from app.tce_apontamento_contrato`)).rows);
-console.log("antes × depois: quantos apontamentos de CONTRATO estavam empilhados no processo:");
-console.table((await db.query(`select
-  (select count(*) from app.tce_apontamento_processo where origem='contrato') no_processo_antes,
-  (select count(*) from app.tce_apontamento_contrato) no_contrato_agora`)).rows);
+// ⚠️ comparação é RELATÓRIO, não resultado: app.tce_apontamento_processo é construída DEPOIS deste script na
+// cadeia (roda_tce.cmd, passo 9). Sem a guarda, uma rodada que abortou antes dela deixava a tabela ausente e
+// derrubava este script inteiro — perdendo o casamento por causa de uma linha de log.
+if ((await db.query(`select to_regclass('app.tce_apontamento_processo') r`)).rows[0].r) {
+  console.log("antes × depois: quantos apontamentos de CONTRATO estavam empilhados no processo:");
+  console.table((await db.query(`select
+    (select count(*) from app.tce_apontamento_processo where origem='contrato') no_processo_antes,
+    (select count(*) from app.tce_apontamento_contrato) no_contrato_agora`)).rows);
+} else {
+  console.log("(app.tce_apontamento_processo ainda não existe nesta rodada — comparação antes × depois fica para a próxima)");
+}
 await db.end();

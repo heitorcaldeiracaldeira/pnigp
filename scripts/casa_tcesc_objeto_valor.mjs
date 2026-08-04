@@ -21,15 +21,24 @@ const NORM_TXT = (c) => `lower(translate(${c}, 'áàâãäéèêëíìîïóòô
 
 await db.query(`create extension if not exists pg_trgm`);
 
-console.log("1) valor do processo no lado do TCE (contratado por item, somado)…");
+// 1) O valor do processo no TCE NÃO se calcula aqui — ele tem dono: scripts/sanea_valor_item_tcesc.mjs.
+// A versão anterior somava `valor_total_contratado` cru atravessando `tcesc_link_contrato`, e carregava os
+// DOIS defeitos que já corrigimos nos outros consumidores:
+//   · fan-out do vínculo (sem distinct, duplicata de vínculo multiplicava o valor);
+//   · o total lançado no campo do preço unitário, que o TCE multiplica pela quantidade outra vez.
+// Como este valor é SINAL DE CASAMENTO (aceita par com objeto ≥0.45 quando o valor bate a 1%), valor podre
+// aqui não faz só um número feio: faz par errado — apontamento do Tribunal preso ao processo de outro.
+console.log("1) valor do processo no lado do TCE (lendo o saneado — este script não recalcula)…");
+if (!(await db.query(`select to_regclass('app.tce_contrato_valor') r`)).rows[0].r) {
+  console.error("ERRO: app.tce_contrato_valor não existe — rode antes: node scripts/sanea_valor_item_tcesc.mjs");
+  process.exit(1);
+}
 await db.query(`drop table if exists app.tce_proc_valor`);
 await db.query(`
   create table app.tce_proc_valor as
-  select lc.identificador_sfi_processo_licitatorio sfi,
-         sum(nullif(replace(replace(ic.valor_total_contratado,'.',''),',','.'),'')::numeric) valor
-  from tcesc_item_contrato ic
-  join tcesc_link_contrato lc on lc.idcontrato = ic.idcontrato
-  where ic.valor_total_contratado is not null
+  with vinc as (select distinct identificador_sfi_processo_licitatorio sfi, idcontrato from tcesc_link_contrato)
+  select v.sfi, sum(c.valor) valor
+  from vinc v join app.tce_contrato_valor c on c.idcontrato = v.idcontrato
   group by 1`);
 await db.query(`create index ix_tpv on app.tce_proc_valor(sfi)`);
 
@@ -80,12 +89,16 @@ await db.query(`
       -- sem valor no TCE: exige objeto MUITO parecido
       or (c.valor is null and similarity(n.objeto, c.objeto) >= ${SIM_SEM_VALOR})
     )
-  order by n.cnpj, n.ano, n.seq, similarity(n.objeto, c.objeto) desc`);
+  -- desempate final por c.sfi: sem ele, candidatos empatados na similaridade eram escolhidos ao acaso e o
+  -- casamento mudava de uma rodada para outra com a MESMA base.
+  order by n.cnpj, n.ano, n.seq, similarity(n.objeto, c.objeto) desc, c.sfi`);
 
 console.log("5) somando ao casamento existente (nunca sobrescreve o casamento por número)…");
 const ins = await db.query(`
-  insert into app.processo_tce_pncp (cnpj, ano, seq, identificador_sfi, numero_edital, ente_norm, metodo)
-  select m.cnpj, m.ano, m.seq, m.identificador_sfi, t.numero_edital, t.ente_norm, m.metodo
+  -- entra como 'a_verificar', NUNCA como confirmado (mesma razão do casador por datas): objeto+valor é sinal
+  -- mais fraco que o número do edital, e a graduação é de audita_casamento_tce.mjs.
+  insert into app.processo_tce_pncp (cnpj, ano, seq, identificador_sfi, numero_edital, ente_norm, metodo, confianca)
+  select m.cnpj, m.ano, m.seq, m.identificador_sfi, t.numero_edital, t.ente_norm, m.metodo, 'a_verificar'
   from app.tce_match_objeto m
   join app.tce_proc_norm t on t.id = m.identificador_sfi
   where not exists (select 1 from app.processo_tce_pncp x where x.cnpj=m.cnpj and x.ano=m.ano and x.seq=m.seq)`);
