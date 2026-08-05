@@ -1,20 +1,24 @@
 @echo off
-REM CONSUMIDOR DE EVENTO (pncp_evento) — Tarefa "PNIGP - Itens API", resumivel, session-independent.
-REM SUBSTITUIU o scan ingest_itens_sc.mjs (APOSENTADO 22/jul): o scan varria contratacoes_sc inteira e usava a
-REM maquina de estado itens_proc_feitos; agora o consumidor busca SO a fatia que o evento aponta
-REM (item/resultado/contratacao) e marca consumido_dado. Drena o backlog E mantem itens_sc fresco entre as
-REM rodadas da cadeia diaria. contratacoes_sc segue populada por ingest_contratacoes_sc (o scan so LIA, nao INSERIA).
-REM POR QUE tarefa e nao background: node longo lancado pelo harness MORRE quando o shell volta (medido 15 e 22/jul).
-REM Resumivel pela flag consumido_dado (posicao no log, nao maquina de estado). IgnoreNew evita sobreposicao.
-REM Fix 22/jul: cat 1 (contratacao) usa a API /consulta (a /pncp devolvia 301 morto e travava a fila).
-REM SETLOCAL: LOTE e CONC sao DESTE passo. Sem isolar, eles vazam para quem chamou por "call" e seguem vivos
-REM nos passos seguintes da rodada completa - o CONC=6 daqui chegava aos 17 extratores de marca, calibrados
-REM para CONC=3. E o exit /b explicito devolve o codigo do node a quem chamou.
-REM Node por caminho absoluto, e nao "node" do PATH: sob o Agendador o PATH nao e o mesmo do shell interativo.
+REM CONSUMIDOR DE EVENTO - tarefa "PNIGP - Itens API" do Agendador do Windows, de hora em hora.
+REM
+REM MIGRADA PARA O RUNNER em 05/ago/2026. Os parametros e o destino do log viraram DECLARACAO em
+REM scripts/cadeias.mjs (CADEIAS.itens) e quem cumpre e scripts/roda.mjs. Aqui sobra o ponto de entrada.
+REM Para ver a cadeia sem executar: node scripts/roda.mjs itens --plano
+REM
+REM A TRAVA NAO ESTA NA CADEIA, E SIM DENTRO DO consome_evento_dado.mjs - de proposito. O consumidor e
+REM alcancavel por QUATRO portas: esta tarefa, a fonte eventos_dado do orquestrador, o
+REM run_enriquecimento_diario.cmd e o runner. Trava posta em qualquer uma delas deixaria as outras tres
+REM passando por baixo. E a fila nao se protege sozinha: o SELECT pega consumido_dado IS NULL LIMIT LOTE sem
+REM FOR UPDATE SKIP LOCKED, entao dois consumidores escolhem exatamente os MESMOS eventos.
+REM
+REM O QUE CONTINUA VALENDO E ESTA REGISTRADO EM cadeias.mjs:
+REM   resumivel pela flag consumido_dado - posicao no log, nao maquina de estado. Evento que falhou o fetch
+REM   nao e marcado e volta no ciclo seguinte.
+REM   POR QUE TAREFA E NAO BACKGROUND DO HARNESS: node longo lancado pelo shell MORRE quando o shell volta,
+REM   medido em 15 e 22/jul. IgnoreNew no Agendador evita sobreposicao de gatilho.
+REM   CRLF e ASCII puro neste arquivo; ERRORLEVEL guardado antes de qualquer echo.
 setlocal
 cd /d C:\Users\PC\pnigp
-set LOTE=25000
-set CONC=6
-"%LOCALAPPDATA%\nodejs\node.exe" scripts\consome_evento_dado.mjs >> "%TEMP%\pnigp_consome_eventos.log" 2>&1
+"%LOCALAPPDATA%\nodejs\node.exe" scripts\roda.mjs itens
 set RC=%ERRORLEVEL%
 endlocal & exit /b %RC%

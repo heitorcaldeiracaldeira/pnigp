@@ -50,9 +50,12 @@ export const CADEIAS = {
   itens: {
     titulo: "Consumidor de evento — mantém itens_sc fresco",
     log: "pnigp-itens.log",
-    // a fila (pncp_evento) é lida por LOTE sem claim/lease, então dois consumidores pegam os MESMOS eventos.
-    // Enquanto a fila não tiver SKIP LOCKED, a exclusão tem que vir daqui.
-    trava: { nome: "cadeia_itens", toleranciaMin: 30 },
+    // A trava mora DENTRO do consome_evento_dado.mjs, e não aqui, porque ele é alcançável por quatro portas:
+    // a tarefa horária, a fonte `eventos_dado` do orquestrador, o run_enriquecimento_diario.cmd e este runner.
+    // Trava posta na cadeia deixaria as outras três passando por baixo. (A fila em si não se protege: o SELECT
+    // pega `consumido_dado IS NULL LIMIT LOTE` sem FOR UPDATE SKIP LOCKED, então dois consumidores escolhem
+    // exatamente os mesmos eventos.)
+    trava: null,
     aoFalhar: "parar",
     env: {},
     passos: [

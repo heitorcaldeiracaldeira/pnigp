@@ -21,6 +21,7 @@
 //
 // node scripts/consome_evento_dado.mjs        (LOTE=200 CONC=6 DRY=1 opcionais)
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { pegaTrava } from "./trava_processo.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); const ROOT = path.join(__dirname, "..");
 const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const PNCP = "https://pncp.gov.br/api/pncp/v1";
@@ -42,6 +43,21 @@ async function get(url) {
     } catch { await sleep(1000 * (t + 1)); }
   }
   return null;   // esgotou → NÃO marca consumido: o evento fica na fila e volta no próximo ciclo
+}
+
+// ═══ TRAVA — A EXCLUSÃO TEM QUE MORAR AQUI, NÃO EM QUEM CHAMA ═══
+// Este consumidor é alcançável por QUATRO portas: a tarefa horária "PNIGP - Itens API", a fonte `eventos_dado`
+// do orquestrador (que o chama com LOTE=300), o run_enriquecimento_diario.cmd (LOTE=15000) e o runner. Uma
+// trava posta em qualquer uma delas deixaria as outras três passando por baixo.
+// E a fila NÃO se protege sozinha: o SELECT pega `consumido_dado IS NULL ... LIMIT LOTE` sem FOR UPDATE SKIP
+// LOCKED, então dois consumidores simultâneos escolhem exatamente os MESMOS eventos e fazem o mesmo trabalho
+// duas vezes contra a API do PNCP. Enquanto a fila não tiver claim próprio, a exclusão vive aqui.
+// Sair com 0 quando não pega: não é falha, é "tem alguém drenando agora".
+const trava = await pegaTrava(db, "cadeia_itens", { toleranciaMin: 30 });
+if (!trava.ok) {
+  console.log(`já há um consumidor de evento em curso (${trava.donoAtual}, há ${trava.minRodando} min) — saindo sem tocar na fila`);
+  await db.end();
+  process.exit(0);
 }
 
 // coluna p/ o baixador de PDF saber o que vale a pena (o evento já disse o tipo — não precisa listar /arquivos)
@@ -147,4 +163,5 @@ console.log(`✔ consumidos: ${feito.res} resultado · ${feito.item} item · ${f
 const p = (await q(`SELECT count(*) FILTER (WHERE consumido_dado IS NULL) pend,
   count(*) FILTER (WHERE alvo_download) baixar FROM pncp_evento`)).rows[0];
 console.log(`  fila restante: ${p.pend} · documentos tipo 16 a baixar: ${p.baixar}`);
+await trava.solta();
 await db.end();
