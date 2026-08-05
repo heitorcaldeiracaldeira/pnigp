@@ -479,9 +479,15 @@ async function rodar(f) {
 }
 
 // RECUO APÓS FALHA — a fonte quebrada continua devida (o relógio dela não andou), mas não pode ser tentada
-// a cada ciclo para sempre: 5 tentativas por rodada, de hora em hora, é queimar recurso à toa. O recuo
-// dobra a cada fracasso seguido e para em 48h, então a fonte volta sozinha sem nunca ser esquecida.
-const RECUO_BASE_H = 6, RECUO_TETO_H = 48;
+// a cada ciclo para sempre: 5 tentativas por rodada, de hora em hora, é queimar recurso à toa.
+//
+// O TETO É BAIXO DE PROPÓSITO. Fonte oficial publica QUANDO QUER — SICONFI, INEP, DATASUS soltam competência
+// nova sem aviso e sem hora marcada, e falha quase sempre é a fonte fora do ar, não o dado inexistente.
+// Recuo longo transformaria uma indisponibilidade de meia hora em um dia inteiro de atraso. Com 1h dobrando
+// até o teto de 6h, uma fonte quebrada ainda é tentada 4 ou mais vezes por dia, e uma que voltou ao ar é
+// recolhida em no máximo uma hora. O que este recuo evita é só o desperdício de repetir 5 tentativas de
+// 20 minutos a cada ciclo de hora em hora — nunca deixar de buscar o que já está publicado.
+const RECUO_BASE_H = 1, RECUO_TETO_H = 6;
 function emRecuo(st) {
   const n = Number(st?.falhas_seguidas) || 0;
   if (!n || !st?.ultima_falha) return null;
