@@ -2,6 +2,7 @@
 // Introspecta: ETLs (cabeçalho dos scripts), tabelas do Neon (+contagens), rotas/páginas, catálogo de coleta
 // e tarefas agendadas → docs/SISTEMA.md. Mantém a doc sempre fiel ao estado real. node scripts/gerar_documentacao.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { carimboCurtoBR } from "./hora_br.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
 const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
@@ -27,9 +28,10 @@ function walk(dir, pred, base = dir, acc = []) {
 }
 
 async function main() {
-  const hoje = new Date().toISOString().slice(0, 10);
+  // horário de Brasília, não UTC: uma rodada da noite de 04/ago carimbava a doc como se fosse do dia 05
+  const agora = carimboCurtoBR();
   let md = `# PNIGP — Documentação do Sistema (gerada automaticamente)\n\n`;
-  md += `> Gerada em ${hoje} por \`scripts/gerar_documentacao.mjs\`. Reflete o estado real do código e do banco. **Não editar à mão.**\n\n`;
+  md += `> Gerada em ${agora} por \`scripts/gerar_documentacao.mjs\`. Reflete o estado real do código e do banco. **Não editar à mão.**\n\n`;
 
   // 1) Tabelas do Neon + contagens
   md += `## 1. Banco de dados (Neon)\n\n| Tabela | Registros | Colunas |\n|---|---|---|\n`;

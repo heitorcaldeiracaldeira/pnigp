@@ -4,6 +4,7 @@
 //   MODO=run           → detecta e executa os ETLs devidos.
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import { spawn, execSync } from "child_process"; import pg from "pg";
 import { pegaTrava } from "./trava_processo.mjs";
+import { horaLogBR, carimboCurtoBR } from "./hora_br.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
 const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
@@ -12,7 +13,7 @@ const HOJE = new Date();
 const ANO_FECHADO = HOJE.getFullYear() - 1;      // último exercício fechado
 const ANO_CORRENTE = HOJE.getFullYear();
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
-const log = (m) => process.stdout.write(`[ORQ ${new Date().toISOString().slice(11, 19)}] ${m}\n`);
+const log = (m) => process.stdout.write(`[ORQ ${horaLogBR()}] ${m}\n`);   // Brasília, com o fuso declarado
 
 const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 3, keepAlive: true, query_timeout: 60000, statement_timeout: 60000 });
 db.on("error", () => {});
@@ -408,7 +409,7 @@ async function rodar(f) {
   for (let tent = 1; tent <= MAX_TENT; tent++) {
     log(`▶ ${f.id} (tentativa ${tent}/${MAX_TENT})`);
     ultimo = await runOnce(f, tent - 1);
-    await db.query(`UPDATE etl_catalogo SET ultima_exec=now(), ultimo_status=$1, msg=$2, atualizado_em=now() WHERE id=$3`, [ultimo, `tentativa ${tent} · ${new Date().toISOString().slice(0, 16)}`, f.id]).catch(() => {});
+    await db.query(`UPDATE etl_catalogo SET ultima_exec=now(), ultimo_status=$1, msg=$2, atualizado_em=now() WHERE id=$3`, [ultimo, `tentativa ${tent} · ${carimboCurtoBR()}`, f.id]).catch(() => {});
     if (ultimo === "ok") return "ok";
     log(`  ${f.id}: ${ultimo} — religando em 5s`);
     await sleep(5000);

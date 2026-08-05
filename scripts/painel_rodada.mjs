@@ -7,9 +7,9 @@
 // LÊ SÓ ARQUIVO, não toca no banco: a rodada já é pesada e o painel não pode disputar conexão com ela.
 // FONTES: pnigp-tudo.log (as 5 fases + detalhe das fases 1 a 4) e pnigp-tce.log (os 10 passos da fase 5).
 //
-// FUSO — o log mistura dois relógios de propósito e o painel resolve isso aqui: o cabeçalho de fase vem do
-// %TIME% do cmd (horário local) e as linhas [ORQ hh:mm:ss] vêm de toISOString() do node (UTC). O painel exibe
-// TUDO em horário de Brasília (UTC-3, sem horário de verão desde 2019) e marca a origem de cada carimbo.
+// FUSO — tudo aqui é horário de Brasília. Os .cmd carimbam com %TIME% (já local) e os scripts node carimbam
+// por hora_br.mjs, que declara o fuso na própria linha (23:58:12-03). O painel exibe como está; só converte
+// linha ANTIGA, gravada antes dessa uniformização, que vinha em UTC sem declarar.
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -18,6 +18,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const TMP = path.join(process.env.LOCALAPPDATA || "", "Temp");
 const LOG_TUDO = path.join(TMP, "pnigp-tudo.log");
 const LOG_TCE = path.join(TMP, "pnigp-tce.log");
+const LOG_MARCA = path.join(TMP, "pnigp-marca.log");   // cadeia da marca lançada à parte (roda_marca.cmd)
 const SAIDA = process.env.SAIDA || "C:\\Users\\PC\\painel_rodada.html";
 const LOOP = process.env.LOOP === "1";
 const PASSO_MS = 15000;
@@ -41,8 +42,15 @@ const agoraSeg = () => { const d = new Date(); return d.getHours() * 3600 + d.ge
 const diff = (a, b) => { if (a == null || b == null) return null; let d = b - a; if (d < -3600) d += 86400; return d < 0 ? 0 : d; };
 const dur = (s) => { if (s == null) return "—"; if (s < 60) return `${s}s`; if (s < 3600) return `${Math.floor(s / 60)}min ${s % 60}s`; return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}min`; };
 const hhmm = (t) => (t || "").slice(0, 8);
-// [ORQ hh:mm:ss] é UTC — traz para Brasília
-const utcParaBR = (t) => { const s = seg(t); return s == null ? t : new Date((s - 3 * 3600 + 86400) % 86400 * 1000).toISOString().slice(11, 19); };
+// Carimbo do orquestrador. Hoje ele sai como "23:58:12-03" (hora_br.mjs) e é exibido como está. Linhas
+// gravadas ANTES dessa mudança vêm sem fuso declarado e são UTC — essas ainda se converte. É a única razão
+// de esta função existir; quando não houver mais log antigo em circulação, ela pode sair.
+const horaExibida = (t) => {
+  if (!t) return t;
+  if (/-\d\d$/.test(t)) return t.replace(/-\d\d$/, "");         // já é Brasília, declarado na origem
+  const s = seg(t);                                              // legado: UTC sem declaração
+  return s == null ? t : new Date((s - 3 * 3600 + 86400) % 86400 * 1000).toISOString().slice(11, 19);
+};
 
 // ---- as 17 etapas da cadeia da marca, lidas do próprio pipeline (não duplicar a lista aqui) ------
 function etapasMarca() {
@@ -95,14 +103,15 @@ function lerRodada() {
 function detalheColeta(corpo) {
   const fontes = new Map();
   const põe = (id, p) => fontes.set(id, { id, ...(fontes.get(id) || {}), ...p });
+  const H = "([\\d:]+(?:-\\d\\d)?)";   // hora do log, com ou sem o fuso declarado
   for (const l of corpo) {
     let m;
-    if ((m = /^\[ORQ ([\d:]+)\]\s+RODA\s+(\S+)/.exec(l))) põe(m[2], { plano: "a coletar" });
-    else if ((m = /^\[ORQ ([\d:]+)\]\s+ok\s+(\S+)/.exec(l))) põe(m[2], { plano: "em dia" });
-    else if ((m = /^\[ORQ ([\d:]+)\]\s+DESATIVADA\s+(\S+)/.exec(l))) põe(m[2], { plano: "desativada", estado: "desativada" });
-    else if ((m = /^\[ORQ ([\d:]+)\] ▶ (\S+) \(tentativa (\d)\/(\d)\)/.exec(l))) põe(m[2], { estado: "rodando", desde: m[1], tentativa: +m[3] });
-    else if ((m = /^\[ORQ ([\d:]+)\] !! (\S+) ESTAGNADO \((\d+)s\)/.exec(l))) põe(m[2], { estagnou: +m[3] });
-    else if ((m = /^\[ORQ ([\d:]+)\] ✔ (\S+): (.+)$/.exec(l))) põe(m[2], { estado: m[3].trim() === "ok" ? "ok" : "erro", saida: m[3].trim(), fim: m[1] });
+    if ((m = new RegExp(`^\\[ORQ ${H}\\]\\s+RODA\\s+(\\S+)`).exec(l))) põe(m[2], { plano: "a coletar" });
+    else if ((m = new RegExp(`^\\[ORQ ${H}\\]\\s+ok\\s+(\\S+)`).exec(l))) põe(m[2], { plano: "em dia" });
+    else if ((m = new RegExp(`^\\[ORQ ${H}\\]\\s+DESATIVADA\\s+(\\S+)`).exec(l))) põe(m[2], { plano: "desativada", estado: "desativada" });
+    else if ((m = new RegExp(`^\\[ORQ ${H}\\] ▶ (\\S+) \\(tentativa (\\d)\\/(\\d)\\)`).exec(l))) põe(m[2], { estado: "rodando", desde: m[1], tentativa: +m[3] });
+    else if ((m = new RegExp(`^\\[ORQ ${H}\\] !! (\\S+) ESTAGNADO \\((\\d+)s\\)`).exec(l))) põe(m[2], { estagnou: +m[3] });
+    else if ((m = new RegExp(`^\\[ORQ ${H}\\] ✔ (\\S+): (.+)$`).exec(l))) põe(m[2], { estado: m[3].trim() === "ok" ? "ok" : "erro", saida: m[3].trim(), fim: m[1] });
   }
   const plano = [...fontes.values()].filter((f) => f.plano === "a coletar" || f.estado);
   const total = [...fontes.values()].filter((f) => f.plano === "a coletar").length;
@@ -117,18 +126,54 @@ function detalheColeta(corpo) {
 }
 
 // ---- detalhe da fase 4: as 17 etapas da cadeia da marca -------------------------------------------
-function detalheMarca(corpo) {
+// serve tanto para a fase 4 da rodada quanto para a execução avulsa — as duas escrevem as mesmas linhas,
+// em logs diferentes. `terminou` evita que a última etapa vista fique eternamente marcada como "rodando".
+function detalheMarca(corpo, terminou = false) {
   const todas = etapasMarca();
   const texto = corpo.join("\n");
   const vistas = [...texto.matchAll(/^── (\S+) · /gm)].map((m) => m[1]);
   const erros = new Map([...texto.matchAll(/^\s*! (\S+) saiu (-?\d+)/gm)].map((m) => [m[1], +m[2]]));
-  const atual = vistas[vistas.length - 1];
-  const concluida = /^\s*etapa\s+saida|== FIM|resumo/im.test(texto) && !atual;
+  const atual = terminou ? null : vistas[vistas.length - 1];
   return todas.map((e, i) => ({
     ...e, i: i + 1,
-    estado: erros.has(e.script) ? "falhou" : e.script === atual && !concluida ? "rodando" : vistas.includes(e.script) ? "ok" : "aguardando",
+    estado: erros.has(e.script) ? "falhou"
+      : e.script === atual ? "rodando"
+      : vistas.includes(e.script) ? "ok"
+      : terminou ? "pulada" : "aguardando",   // acabou e nunca apareceu = pulada (SEM_LLM pula visão e atas)
     exit: erros.get(e.script) ?? null,
   }));
+}
+
+// ---- a cadeia da marca lançada à parte (roda_marca.cmd / tarefa "PNIGP - Marca diaria") -----------
+// É a MESMA cadeia que a fase 4 da rodada, mas com vida própria: pode estar rodando enquanto a rodada faz
+// outra coisa, e é ela que a tarefa das 05:00 dispara. Por isso ganha bloco próprio em vez de virar fase.
+function lerCadeiaMarca() {
+  const bruto = ler(LOG_MARCA);
+  if (!bruto.trim()) return null;
+  const i = bruto.lastIndexOf("===== INICIO");
+  const txt = bruto.slice(i < 0 ? 0 : i);
+  const linhas = txt.split(/\r?\n/);
+
+  const mIni = /INICIO\s+(\S+)\s+([\d:,\.]+)/.exec(linhas[0] || "");
+  const mFim = /FIM\s+(\S+)\s+([\d:,\.]+)\s*\(exit (-?\d+)\)/.exec(txt);
+  const pulou = /já há uma rodada da cadeia de marca em curso/.test(txt);
+  const encerrada = !!mFim;
+  const estado = pulou ? "pulada" : !encerrada ? "rodando" : +mFim[3] === 0 ? "concluida" : "falhou";
+
+  const antes = /^antes:\s*(\{.*\})\s*$/m.exec(txt);
+  const fecho = /antes (\{.*?\}) → depois (\{.*?\})/.exec(txt);
+  const delta = /Δ marca conferida:\s*(-?\d+)/.exec(txt);
+  const conta = (j) => { try { const o = JSON.parse(j); return { conferida: +o.conferida, cru: +o.cru }; } catch { return null; } };
+
+  return {
+    estado, inicio: hhmm(mIni?.[2]), fim: encerrada ? hhmm(mFim[2]) : null, exit: encerrada ? +mFim[3] : null,
+    duracao: diff(seg(mIni?.[2]), encerrada ? seg(mFim[2]) : agoraSeg()),
+    etapas: detalheMarca(linhas, encerrada || pulou),
+    antes: antes ? conta(antes[1]) : null,
+    depois: fecho ? conta(fecho[2]) : null,
+    delta: delta ? +delta[1] : null,
+    cauda: linhas.filter((l) => l.trim()).slice(-6),
+  };
 }
 
 // ---- detalhe da fase 5: os 10 passos do TCE (log próprio) ------------------------------------------
@@ -152,7 +197,10 @@ const PILULA = { concluida: ["ok", "concluída"], rodando: ["run", "em curso"], 
 
 function render() {
   const r = lerRodada();
+  const cm = lerCadeiaMarca();
   const emCurso = !r.encerrada;
+  const marcaEmCurso = cm?.estado === "rodando";
+  const vivo = emCurso || marcaEmCurso;          // a página só se recarrega enquanto ALGUMA das duas anda
   const faseAtual = r.fases.find((f) => f.estado === "rodando");
   const gerado = new Date().toLocaleTimeString("pt-BR");
 
@@ -167,14 +215,14 @@ function render() {
       detalhe = `
         <div class="barra"><span style="width:${pct}%"></span></div>
         <p class="num"><b>${feitas}</b> de <b>${d.total}</b> fontes concluídas · ${d.ok} ok · ${d.erro.length} com erro${d.desativada.length ? ` · ${d.desativada.length} desativada` : ""}</p>
-        ${d.rodando.length ? `<p class="agora">▶ coletando agora: ${d.rodando.map((x) => `<b>${esc(x.id)}</b> <span class="fraco">desde ${utcParaBR(x.desde)}${x.tentativa > 1 ? ` · tentativa ${x.tentativa}` : ""}</span>`).join(" · ")}</p>` : ""}
+        ${d.rodando.length ? `<p class="agora">▶ coletando agora: ${d.rodando.map((x) => `<b>${esc(x.id)}</b> <span class="fraco">desde ${horaExibida(x.desde)}${x.tentativa > 1 ? ` · tentativa ${x.tentativa}` : ""}</span>`).join(" · ")}</p>` : ""}
         ${d.erro.length ? `<p class="ruim">✕ falharam as 5 tentativas: ${d.erro.map((x) => `${esc(x.id)} <span class="fraco">(${esc(x.saida)})</span>`).join(" · ")}</p>` : ""}
         ${d.desativada.length ? `<p class="fraco">⊘ desativadas de propósito: ${d.desativada.map((x) => esc(x.id)).join(", ")}</p>` : ""}
         ${d.posFinal ? `<p class="bom">✓ ciclo de coleta concluído — validação, frescor, notificações e documentação incluídos</p>` : ""}`;
     }
 
     if (f.n === 4 && f.corpo.length) {
-      const et = detalheMarca(f.corpo);
+      const et = detalheMarca(f.corpo, f.estado !== "rodando");
       const feitas = et.filter((e) => e.estado === "ok" || e.estado === "falhou").length;
       detalhe = `
         <div class="barra"><span style="width:${Math.round((feitas / et.length) * 100)}%"></span></div>
@@ -211,14 +259,37 @@ function render() {
       </article>`;
   }).join("");
 
+  // bloco da cadeia da marca avulsa — só aparece se o log dela existir
+  const blocoMarca = !cm ? "" : (() => {
+    const [cls, rot] = PILULA[cm.estado] || ["wait", cm.estado];
+    const feitas = cm.etapas.filter((e) => e.estado === "ok" || e.estado === "falhou").length;
+    const ganho = cm.antes && cm.depois ? cm.depois.conferida - cm.antes.conferida : cm.delta;
+    return `
+    <section class="avulsa ${cm.estado}">
+      <header>
+        <h2>Cadeia da marca · execução à parte</h2>
+        <span class="pill ${cls}">${rot}</span>
+      </header>
+      <p class="oque">A mesma cadeia da fase 4, mas com vida própria: é esta que a tarefa das 05:00 dispara e é aqui que ela aparece quando roda fora da rodada. Log: ${esc(LOG_MARCA)}</p>
+      ${cm.estado === "pulada"
+        ? `<p class="tempo">Saiu na largada às ${esc(cm.inicio)} sem tocar na fila — já havia outra execução com a trava. Isso é o comportamento correto: duas execuções ao mesmo tempo cegam uma à outra em <code>marca_ata_feitas</code>.</p>`
+        : `<p class="tempo">começou ${esc(cm.inicio)} · ${cm.estado === "rodando" ? `há ${dur(cm.duracao)}` : `levou ${dur(cm.duracao)}${cm.exit != null ? ` · saída ${cm.exit}` : ""}`}</p>
+           <div class="barra"><span style="width:${Math.round((feitas / cm.etapas.length) * 100)}%"></span></div>
+           <p class="num"><b>${feitas}</b> de <b>${cm.etapas.length}</b> etapas${cm.antes ? ` · partiu de ${cm.antes.conferida.toLocaleString("pt-BR")} itens com marca conferida` : ""}</p>
+           ${ganho != null ? `<p class="${ganho > 0 ? "bom" : "fraco"}">Δ marca conferida: ${ganho > 0 ? "+" : ""}${ganho.toLocaleString("pt-BR")} itens</p>` : ""}
+           <ol class="etapas">${cm.etapas.map((e) => `<li class="${e.estado}"><span class="i">${e.i}</span> ${esc(e.desc)} <span class="fraco">${esc(e.script)}</span>${e.exit != null ? ` <span class="ruim">saiu ${e.exit}</span>` : ""}${e.estado === "pulada" ? ` <span class="fraco">(não rodou)</span>` : ""}</li>`).join("")}</ol>
+           ${cm.estado === "rodando" ? `<pre class="saida">${esc(cm.cauda.join("\n"))}</pre>` : ""}`}
+    </section>`;
+  })();
+
   const cauda = r.linhas.filter((l) => l.trim()).slice(-14)
-    .map((l) => esc(l.replace(/^\[ORQ ([\d:]+)\]/, (_, t) => `[${utcParaBR(t)}]`)))
+    .map((l) => esc(l.replace(/^\[ORQ ([\d:]+(?:-\d\d)?)\]/, (_, t) => `[${horaExibida(t)}]`)))
     .join("\n");
 
   return `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-${emCurso ? `<meta http-equiv="refresh" content="15">` : ""}
+${vivo ? `<meta http-equiv="refresh" content="15">` : ""}
 <title>Rodada completa — acompanhamento</title>
 <style>
   :root{--bg:#f8fafc;--card:#fff;--linha:#e2e8f0;--txt:#0f172a;--fraco:#64748b;--ok:#059669;--run:#0284c7;--err:#e11d48;--wait:#94a3b8}
@@ -229,8 +300,13 @@ ${emCurso ? `<meta http-equiv="refresh" content="15">` : ""}
   h1{font-size:24px;margin:0 0 4px}
   .sub{color:var(--fraco);font-size:13px;margin:0}
   .estado{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px}
-  .estado.viva{background:#e0f2fe;color:#075985}.estado.fim{background:#dcfce7;color:#166534}
-  @media(prefers-color-scheme:dark){.estado.viva{background:#082f49;color:#bae6fd}.estado.fim{background:#052e16;color:#bbf7d0}}
+  .estado.viva{background:#e0f2fe;color:#075985}.estado.fim{background:#dcfce7;color:#166534}.estado.ruim{background:#ffe4e6;color:#9f1239}
+  @media(prefers-color-scheme:dark){.estado.viva{background:#082f49;color:#bae6fd}.estado.fim{background:#052e16;color:#bbf7d0}.estado.ruim{background:#4c0519;color:#fecdd3}}
+  .estados{display:flex;flex-wrap:wrap;gap:10px}
+  .avulsa{max-width:900px;margin:18px auto 0;background:var(--card);border:1px solid var(--linha);border-radius:16px;padding:16px 18px}
+  .avulsa.rodando{border-color:var(--run);box-shadow:0 0 0 3px rgba(2,132,199,.12)}
+  .avulsa.falhou{border-color:var(--err)}
+  .avulsa code{font:12px ui-monospace,Consolas,monospace;background:var(--bg);padding:1px 4px;border-radius:4px}
   .ponto{width:9px;height:9px;border-radius:50%;background:currentColor;animation:pulsa 1.4s infinite}
   @keyframes pulsa{0%,100%{opacity:1}50%{opacity:.25}}
   .trilha{max-width:900px;margin:0 auto;position:relative}
@@ -260,7 +336,7 @@ ${emCurso ? `<meta http-equiv="refresh" content="15">` : ""}
   .etapas li{display:flex;align-items:center;gap:8px;font-size:13px;padding:3px 0}
   .etapas .i{flex:0 0 20px;height:20px;border-radius:50%;background:var(--linha);color:var(--fraco);display:grid;place-items:center;font-size:11px;font-weight:700}
   .etapas li.ok .i{background:#dcfce7;color:#166534}.etapas li.rodando .i{background:#e0f2fe;color:#075985}.etapas li.falhou .i{background:#ffe4e6;color:#9f1239}
-  .etapas li.aguardando{opacity:.5}
+  .etapas li.aguardando{opacity:.5}.etapas li.pulada{opacity:.45;text-decoration:line-through}
   .etapas li.rodando{font-weight:600;color:var(--run)}
   .saida{margin:10px 0 0;padding:10px 12px;background:var(--bg);border:1px solid var(--linha);border-radius:10px;font:12px/1.5 ui-monospace,Consolas,monospace;white-space:pre-wrap;overflow-x:auto}
   .rodape{max-width:900px;margin:26px auto 0}
@@ -271,18 +347,26 @@ ${emCurso ? `<meta http-equiv="refresh" content="15">` : ""}
 <div class="capa">
   <h1>Rodada completa — acompanhamento</h1>
   <p class="sub">As 5 cadeias na ordem em que dependem uma da outra. Começou em ${esc(r.inicio.data)} às ${esc(r.inicio.hora)}.</p>
-  <div class="estado ${emCurso ? "viva" : "fim"}">${emCurso
-    ? `<span class="ponto"></span> Em curso há ${dur(diff(seg(r.inicio.hora), agoraSeg()))} — fase ${faseAtual ? faseAtual.n : "?"} de 5${faseAtual ? `: ${esc(faseAtual.titulo)}` : ""}`
-    : `✓ Rodada encerrada às ${esc(r.fimHora)} — durou ${dur(diff(seg(r.inicio.hora), seg(r.fimHora)))}`}</div>
+  <div class="estados">
+    <div class="estado ${emCurso ? "viva" : "fim"}">${emCurso
+      ? `<span class="ponto"></span> Rodada em curso há ${dur(diff(seg(r.inicio.hora), agoraSeg()))} — fase ${faseAtual ? faseAtual.n : "?"} de 5${faseAtual ? `: ${esc(faseAtual.titulo)}` : ""}`
+      : `✓ Rodada encerrada às ${esc(r.fimHora)} — durou ${dur(diff(seg(r.inicio.hora), seg(r.fimHora)))}`}</div>
+    ${cm ? `<div class="estado ${marcaEmCurso ? "viva" : cm.estado === "falhou" ? "ruim" : "fim"}">${marcaEmCurso
+      ? `<span class="ponto"></span> Cadeia da marca à parte em curso há ${dur(cm.duracao)}`
+      : cm.estado === "pulada" ? `⊘ Cadeia da marca saiu sem rodar (outra execução tinha a trava)`
+      : `${cm.estado === "falhou" ? "✕" : "✓"} Cadeia da marca encerrada às ${esc(cm.fim)} — durou ${dur(cm.duracao)}`}</div>` : ""}
+  </div>
 </div>
 <main class="trilha">${cards}</main>
+${blocoMarca}
 <div class="rodape">
   <h3>Últimas linhas do log · ${esc(LOG_TUDO)}</h3>
   <pre class="log">${cauda}</pre>
 </div>
-<p class="nota">Gerado às ${gerado} (Brasília). ${emCurso ? "Esta página se recarrega sozinha a cada 15 segundos enquanto a rodada estiver em curso." : "A rodada terminou — a página parou de se recarregar."}
-Os horários entre colchetes vêm em UTC no log e são convertidos para Brasília aqui; os horários de início de fase já são locais.
-Uma fase só começa quando a anterior termina, e nenhuma delas para a rodada se falhar: o resumo no fim do log traz o código de saída de cada uma.</p>
+<p class="nota">Gerado às ${gerado}. ${vivo ? "Esta página se recarrega sozinha a cada 15 segundos enquanto houver rodada ou cadeia da marca em curso." : "Rodada e cadeia da marca terminadas — a página parou de se recarregar."}
+<b>Todos os horários são de Brasília</b> (UTC−3): os scripts declaram o fuso na própria linha do log e os arquivos .cmd já carimbam em hora local. Linha antiga, gravada antes dessa uniformização, vinha em UTC e é convertida aqui.
+Uma fase só começa quando a anterior termina, e nenhuma delas para a rodada se falhar: o resumo no fim do log traz o código de saída de cada uma.
+A cadeia da marca aparece em dois lugares porque tem dois caminhos: como fase 4 da rodada, e à parte — que é como a tarefa das 05:00 a dispara.</p>
 </body></html>`;
 }
 
@@ -291,7 +375,11 @@ async function main() {
     const html = render();
     fs.writeFileSync(SAIDA, html, "utf8");
     if (!LOOP) break;
-    if (/RODADA COMPLETA - FIM/.test(ler(LOG_TUDO).slice(ler(LOG_TUDO).lastIndexOf("===== RODADA COMPLETA - INICIO")))) break;
+    // só encerra quando as DUAS acabaram: a rodada pode terminar com a cadeia da marca ainda mastigando
+    const tudo = ler(LOG_TUDO);
+    const rodadaFim = /RODADA COMPLETA - FIM/.test(tudo.slice(tudo.lastIndexOf("===== RODADA COMPLETA - INICIO")));
+    const cm = lerCadeiaMarca();
+    if (rodadaFim && cm?.estado !== "rodando") break;
     await new Promise((s) => setTimeout(s, PASSO_MS));
   } while (LOOP);
   console.log(`painel escrito em ${SAIDA}`);

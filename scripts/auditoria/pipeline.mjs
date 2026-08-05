@@ -18,6 +18,7 @@
 import { spawn } from "child_process"; import path from "path"; import { fileURLToPath } from "url";
 import fs from "fs"; import pg from "pg";
 import { pegaTrava } from "../trava_processo.mjs";
+import { carimboBR } from "../hora_br.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCRIPTS = path.join(__dirname, "..");
 const ROOT = path.join(SCRIPTS, "..");
@@ -73,7 +74,7 @@ const mede = async () => (await db.query(`select (select count(*) from app.item_
 const trava = await pegaTrava(db, "cadeia_marca", { toleranciaMin: 15 });  // etapas longas: tolerância folgada
 if (!trava.ok) { console.log(`já há uma rodada da cadeia de marca em curso (${trava.donoAtual}, há ${trava.minRodando} min) — saindo sem tocar na fila`); await db.end(); process.exit(0); }
 
-console.log(`== CADEIA DA MARCA (UF=${UF}) · ${new Date().toISOString()} ==`);
+console.log(`== CADEIA DA MARCA (UF=${UF}) · ${carimboBR()} ==`);   // Brasília, igual ao resto dos logs
 const antes = await mede();
 console.log("antes:", JSON.stringify(antes));
 const log = [];
