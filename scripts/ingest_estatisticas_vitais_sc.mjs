@@ -4,7 +4,12 @@
 import fs from "fs"; import pg from "pg";
 const DATABASE_URL = fs.readFileSync("C:/Users/PC/pnigp/.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const UF_COD = process.env.UF_COD || "42"; // SC
-const ANOS = (process.env.ANOS || Array.from({ length: 21 }, (_, i) => 2003 + i).join(",")).split(",");
+// série de 2003 até o último exercício fechado — a janela ANDA com o calendário. Antes era um length fixo
+// de 21 anos (parava em 2023), então o ano novo do Registro Civil NUNCA entrava, por mais que se recoletasse.
+// Ano que o IBGE ainda não publicou volta vazio e é simplesmente ignorado (marca "x" no progresso).
+const ANO_INICIAL = 2003;
+const ANO_FINAL = new Date().getFullYear() - 1;
+const ANOS = (process.env.ANOS || Array.from({ length: ANO_FINAL - ANO_INICIAL + 1 }, (_, i) => ANO_INICIAL + i).join(",")).split(",");
 const H = { "user-agent": "Mozilla/5.0" };
 // busca ano a ano (p/all num só request estoura o timeout do SIDRA)
 const sidra = async (t, v, ano) => { const u = `https://apisidra.ibge.gov.br/values/t/${t}/n6/in%20n3%20${UF_COD}/v/${v}/p/${ano}`; for (let i = 0; i < 4; i++) { try { const r = await fetch(u, { headers: H, signal: AbortSignal.timeout(45000) }); if (r.ok) { const j = await r.json(); if (Array.isArray(j)) return j; } } catch (e) {} await new Promise((s) => setTimeout(s, 1500)); } return null; };

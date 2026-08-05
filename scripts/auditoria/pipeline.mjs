@@ -9,21 +9,24 @@
 // toca o que homologou/mudou desde a última, então o custo é pequeno; o caro foi só o passivo inicial.
 //
 // TRAVA: `az`/`betha`/`ecustomize`/`portal_vencedores` compartilham `marca_ata_feitas` chaveada por processo —
-// duas execuções simultâneas fazem uma cegar a outra. Lock de sessão no Postgres: se já houver rodada em curso
-// (inclusive uma bateria manual), sai limpo em vez de corromper a fila.
+// duas execuções simultâneas fazem uma cegar a outra. Trava por linha com batida (trava_processo.mjs): se já
+// houver rodada em curso (inclusive uma bateria manual), sai limpo em vez de corromper a fila. NÃO é advisory
+// lock — lock de sessão não sobrevive ao pooler do Neon; o porquê, medido, está em trava_processo.mjs.
 //
 //   node scripts/auditoria/pipeline.mjs            # ciclo completo (é o que a tarefa agendada chama)
 //   SEM_LLM=1 node scripts/auditoria/pipeline.mjs  # pula visão/atas (as duas etapas que usam API)
 import { spawn } from "child_process"; import path from "path"; import { fileURLToPath } from "url";
 import fs from "fs"; import pg from "pg";
+import { pegaTrava } from "../trava_processo.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SCRIPTS = path.join(__dirname, "..");
 const ROOT = path.join(SCRIPTS, "..");
 const UF = (process.env.UF || "sc").toLowerCase();
 const SEM_LLM = process.env.SEM_LLM === "1";
 const U = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
-const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }, max: 1, statement_timeout: 300000 });
-const LOCK = 918273645;   // chave do advisory lock da cadeia de marca
+// max: 2 e não 1 — a batida da trava precisa de uma conexão livre mesmo com uma consulta longa em curso;
+// com pool de 1 ela ficaria na fila atrás de um statement de até 300s e a trava pareceria abandonada.
+const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }, max: 2, statement_timeout: 300000 });
 
 const ETAPAS = [
   // 1) EVENTO — quem homologou/des-homologou desde o watermark; reabre o processo e enfileira o doc que falta
@@ -62,9 +65,13 @@ const run = (script, env) => new Promise((res) => {
 const mede = async () => (await db.query(`select (select count(*) from app.item_marca_conferida_${UF}) conferida,
   (select count(*) from item_marca_${UF}) cru`)).rows[0];
 
-const cli = await db.connect();
-const { rows: [{ ok }] } = await cli.query(`select pg_try_advisory_lock($1) ok`, [LOCK]);
-if (!ok) { console.log("já há uma rodada da cadeia de marca em curso — saindo sem tocar na fila"); cli.release(); await db.end(); process.exit(0); }
+// A trava NÃO é mais pg_advisory_lock: o DATABASE_URL é o endpoint "-pooler" do Neon (pgbouncer em modo
+// transação) e lock de sessão não sobrevive a isso. Medido em 04/ago/2026: o unlock devolveu false e a trava
+// ficou presa no backend, de forma que outra execução não conseguia pegá-la depois de "solta". Numa cadeia que
+// sai em silêncio quando não pega a trava, isso é o pior defeito possível — ela pularia a noite inteira sem
+// dizer por quê, e ninguém veria a marca deixar de ser enriquecida. Ver trava_processo.mjs.
+const trava = await pegaTrava(db, "cadeia_marca", { toleranciaMin: 15 });  // etapas longas: tolerância folgada
+if (!trava.ok) { console.log(`já há uma rodada da cadeia de marca em curso (${trava.donoAtual}, há ${trava.minRodando} min) — saindo sem tocar na fila`); await db.end(); process.exit(0); }
 
 console.log(`== CADEIA DA MARCA (UF=${UF}) · ${new Date().toISOString()} ==`);
 const antes = await mede();
@@ -81,5 +88,5 @@ const depois = await mede();
 console.table(log);
 console.log(`antes ${JSON.stringify(antes)} → depois ${JSON.stringify(depois)}`);
 console.log(`Δ marca conferida: ${Number(depois.conferida) - Number(antes.conferida)} itens`);
-await cli.query(`select pg_advisory_unlock($1)`, [LOCK]);
-cli.release(); await db.end();
+await trava.solta();
+await db.end();

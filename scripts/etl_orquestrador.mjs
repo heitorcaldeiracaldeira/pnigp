@@ -3,6 +3,7 @@
 //   MODO=plan (padrão) → só detecta e reporta o que está pendente, sem rodar.
 //   MODO=run           → detecta e executa os ETLs devidos.
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import { spawn, execSync } from "child_process"; import pg from "pg";
+import { pegaTrava } from "./trava_processo.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
 const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
@@ -54,8 +55,12 @@ const FONTES = [
     devido: async (st) => diasDesde(st?.ultima_exec) > 365 }, // série histórica estável (até 2021 neste path)
   { id: "bolsa_atleta", label: "Bolsa Atleta por município (Min. Esporte — atletas + valor)", api: "esporte", script: "scripts/ingest_bolsa_atleta_sc.mjs", env: {},
     devido: async (st) => (await maxAno("bolsa_atleta_sc")) < ANO_CORRENTE || diasDesde(st?.ultima_exec) > 60 },
+  // O ano que falta só chega quando o IBGE publica, e isso não depende de insistir: a condição antiga
+  // (max_ano < ANO_FECHADO-1) era VERDADE PERMANENTE enquanto o Registro Civil não publicasse o ano
+  // seguinte, então esta fonte se declarava vencida em TODA rodada, todo dia, para sempre. Agora a
+  // perseguição do ano novo tem cadência mensal; o resto segue a cadência semestral da fonte.
   { id: "estatisticas_vitais", label: "Estatísticas vitais por município (IBGE Registro Civil — nascidos/óbitos, série)", api: "sidra", script: "scripts/ingest_estatisticas_vitais_sc.mjs", env: {},
-    devido: async (st) => (await maxAno("estatisticas_vitais_sc")) < ANO_FECHADO - 1 || diasDesde(st?.ultima_exec) > 180 },
+    devido: async (st) => ((await maxAno("estatisticas_vitais_sc")) < ANO_FECHADO - 1 && diasDesde(st?.ultima_exec) > 30) || diasDesde(st?.ultima_exec) > 180 },
   { id: "ans_cobertura", label: "Cobertura de planos de saúde por município (ANS — pressão sobre o SUS)", api: "ans", script: "scripts/ingest_ans_cobertura_sc.mjs", env: {},
     devido: async (st) => diasDesde(st?.ultima_exec) > 90 },
   { id: "caged", label: "Saldo de empregos formais por município (Novo CAGED/MTE, mensal)", api: "mte", script: "scripts/ingest_caged_sc.mjs", env: {},
@@ -342,7 +347,38 @@ const estado = async (id) => (await db.query(`SELECT * FROM etl_catalogo WHERE i
 // ===== SUPERVISÃO (lógica do PNCP aplicada a TODA fonte) =====
 // Tabela cujo count(*) cresce durante a coleta = sinal de progresso de cada fonte.
 const TAB = { financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", receitas_det: "receitas_detalhe_sc", desp_subfuncao: "despesa_subfuncao_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", pdde: "pdde_sc", pnld: "pnld_reserva_sc", acesso_financeiro: "acesso_financeiro_sc", estban: "estban_sc", bndes: "bndes_sc", cfem: "cfem_sc", queimadas: "queimadas_sc", anp: "anp_precos_sc", bolsa_atleta: "bolsa_atleta_sc", estatisticas_vitais: "estatisticas_vitais_sc", ans_cobertura: "ans_cobertura_sc", caged: "caged_sc", rais: "rais_sc", prodes: "prodes_sc", desastres: "desastres_sc", sinisa: "sinisa_sc", sinan_dengue: "sinan_dengue_sc", aneel_gd: "aneel_gd_sc", anatel_bl: "anatel_bl_sc", senatran_frota: "frota_sc", pronaf: "pronaf_sc", ibama_autos: "ibama_autos_sc", sinesp: "sinesp_vitimas_sc", incra_assentamentos: "incra_assentamentos_sc", icmbio_uc: "icmbio_uc_sc", ana_outorgas: "ana_outorgas_sc", ibge_producao: "ibge_producao_sc", arboviroses: "arboviroses_sc", datatran: "datatran_sc", anp_vendas: "anp_vendas_sc", capag: "capag_sc", rfb_arrecadacao: "rfb_arrecadacao_sc", sim: "sim_sc", sisagua: "sisagua_sc", bps_precos_ref: "bps_precos_ref", sia_producao: "sia_producao_sc", medicamentos_alto_custo: "medicamentos_alto_custo_sc", cnes_equipes: "cnes_equipes_sc", cnes_equipamentos: "cnes_equipamentos_sc", cnes_leitos: "cnes_leitos_sc", cnes_profissionais: "cnes_profissionais_sc", apac: "apac_sc", raas_saude_mental: "raas_saude_mental_sc", cobertura_vacinal: "cobertura_vacinal_sc", sinan_agravos: "sinan_agravos_sc", sinasc: "sinasc_sc", sih: "sih_sc", igdm: "igdm_sc", ibama_embargos: "ibama_embargos_sc", quilombos: "quilombos_sc", equipamentos_esporte: "equipamentos_esporte_sc", censo_especial: "educacao_especial_sc", fundeb_oficial: "fundeb_oficial_sc", fundeb_parametros: "fatores_fundeb", indicadores_inep: "indicadores_inep_sc", indicadores_inep_escola: "indicadores_inep_escola_sc", rpps_crp: "rpps_crp_sc", cadprev_full: "cadprev_sync_log", crp_alertas: "crp_alertas", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc_feitos", processos: "contratacoes_sc", itens: "itens_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", cnes: "cnes_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc", catalogo_govbr: "catalogo_govbr_sc", classificacao_itens: "itens_classificacao_sc", emendas: "emendas_indicacao_sc", emendas_exec: "emendas_execucao_sc", programa_beneficiario: "programa_beneficiario_sc", programas_federais: "programas_federais_sc", suas: "suas_sc", assistencia_social: "assistencia_repasse_sc", equipamentos_suas: "equipamentos_suas_sc", equipamentos_endereco: "equipamentos_suas_sc", equipamentos_geo: "equipamentos_suas_sc", equipamentos_cep: "equipamentos_suas_sc", equipamentos_justica: "equipamentos_justica_sc", precatorios: "precatorios_sc", saneamento: "saneamento_sc", snis: "snis_sc", transferencias_stn: "transferencias_stn_sc", sancoes: "sancoes", munic: "munic_sc", acompanhamento: "acompanhamento_sc", acompanhamento_funcao: "acompanhamento_funcao_sc", msc_despesa: "msc_despesa_sc", precos_compras: "sobrepreco_compras_sc", apresentacao_rotulo: "item_apresentacao_sc", apresentacao_desc: "item_apresentacao_desc_sc", apresentacao_llm: "item_apresentacao_desc_sc", precos_basica: "precos_referencia_basica_sc", mislabel_unidade: "mislabel_unidade_sc", precos_nacional: "precos_nacional_ref", sobrepreco_nacional: "sobrepreco_compras_sc", variacao_interna: "variacao_interna_sc", red_flags: "red_flags_fornecedores_sc", mcmv: "mcmv_sc", programas_agil: "programas_transferegov", cmed: "cmed_pmvg", sobrepreco_med: "sobrepreco_medicamentos_sc", agropecuaria: "agropecuaria_sc", caf: "caf_sc", car: "car_sc", pronaf: "pronaf_sc", bancada: "bancada_federal_sc", incremental: "pncp_evento", eventos_dado: "item_resultado_sc", rederiva: "pncp_evento" };
-const conta = async (id) => { try { return Number((await db.query(`SELECT count(*) n FROM ${TAB[id] || "financas_sc"}`)).rows[0].n) || 0; } catch { return 0; } };
+// SINAL DE PROGRESSO — count(*) SOZINHO É CEGO a ETL que faz upsert. Caso real (04/ago/2026):
+// estatisticas_vitais regrava sempre as MESMAS 5.956 linhas (290 municípios × 2003-2023) com
+// INSERT ... ON CONFLICT DO UPDATE, então o count fica parado em 5.956 por construção. O supervisor lia
+// "quieto" e matava aos 20 min — 5 tentativas seguidas, sem a coleta nunca ter parado de fato (o
+// max(atualizado) da tabela avançava enquanto ele a dava por morta). O sinal agora é o par
+// (linhas, escrita mais recente): basta UM dos dois andar para a fonte contar como viva.
+// A coluna de carimbo é descoberta no information_schema, uma vez por fonte — nada de lista a manter.
+const CARIMBOS = ["atualizado", "atualizado_em", "criado_em", "ts", "coletado_em", "data_carga"];
+const colCarimbo = new Map();
+async function carimboDe(tab) {
+  if (colCarimbo.has(tab)) return colCarimbo.get(tab);
+  let col = null;
+  try {
+    const { rows } = await db.query(
+      `SELECT column_name FROM information_schema.columns
+        WHERE table_name=$1 AND data_type LIKE 'timestamp%' AND column_name = ANY($2)`, [tab, CARIMBOS]);
+    col = CARIMBOS.find((c) => rows.some((r) => r.column_name === c)) || null;
+  } catch { col = null; }
+  colCarimbo.set(tab, col);
+  return col;
+}
+// devolve { n: linhas, sig: assinatura comparável }; sig muda se ENTRAR linha OU se alguma linha for REGRAVADA
+async function sinal(id) {
+  const tab = TAB[id] || "financas_sc";
+  const col = await carimboDe(tab);
+  try {
+    const { rows: [r] } = await db.query(
+      col ? `SELECT count(*) n, coalesce(extract(epoch from max(${col}))::bigint,0) t FROM ${tab}`
+          : `SELECT count(*) n, 0 t FROM ${tab}`);
+    return { n: Number(r.n) || 0, sig: `${r.n}|${r.t}` };
+  } catch { return { n: 0, sig: "erro" }; }
+}
 const STALL_MS = 20 * 60 * 1000;   // 20 min sem progresso => mata e religa (folga p/ não matar ente pesado)
 const CHECK_MS = 60 * 1000;
 const MAX_TENT = 5;
@@ -352,13 +388,13 @@ const killTree = (pid) => { try { execSync(`taskkill /F /T /PID ${pid}`, { stdio
 function runOnce(f, reinicios) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [f.script], { cwd: ROOT, env: { ...process.env, ...f.env }, stdio: "ignore" });
-    let last = -1, lastChange = Date.now(), settled = false, timer = null;
+    let last = "", lastChange = Date.now(), settled = false, timer = null;
     const fin = (v) => { if (settled) return; settled = true; if (timer) clearInterval(timer); resolve(v); };
     timer = setInterval(async () => {
-      let p; try { p = await conta(f.id); } catch { return; }
-      if (p !== last) { last = p; lastChange = Date.now(); }
+      let p; try { p = await sinal(f.id); } catch { return; }
+      if (p.sig !== last) { last = p.sig; lastChange = Date.now(); }
       const idle = Math.round((Date.now() - lastChange) / 1000);
-      await db.query(`UPDATE etl_catalogo SET msg=$1, atualizado_em=now() WHERE id=$2`, [`rodando: ${p} regs · ${reinicios} reinício(s)${idle > 120 ? ` · quieto ${idle}s` : ""}`, f.id]).catch(() => {});
+      await db.query(`UPDATE etl_catalogo SET msg=$1, atualizado_em=now() WHERE id=$2`, [`rodando: ${p.n} regs · ${reinicios} reinício(s)${idle > 120 ? ` · quieto ${idle}s` : ""}`, f.id]).catch(() => {});
       if (Date.now() - lastChange > STALL_MS) { log(`!! ${f.id} ESTAGNADO (${idle}s) — matando e religando`); killTree(child.pid); fin("retry"); }
     }, CHECK_MS);
     child.on("exit", (code) => fin(code === 0 ? "ok" : `erro(${code})`));
@@ -380,7 +416,21 @@ async function rodar(f) {
   return ultimo;
 }
 
+let trava = null;   // a trava vive no escopo do módulo: main() a pega, e os manipuladores de sinal a soltam
+
 async function main() {
+  // TRAVA — um orquestrador por vez. Em 04/ago/2026 a rodada forçada das 21:40 e o PNIGP_ETL_diario das 22:30
+  // rodaram juntos: dois processos coletando as MESMAS fontes, escrevendo nas mesmas linhas do etl_catalogo e
+  // disputando o mesmo banco (que é o gargalo). Quem chega depois sai em silêncio e com código 0 — não é falha,
+  // é "já tem alguém coletando"; sair com erro faria a cadeia chamadora reportar quebra onde não houve.
+  // MODO=plan não trava: só relata. Por que não é pg_advisory_lock — ver trava_processo.mjs (pooler).
+  if (MODO !== "plan") {
+    trava = await pegaTrava(db, "orquestrador", { toleranciaMin: 10 });
+    if (!trava.ok) {
+      log(`já há um orquestrador coletando (${trava.donoAtual}, há ${trava.minRodando} min, última batida ${trava.segUltimaBatida}s atrás) — saindo sem tocar em nada; isto NÃO é erro`);
+      await db.end(); return;
+    }
+  }
   await ensure();
   log(`MODO=${MODO} | ano fechado=${ANO_FECHADO} | corrente=${ANO_CORRENTE}`);
   // 1) detectar (MODO=solicitados → roda só o que foi pedido na tela; run → devidos OU solicitados; plan → só reporta)
@@ -431,6 +481,12 @@ async function main() {
     log("regenerando documentação…"); await rodarScript("scripts/gerar_documentacao.mjs");
   }
   log("ciclo concluído.");
+  await trava?.solta();
   await db.end();
 }
-main().catch((e) => { log("ERRO FATAL: " + e); process.exit(1); });
+// a trava é solta em qualquer saída: no fim normal, no erro fatal e no taskkill/Ctrl-C. Se ainda assim ficar
+// órfã (queda de energia, máquina dormindo), a batida envelhece e o próximo orquestrador a toma — sem socorro manual.
+for (const sinalSO of ["SIGINT", "SIGTERM", "SIGBREAK"]) {
+  process.on(sinalSO, async () => { await trava?.solta().catch(() => {}); process.exit(130); });
+}
+main().catch(async (e) => { log("ERRO FATAL: " + e); await trava?.solta().catch(() => {}); process.exit(1); });
