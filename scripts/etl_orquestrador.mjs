@@ -342,6 +342,7 @@ async function ensure() {
   await db.query(`ALTER TABLE etl_catalogo ADD COLUMN IF NOT EXISTS desativado BOOLEAN DEFAULT FALSE`); // fonte suspensa aqui no catálogo; a tela /etl não oferece o botão
   await db.query(`ALTER TABLE etl_catalogo ADD COLUMN IF NOT EXISTS ultima_falha timestamptz`);        // quando esgotou as tentativas (NÃO conta como execução)
   await db.query(`ALTER TABLE etl_catalogo ADD COLUMN IF NOT EXISTS falhas_seguidas INTEGER DEFAULT 0`);// governa o recuo; zera no primeiro sucesso
+  await db.query(`ALTER TABLE etl_catalogo ADD COLUMN IF NOT EXISTS duracao_seg INTEGER`);             // quanto a última coleta BEM-SUCEDIDA custou — é o que governa o piso
   // o desativado sai daqui a cada execução: religar a fonte é tirar a chave do FONTES, sem tocar no banco
   for (const f of FONTES) await db.query(`INSERT INTO etl_catalogo (id,label,api,desativado) VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO UPDATE SET label=EXCLUDED.label, api=EXCLUDED.api, desativado=EXCLUDED.desativado`, [f.id, f.label, f.api, !!f.desativado]);
 }
@@ -458,11 +459,13 @@ async function rodar(f) {
   let ultimo = "—";
   for (let tent = 1; tent <= MAX_TENT; tent++) {
     log(`▶ ${f.id} (tentativa ${tent}/${MAX_TENT})`);
+    const t0 = Date.now();
     ultimo = await runOnce(f, tent - 1);
     if (ultimo === "ok") {
+      const seg = Math.round((Date.now() - t0) / 1000);
       await db.query(`UPDATE etl_catalogo SET ultima_exec=now(), ultimo_status='ok', falhas_seguidas=0,
-                        ultima_falha=NULL, msg=$1, atualizado_em=now() WHERE id=$2`,
-        [`ok · ${carimboCurtoBR()}`, f.id]).catch(() => {});
+                        ultima_falha=NULL, duracao_seg=$1, msg=$2, atualizado_em=now() WHERE id=$3`,
+        [seg, `ok em ${seg}s · ${carimboCurtoBR()}`, f.id]).catch(() => {});
       return "ok";
     }
     await db.query(`UPDATE etl_catalogo SET ultimo_status=$1, msg=$2, atualizado_em=now() WHERE id=$3`,
@@ -488,6 +491,32 @@ async function rodar(f) {
 // recolhida em no máximo uma hora. O que este recuo evita é só o desperdício de repetir 5 tentativas de
 // 20 minutos a cada ciclo de hora em hora — nunca deixar de buscar o que já está publicado.
 const RECUO_BASE_H = 1, RECUO_TETO_H = 6;
+
+// PISO DE VERIFICAÇÃO — a resposta a "dado oficial pode ser lançado a qualquer momento".
+//
+// A cadência escrita em cada `devido` (diasDesde > 30, > 90, > 365...) nasceu ancorada na coisa errada: em
+// quando NÓS rodamos, não em quando a FONTE publica. E ninguém nunca mediu quanto custa olhar de novo, então
+// todo N é chute — hoje há 49 fontes que só voltam depois de 60 dias ou mais, e nenhuma com folga menor que
+// 3 dias. Para SICONFI, INEP, DATASUS e afins, que soltam competência sem hora marcada, isso é chegar tarde
+// por construção.
+//
+// A regra passa a ser: o N declarado é TETO (no máximo esperar tanto), nunca piso. Se a última coleta
+// bem-sucedida foi BARATA, olha-se de novo todo dia, independentemente do N. Barato aqui é medido, não
+// suposto: a coluna duracao_seg guarda o custo real da última execução que deu certo.
+//
+// Isto só pode AUMENTAR a frequência, nunca diminuir — nenhuma fonte passa a ser vista menos vezes. E não
+// explode a carga no primeiro dia: fonte sem duração medida ainda não tem piso, porque custo desconhecido
+// não autoriza gasto. Na prática o sistema se calibra sozinho conforme mede.
+const PISO_H = 20;          // ~diário, com folga para não empatar com o horário da tarefa
+const BARATA_SEG = 120;     // até 2 min de coleta: reolhar todo dia não pesa
+function noPiso(st) {
+  // custo desconhecido NÃO autoriza gasto — e `Number(null)` é 0, que passaria por "barato": testar o nulo
+  // explicitamente, antes de qualquer conversão. Sem esta linha o piso pegou 147 das 169 fontes de uma vez.
+  if (st?.duracao_seg == null || st?.ultima_exec == null) return false;
+  const seg = Number(st.duracao_seg);
+  if (!Number.isFinite(seg) || seg > BARATA_SEG) return false;
+  return (Date.now() - new Date(st.ultima_exec).getTime()) / 3600000 >= PISO_H;
+}
 function emRecuo(st) {
   const n = Number(st?.falhas_seguidas) || 0;
   if (!n || !st?.ultima_falha) return null;
@@ -527,6 +556,8 @@ async function main() {
       continue;
     }
     let devido = false; try { devido = await f.devido(st); } catch {}
+    const piso = !devido && noPiso(st);   // o detector disse "em dia", mas olhar de novo é barato e já passou o dia
+    if (piso) devido = true;
     const solicitado = st?.solicitado === true;
     const ma = f.id === "cnes"
       ? (Number((await db.query(`SELECT max(extract(year from atualizado))::int y FROM cnes_sc`).catch(() => ({ rows: [{}] }))).rows[0]?.y) || 0) // CNES é snapshot por competência (sem coluna ano)
@@ -536,7 +567,7 @@ async function main() {
     const recuo = solicitado ? null : emRecuo(st);
     const roda = SOLIC ? solicitado : ((devido || solicitado) && !recuo);
     plano.push({ f, roda });
-    log(`  ${roda ? "RODA    " : recuo ? "RECUO   " : "ok      "} ${f.id.padEnd(14)} max_ano=${ma}${solicitado ? " [solicitado]" : ""}${recuo ? ` [${recuo.n} falha(s) seguidas — volta em ~${recuo.faltaH}h]` : ""}`);
+    log(`  ${roda ? "RODA    " : recuo ? "RECUO   " : "ok      "} ${f.id.padEnd(14)} max_ano=${ma}${solicitado ? " [solicitado]" : ""}${piso ? ` [piso: custa ${st.duracao_seg}s, reolhando]` : ""}${recuo ? ` [${recuo.n} falha(s) seguidas — volta em ~${recuo.faltaH}h]` : ""}`);
   }
   const devidos = plano.filter((p) => p.roda);
   log(`→ ${devidos.length} fonte(s) a coletar: ${devidos.map((p) => p.f.id).join(", ") || "(nenhuma)"}`);
