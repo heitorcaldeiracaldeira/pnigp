@@ -22,7 +22,16 @@ const FORMATOS = [
     sel: `d.gerador='outro' AND d.chars>800 AND left(d.texto,9000) ~* 'participante:'` },
   { id: "ipm", parse: parseAtaIpm,
     sel: `d.gerador='outro' AND d.chars>800 AND left(d.texto,9000) ~* 'atende\\.net|ipm sistemas'` },
-  { id: "dispensa", parse: parseAtaDispensaTermo,
+  // TETO POR RODADA — só a dispensa tem, e por medição. `marca_ata_feitas` já garante que cada processo é
+  // varrido UMA VEZ na vida, então isto não é desperdício repetido: é o passivo inicial. O problema é o
+  // tamanho dele. Em 05/ago a fila de dispensa tinha 94.565 processos e a cadeia inteira ficou presa aqui por
+  // quase 8 horas — 67.150 varridos a ~165/min, com 132 marcas encontradas. Rendimento de 0,2%, coerente com
+  // o que já se sabia: em dispensa o órgão quase nunca anexa a ata (0,12% medido num re-poll de 82 mil docs).
+  // Cada processo custa ler até 12 textos de documento, e é isso que pesa.
+  // Com teto, o passivo drena em fatias ao longo dos dias e as outras 12 etapas da cadeia — inclusive o
+  // consolida_marca, sem o qual NADA chega ao produto — rodam todo dia em vez de esperar a varredura acabar.
+  // Nada é pulado: o que não coube nesta rodada é o primeiro da próxima.
+  { id: "dispensa", parse: parseAtaDispensaTermo, teto: Number(process.env.TETO_DISPENSA || 5000),
     sel: `d.chars>500 AND EXISTS (SELECT 1 FROM contratacoes_sc c WHERE c.cnpj=d.cnpj AND c.ano=d.ano AND c.seq=d.seq AND c.modalidade_id IN (8,9,12))` },
 ];
 
@@ -36,12 +45,20 @@ async function main() {
   let totMarca = 0;
   for (const F of FORMATOS) {
     if (SO && SO !== F.id) continue;
-    // chaves primeiro (leve); o texto vem por ata no loop
+    // O TETO do formato manda; LIMIT do ambiente serve para uma rodada manual pontual.
+    const limF = F.teto ? `LIMIT ${F.teto}` : lim;
+    // MAIS NOVO PRIMEIRO: a marca de uma compra deste mês vale para quem decide hoje; a de 2021 é histórico.
+    // Sem ORDER BY, a fatia de cada rodada saía em ordem arbitrária e o recente podia ficar para o fim da fila.
     const atas = (await q(`SELECT d.cnpj,d.ano,d.seq,d.cod_ibge FROM arquivo_texto_sc d
       WHERE ${F.sel}
         AND NOT EXISTS (SELECT 1 FROM marca_ata_feitas f WHERE f.cnpj=d.cnpj AND f.ano=d.ano AND f.seq=d.seq)
-      GROUP BY d.cnpj,d.ano,d.seq,d.cod_ibge ${lim}`)).rows;
-    console.log(`[${F.id}] ${atas.length.toLocaleString()} atas a processar`);
+      GROUP BY d.cnpj,d.ano,d.seq,d.cod_ibge
+      ORDER BY d.ano DESC, d.seq DESC ${limF}`)).rows;
+    // quanto ainda falta no total, para o teto não esconder o tamanho do passivo
+    const resto = F.teto ? Number((await q(`SELECT count(*) n FROM (SELECT 1 FROM arquivo_texto_sc d
+      WHERE ${F.sel} AND NOT EXISTS (SELECT 1 FROM marca_ata_feitas f WHERE f.cnpj=d.cnpj AND f.ano=d.ano AND f.seq=d.seq)
+      GROUP BY d.cnpj,d.ano,d.seq) x`)).rows[0].n) : null;
+    console.log(`[${F.id}] ${atas.length.toLocaleString()} atas a processar${resto != null ? ` (teto ${F.teto.toLocaleString()} por rodada · passivo total ${resto.toLocaleString()})` : ""}`);
     let feitas = 0, comMarca = 0;
     for (const e of atas) {
       try {
