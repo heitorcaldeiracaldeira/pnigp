@@ -137,8 +137,8 @@ export const CADEIAS = {
     aoFalhar: "parar",
     env: { CADEIA_BASE: "base-da-cadeia" },
     passos: [
-      { rotulo: "diz quem sou e o que herdei", script: "scripts/_teste_passo.mjs", env: { PASSO: "um" } },
-      { rotulo: "confirma que o env do passo anterior NAO vazou", script: "scripts/_teste_passo.mjs" },
+      { rotulo: "diz quem sou e o que herdei", script: "scripts/passo_verificacao.mjs", env: { PASSO: "um" } },
+      { rotulo: "confirma que o env do passo anterior NAO vazou", script: "scripts/passo_verificacao.mjs" },
     ],
   },
 
@@ -149,9 +149,9 @@ export const CADEIAS = {
     aoFalhar: "parar",
     env: {},
     passos: [
-      { rotulo: "passo que vai bem", script: "scripts/_teste_passo.mjs", env: { PASSO: "ok" } },
-      { rotulo: "passo que quebra", script: "scripts/_teste_passo.mjs", env: { PASSO: "quebra", SAIR: "3" } },
-      { rotulo: "passo que NAO pode rodar", script: "scripts/_teste_passo.mjs", env: { PASSO: "jamais" } },
+      { rotulo: "passo que vai bem", script: "scripts/passo_verificacao.mjs", env: { PASSO: "ok" } },
+      { rotulo: "passo que quebra", script: "scripts/passo_verificacao.mjs", env: { PASSO: "quebra", SAIR: "3" } },
+      { rotulo: "passo que NAO pode rodar", script: "scripts/passo_verificacao.mjs", env: { PASSO: "jamais" } },
     ],
   },
 };
