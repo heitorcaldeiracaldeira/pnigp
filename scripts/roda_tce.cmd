@@ -40,6 +40,14 @@ cd /d C:\Users\PC\pnigp
 set LOG=%LOCALAPPDATA%\Temp\pnigp-tce.log
 set NODE=%LOCALAPPDATA%\nodejs\node.exe
 
+REM TRAVA - o passo 1 faz DROP e reconstroi app.processo_tce_pncp. Duas execucoes sobrepostas, a tarefa das
+REM 02:00 contra o passo 5 de uma rodada forcada, derrubam a tabela debaixo do passo 6 da outra. Ate 05/ago
+REM esta cadeia nao tinha exclusao nenhuma: a justificativa toda dela e consistencia de dado, e o mecanismo
+REM que garantiria isso faltava. Dono com %RANDOM% duplo para que duas execucoes nunca compartilhem dono.
+set DONO=tce-%RANDOM%%RANDOM%
+"%NODE%" scripts\trava.mjs pega cadeia_tce %DONO% 45 >> "%LOG%" 2>&1
+if errorlevel 1 goto :ocupado
+
 echo. >> "%LOG%"
 echo ===== INICIO %DATE% %TIME% ===== >> "%LOG%"
 
@@ -65,15 +73,27 @@ call :etapa "10/10 fila de averiguacao" scripts\constroi_fila_divergencia_valor.
 if errorlevel 1 goto :falhou
 
 echo ===== FIM %DATE% %TIME% (ciclo completo) ===== >> "%LOG%"
+"%NODE%" scripts\trava.mjs solta cadeia_tce %DONO% >> "%LOG%" 2>&1
+endlocal
+exit /b 0
+
+REM Ja havia cadeia em curso: sair com 0 e o certo. Nao e falha - e "tem alguem fazendo isso agora" - e sair
+REM com erro faria a rodada completa reportar quebra onde nao houve. Mesma regra da cadeia da marca.
+:ocupado
+echo ===== NAO RODOU %DATE% %TIME% - outra execucao esta com a trava cadeia_tce ===== >> "%LOG%"
 endlocal
 exit /b 0
 
 REM ARMADILHA JA PAGA: nada de bloco "if errorlevel 1 ( ... )" aqui, e nada de PARENTESE no rotulo da etapa.
 REM O cmd.exe expande %~1 dentro do bloco AO PARSEAR: um ")" vindo do texto do rotulo fecha o bloco antes da
 REM hora e o "exit /b 1" passa a rodar sempre - a cadeia abortava com o node saindo em 0. Por isso: goto.
+REM A batida vai AQUI, uma por etapa: e um UPDATE de uma linha, custo nenhum, e o que importa para a trava
+REM nao e a duracao da cadeia inteira e sim o intervalo entre duas batidas - por isso a tolerancia de 45 min
+REM cobre o passo mais lento, que tem statement_timeout de 1790s.
 :etapa
 echo. >> "%LOG%"
 echo --- %~1 :: %TIME% --- >> "%LOG%"
+"%NODE%" scripts\trava.mjs bate cadeia_tce %DONO% >nul 2>&1
 "%NODE%" %~2 >> "%LOG%" 2>&1
 if errorlevel 1 goto :etapa_erro
 exit /b 0
@@ -84,5 +104,6 @@ exit /b 1
 
 :falhou
 echo ===== FIM %DATE% %TIME% (INTERROMPIDO - a etapa acima falhou; nada a jusante rodou) ===== >> "%LOG%"
+"%NODE%" scripts\trava.mjs solta cadeia_tce %DONO% >> "%LOG%" 2>&1
 endlocal
 exit /b 1

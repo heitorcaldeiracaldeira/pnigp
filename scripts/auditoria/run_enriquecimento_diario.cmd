@@ -23,6 +23,16 @@ set CONC=6
 "%NODE%" scripts\ingest_cadeia_pncp.mjs       >> logs\enriquecimento_diario.log 2>&1
 "%NODE%" scripts\ingest_arquivos_sc.mjs       >> logs\enriquecimento_diario.log 2>&1
 
+REM --- TRAVA DA MARCA - daqui para baixo esta cadeia toca as MESMAS tabelas que a "PNIGP - Marca diaria":
+REM     ao_homologar mexe em marca_padrao_feitas e no watermark, os coletores compartilham marca_ata_feitas, e
+REM     consolida_marca reescreve item_marca_conferida. Esta tarefa dispara 04:13 com limite de 3h e a da marca
+REM     dispara 05:00 - as duas se cruzam por ate 2h. O IgnoreNew do Agendador NAO protege: sao tarefas
+REM     distintas, cada uma com a sua contagem de instancias. Ate 05/ago so o pipeline.mjs pegava a trava, e
+REM     quem entrava por aqui passava por baixo dela. Agora as duas portas obedecem a mesma trava.
+set DONO=enriq-%RANDOM%%RANDOM%
+"%NODE%" scripts\trava.mjs pega cadeia_marca %DONO% 45 >> logs\enriquecimento_diario.log 2>&1
+if errorlevel 1 goto :sem_marca
+
 REM --- EVENTO: (des)homologou -> reabre o proc (reconcilia marca + re-enriquece descrição) ---
 "%NODE%" scripts\auditoria\ao_homologar.mjs   >> logs\enriquecimento_diario.log 2>&1
 
@@ -48,5 +58,18 @@ REM --- MARCA pelo doc de resultado (acervo -> PNCP -> portal de origem) + conso
 set INCREMENTAL=1
 set CONC=3
 set USAR_LINK=1
+"%NODE%" scripts\trava.mjs bate cadeia_marca %DONO% >nul 2>&1
 "%NODE%" scripts\auditoria\enriquece_marca.mjs >> logs\enriquecimento_diario.log 2>&1
 "%NODE%" scripts\auditoria\consolida_marca.mjs >> logs\enriquecimento_diario.log 2>&1
+"%NODE%" scripts\trava.mjs solta cadeia_marca %DONO% >> logs\enriquecimento_diario.log 2>&1
+goto :fim
+
+REM Cadeia da marca ja em curso. A DESCRICAO nao disputa nada com ela e roda do mesmo jeito - so a parte de
+REM marca fica de fora, e volta amanha. As duas linhas repetidas abaixo sao de proposito: no cmd, desviar por
+REM rotulo e mais seguro do que aninhar bloco, e este arquivo ja pagou o preco de bloco com parentese.
+:sem_marca
+echo ===== marca PULADA %DATE% %TIME% - outra execucao esta com a trava cadeia_marca ===== >> logs\enriquecimento_diario.log
+"%NODE%" scripts\constroi_fila_enriquecimento.mjs >> logs\enriquecimento_diario.log 2>&1
+"%NODE%" scripts\enriquece_item_documento.mjs     >> logs\enriquecimento_diario.log 2>&1
+
+:fim
