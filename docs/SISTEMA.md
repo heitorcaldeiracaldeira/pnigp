@@ -1,6 +1,6 @@
 # PNIGP — Documentação do Sistema (gerada automaticamente)
 
-> Gerada em 2026-08-05 por `scripts/gerar_documentacao.mjs`. Reflete o estado real do código e do banco. **Não editar à mão.**
+> Gerada em 2026-08-04 23:57 -03 por `scripts/gerar_documentacao.mjs`. Reflete o estado real do código e do banco. **Não editar à mão.**
 
 ## 1. Banco de dados (Neon)
 
@@ -149,7 +149,7 @@
 | `estabelecimentos_saude_sc` | 35.458 | 17 (codigo_cnes, cod_ibge, nome, tipo_codigo, tipo, gestao, esfera, sus_ambulatorial…) |
 | `estado_indicador_valores` | 2.160 | 4 (estado_id, indicador_id, ano, valor) |
 | `estados` | 27 | 8 (id, uf, nome, regiao, populacao, capital, governador, pib_per_capita) |
-| `estatisticas_vitais_sc` | 5.956 | 5 (cod_ibge, ano, nascidos, obitos, atualizado) |
+| `estatisticas_vitais_sc` | 6.250 | 5 (cod_ibge, ano, nascidos, obitos, atualizado) |
 | `estban_sc` | 6.305 | 11 (cod_ibge, ano_mes, credito, credito_rural, credito_agroind, credito_imob, poupanca, prazo…) |
 | `etl_catalogo` | 171 | 11 (id, label, api, max_ano, ultima_exec, ultimo_status, devido, msg…) |
 | `farmacia_popular_sc` | 295 | 3 (cod_ibge, n_farmacias, atualizado) |
@@ -163,7 +163,7 @@
 | `fnde_simad_check` | 7.965 | 3 (cod_ibge, ano, n) |
 | `fnde_simad_sc` | 207.012 | 12 (cod_ibge, ano, data_pgto, ob, valor, parcela, programa, cnpj_recebedor…) |
 | `fns_repasse_sc` | 45.630 | 8 (cod_ibge, ano, bloco_cod, bloco_nome, area_cod, area_nome, vl_total, vl_liquido) |
-| `frescor_log` | 20 | 6 (id, rodado_em, total, ok, resumo, problemas) |
+| `frescor_log` | 21 | 6 (id, rodado_em, total, ok, resumo, problemas) |
 | `frota_sc` | 289 | 6 (cod_ibge, ano, total, automovel, motocicleta, atualizado) |
 | `fundeb_hist_sc` | 1.142 | 8 (cod_ibge, ano, matriculas, ponderadas, receita, vaaf_calc, breakdown, atualizado) |
 | `fundeb_matriculas_sc` | 295 | 19 (cod_ibge, ano, creche, creche_int, pre, pre_int, fund_ai, fund_ai_int…) |
@@ -236,7 +236,7 @@
 | `pca_sc_feitos` | 295 | 2 (cod_ibge, n) |
 | `pdde_saldo_sc` | 295 | 5 (cod_ibge, ano, saldo, escolas, atualizado) |
 | `pdde_sc` | 1.148 | 5 (cod_ibge, ano, vl_total, n_escolas, qt_alunos) |
-| `pg_stat_statements` | 638 | 52 (userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time…) |
+| `pg_stat_statements` | 917 | 52 (userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time…) |
 | `pg_stat_statements_info` | 1 | 2 (dealloc, stats_reset) |
 | `pib_municipal_sc` | 295 | 8 (cod_ibge, ano, pib, pib_per_capita, atualizado, serie, componentes, componentes_serie) |
 | `pix_municipio_sc` | 7.375 | 8 (cod_ibge, ano_mes, vl_recebido, vl_recebido_pj, vl_pago, qt_recebido, n_pes_receb_pj, atualizado) |
@@ -253,6 +253,7 @@
 | `precos_referencia_sc` | 2.067 | 13 (chave, unidade, mediana, p25, p75, n_itens, n_munis, catmat_pdm…) |
 | `previne_sc` | 5.310 | 7 (cod_ibge, competencia, indicador, ind_nome, numerador, denominador, pct) |
 | `processo_fase_sc` | 239.492 | 17 (cnpj, ano, seq, cod_ibge, municipio_nome, modalidade, modalidade_id, objeto…) |
+| `processo_trava` | 2 | 4 (nome, dono, desde, batida) |
 | `processos_ata_sc` | 12.566 | 3 (cnpj, seq, ano) |
 | `processos_feitos` | 55 | 4 (modalidade, ano, n, concluido_em) |
 | `processos_sc` | 246.973 | 11 (cnpj_orgao, ano, sequencial, cod_ibge, numero_controle, modalidade_id, modalidade, objeto…) |
@@ -536,6 +537,7 @@
 | `scripts/gera_relatorio_extracao.mjs` | Gera um HTML de conclusão da extração de texto do PNCP (arquivo_texto_sc). Queries LEVES (sem subconsulta correlacionada) p/ NAO competir com a extração. Uso pelo vigia (.claude/wa |
 | `scripts/gerar_documentacao.mjs` | Gerador de documentação automática do sistema PNIGP. Introspecta: ETLs (cabeçalho dos scripts), tabelas do Neon (+contagens), rotas/páginas, catálogo de coleta e tarefas agendadas  |
 | `scripts/harvest_painel_gold.mjs` | COLETOR DE GABARITO — Painel de Preços federal (dadosabertos.compras.gov.br) como corpus rotulado real. Resolve a raiz do problema de classificação: SC não publica CATMAT (0 rótulo |
+| `scripts/hora_br.mjs` | RELÓGIO ÚNICO DOS SCRIPTS — tudo que um humano vai ler sai em horário de Brasília.  O PROBLEMA que isto resolve. O servidor e o node correm em UTC, então `new Date().toISOString()` |
 | `scripts/inep_list.mjs` | — |
 | `scripts/inep_matriculas.mjs` | — |
 | `scripts/inep_parse.mjs` | — |
@@ -1213,7 +1215,7 @@
 | PNLD reserva técnica — demanda de livros (FNDE — Antonieta de Barros) | fnde | 2025 | há 1d | em dia |
 | Repasses federais FNS por bloco (Consulta Consolidada) | fns | 2026 | há 15d | em dia |
 | Autos de infração ambiental por município (IBAMA, série 1990+) | ibama | — | há 6h | em dia |
-| Áreas embargadas por município (IBAMA CSV) | ibama | — | há 30d | em dia |
+| Áreas embargadas por município (IBAMA CSV) | ibama | — | há 30d | pendente |
 | Agricultura e agricultura familiar por município — Censo Agropecuário 2017 (IBGE/SIDRA t/6778+6883): estabelecimentos + área, familiar vs não-familiar | ibge | 2025 | há 35d | em dia |
 | Taxa de alfabetização 15+ Censo 2022 (IBGE SIDRA 9543) | ibge | 2025 | há 28d | em dia |
 | População por cor/raça Censo 2022 (IBGE SIDRA 9605) | ibge | 2025 | há 29d | em dia |
@@ -1241,14 +1243,14 @@
 | Indicadores educacionais INEP (AFD/TDI/ATU/rendimento por município) | inep | 2025 | há 32d | em dia |
 | Indicadores INEP por escola (georreferenciado) | inep | 2025 | há 32d | em dia |
 | SAEB proficiência Port/Mat por etapa (INEP) | inep | 2025 | há 23d | em dia |
-| Arboviroses (dengue/zika/chikungunya) por município (InfoDengue/SINAN) | infodengue | 2025 | há 5h | em dia |
+| Arboviroses (dengue/zika/chikungunya) por município (InfoDengue/SINAN) | infodengue | 2025 | há 6h | em dia |
 | Dengue por município (SINAN via InfoDengue, série + incidência) | infodengue | 2025 | há 1d | em dia |
 | Desmatamento PRODES por município (INPE, interseção PostGIS) | inpe | 2024 | há 31d | em dia |
-| Focos de calor por município (INPE BDQueimadas, mensal) | inpe | 2026 | há 15d | em dia |
+| Focos de calor por município (INPE BDQueimadas, mensal) | inpe | 2026 | há 15d | pendente |
 | IEGM — qualidade da gestão (TCE-SC/IRB, dados abertos) | irb | 2025 | há 34d | em dia |
 | Cobertura vacinal SÉRIE 2015-2026 por município/vacina (SI-PNI LocalizaSUS, engine Qlik set-analysis) | localizasus | 2026 | há 30d | em dia |
 | CAF — Cadastro Nacional da Agricultura Familiar (ex-DAP) por município: nº de agricultores familiares (MDA, XLSX mensal) | mda | 2025 | há 1d | em dia |
-| IGD-M gestão PBF/CadÚnico por município (MDS/SAGI Solr) | mds | — | há 30d | em dia |
+| IGD-M gestão PBF/CadÚnico por município (MDS/SAGI Solr) | mds | — | há 30d | pendente |
 | SUAS repasse+SALDO na mesa por município (MDS/SAGI Solr) — recurso não usado | mds | 2025 | há 6h | em dia |
 | Guardião de frescor (série + última competência) | meta | — | há 0h | em dia |
 | Saldo de empregos formais por município (Novo CAGED/MTE, mensal) | mte | 2026 | há 6h | em dia |
@@ -1257,18 +1259,18 @@
 | Obras por município — detalhe (ObrasGov) | obrasgov | 2025 | há 23d | em dia |
 | Equipamentos esportivos georreferenciados (OSM — mapa camada Esporte) | osm | — | há 31d | em dia |
 | Equipamentos segurança/justiça/defesa civil georreferenciados (OSM + SAP/SC): polícia, bombeiros, defesa civil, prisional, socioeducativo | osm | — | há 39d | em dia |
-| Atas de Registro de Preço (PNCP Consulta) | pncp | — | há 5h | em dia |
+| Atas de Registro de Preço (PNCP Consulta) | pncp | — | há 6h | em dia |
 | Classificação dos itens → CATMAT/CATSER (dicionário, matcher v2) | pncp | — | há 6h | em dia |
 | Busca diária do PNCP (compras/contratos/atas — ano corrente) | pncp | — | há 26d | em dia |
 | Contratos (PNCP ano corrente, append) | pncp | 2027 | há 19d | em dia |
 | Empenhos por contrato (PNCP Lei 14.133 — acende quando publicarem) | pncp | — | há 14d | em dia |
 | Consumo de eventos → espelho (a fatia que o evento aponta) | pncp | 2025 | há 1h | pendente |
-| Coleta incremental PNCP — o que mudou (enche a fila de eventos) | pncp | 2025 | há 1d | em dia |
-| Itens de TODOS os processos (preço unitário) | pncp | 2025 | há 23h | em dia |
+| Coleta incremental PNCP — o que mudou (enche a fila de eventos) | pncp | 2025 | há 1d | pendente |
+| Itens de TODOS os processos (preço unitário) | pncp | 2025 | há 24h | em dia |
 | Notas fiscais / instrumentos de cobrança (PNCP — acende quando publicarem) | pncp | — | há 14d | em dia |
 | PCA (PNCP) | pncp | — | há 9d | em dia |
 | Preço de referência por item (mediana SC) + classificação ata/efetivada — base da análise de preços | pncp | 2025 | há 43d | em dia |
-| Contratações PNCP — TODAS (entidade Contratação espelhando o PNCP: modalidade/plataforma/SRP/estimado×homologado; via bulk por data) | pncp | 2025 | há 24h | em dia |
+| Contratações PNCP — TODAS (entidade Contratação espelhando o PNCP: modalidade/plataforma/SRP/estimado×homologado; via bulk por data) | pncp | 2025 | há 1d | em dia |
 | Sazonalidade de preço por categoria (melhor mês de compra, SC) | pncp | 2025 | há 41d | em dia |
 | Acidentes em rodovias federais por município (PRF DATATRAN, série 2015+) | prf | 2025 | há 6h | em dia |
 | Localidade dos fornecedores (CNPJ→UF/município) | receita | — | há 1d | em dia |
@@ -1288,7 +1290,7 @@
 | Previdência RPPS (RREO Anexo 04) | siconfi | 2025 | há 46d | em dia |
 | Educação/RCL (RREO an.14/3) | siconfi | 2025 | há 46d | em dia |
 | Salário-Educação por município (SICONFI DCA) | siconfi | 2025 | há 23d | em dia |
-| Estatísticas vitais por município (IBGE Registro Civil — nascidos/óbitos, série) | sidra | 2023 | há 0h | pendente |
+| Estatísticas vitais por município (IBGE Registro Civil — nascidos/óbitos, série) | sidra | 2023 | há 0h | em dia |
 | Produção agropecuária (PAM/PPM) + empresas (CEMPRE) por município (IBGE SIDRA) | sidra | — | há 31d | em dia |
 | Vítimas de crimes violentos letais por município (SINESP/MJSP, dados abertos) | sinesp | — | há 31d | em dia |
 | Catálogo de Ações Orçamentárias Federais (SIOP dados abertos) — o que emenda financia por setor; cruza com acao_orcamentaria da indicação | siop | 2025 | há 34d | em dia |
@@ -1297,7 +1299,7 @@
 | Produção da APS (SISAB — fichas aprovadas, série mensal 2021+) | sisab | 2025 | há 6h | em dia |
 | SNIS Água/Esgoto por município e prestador (atendimento, perdas, tratamento) — app Ministério das Cidades via Playwright; state-agnostic (UF/ANO) | snis | 2025 | há 39d | em dia |
 | CAPAG capacidade de pagamento por município (STN/Tesouro) | tesouro | — | há 31d | em dia |
-| Regularidade fiscal CAUC/CADIN (Tesouro) | tesouro | — | há 7d | em dia |
+| Regularidade fiscal CAUC/CADIN (Tesouro) | tesouro | — | há 7d | pendente |
 | Ranking da Qualidade da Informação Fiscal (Tesouro) por município | tesouro | 2025 | há 28d | em dia |
 | Transferências da União por município, MENSAL (FPM/FUNDEB/ITR/Lei Kandir/CIDE/FEX/IOF/LC176) — CSV oficial STN/Tesouro Transparente; NACIONAL, state-agnostic (UF env) | tesouro | 2025 | há 8d | em dia |
 | Precatórios por município (estoque e quantidade) — API do TJSC, Regime Especial de Precatórios; replicável por UF (CNJ Res. 303) | tjsc | 2025 | há 39d | em dia |

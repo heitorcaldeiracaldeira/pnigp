@@ -6,12 +6,21 @@ REM
 REM NAO tem gatilho diario de proposito: as cadeias ja tem horario proprio na madrugada e dispara-las juntas
 REM faria as cinco disputarem o mesmo banco. Esta tarefa e para rodar TUDO de uma vez, quando alguem manda.
 REM
+REM UMA PORTA POR CADEIA. Cada passo chama o MESMO arquivo que o Agendador chama - nao um atalho paralelo
+REM para o node. Antes daqui, tres cadeias tinham duas portas (a do agendador e a desta rodada), cada uma com
+REM o seu ambiente e o seu log: em 04/ago/2026 isso fez a coleta rodar DUAS VEZES ao mesmo tempo (rodada
+REM forcada das 21:40 contra o PNIGP_ETL_diario das 22:30), e obrigava a procurar o resultado da marca em dois
+REM lugares diferentes conforme quem tivesse disparado. Quem mexer no ambiente de uma cadeia mexe no wrapper
+REM dela, e vale para os dois gatilhos. Quem impede sobreposicao e a trava (trava_processo.mjs), nao a sorte.
+REM
 REM ORDEM E DEPENDENCIA:
-REM   1 etl_orquestrador MODO=run  : coleta do PNCP e das demais fontes devidas
-REM   2 consome_evento_dado        : drena a fila de eventos, mantem itens_sc fresco
-REM   3 enriquece_paralelo         : descricao do item a partir dos documentos, 1 processo por nucleo
-REM   4 auditoria/pipeline         : cadeia da marca/modelo, 16 etapas + consolida
-REM   5 roda_tce                   : casamento TCE x PNCP, saneamento do valor e fila de averiguacao
+REM   1 run_etl.bat            : coleta do PNCP e das demais fontes devidas   [= PNIGP_ETL_diario]
+REM   2 roda_itens_api.bat     : drena a fila de eventos, mantem itens_sc fresco   [= PNIGP - Itens API]
+REM   3 enriquece_paralelo     : descricao do item a partir dos documentos, 1 processo por nucleo
+REM   4 roda_marca.cmd         : cadeia da marca/modelo, 17 etapas + consolida   [= PNIGP - Marca diaria]
+REM   5 roda_tce.cmd           : casamento TCE x PNCP, saneamento e fila de averiguacao   [= PNIGP - TCE diario]
+REM O passo 3 e o unico que ainda chama o node direto: e a unica cadeia sem tarefa propria, entao so tem
+REM uma porta de qualquer jeito. No dia em que ganhar tarefa, ganha wrapper e entra na mesma regra.
 REM O TCE vem por ultimo porque le itens_sc e contratos_sc ja atualizados pelos passos 1 e 2.
 REM
 REM AQUI NAO SE PARA NO PRIMEIRO ERRO, ao contrario do roda_tce.cmd: as cinco cadeias sao independentes o
@@ -29,21 +38,24 @@ set NODE=%LOCALAPPDATA%\nodejs\node.exe
 echo. >> "%LOG%"
 echo ===== RODADA COMPLETA - INICIO %DATE% %TIME% ===== >> "%LOG%"
 
-set MODO=run
-call :etapa "1/5 coleta PNCP e fontes devidas" scripts\etl_orquestrador.mjs
+echo. >> "%LOG%"
+echo --- 1/5 coleta PNCP e fontes devidas :: %TIME% --- >> "%LOG%"
+call run_etl.bat
 set E1=%ERRORLEVEL%
 set MODO=
 
-set LOTE=25000
-set CONC=6
-call :etapa "2/5 consumidor de evento - itens" scripts\consome_evento_dado.mjs
+echo. >> "%LOG%"
+echo --- 2/5 consumidor de evento - itens :: %TIME% --- >> "%LOG%"
+call scripts\roda_itens_api.bat
 set E2=%ERRORLEVEL%
 
 set LIMIT=0
 call :etapa "3/5 enriquecimento do descritivo" scripts\enriquece_paralelo.mjs
 set E3=%ERRORLEVEL%
 
-call :etapa "4/5 cadeia da marca e modelo" scripts\auditoria\pipeline.mjs
+echo. >> "%LOG%"
+echo --- 4/5 cadeia da marca e modelo :: %TIME% --- >> "%LOG%"
+call scripts\roda_marca.cmd
 set E4=%ERRORLEVEL%
 
 echo. >> "%LOG%"

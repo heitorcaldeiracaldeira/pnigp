@@ -340,14 +340,35 @@ async function ensure() {
     ultima_exec timestamptz, ultimo_status TEXT, devido BOOLEAN, msg TEXT, atualizado_em timestamptz )`);
   await db.query(`ALTER TABLE etl_catalogo ADD COLUMN IF NOT EXISTS solicitado BOOLEAN DEFAULT FALSE`); // pedido manual via tela /etl
   await db.query(`ALTER TABLE etl_catalogo ADD COLUMN IF NOT EXISTS desativado BOOLEAN DEFAULT FALSE`); // fonte suspensa aqui no catálogo; a tela /etl não oferece o botão
+  await db.query(`ALTER TABLE etl_catalogo ADD COLUMN IF NOT EXISTS ultima_falha timestamptz`);        // quando esgotou as tentativas (NÃO conta como execução)
+  await db.query(`ALTER TABLE etl_catalogo ADD COLUMN IF NOT EXISTS falhas_seguidas INTEGER DEFAULT 0`);// governa o recuo; zera no primeiro sucesso
   // o desativado sai daqui a cada execução: religar a fonte é tirar a chave do FONTES, sem tocar no banco
   for (const f of FONTES) await db.query(`INSERT INTO etl_catalogo (id,label,api,desativado) VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO UPDATE SET label=EXCLUDED.label, api=EXCLUDED.api, desativado=EXCLUDED.desativado`, [f.id, f.label, f.api, !!f.desativado]);
 }
 const estado = async (id) => (await db.query(`SELECT * FROM etl_catalogo WHERE id=$1`, [id])).rows[0];
 
 // ===== SUPERVISÃO (lógica do PNCP aplicada a TODA fonte) =====
-// Tabela cujo count(*) cresce durante a coleta = sinal de progresso de cada fonte.
-const TAB = { financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", receitas_det: "receitas_detalhe_sc", desp_subfuncao: "despesa_subfuncao_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", pdde: "pdde_sc", pnld: "pnld_reserva_sc", acesso_financeiro: "acesso_financeiro_sc", estban: "estban_sc", bndes: "bndes_sc", cfem: "cfem_sc", queimadas: "queimadas_sc", anp: "anp_precos_sc", bolsa_atleta: "bolsa_atleta_sc", estatisticas_vitais: "estatisticas_vitais_sc", ans_cobertura: "ans_cobertura_sc", caged: "caged_sc", rais: "rais_sc", prodes: "prodes_sc", desastres: "desastres_sc", sinisa: "sinisa_sc", sinan_dengue: "sinan_dengue_sc", aneel_gd: "aneel_gd_sc", anatel_bl: "anatel_bl_sc", senatran_frota: "frota_sc", pronaf: "pronaf_sc", ibama_autos: "ibama_autos_sc", sinesp: "sinesp_vitimas_sc", incra_assentamentos: "incra_assentamentos_sc", icmbio_uc: "icmbio_uc_sc", ana_outorgas: "ana_outorgas_sc", ibge_producao: "ibge_producao_sc", arboviroses: "arboviroses_sc", datatran: "datatran_sc", anp_vendas: "anp_vendas_sc", capag: "capag_sc", rfb_arrecadacao: "rfb_arrecadacao_sc", sim: "sim_sc", sisagua: "sisagua_sc", bps_precos_ref: "bps_precos_ref", sia_producao: "sia_producao_sc", medicamentos_alto_custo: "medicamentos_alto_custo_sc", cnes_equipes: "cnes_equipes_sc", cnes_equipamentos: "cnes_equipamentos_sc", cnes_leitos: "cnes_leitos_sc", cnes_profissionais: "cnes_profissionais_sc", apac: "apac_sc", raas_saude_mental: "raas_saude_mental_sc", cobertura_vacinal: "cobertura_vacinal_sc", sinan_agravos: "sinan_agravos_sc", sinasc: "sinasc_sc", sih: "sih_sc", igdm: "igdm_sc", ibama_embargos: "ibama_embargos_sc", quilombos: "quilombos_sc", equipamentos_esporte: "equipamentos_esporte_sc", censo_especial: "educacao_especial_sc", fundeb_oficial: "fundeb_oficial_sc", fundeb_parametros: "fatores_fundeb", indicadores_inep: "indicadores_inep_sc", indicadores_inep_escola: "indicadores_inep_escola_sc", rpps_crp: "rpps_crp_sc", cadprev_full: "cadprev_sync_log", crp_alertas: "crp_alertas", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc_feitos", processos: "contratacoes_sc", itens: "itens_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", cnes: "cnes_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc", catalogo_govbr: "catalogo_govbr_sc", classificacao_itens: "itens_classificacao_sc", emendas: "emendas_indicacao_sc", emendas_exec: "emendas_execucao_sc", programa_beneficiario: "programa_beneficiario_sc", programas_federais: "programas_federais_sc", suas: "suas_sc", assistencia_social: "assistencia_repasse_sc", equipamentos_suas: "equipamentos_suas_sc", equipamentos_endereco: "equipamentos_suas_sc", equipamentos_geo: "equipamentos_suas_sc", equipamentos_cep: "equipamentos_suas_sc", equipamentos_justica: "equipamentos_justica_sc", precatorios: "precatorios_sc", saneamento: "saneamento_sc", snis: "snis_sc", transferencias_stn: "transferencias_stn_sc", sancoes: "sancoes", munic: "munic_sc", acompanhamento: "acompanhamento_sc", acompanhamento_funcao: "acompanhamento_funcao_sc", msc_despesa: "msc_despesa_sc", precos_compras: "sobrepreco_compras_sc", apresentacao_rotulo: "item_apresentacao_sc", apresentacao_desc: "item_apresentacao_desc_sc", apresentacao_llm: "item_apresentacao_desc_sc", precos_basica: "precos_referencia_basica_sc", mislabel_unidade: "mislabel_unidade_sc", precos_nacional: "precos_nacional_ref", sobrepreco_nacional: "sobrepreco_compras_sc", variacao_interna: "variacao_interna_sc", red_flags: "red_flags_fornecedores_sc", mcmv: "mcmv_sc", programas_agil: "programas_transferegov", cmed: "cmed_pmvg", sobrepreco_med: "sobrepreco_medicamentos_sc", agropecuaria: "agropecuaria_sc", caf: "caf_sc", car: "car_sc", pronaf: "pronaf_sc", bancada: "bancada_federal_sc", incremental: "pncp_evento", eventos_dado: "item_resultado_sc", rederiva: "pncp_evento" };
+// Tabela onde a fonte ESCREVE — é nela que se mede o progresso. Fonte fora deste mapa caía no
+// `|| "financas_sc"`, isto é, era vigiada contra uma tabela que ninguém estava escrevendo: assinatura
+// constante, "estagnação" garantida aos 20 min, taskkill e 5 tentativas até desistir. Em 05/ago/2026 havia
+// 41 fontes nessa situação (de 169), entre elas transferencias_cgu, programas_transferegov, censo e ideb.
+// O destino de cada uma foi tirado do INSERT/UPDATE do próprio script e conferido contra o information_schema.
+// QUEM ACRESCENTAR FONTE ACRESCENTA AQUI: o `checaCobertura()` abaixo reclama na largada se esquecer.
+const TAB = { financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", receitas_det: "receitas_detalhe_sc", desp_subfuncao: "despesa_subfuncao_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", pdde: "pdde_sc", pnld: "pnld_reserva_sc", acesso_financeiro: "acesso_financeiro_sc", estban: "estban_sc", bndes: "bndes_sc", cfem: "cfem_sc", queimadas: "queimadas_sc", anp: "anp_precos_sc", bolsa_atleta: "bolsa_atleta_sc", estatisticas_vitais: "estatisticas_vitais_sc", ans_cobertura: "ans_cobertura_sc", caged: "caged_sc", rais: "rais_sc", prodes: "prodes_sc", desastres: "desastres_sc", sinisa: "sinisa_sc", sinan_dengue: "sinan_dengue_sc", aneel_gd: "aneel_gd_sc", anatel_bl: "anatel_bl_sc", senatran_frota: "frota_sc", pronaf: "pronaf_sc", ibama_autos: "ibama_autos_sc", sinesp: "sinesp_vitimas_sc", incra_assentamentos: "incra_assentamentos_sc", icmbio_uc: "icmbio_uc_sc", ana_outorgas: "ana_outorgas_sc", ibge_producao: "ibge_producao_sc", arboviroses: "arboviroses_sc", datatran: "datatran_sc", anp_vendas: "anp_vendas_sc", capag: "capag_sc", rfb_arrecadacao: "rfb_arrecadacao_sc", sim: "sim_sc", sisagua: "sisagua_sc", bps_precos_ref: "bps_precos_ref", sia_producao: "sia_producao_sc", medicamentos_alto_custo: "medicamentos_alto_custo_sc", cnes_equipes: "cnes_equipes_sc", cnes_equipamentos: "cnes_equipamentos_sc", cnes_leitos: "cnes_leitos_sc", cnes_profissionais: "cnes_profissionais_sc", apac: "apac_sc", raas_saude_mental: "raas_saude_mental_sc", cobertura_vacinal: "cobertura_vacinal_sc", sinan_agravos: "sinan_agravos_sc", sinasc: "sinasc_sc", sih: "sih_sc", igdm: "igdm_sc", ibama_embargos: "ibama_embargos_sc", quilombos: "quilombos_sc", equipamentos_esporte: "equipamentos_esporte_sc", censo_especial: "educacao_especial_sc", fundeb_oficial: "fundeb_oficial_sc", fundeb_parametros: "fatores_fundeb", indicadores_inep: "indicadores_inep_sc", indicadores_inep_escola: "indicadores_inep_escola_sc", rpps_crp: "rpps_crp_sc", cadprev_full: "cadprev_sync_log", crp_alertas: "crp_alertas", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc_feitos", processos: "contratacoes_sc", itens: "itens_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", cnes: "cnes_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc", catalogo_govbr: "catalogo_govbr_sc", classificacao_itens: "itens_classificacao_sc", emendas: "emendas_indicacao_sc", emendas_exec: "emendas_execucao_sc", programa_beneficiario: "programa_beneficiario_sc", programas_federais: "programas_federais_sc", suas: "suas_sc", assistencia_social: "assistencia_repasse_sc", equipamentos_suas: "equipamentos_suas_sc", equipamentos_endereco: "equipamentos_suas_sc", equipamentos_geo: "equipamentos_suas_sc", equipamentos_cep: "equipamentos_suas_sc", equipamentos_justica: "equipamentos_justica_sc", precatorios: "precatorios_sc", saneamento: "saneamento_sc", snis: "snis_sc", transferencias_stn: "transferencias_stn_sc", sancoes: "sancoes", munic: "munic_sc", acompanhamento: "acompanhamento_sc", acompanhamento_funcao: "acompanhamento_funcao_sc", msc_despesa: "msc_despesa_sc", precos_compras: "sobrepreco_compras_sc", apresentacao_rotulo: "item_apresentacao_sc", apresentacao_desc: "item_apresentacao_desc_sc", apresentacao_llm: "item_apresentacao_desc_sc", precos_basica: "precos_referencia_basica_sc", mislabel_unidade: "mislabel_unidade_sc", precos_nacional: "precos_nacional_ref", sobrepreco_nacional: "sobrepreco_compras_sc", variacao_interna: "variacao_interna_sc", red_flags: "red_flags_fornecedores_sc", mcmv: "mcmv_sc", programas_agil: "programas_transferegov", cmed: "cmed_pmvg", sobrepreco_med: "sobrepreco_medicamentos_sc", agropecuaria: "agropecuaria_sc", caf: "caf_sc", car: "car_sc", pronaf: "pronaf_sc", bancada: "bancada_federal_sc", incremental: "pncp_evento", eventos_dado: "item_resultado_sc", rederiva: "pncp_evento",
+  // --- as 41 que faltavam (05/ago/2026) ---
+  producao_aps: "producao_aps_serie_sc", indicadores_previne: "indicadores_aps_sc", qualidade_siaps: "qualidade_aps_sc",
+  suas_saldo: "suas_saldo_sc", pdde_saldo: "pdde_saldo_sc", pnae_agri: "pnae_agri_sc", barragens: "barragens_sc",
+  paa: "paa_sc", lpg: "lpg_sc", salic: "salic_sc", obras: "obras_sc", novopac: "novopac_sc",
+  censo_corraca: "censo_corraca_sc", populacao_faixa: "populacao_faixa_sc", pib_municipal: "pib_municipal_sc",
+  idhm: "idhm_sc", cemaden: "cemaden_sc", domicilios: "domicilios_sc", ranking_tesouro: "ranking_tesouro_sc",
+  escola_turmas: "escola_turmas_sc", evasao_escolar: "taxa_evasao_sc", salario_educacao: "salario_educacao_sc",
+  saeb: "saeb_sc", cnpj_municipal: "cnpj_municipal_sc", transferencias_cgu: "transferencias_cgu_sc",
+  alfabetizacao: "alfabetizacao_sc", setores: "setores_censitarios_sc", setores_geo: "setores_geo_sc",
+  museus: "museus_sc", iegm: "iegm_sc", ideb: "ideb_sc", censo: "censo_matricula_sc",
+  programas_transferegov: "programas_transferegov", fnde_simad: "fnde_simad_sc", escolas: "escolas_sc",
+  cnes_estab: "estabelecimentos_saude_sc", siop_acoes: "siop_acoes", convenios: "convenios_sc",
+  // estas três só fazem UPDATE (não inserem linha): o count NUNCA muda e o progresso só aparece no carimbo
+  setores_idade: "setores_censitarios_sc", setores_criancas: "setores_censitarios_sc", geo_entes: "entes_sc" };
 // SINAL DE PROGRESSO — count(*) SOZINHO É CEGO a ETL que faz upsert. Caso real (04/ago/2026):
 // estatisticas_vitais regrava sempre as MESMAS 5.956 linhas (290 municípios × 2003-2023) com
 // INSERT ... ON CONFLICT DO UPDATE, então o count fica parado em 5.956 por construção. O supervisor lia
@@ -361,15 +382,21 @@ async function carimboDe(tab) {
   if (colCarimbo.has(tab)) return colCarimbo.get(tab);
   let col = null;
   try {
+    // 1ª escolha: um dos nomes canônicos. 2ª: QUALQUER timestamp com "atualiz" no nome (entes_sc, por
+    // exemplo, carimba em geo_atualizado_em) — sem isso a fonte que só faz UPDATE fica sem sinal nenhum.
     const { rows } = await db.query(
       `SELECT column_name FROM information_schema.columns
-        WHERE table_name=$1 AND data_type LIKE 'timestamp%' AND column_name = ANY($2)`, [tab, CARIMBOS]);
-    col = CARIMBOS.find((c) => rows.some((r) => r.column_name === c)) || null;
+        WHERE table_name=$1 AND data_type LIKE 'timestamp%'`, [tab]);
+    const nomes = rows.map((r) => r.column_name);
+    col = CARIMBOS.find((c) => nomes.includes(c)) || nomes.find((c) => /atualiz/.test(c)) || null;
   } catch { col = null; }
   colCarimbo.set(tab, col);
   return col;
 }
-// devolve { n: linhas, sig: assinatura comparável }; sig muda se ENTRAR linha OU se alguma linha for REGRAVADA
+// devolve { n: linhas, sig: assinatura comparável, cego }; sig muda se ENTRAR linha OU se alguma linha for
+// REGRAVADA. `cego` = a tabela não tem carimbo de tempo, então o único sinal possível é o count — e para
+// fonte que só faz UPDATE o count é constante por natureza. Nesse caso NÃO dá para distinguir "parada" de
+// "regravando", e o supervisor não pode matar por suposição (foi assim que se perderam 5 tentativas seguidas).
 async function sinal(id) {
   const tab = TAB[id] || "financas_sc";
   const col = await carimboDe(tab);
@@ -377,8 +404,18 @@ async function sinal(id) {
     const { rows: [r] } = await db.query(
       col ? `SELECT count(*) n, coalesce(extract(epoch from max(${col}))::bigint,0) t FROM ${tab}`
           : `SELECT count(*) n, 0 t FROM ${tab}`);
-    return { n: Number(r.n) || 0, sig: `${r.n}|${r.t}` };
-  } catch { return { n: 0, sig: "erro" }; }
+    return { n: Number(r.n) || 0, sig: `${r.n}|${r.t}`, cego: !col };
+  } catch { return { n: 0, sig: "erro", cego: true }; }
+}
+
+// Fonte sem tabela declarada no TAB seria vigiada contra financas_sc — assinatura alheia, "estagnação"
+// garantida. Isso é erro de configuração e tem que gritar na largada, não virar morte silenciosa aos 20 min.
+function checaCobertura() {
+  const orfas = FONTES.filter((f) => !TAB[f.id]).map((f) => f.id);
+  if (orfas.length) log(`!! ${orfas.length} fonte(s) SEM tabela no mapa TAB — supervisão degradada, não serão mortas por estagnação: ${orfas.join(", ")}`);
+  const vistos = new Set(), repetidos = new Set();
+  for (const f of FONTES) { if (vistos.has(f.id)) repetidos.add(f.id); vistos.add(f.id); }
+  if (repetidos.size) log(`!! id REPETIDO no catálogo de fontes (rodam duas vezes, na mesma linha de estado): ${[...repetidos].join(", ")}`);
 }
 const STALL_MS = 20 * 60 * 1000;   // 20 min sem progresso => mata e religa (folga p/ não matar ente pesado)
 const CHECK_MS = 60 * 1000;
@@ -389,14 +426,21 @@ const killTree = (pid) => { try { execSync(`taskkill /F /T /PID ${pid}`, { stdio
 function runOnce(f, reinicios) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [f.script], { cwd: ROOT, env: { ...process.env, ...f.env }, stdio: "ignore" });
-    let last = "", lastChange = Date.now(), settled = false, timer = null;
+    let last = "", lastChange = Date.now(), settled = false, timer = null, avisouCego = false;
     const fin = (v) => { if (settled) return; settled = true; if (timer) clearInterval(timer); resolve(v); };
     timer = setInterval(async () => {
       let p; try { p = await sinal(f.id); } catch { return; }
       if (p.sig !== last) { last = p.sig; lastChange = Date.now(); }
       const idle = Math.round((Date.now() - lastChange) / 1000);
       await db.query(`UPDATE etl_catalogo SET msg=$1, atualizado_em=now() WHERE id=$2`, [`rodando: ${p.n} regs · ${reinicios} reinício(s)${idle > 120 ? ` · quieto ${idle}s` : ""}`, f.id]).catch(() => {});
-      if (Date.now() - lastChange > STALL_MS) { log(`!! ${f.id} ESTAGNADO (${idle}s) — matando e religando`); killTree(child.pid); fin("retry"); }
+      if (Date.now() - lastChange > STALL_MS) {
+        if (p.cego) {  // sem carimbo de tempo: quieto não prova parado. Avisa uma vez e deixa correr até sair sozinho.
+          if (!avisouCego) { avisouCego = true; log(`   ${f.id}: ${idle}s sem sinal, mas a tabela não tem carimbo de tempo — deixando correr (não dá para provar estagnação)`); }
+          lastChange = Date.now();
+          return;
+        }
+        log(`!! ${f.id} ESTAGNADO (${idle}s) — matando e religando`); killTree(child.pid); fin("retry");
+      }
     }, CHECK_MS);
     child.on("exit", (code) => fin(code === 0 ? "ok" : `erro(${code})`));
     child.on("error", () => fin("erro(spawn)"));
@@ -404,17 +448,46 @@ function runOnce(f, reinicios) {
 }
 
 // supervisão completa: religa em estagnação OU crash, até MAX_TENT (ETLs são idempotentes/resumíveis)
+//
+// `ultima_exec` SÓ AVANÇA EM SUCESSO. Antes ela era gravada a cada tentativa, inclusive nas 5 que falhavam —
+// e como quase todo detector de "devido" é `diasDesde(ultima_exec) > N`, a fonte que quebrava ficava
+// NÃO-DEVIDA pelos N dias seguintes. Ou seja: quebrava, era religada 5 vezes, e sumia da fila em silêncio;
+// ninguém relia o ultimo_status para reagendar. Agora o fracasso vai para `ultima_falha`/`falhas_seguidas`,
+// que não mexem no relógio do detector, e o retorno é governado pelo recuo abaixo — nunca por esquecimento.
 async function rodar(f) {
   let ultimo = "—";
   for (let tent = 1; tent <= MAX_TENT; tent++) {
     log(`▶ ${f.id} (tentativa ${tent}/${MAX_TENT})`);
     ultimo = await runOnce(f, tent - 1);
-    await db.query(`UPDATE etl_catalogo SET ultima_exec=now(), ultimo_status=$1, msg=$2, atualizado_em=now() WHERE id=$3`, [ultimo, `tentativa ${tent} · ${carimboCurtoBR()}`, f.id]).catch(() => {});
-    if (ultimo === "ok") return "ok";
+    if (ultimo === "ok") {
+      await db.query(`UPDATE etl_catalogo SET ultima_exec=now(), ultimo_status='ok', falhas_seguidas=0,
+                        ultima_falha=NULL, msg=$1, atualizado_em=now() WHERE id=$2`,
+        [`ok · ${carimboCurtoBR()}`, f.id]).catch(() => {});
+      return "ok";
+    }
+    await db.query(`UPDATE etl_catalogo SET ultimo_status=$1, msg=$2, atualizado_em=now() WHERE id=$3`,
+      [ultimo, `tentativa ${tent}/${MAX_TENT} · ${carimboCurtoBR()}`, f.id]).catch(() => {});
     log(`  ${f.id}: ${ultimo} — religando em 5s`);
     await sleep(5000);
   }
+  // esgotou as tentativas: marca a falha SEM tocar em ultima_exec, e conta para o recuo
+  await db.query(`UPDATE etl_catalogo SET ultimo_status=$1, ultima_falha=now(),
+                    falhas_seguidas=COALESCE(falhas_seguidas,0)+1,
+                    msg=$2, atualizado_em=now() WHERE id=$3`,
+    [ultimo, `falhou ${MAX_TENT}/${MAX_TENT} · ${carimboCurtoBR()}`, f.id]).catch(() => {});
   return ultimo;
+}
+
+// RECUO APÓS FALHA — a fonte quebrada continua devida (o relógio dela não andou), mas não pode ser tentada
+// a cada ciclo para sempre: 5 tentativas por rodada, de hora em hora, é queimar recurso à toa. O recuo
+// dobra a cada fracasso seguido e para em 48h, então a fonte volta sozinha sem nunca ser esquecida.
+const RECUO_BASE_H = 6, RECUO_TETO_H = 48;
+function emRecuo(st) {
+  const n = Number(st?.falhas_seguidas) || 0;
+  if (!n || !st?.ultima_falha) return null;
+  const esperaH = Math.min(RECUO_BASE_H * 2 ** (n - 1), RECUO_TETO_H);
+  const passadasH = (Date.now() - new Date(st.ultima_falha).getTime()) / 3600000;
+  return passadasH < esperaH ? { esperaH, faltaH: Math.ceil(esperaH - passadasH), n } : null;
 }
 
 let trava = null;   // a trava vive no escopo do módulo: main() a pega, e os manipuladores de sinal a soltam
@@ -433,6 +506,7 @@ async function main() {
     }
   }
   await ensure();
+  checaCobertura();
   log(`MODO=${MODO} | ano fechado=${ANO_FECHADO} | corrente=${ANO_CORRENTE}`);
   // 1) detectar (MODO=solicitados → roda só o que foi pedido na tela; run → devidos OU solicitados; plan → só reporta)
   const SOLIC = MODO === "solicitados";
@@ -452,9 +526,11 @@ async function main() {
       ? (Number((await db.query(`SELECT max(extract(year from atualizado))::int y FROM cnes_sc`).catch(() => ({ rows: [{}] }))).rows[0]?.y) || 0) // CNES é snapshot por competência (sem coluna ano)
       : await maxAno({ financas: "financas_sc", metas: "metas_fiscais_sc", rreo_const: "rreo_const_sc", receitas_det: "receitas_detalhe_sc", desp_subfuncao: "despesa_subfuncao_sc", rgf: "rgf_sc", siops: "siops_sc", rpps: "rpps_sc", rpps_atuarial: "rpps_atuarial_sc", pdde: "pdde_sc", pnld: "pnld_reserva_sc", acesso_financeiro: "acesso_financeiro_sc", estban: "estban_sc", bndes: "bndes_sc", cfem: "cfem_sc", queimadas: "queimadas_sc", anp: "anp_precos_sc", bolsa_atleta: "bolsa_atleta_sc", estatisticas_vitais: "estatisticas_vitais_sc", ans_cobertura: "ans_cobertura_sc", caged: "caged_sc", rais: "rais_sc", prodes: "prodes_sc", desastres: "desastres_sc", sinisa: "sinisa_sc", sinan_dengue: "sinan_dengue_sc", aneel_gd: "aneel_gd_sc", anatel_bl: "anatel_bl_sc", senatran_frota: "frota_sc", pronaf: "pronaf_sc", ibama_autos: "ibama_autos_sc", sinesp: "sinesp_vitimas_sc", incra_assentamentos: "incra_assentamentos_sc", icmbio_uc: "icmbio_uc_sc", ana_outorgas: "ana_outorgas_sc", ibge_producao: "ibge_producao_sc", arboviroses: "arboviroses_sc", datatran: "datatran_sc", anp_vendas: "anp_vendas_sc", capag: "capag_sc", rfb_arrecadacao: "rfb_arrecadacao_sc", sim: "sim_sc", sisagua: "sisagua_sc", bps_precos_ref: "bps_precos_ref", sia_producao: "sia_producao_sc", medicamentos_alto_custo: "medicamentos_alto_custo_sc", cnes_equipes: "cnes_equipes_sc", cnes_equipamentos: "cnes_equipamentos_sc", cnes_leitos: "cnes_leitos_sc", cnes_profissionais: "cnes_profissionais_sc", apac: "apac_sc", raas_saude_mental: "raas_saude_mental_sc", cobertura_vacinal: "cobertura_vacinal_sc", sinan_agravos: "sinan_agravos_sc", sinasc: "sinasc_sc", sih: "sih_sc", igdm: "igdm_sc", ibama_embargos: "ibama_embargos_sc", quilombos: "quilombos_sc", equipamentos_esporte: "equipamentos_esporte_sc", censo_especial: "educacao_especial_sc", fundeb_oficial: "fundeb_oficial_sc", fundeb_parametros: "fatores_fundeb", indicadores_inep: "indicadores_inep_sc", indicadores_inep_escola: "indicadores_inep_escola_sc", rpps_crp: "rpps_crp_sc", cadprev_full: "cadprev_sync_log", crp_alertas: "crp_alertas", compras: "compras_sc", contratos: "contratos_sc", pca: "pca_sc", indicadores: "indicadores_sc", transferencias: "transferencias_sc", sih: "saude_producao_sc", sia: "saude_producao_sc", previne: "previne_sc", indigena: "entes_sc", fns: "fns_repasse_sc", cnpj_loc: "cnpj_loc", empenhos: "empenhos_check", atas: "atas_sc", nf: "nf_sc", cauc: "cauc_sc", catalogo_govbr: "catalogo_govbr_sc", classificacao_itens: "itens_classificacao_sc", emendas_exec: "emendas_execucao_sc", equipamentos_suas: "equipamentos_suas_sc", equipamentos_endereco: "equipamentos_suas_sc", equipamentos_geo: "equipamentos_suas_sc", equipamentos_cep: "equipamentos_suas_sc", equipamentos_justica: "equipamentos_justica_sc" }[f.id] || "financas_sc", f.id === "contratos" ? "ano_compra" : "ano");
     await db.query(`UPDATE etl_catalogo SET max_ano=$1, devido=$2, atualizado_em=now() WHERE id=$3`, [ma, devido, f.id]);
-    const roda = SOLIC ? solicitado : (devido || solicitado);
+    // pedido manual da tela fura o recuo: se alguém clicou, é porque quer agora
+    const recuo = solicitado ? null : emRecuo(st);
+    const roda = SOLIC ? solicitado : ((devido || solicitado) && !recuo);
     plano.push({ f, roda });
-    log(`  ${roda ? "RODA    " : "ok      "} ${f.id.padEnd(14)} max_ano=${ma}${solicitado ? " [solicitado]" : ""}`);
+    log(`  ${roda ? "RODA    " : recuo ? "RECUO   " : "ok      "} ${f.id.padEnd(14)} max_ano=${ma}${solicitado ? " [solicitado]" : ""}${recuo ? ` [${recuo.n} falha(s) seguidas — volta em ~${recuo.faltaH}h]` : ""}`);
   }
   const devidos = plano.filter((p) => p.roda);
   log(`→ ${devidos.length} fonte(s) a coletar: ${devidos.map((p) => p.f.id).join(", ") || "(nenhuma)"}`);
