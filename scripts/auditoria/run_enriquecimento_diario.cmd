@@ -1,6 +1,6 @@
 @echo off
 REM ENRIQUECIMENTO DIÁRIO INCREMENTAL — a cadeia completa, dirigida por evento, sem varrer o passado.
-REM   FEEDER (só o que mudou no PNCP) -> EVENTO -> DESCRIÇÃO (docs do processo) -> MARCA (doc de resultado) -> consolida.
+REM   FEEDER (só o que mudou no PNCP) --- EVENTO --- DESCRIÇÃO (docs do processo) --- MARCA (doc de resultado) --- consolida.
 REM Tudo idempotente/resumível. Task "Enriquecimento diario" (diária, IgnoreNew).
 cd /d C:\Users\PC\pnigp
 set NODE=C:\Users\PC\AppData\Local\nodejs\node.exe
@@ -33,12 +33,18 @@ set DONO=enriq-%RANDOM%%RANDOM%
 "%NODE%" scripts\trava.mjs pega cadeia_marca %DONO% 45 >> logs\enriquecimento_diario.log 2>&1
 if errorlevel 1 goto :sem_marca
 
-REM --- EVENTO: (des)homologou -> reabre o proc (reconcilia marca + re-enriquece descrição) ---
+REM --- EVENTO: (des)homologou --- reabre o proc (reconcilia marca + re-enriquece descrição) ---
 "%NODE%" scripts\auditoria\ao_homologar.mjs   >> logs\enriquecimento_diario.log 2>&1
 
-REM --- DESCRIÇÃO completa do item pelos DOCUMENTOS do processo (TR/Edital/ETP) ---
-"%NODE%" scripts\constroi_fila_enriquecimento.mjs >> logs\enriquecimento_diario.log 2>&1
-"%NODE%" scripts\enriquece_item_documento.mjs     >> logs\enriquecimento_diario.log 2>&1
+REM --- DESCRICAO completa do item pelos DOCUMENTOS do processo TR/Edital/ETP ---
+REM     Passou a chamar a cadeia "enriquecimento" do runner, que e a MESMA porta usada pela rodada completa e
+REM     pela tarefa "PNIGP Enriquece Item Documento". Antes daqui, esta linha chamava o enriquece_item_documento
+REM     SOZINHO - a versao serial, um processo - enquanto as outras portas chamavam o lancador paralelo. Mesmo
+REM     trabalho, parametros diferentes, e sem trava entre elas. Agora e a mesma cadeia, com a trava
+REM     cadeia_enriquecimento, e a fila e reconstruida uma vez so pelo proprio lancador.
+REM     MUDANCA DE COMPORTAMENTO A NOTAR: as 04:13 isto passa a usar todos os nucleos, e nao um processo. Como
+REM     este .cmd e sequencial, o resto da cadeia so espera terminar mais cedo.
+"%NODE%" scripts\roda.mjs enriquecimento >> logs\enriquecimento_diario.log 2>&1
 
 REM --- MARCA pelos PORTAIS (acervo PNCP, autônomo, captcha-free) — DEPOIS da descrição. Idempotentes (*_feitas):
 REM     por dia só pegam os procs novos. Ancoram por valor+CNPJ e gravam item_marca_conferida (portal proprio);
@@ -54,7 +60,7 @@ set LIMIT=0
 "%NODE%" scripts\auditoria\coletor_acervo_portais.mjs                  >> logs\enriquecimento_diario.log 2>&1
 set LIMIT=
 
-REM --- MARCA pelo doc de resultado (acervo -> PNCP -> portal de origem) + consolida as vias cruas ---
+REM --- MARCA pelo doc de resultado (acervo --- PNCP --- portal de origem) + consolida as vias cruas ---
 set INCREMENTAL=1
 set CONC=3
 set USAR_LINK=1
@@ -69,7 +75,6 @@ REM marca fica de fora, e volta amanha. As duas linhas repetidas abaixo sao de p
 REM rotulo e mais seguro do que aninhar bloco, e este arquivo ja pagou o preco de bloco com parentese.
 :sem_marca
 echo ===== marca PULADA %DATE% %TIME% - outra execucao esta com a trava cadeia_marca ===== >> logs\enriquecimento_diario.log
-"%NODE%" scripts\constroi_fila_enriquecimento.mjs >> logs\enriquecimento_diario.log 2>&1
-"%NODE%" scripts\enriquece_item_documento.mjs     >> logs\enriquecimento_diario.log 2>&1
+"%NODE%" scripts\roda.mjs enriquecimento >> logs\enriquecimento_diario.log 2>&1
 
 :fim

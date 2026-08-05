@@ -15,6 +15,16 @@
 //   env         ambiente comum a todos os passos da cadeia
 //   passos[]    { rotulo, script, env, timeoutMin }  ou  { rotulo, cadeia }
 //
+// COMO DIMENSIONAR A TOLERÂNCIA DA TRAVA — o erro é intuitivo e caro. Ela NÃO é a duração da cadeia: é quanto
+// tempo se aceita sem BATIDA antes de concluir que o dono morreu. Como o runner é um processo só, vivo do
+// primeiro ao último passo, ele bate de minuto em minuto mesmo numa cadeia de três horas — bastam poucos
+// minutos de folga para um soluço do banco. Tolerância grande não protege nada e tem custo real: quando um
+// processo morre de verdade (taskkill, máquina dormindo), a cadeia fica bloqueada por todo esse tempo. Foi o
+// que aconteceu aqui em 05/ago com 60 min declarados: matei um teste e a execução seguinte saiu como PULADA.
+// A exceção é a trava tomada pela linha de comando (scripts/trava.mjs) dentro de um .cmd: ali a batida só
+// acontece entre passos, então a tolerância precisa cobrir o PASSO MAIS LONGO — é o caso do
+// run_enriquecimento_diario.cmd, que segue com 45 min por isso.
+//
 // O ENV DE UM PASSO NÃO VAZA PARA O SEGUINTE. Cada passo recebe o ambiente montado da declaração — base do
 // processo + env da cadeia + env do passo — e nada do passo anterior. Era assim que o CONC=6 do consumidor de
 // evento chegava aos 17 extratores de marca, calibrados para CONC=3.
@@ -66,12 +76,15 @@ export const CADEIAS = {
   enriquecimento: {
     titulo: "Descrição do item a partir dos documentos do processo",
     log: "pnigp-enriquecimento.log",
-    trava: { nome: "cadeia_enriquecimento", toleranciaMin: 60 },
-    aoFalhar: "parar",   // o enriquecedor consome a fila que o passo anterior constrói
+    trava: { nome: "cadeia_enriquecimento", toleranciaMin: 10 },
+    aoFalhar: "parar",
     env: {},
+    // UM passo só, e não dois: o enriquece_paralelo.mjs JÁ chama constroiFila() antes de abrir os shards
+    // (importa a função, não o script). Declarar a fila como passo separado faria a varredura duas vezes —
+    // uma varredura inteira jogada fora por rodada. O passo é o lançador; os shards são filhos dele, um por
+    // núcleo, em fatias disjuntas por hash.
     passos: [
-      { rotulo: "constrói a fila", script: "scripts/constroi_fila_enriquecimento.mjs" },
-      { rotulo: "enriquece em paralelo", script: "scripts/enriquece_paralelo.mjs", env: { LIMIT: "0" } },
+      { rotulo: "reconstrói a fila e enriquece em paralelo", script: "scripts/enriquece_paralelo.mjs", env: { LIMIT: "0" }, timeoutMin: 180 },
     ],
   },
 
@@ -90,8 +103,9 @@ export const CADEIAS = {
     titulo: "Casamento TCE × PNCP, saneamento do valor e fila de averiguação",
     log: "pnigp-tce.log",
     // o passo 1 faz DROP e reconstrói app.processo_tce_pncp: duas execuções sobrepostas derrubam a tabela
-    // debaixo do passo 6 da outra. 45 min cobre o passo mais lento (statement_timeout de 1790s).
-    trava: { nome: "cadeia_tce", toleranciaMin: 45 },
+    // debaixo do passo 6 da outra. A tolerância é de batida, não de duração — o runner bate a cada minuto
+    // durante os ~8 min da cadeia; o que cobre o passo lento é o timeoutMin de cada passo, logo abaixo.
+    trava: { nome: "cadeia_tce", toleranciaMin: 10 },
     // PARA no primeiro erro, e o motivo é de dado: se o saneamento falhar e a cadeia seguisse, o casamento de
     // contrato leria valor VELHO e a fila sairia com divergência que não existe.
     aoFalhar: "parar",
@@ -118,7 +132,7 @@ export const CADEIAS = {
   rodada: {
     titulo: "Rodada completa — as cinco cadeias, na ordem em que dependem uma da outra",
     log: "pnigp-rodada.log",
-    trava: { nome: "cadeia_rodada", toleranciaMin: 30 },
+    trava: { nome: "cadeia_rodada", toleranciaMin: 10 },
     aoFalhar: "seguir",
     env: {},
     passos: [
