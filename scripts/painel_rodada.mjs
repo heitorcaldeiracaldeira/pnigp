@@ -176,8 +176,49 @@ function lerCadeiaMarca() {
   };
 }
 
-// ---- detalhe da fase 5: os 10 passos do TCE (log próprio) ------------------------------------------
+// ---- formato ÚNICO do runner (roda.mjs) ----------------------------------------------------------
+// <AAAA-MM-DD hh:mm:ss -03> <NIVEL> <cadeia> <EVENTO> <alvo> | <mensagem>
+// Uma expressão para tudo, em vez das vinte e tantas que liam os dialetos de cada .cmd. Com a data no
+// carimbo, some também a aritmética de virada de meia-noite que o painel fazia na mão.
+const RE_RUNNER = /^(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d) -\d\d (INFO|WARN|ERRO) (\S+) (INICIO|ETAPA_INICIO|ETAPA_FIM|FALHA|PULADA|RESUMO|FIM) (\S+) \| ?(.*)$/;
+function eventosDoRunner(arquivo) {
+  const linhas = ler(arquivo).split(/\r?\n/);
+  let ini = -1;
+  linhas.forEach((l, i) => { const m = RE_RUNNER.exec(l); if (m && m[4] === "INICIO") ini = i; });
+  if (ini < 0) return null;   // log ainda no formato antigo
+  const ev = [];
+  for (const l of linhas.slice(ini)) {
+    const m = RE_RUNNER.exec(l);
+    if (m) ev.push({ hora: m[1].slice(11), nivel: m[2], cadeia: m[3], evento: m[4], alvo: m[5], msg: m[6] });
+  }
+  return ev;
+}
+// passos de uma cadeia do runner, na forma que os cartões do painel já sabem desenhar
+function passosDoRunner(arquivo) {
+  const ev = eventosDoRunner(arquivo);
+  if (!ev) return null;
+  const encerrou = ev.some((e) => e.evento === "FIM");
+  const passos = new Map();
+  for (const e of ev) {
+    if (!/^\d+\/\d+$/.test(e.alvo)) continue;
+    const p = passos.get(e.alvo) || { n: Number(e.alvo.split("/")[0]), rotulo: "", hora: e.hora, estado: "rodando", duracao: null };
+    if (e.evento === "ETAPA_INICIO") { p.rotulo = e.msg; p.hora = e.hora; p.estado = "rodando"; }
+    if (e.evento === "ETAPA_FIM") { p.estado = "ok"; p.duracao = Number(/dur=(\d+)s/.exec(e.msg)?.[1]) || null; }
+    if (e.evento === "FALHA") { p.estado = "falhou"; p.duracao = Number(/dur=(\d+)s/.exec(e.msg)?.[1]) || null; }
+    if (e.evento === "PULADA") { p.estado = "pulada"; p.rotulo = p.rotulo || e.msg; }
+    passos.set(e.alvo, p);
+  }
+  const lista = [...passos.values()].sort((a, b) => a.n - b.n);
+  // passo ainda "rodando" numa cadeia que já fechou não existe — foi cortado
+  if (encerrou) for (const p of lista) if (p.estado === "rodando") p.estado = "pulada";
+  return lista;
+}
+
+// ---- detalhe da fase 5: os passos do TCE (log próprio) --------------------------------------------
 function detalheTce() {
+  const novo = passosDoRunner(LOG_TCE);   // desde 05/ago o TCE roda pelo runner
+  if (novo) return novo;
+  // formato antigo, preservado para log histórico
   const bruto = ler(LOG_TCE);
   const i = bruto.lastIndexOf("--- 1/10");
   if (i < 0) return [];
@@ -232,9 +273,10 @@ function render() {
 
     if (f.n === 5 && f.corpo.length) {
       const ps = detalheTce();
+      const feitosTce = ps.filter((p) => p.estado !== "rodando").length;
       detalhe = ps.length
-        ? `<div class="barra"><span style="width:${Math.round((ps.filter((p) => p.estado !== "rodando").length / 10) * 100)}%"></span></div>
-           <p class="num"><b>${ps.filter((p) => p.estado !== "rodando").length}</b> de <b>10</b> passos</p>
+        ? `<div class="barra"><span style="width:${Math.round((feitosTce / ps.length) * 100)}%"></span></div>
+           <p class="num"><b>${feitosTce}</b> de <b>${ps.length}</b> passos</p>
            <ol class="etapas">${ps.map((p) => `<li class="${p.estado}"><span class="i">${p.n}</span> ${esc(p.rotulo)} <span class="fraco">${p.hora} · ${dur(p.duracao)}</span></li>`).join("")}</ol>`
         : `<p class="fraco">o log do TCE ainda não registrou o primeiro passo</p>`;
     }
