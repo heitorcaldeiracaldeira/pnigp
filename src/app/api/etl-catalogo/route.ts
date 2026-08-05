@@ -10,10 +10,10 @@ export async function GET() {
     const fontes = await query<{
       id: string; label: string; api: string; max_ano: number | null;
       ultima_exec: string | null; ultimo_status: string | null; devido: boolean | null; solicitado: boolean | null; msg: string | null;
-      atualizado_em: string | null; idade_exec: number | null;
+      desativado: boolean | null; atualizado_em: string | null; idade_exec: number | null;
     }>(
       `SELECT id, label, api, max_ano, ultima_exec, ultimo_status, devido,
-              COALESCE(solicitado,false) AS solicitado, msg, atualizado_em,
+              COALESCE(solicitado,false) AS solicitado, COALESCE(desativado,false) AS desativado, msg, atualizado_em,
               EXTRACT(EPOCH FROM (now()-ultima_exec))::int AS idade_exec
          FROM etl_catalogo ORDER BY api, id`,
     );
@@ -29,7 +29,9 @@ export async function POST(req: Request) {
   try {
     const { id } = await req.json();
     if (!id || typeof id !== "string") return NextResponse.json({ ok: false, erro: "id ausente" }, { status: 400 });
-    const r = await query(`UPDATE etl_catalogo SET solicitado=true, msg='solicitado pela tela', atualizado_em=now() WHERE id=$1 RETURNING id`, [id]);
+    // fonte desativada no orquestrador não aceita pedido: o WHERE recusa, senão o botão mentiria (marcaria e nada rodaria)
+    const r = await query(`UPDATE etl_catalogo SET solicitado=true, msg='solicitado pela tela', atualizado_em=now() WHERE id=$1 AND COALESCE(desativado,false)=false RETURNING id`, [id]);
+    if (!r.length) return NextResponse.json({ ok: false, erro: "fonte inexistente ou desativada" }, { status: 409 });
     return NextResponse.json({ ok: r.length > 0 });
   } catch (e) {
     return NextResponse.json({ ok: false, erro: String(e) }, { status: 500 });

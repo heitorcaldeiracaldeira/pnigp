@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock, Database, RefreshCw } from "lucide-react";
+import { AlertTriangle, Ban, CheckCircle2, Clock, Database, RefreshCw } from "lucide-react";
 import { adminHeaders, ensureAdminToken } from "@/lib/admin-client";
 
 type Fonte = {
   id: string; label: string; api: string; max_ano: number | null;
   ultima_exec: string | null; ultimo_status: string | null; devido: boolean | null; solicitado: boolean | null; msg: string | null;
-  atualizado_em: string | null; idade_exec: number | null;
+  desativado: boolean | null; atualizado_em: string | null; idade_exec: number | null;
 };
 type Resp = { ts: number; fontes: Fonte[]; erro?: string };
 
@@ -23,6 +23,7 @@ function idade(s: number | null) {
 }
 // sugestão SEMPRE com a evidência que a sustenta
 function sugestao(f: Fonte): { txt: string; evidencia: string } {
+  if (f.desativado) return { txt: "Desativada — não coleta e não aceita pedido.", evidencia: f.msg?.startsWith("DESATIVADA") ? f.msg.replace(/^DESATIVADA — /, "") : "suspensa no orquestrador" };
   if (!f.devido) return { txt: "Em dia — sem ação necessária.", evidencia: `base no ano ${f.max_ano || "—"} · coletada ${idade(f.idade_exec)}` };
   if (ANUAL.includes(f.api)) return { txt: `Coletar o exercício fechado ${ANO_FECHADO}.`, evidencia: `banco tem até ${f.max_ano || "—"} < ${ANO_FECHADO} (competência fechada já disponível na fonte)` };
   return { txt: `Atualizar (ano corrente publica continuamente).`, evidencia: `última coleta ${idade(f.idade_exec)} — janela de atualização vencida` };
@@ -98,7 +99,9 @@ export default function EtlPage() {
                   <td className="px-4 py-3 text-center tabular-nums text-slate-700">{f.max_ano || "—"}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-slate-500"><span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5 text-slate-400" />{idade(f.idade_exec)}</span></td>
                   <td className="px-4 py-3 text-center">
-                    {f.devido
+                    {f.desativado
+                      ? <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500"><Ban className="h-3.5 w-3.5" /> desativada</span>
+                      : f.devido
                       ? <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700"><AlertTriangle className="h-3.5 w-3.5" /> pendente</span>
                       : <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700"><CheckCircle2 className="h-3.5 w-3.5" /> em dia</span>}
                   </td>
@@ -107,10 +110,12 @@ export default function EtlPage() {
                     <div className="mt-0.5 text-[11px] text-slate-400">evidência: {s.evidencia}</div>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <button onClick={() => solicitar(f.id)} disabled={!!ped || rodando}
+                    {f.desativado
+                      ? <span className="text-xs text-slate-400">—</span>
+                      : <button onClick={() => solicitar(f.id)} disabled={!!ped || rodando}
                       className={`rounded-lg px-2.5 py-1.5 text-xs font-medium ${ped ? "bg-blue-100 text-blue-600" : "bg-teal-600 text-white hover:bg-teal-700"} disabled:cursor-default`}>
                       {ped ? "solicitado ✓" : rodando ? "rodando…" : "Buscar dados"}
-                    </button>
+                    </button>}
                   </td>
                 </tr>
               );

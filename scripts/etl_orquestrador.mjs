@@ -307,7 +307,12 @@ const FONTES = [
     devido: async (st) => Number((await db.query(`SELECT count(*) n FROM mislabel_unidade_sc`).catch(() => ({ rows: [{ n: 0 }] }))).rows[0].n) === 0 || diasDesde(st?.ultima_exec) > 30 }, // roda após apresentação
   { id: "precos_nacional", label: "Referência NACIONAL de preços por CATMAT (Painel de Preços/Compras.gov.br), por unidade e por forma (avulso×escala) — enriquece o Banco de Preços e o sobrepreço", api: "compras", script: "scripts/ingest_precos_nacional.mjs", env: {},
     devido: async (st) => Number((await db.query(`SELECT count(*) n FROM precos_nacional_ref`).catch(() => ({ rows: [{ n: 0 }] }))).rows[0].n) === 0 || diasDesde(st?.ultima_exec) > 45 }, // depende de precos_referencia_sc.catmat_cod (classificador)
+  // DESATIVADA em 04/ago/2026 a pedido do Heitor: o sobrepreço vai ser REESCRITO depois que o BANCO DE PREÇOS
+  // (em construção) ficar pronto — é ele que passa a ser a régua de comparação, no lugar do duplo benchmark
+  // atual. Até lá esta rotina não roda: nem por devido, nem por [solicitado] na tela /etl. O script
+  // build_sobrepreco_nacional.mjs fica no repo como base da reescrita; para religar, tire o desativado daqui.
   { id: "sobrepreco_nacional", label: "Reconstrução do sobrepreço com DUPLO benchmark — mediana de SC + referência nacional + desvio/CV (IN 65); derivado de itens_sc + precos_referencia_sc + precos_nacional_ref", api: "derivado", script: "scripts/build_sobrepreco_nacional.mjs", env: {},
+    desativado: "será reescrita depois que o banco de preços (em construção) ficar pronto — pedido de 04/ago/2026",
     devido: async (st) => Number((await db.query(`SELECT count(*) n FROM sobrepreco_compras_sc WHERE unit_nac IS NOT NULL`).catch(() => ({ rows: [{ n: 0 }] }))).rows[0].n) === 0 || diasDesde(st?.ultima_exec) > 30 }, // roda após precos_compras + precos_nacional
   { id: "variacao_interna", label: "Variação INTERNA de preços — mesmo município comprou o mesmo item a preços diferentes (derivado de itens_sc, via SQL)", api: "derivado", script: "scripts/build_variacao_interna.mjs", env: {},
     devido: async (st) => Number((await db.query(`SELECT count(*) n FROM variacao_interna_sc`).catch(() => ({ rows: [{ n: 0 }] }))).rows[0].n) === 0 || diasDesde(st?.ultima_exec) > 30 },
@@ -328,7 +333,9 @@ async function ensure() {
     id TEXT PRIMARY KEY, label TEXT, api TEXT, max_ano INTEGER,
     ultima_exec timestamptz, ultimo_status TEXT, devido BOOLEAN, msg TEXT, atualizado_em timestamptz )`);
   await db.query(`ALTER TABLE etl_catalogo ADD COLUMN IF NOT EXISTS solicitado BOOLEAN DEFAULT FALSE`); // pedido manual via tela /etl
-  for (const f of FONTES) await db.query(`INSERT INTO etl_catalogo (id,label,api) VALUES ($1,$2,$3) ON CONFLICT (id) DO UPDATE SET label=EXCLUDED.label, api=EXCLUDED.api`, [f.id, f.label, f.api]);
+  await db.query(`ALTER TABLE etl_catalogo ADD COLUMN IF NOT EXISTS desativado BOOLEAN DEFAULT FALSE`); // fonte suspensa aqui no catálogo; a tela /etl não oferece o botão
+  // o desativado sai daqui a cada execução: religar a fonte é tirar a chave do FONTES, sem tocar no banco
+  for (const f of FONTES) await db.query(`INSERT INTO etl_catalogo (id,label,api,desativado) VALUES ($1,$2,$3,$4) ON CONFLICT (id) DO UPDATE SET label=EXCLUDED.label, api=EXCLUDED.api, desativado=EXCLUDED.desativado`, [f.id, f.label, f.api, !!f.desativado]);
 }
 const estado = async (id) => (await db.query(`SELECT * FROM etl_catalogo WHERE id=$1`, [id])).rows[0];
 
@@ -381,6 +388,13 @@ async function main() {
   const plano = [];
   for (const f of FONTES) {
     const st = await estado(f.id);
+    // fonte desativada: não roda nem por devido nem por [solicitado]; o pedido manual é limpo para não ficar preso na fila da tela /etl
+    if (f.desativado) {
+      await db.query(`UPDATE etl_catalogo SET devido=false, solicitado=false, msg=$1, atualizado_em=now() WHERE id=$2`, [`DESATIVADA — ${f.desativado}`, f.id]).catch(() => {});
+      plano.push({ f, roda: false });
+      log(`  DESATIVADA ${f.id.padEnd(14)} ${f.desativado}`);
+      continue;
+    }
     let devido = false; try { devido = await f.devido(st); } catch {}
     const solicitado = st?.solicitado === true;
     const ma = f.id === "cnes"
