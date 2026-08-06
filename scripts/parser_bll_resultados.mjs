@@ -36,7 +36,7 @@
 //    mas Descrição não serve de delimitador por causa disso.
 
 const semAcento = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "");
-const VAZIO = /^(n\/?c|n\.?c\.?|nao|nao informad[oa]|nao se aplica|n\/?a|s\/m|sem marca|prop|propri[ao]s?|marca propria|serv|servicos?|produtos?|generic[ao]s?|divers[ao]s?|obra s?|engenharia|locacao|mao de obra|deserto|fracassado|-{1,3}|\.*|)$/i;
+const VAZIO = /^(n\/?c|n\.?c\.?|nao|nao informad[oa]|nao se aplica|n\/?a|s\/m|sem marca|prop|propri[ao]s?|marca propria|serv|servicos?|produtos?|generic[ao]s?|divers[ao]s?|obras?|engenharia|locacao|mao de obra|deserto|fracassado|similar|equivalente|conforme edital|-{1,3}|\.*|)$/i;
 const soDigitos = (s) => String(s || "").replace(/\D/g, "");
 const limpa = (s) => String(s || "").replace(/\s+/g, " ").trim();
 

@@ -68,7 +68,14 @@ const ASSINATURAS = [
     teste: (t) => /TIPO:\s*VENCEDORES DA FASE DE DISPUTA/i.test(t) || (/CNPJ\/CPF\s*:/i.test(t) && /Iten[s]?\s+do\s+lote\s*:/i.test(t)),
   },
   {
-    gerador: "bll",
+    // ═══ BLL E BNC SAO O MESMO GERADOR ═══
+    // Medido: dos 26.638 documentos dos processos cujo portal_real e BNC, 791 casam esta assinatura e sao
+    // lidos por este leitor, rendendo 2.633 marcas. O "PropostasProcesso" de Nova Trento (BNC) e byte a
+    // byte o mesmo layout do de Criciuma (BLL), e os dois carregam anexos em
+    // lanceeletronico.blob.core.windows.net -- e um fornecedor de plataforma so, usado pelos dois portais.
+    // Por isso o rotulo nao e "bll": nomear pelo portal repetiria o erro que este arquivo existe para
+    // corrigir. Nao ha "leitor da BNC" a escrever; ha um gerador servindo dois portais.
+    gerador: "bll_bnc",
     leitor: "parser_bll_resultados",
     // "VALORES UNITÁRIOS FINAIS" sozinho basta: é o quadro que a BLL imprime no fecho, e aparece também
     // no documento de CLASSIFICAÇÃO, que não tem "ATA DE" nem "Gerado em:" e por isso escapava do
