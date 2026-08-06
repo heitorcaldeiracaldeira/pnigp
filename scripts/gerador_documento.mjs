@@ -57,6 +57,12 @@ const RE_PESQUISA_PRECO = new RegExp([
   "IDENTIFICA[ÇC][ÃA]O DAS FONTES",
   "JUSTIFICATIVA DE PESQUISA DE PRE[ÇC]O",
   "FORMUL[ÁA]RIO DE PESQUISA DE PRE[ÇC]O",
+  // Achados ao analisar o Licitanet: 131 documentos de pesquisa de preço escapavam para "desconhecido".
+  // "JUSTIFICATIVA DE PREÇO" (sem o "PESQUISA DE" no meio) e as duas formas em que esses relatórios
+  // declaram estar citando o PNCP de terceiros — "Fonte: PNCP" e "Preço ( PNCP )".
+  "JUSTIFICATIVA D[EO]S? PRE[ÇC]O",
+  "Fonte:\\s*PNCP\\b",
+  "Pre[çc]o\\s*\\(\\s*PNCP\\s*\\)",
 ].join("|"), "i");
 
 // Cada gerador é reconhecido por uma assinatura POSITIVA — algo que só ele escreve.
