@@ -90,6 +90,24 @@ const ASSINATURAS = [
     teste: (t) => /M\s?a\s?r\s?c\s?a\s*\/\s*F\s?a\s?b\s?r\s?i\s?c\s?a\s?n\s?t\s?e/i.test(t) && /Valor\s+propo\s?\w*ta|Porte\s+MeEpp/i.test(t),
   },
   {
+    gerador: "contrato_arp",
+    leitor: "parser_contrato_arp",
+    // exige o QUADRO: 122 dos 174 contratos com a palavra "marca" a trazem so em clausula de obrigacao
+    // ("apresentar relacao dos materiais... marca/modelo"), que nao e a marca de nada.
+    // O parêntese importa: sem ele, `A && B || C` agrupa como `(A && B) || C`, e a segunda alternativa
+    // sozinha casaria qualquer documento com "Valor ... Marca/Modelo" — inclusive edital.
+    // ⚠️ A MINUTA DO CONTRATO VEM DENTRO DO EDITAL. Medido: sem esta trava, 1.613 documentos dos processos
+    // da BLL entravam como contrato — e a maioria era edital, porque todo edital anexa a minuta com
+    // "CONTRATADA:" e "CONTRATO Nº". Minuta não tem contratada nem preço pactuado: é formulário em branco.
+    // Aqui o teste negativo se justifica (ao contrário do caso do "Termo de Referência", em que a frase
+    // aparecia dentro da descrição do item de um documento de resultado legítimo): estes marcadores só
+    // ocorrem no corpo normativo do edital, nunca num contrato assinado.
+    teste: (t) => /ATA DE REGISTRO DE PRE[ÇC]O|CONTRATO N[º°o]|DA CONTRATADA|CONTRATADA:/i.test(t)
+      && !/torna p[úu]blico|DISPOSI[ÇC][ÕO]ES PRELIMINARES|DO OBJETO DA LICITA|CREDENCIAMENTO|MINUTA D[EO]|RECEBIMENTO DAS PROPOSTAS|SESS[ÃA]O P[ÚU]BLICA DE ABERTURA/i.test(t)
+      && (/M\s?a\s?r\s?c\s?a\s*\/?\s*(?:M\s?o\s?d\s?e\s?l\s?o)?[^.]{0,60}?(?:Valor|Pre[çc]o|Qtde|Quant)/i.test(t)
+        || /(?:Valor|Pre[çc]o|Qtde|Quant)[^.]{0,60}?M\s?a\s?r\s?c\s?a\s*\/?\s*M\s?o\s?d\s?e\s?l\s?o/i.test(t)),
+  },
+  {
     gerador: "pcp",
     leitor: "parser_pcp_vencedores",
     teste: (t) => /Portal de Compras P[úu]blicas/i.test(t) && /VENCEDOR|Vencedor/.test(t),
