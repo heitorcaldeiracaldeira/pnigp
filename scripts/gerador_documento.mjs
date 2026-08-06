@@ -85,6 +85,14 @@ const ASSINATURAS = [
       || (/Gerado em:\s*\d{2}\/\d{2}\/\d{4}/i.test(t) && /Val\.?\s*Ref\.?\s*:/i.test(t) && /Valor\s*Unit\.?\s*:/i.test(t)),
   },
   {
+    // O rodape "Licitar Digital :: <ente> Pagina N de M" e a assinatura mais forte: e o proprio sistema
+    // carimbando cada pagina. A segunda alternativa cobre o documento que perdeu o rodape na extracao.
+    gerador: "licitar_digital",
+    leitor: "parser_licitar_digital",
+    teste: (t) => /Licitar Digital\s*::/i.test(t)
+      || (/Descri[çc][ãa]o Comprador/i.test(t) && /Marca:\s*[\s\S]{0,60}?Fabricante:/i.test(t)),
+  },
+  {
     gerador: "erp_termo",
     leitor: "parser_termo_homologacao",
     teste: (t) => /TERMO DE (HOMOLOGA[ÇC][ÃA]O|ADJUDICA[ÇC][ÃA]O)([^.]{0,40})?(DE PROCESSO LICITAT|E ADJUDICA)/i.test(t)

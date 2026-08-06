@@ -144,3 +144,72 @@ export function parseAtaLicitarDigital(texto) {
 }
 
 export default parseAtaLicitarDigital;
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════
+// CAMADA DE RESULTADO — dirigida pelo ITEM, para não atribuir marca de PERDEDOR.
+//
+// parseAtaLicitarDigital devolve TODAS as propostas, e no layout "ATA DE PROPOSTAS ENVIADAS" isso é o campo
+// inteiro da disputa: vários fornecedores por item, cada um com a SUA marca. Percorrer essas linhas em ordem
+// e gravar o que aparece atribuiria a marca do perdedor ao item — o mesmo erro que o "Relatório - Termo de
+// julgamento" do Compras.gov ensinou (lá eram 7.572 rótulos de marca para 3.527 itens).
+//
+// A saída não é deduzir o vencedor do texto: NÓS JÁ SABEMOS QUEM GANHOU, pelo espelho do PNCP. Para cada
+// item, procura-se a linha cujo CNPJ é o do vencedor e cujo unitário bate com o homologado. Dupla âncora
+// por construção, e o perdedor fica de fora sem heurística nenhuma.
+//
+// Os três estados saem como nos outros leitores: `marca` (campo preenchido e item identificado),
+// `sem_marca_declarada` (a célula existe e o campo veio VAZIO — informação sobre a compra, que no Licitar
+// Digital é o caso honesto de serviço e combustível), `candidato` (leu, mas só a ordem sustenta) e
+// `linha_nao_lida` (o vencedor do PNCP não tem linha neste documento).
+const soDig = (s) => String(s || "").replace(/\D/g, "");
+const pertoLd = (a, b) => a != null && b != null && Number(b) !== 0
+  && (Math.abs(a - Number(b)) <= 0.02 || Math.abs(a - Number(b)) / Math.abs(Number(b)) <= 0.005);
+
+/**
+ * @param texto  documento de resultado do Licitar Digital
+ * @param itens  [{numero, cnpj_fornecedor, valor, valor_ref}] do PNCP
+ */
+export function leResultadosLicitarDigital(texto, itens = []) {
+  const resumo = { marca: 0, sem_marca_declarada: 0, candidato: 0, linha_nao_lida: 0 };
+  const regs = parseAtaLicitarDigital(texto);
+  if (!regs.length) return { achou: false, motivo: "sem celula de valor+marca", itens: [], resumo };
+
+  const porCnpj = new Map();
+  for (const r of regs) {
+    const c = soDig(r.cnpjFornecedor);
+    if (!c) continue;
+    if (!porCnpj.has(c)) porCnpj.set(c, []);
+    porCnpj.get(c).push(r);
+  }
+
+  const usadas = new Set();
+  const out = [];
+  for (const i of itens) {
+    const cnpj = soDig(i.cnpj_fornecedor || i.cnpj);
+    if (!cnpj) continue;                                   // item sem vencedor no espelho: nada a casar
+    const cands = (porCnpj.get(cnpj) || []).filter((r) => !usadas.has(r));
+    if (!cands.length) {
+      resumo.linha_nao_lida++;
+      out.push({ item_pncp: Number(i.numero), cnpj, status: "linha_nao_lida", motivo: "vencedor do PNCP sem linha neste documento" });
+      continue;
+    }
+    let linha = null, ancora = "cnpj", valorUsado = null;
+    for (const [campo, nome] of [["valor", "valor"], ["valor_ref", "valor_ref"]]) {
+      if (linha) break;
+      const hit = cands.find((r) => pertoLd(r.valorUnitario, i[campo]));
+      if (hit) { linha = hit; valorUsado = hit.valorUnitario; ancora = `cnpj+${nome}`; }
+    }
+    if (!linha) { linha = cands[0]; ancora = "cnpj+ordem"; }
+    usadas.add(linha);
+
+    const base = {
+      item_pncp: Number(i.numero), cnpj, fornecedor: linha.fornecedor, ancora, valor_ata: valorUsado,
+      modelo: linha.modelo, fabricante: linha.fabricante, layout: linha.layout,
+    };
+    // normalizaMarca já devolve null quando o campo veio vazio — e vazio aqui é resposta, não falha
+    if (!linha.marca) { resumo.sem_marca_declarada++; out.push({ ...base, marca: null, status: "sem_marca_declarada" }); continue; }
+    const st = ancora.includes("valor") ? "marca" : "candidato";
+    resumo[st]++;
+    out.push({ ...base, marca: linha.marca, status: st });
+  }
+  return { achou: true, propostas: regs.length, itens: out, resumo };
+}
