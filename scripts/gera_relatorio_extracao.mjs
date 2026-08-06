@@ -11,9 +11,24 @@ const q = (s) => db.query(s).then((r) => r.rows);
 const fmt = (n) => Number(n).toLocaleString("pt-BR");
 
 try {
-  // ocioso? (query leve) — a menos que FORCE
+  // ═══ OCIOSO NÃO É TERMINADO ═══
+  // O critério original era só `writes25 == 0`: nenhuma gravação em 25 minutos. Mas quem imprime DONE faz o
+  // vigia (.claude/watch-extracao.ps1) DESATIVAR a extração e a si mesmo — então "ocioso" desligava tudo.
+  // Silêncio tem duas causas opostas: acabou o trabalho, ou o trabalho morreu. Medido no log do vigia em
+  // 19/jul/2026: a vazão caiu de ~10.000 gravações por janela para 53, os shards morreram (a tarefa saiu com
+  // 0xC000013A) e a extração ficou DESLIGADA por 18 dias — com 20.975 documentos ainda pendentes, que
+  // ninguém viu porque o sistema se declarou concluído.
+  // Agora só é DONE quando NÃO HÁ MAIS PENDENTE. Ocioso com pendente é PARADO, e parado pede relance, não
+  // desligamento — por isso sai como STALLED, que o vigia trata como "continua ligado".
   const writes25 = (await q(`SELECT count(*)::int n FROM arquivo_texto_sc WHERE atualizado > now() - interval '25 min'`))[0].n;
   if (!process.env.FORCE && writes25 > 0) { console.log(`RUNNING writes25=${writes25}`); await db.end(); process.exit(0); }
+  const pend = (await q(`SELECT count(*)::int n FROM arquivos_sc a
+     WHERE a.uri IS NOT NULL AND NOT EXISTS (SELECT 1 FROM arquivo_texto_sc t
+       WHERE t.cnpj=a.cnpj AND t.ano=a.ano AND t.seq=a.seq AND t.sequencial_documento=a.sequencial_documento)`))[0].n;
+  if (!process.env.FORCE && pend > 0) {
+    console.log(`STALLED writes25=0 pendentes=${pend} — parado, NAO concluido`);
+    await db.end(); process.exit(0);
+  }
 
   // agregados leves: uma passada por tabela, sem subconsulta correlacionada
   const idxTot = (await q(`SELECT count(*)::int n FROM arquivos_sc WHERE uri IS NOT NULL`))[0].n;
