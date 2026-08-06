@@ -1,46 +1,49 @@
-// LEITOR DOS DOCUMENTOS DE RESULTADO DA BLL — ancorado em CNPJ + valor.
+// LEITOR DOS DOCUMENTOS DE RESULTADO DA PLATAFORMA BLL — ancorado em CNPJ + valor.
 //
-// ═══ O UNIVERSO, e o que fica de fora ═══
-// Dos documentos dos processos cujo portal_real é BLL, a maioria dos que contêm a palavra "Marca" é EDITAL
-// (edital_*.pdf, EDITAL_PE_*, ~600 documentos). Ali a marca é referência de especificação, não a do
-// vencedor — o art. 41 da Lei 14.133 veda a indicação de marca justamente nesse lugar. Lê-los envenenaria
-// a base, e foi o mesmo erro que o Compras.gov ensinou.
-// Os documentos DA PLATAFORMA têm nome próprio e é por eles que este leitor se guia:
-//   VencedoresProcesso*   ~474  a lista de vencedores; traz marca, valor e CNPJ na MESMA linha do item
-//   AtaHomologacao        ~330  marca e valor no item; o CNPJ está na tabela de classificação do topo
-//   AtaAdjudicacao        ~270  idem
-//   AtaSessaoFinal        ~337  idem (inclui lotes DESERTO, onde a marca vem vazia — e isso é informação)
-//   PropostasProcesso     ~368  FICA DE FORA: é o campo de TODOS os licitantes, a marca é do perdedor.
-//                               (só 19 desses documentos sequer trazem o rótulo `Marca:`)
+// A seleção de quais documentos chegam aqui NÃO é deste arquivo: é de gerador_documento.mjs, que reconhece
+// o gerador pelo conteúdo. Este leitor trata apenas o layout da própria BLL. Documentos da AZ e termos de
+// ERP que aparecem dentro de processos da BLL (263 termos Betha e 129 atas AZ, medidos) vão para os seus
+// leitores próprios — o portal não determina o gerador.
 //
-// ═══ O FORMATO ═══
-//   Item: 1 Descrição: X Quantidade: 1 Val. Ref.: 2.081.454,13 Unidade: UNIDADE Total Item: 1.745.000,00
-//   Marca: Obra Modelo: Valor Unit.: 1.745.000,00 Quant.: 1 Total: 1.745.000,00
-//   LOTE 1 Num: 409 Lance: 1.745.000,00 WEST ENGENHARIA LTDA 31.252.609/0001-81 1.745.000,00
+// ═══ AS DUAS FORMAS DA PLATAFORMA ═══
 //
-// Ao contrário da AZ, aqui o rótulo vem ANTES do valor — ordem normal. E "Marca: Modelo:" com nada entre os
-// dois significa marca vazia, que é informação sobre a compra e não falha de leitura.
+// A) VENCEDORES DO PROCESSO — traz marca, valor e CNPJ do vencedor na MESMA linha do item:
+//    Item: 1 De crição: Cimento... Quantidade: 48.000 Val. Ref.: 600,00 Unidade: TONELADA
+//    Total Item: 22.699.680,00 Marca: própria Modelo: próprio Valor Unit.: 472,91 Quant.: 1
+//    Total: 22.699.680,00 LOTE 1 Num: 512 Lance: 22.699.680,00
+//    JR CONSTRUÇÕES E TERRAPLANAGEM LTDA 05.895.635/0001-18 22.699.680,00
 //
-// ═══ AS DUAS ARMADILHAS ═══
-// 1. O "s" MINÚSCULO VIRA ESPAÇO nesses PDFs: "Proce o" é Processo, "De crição" é Descrição. Os campos que
+//    Atenção ao que os rótulos significam aqui, porque não é o óbvio: `Valor Unit.` é o UNITÁRIO
+//    (48.000 x 472,91 = 22.699.680) e `Lance` é o TOTAL. Por isso o leitor não confia no rótulo: colhe
+//    todos os números do registro e deixa o valor do PNCP dizer qual era o unitário.
+//
+// B) ATA DE SESSÃO / HOMOLOGAÇÃO / ADJUDICAÇÃO — marca e valor no item, mas SEM o CNPJ ali:
+//    [tabela] Razão Social Num Documento Oferta Inicial Oferta Final
+//             1 DUDA IMÓVEIS LTDA 950 78.519.519/0001-78 7.500,00 7.500,00
+//    LOTE 1 - HOMOLOGADO - data  <objeto>  VALORES UNITÁRIOS FINAIS
+//    Item: 1 Unidade: X De crição: Y Quantidade: 12 Valor Unit.: 7.500,00 Valor Total: 90.000,00
+//    Marca: locação Modelo: locação
+//    O CNPJ vem da tabela de classificação, casado pela oferta final.
+//
+// Ao contrário da AZ, aqui o rótulo vem ANTES do valor — ordem normal. "Marca: Modelo:" com nada entre os
+// dois é marca VAZIA, e vazio é resposta sobre a compra, não falha de leitura.
+//
+// ═══ ARMADILHAS ═══
+// 1. "Total Item: 22.699.680,00" também casa /Item:\s*\d/i — o mesmo marcador fantasma da AZ, que partia o
+//    registro ao meio. A trava é a mesma: não pode vir depois de "total", e o número não pode ser monetário.
+// 2. O "s" minúsculo vira espaço nesses PDFs ("De crição" = Descrição, "Proce o" = Processo). Os campos que
 //    interessam (Marca, Modelo, Valor Unit., Lance, Quantidade, Unidade) não têm s minúsculo e escapam —
-//    mas o rótulo Descrição não, e por isso não serve de delimitador.
-// 2. "Total Item: 1.745.000,00" TAMBÉM casa /Item:\s*\d/i — o mesmo marcador fantasma que partia os
-//    registros da AZ ao meio. A trava é a mesma: não pode vir depois de "total", e o número que segue não
-//    pode ser um valor monetário.
+//    mas Descrição não serve de delimitador por causa disso.
 
 const semAcento = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "");
 const VAZIO = /^(n\/?c|n\.?c\.?|nao|nao informad[oa]|nao se aplica|n\/?a|s\/m|sem marca|prop|propri[ao]s?|marca propria|serv|servicos?|produtos?|generic[ao]s?|divers[ao]s?|obra s?|engenharia|locacao|mao de obra|deserto|fracassado|-{1,3}|\.*|)$/i;
 const soDigitos = (s) => String(s || "").replace(/\D/g, "");
 const limpa = (s) => String(s || "").replace(/\s+/g, " ").trim();
+
 // ═══ O CAMPO COMPOSTO POR BARRA SE AVALIA PARTE A PARTE ═══
 // "NÃO SE APLICA/SERVIÇOS" passava por marca porque a regra ancorada em ^...$ não reconhece o todo, embora
-// reconheça cada metade. O documento aí não declarou marca nenhuma — declarou duas vezes que não há.
-// Só é marca se ALGUMA parte for marca.
-const ehVazio = (s) => {
-  const partes = limpa(semAcento(s)).split(/\s*[\/|]\s*/);
-  return partes.every((p) => VAZIO.test(p));
-};
+// reconheça cada metade. Ali o documento não declarou marca — declarou duas vezes que não há.
+const ehVazio = (s) => limpa(semAcento(s)).split(/\s*[\/|]\s*/).every((p) => VAZIO.test(p));
 
 const RE_DINHEIRO = /\d{1,3}(?:\.\d{3})*,\d{4}|\d{1,3}(?:\.\d{3})*,\d{2}(?!\d)/g;
 const valorDe = (s) => { const v = Number(String(s).replace(/\./g, "").replace(",", ".")); return Number.isFinite(v) ? v : null; };
@@ -50,24 +53,17 @@ const dinheiros = (s) => { const o = []; for (const m of String(s || "").matchAl
 const RE_ITEM = /(?<!total\s)\bItem:\s*(\d{1,7})(?![\d.,]*[.,]\d)/gi;
 const RE_CNPJ = /\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g;
 
-/** os documentos que este leitor aceita — pelo nome que a plataforma dá ao arquivo */
-export const RE_TITULO_BLL = /^(vencedoresprocesso|atahomologacao|ataadjudicacao|atasessaofinal)/i;
-
-/**
- * A tabela de classificação do topo das atas: "1 DUDA IMÓVEIS LTDA 950 78.519.519/0001-78 7.500,00 7.500,00"
- * Dá o CNPJ do vencedor nas famílias que não o repetem na linha do item.
- */
+/** a tabela de classificação do topo das atas: dá o CNPJ nas formas que não o repetem no item */
 export function achaClassificacao(t) {
   const re = /(\d{1,3})\s+([A-Za-zÀ-ÿ0-9][^\d]{3,70}?)\s+(\d{2,7})\s+(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\s+([\d.]+,\d{2})\s+([\d.]+,\d{2})/g;
   const out = []; let m;
-  while ((m = re.exec(t)) !== null) {
+  while ((m = re.exec(t)) !== null)
     out.push({ pos: Number(m[1]), nome: limpa(m[2]), cnpj: soDigitos(m[4]), inicial: valorDe(m[5]), final: valorDe(m[6]) });
-  }
   return out;
 }
 
 /**
- * @param texto  documento de resultado da BLL
+ * @param texto  documento da plataforma BLL (roteado por gerador_documento.mjs)
  * @param itens  [{numero, cnpj_fornecedor, valor, valor_ref}] do PNCP
  */
 export function leResultadosBll(texto, itens = []) {
@@ -96,28 +92,23 @@ export function leResultadosBll(texto, itens = []) {
     const m = marcos[k];
     const trecho = t.slice(m.index, marcos[k + 1] ? marcos[k + 1].index : Math.min(t.length, m.index + 900));
 
-    // ═══ A MARCA, em ordem normal ═══
-    // "Marca: Obra Modelo:" -> Obra. "Marca: Modelo:" -> vazia, e vazia é resposta.
     const mMarca = trecho.match(/Marca\s*:\s*([\s\S]{0,60}?)\s*(?:Modelo\s*:|Valor\s*Unit|Lance\s*:|Quant|$)/i);
     if (!mMarca) { resumo.linha_nao_lida++; out.push({ status: "linha_nao_lida", motivo: "registro do item sem o rotulo Marca:" }); continue; }
     const marca = limpa(mMarca[1]).slice(0, 40);
     const mModelo = trecho.match(/Modelo\s*:\s*([\s\S]{0,60}?)\s*(?:Valor\s*Unit|Lance\s*:|Quant|Marca\s*:|$)/i);
 
-    // ═══ O CNPJ DO VENCEDOR: na própria linha (VencedoresProcesso) ou na classificação (Atas) ═══
+    // o CNPJ do vencedor: na própria linha (forma A) ou na classificação (forma B)
     RE_CNPJ.lastIndex = 0;
     const noTrecho = trecho.match(RE_CNPJ);
     let cnpj = noTrecho ? soDigitos(noTrecho[0]) : null;
     let origemCnpj = cnpj ? "linha do item" : null;
 
-    // valores do registro: o rotulado primeiro, depois qualquer número, porque o PNCP é quem valida
     const rotulados = [];
     for (const re of [/Valor\s*Unit\.?\s*:\s*([\d.]+,\d{2,4})/i, /Lance\s*:\s*([\d.]+,\d{2,4})/i, /Val\.?\s*Ref\.?\s*:\s*([\d.]+,\d{2,4})/i]) {
       const x = trecho.match(re); if (x) { const v = valorDe(x[1]); if (v != null) rotulados.push(v); }
     }
     const candidatos = [...new Set([...rotulados, ...dinheiros(trecho)])].filter((v) => v > 0);
 
-    // sem CNPJ na linha: a classificação diz quem ganhou. Um só classificado, é ele; vários, casa pela
-    // oferta final, que nessas atas é o mesmo número do valor unitário do item.
     if (!cnpj && classif.length) {
       if (classif.length === 1) { cnpj = classif[0].cnpj; origemCnpj = "classificacao (unico)"; }
       else {
