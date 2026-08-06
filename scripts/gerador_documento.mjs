@@ -125,6 +125,15 @@ const ASSINATURAS = [
     teste: (t) => /M\s?a\s?r\s?c\s?a\s*\/\s*F\s?a\s?b\s?r\s?i\s?c\s?a\s?n\s?t\s?e/i.test(t) && /Valor\s+propo\s?\w*ta|Porte\s+MeEpp/i.test(t),
   },
   {
+    // TERMO DE HOMOLOGACAO MUNICIPAL com coluna de marca POSICIONAL (sem rotulo). Encontrado nos processos
+    // sem rota: dos 949 documentos com "Total do Fornecedor", 593 caiam em "desconhecido" -- 88% tem Marca
+    // como COLUNA e so 2 trazem o rotulo "Marca:". Vem depois de consorcio_quadro (que exige Marca/Modelo)
+    // e antes de erp_termo, que casaria pelo titulo sem saber ler a coluna.
+    gerador: "termo_municipal",
+    leitor: "parser_termo_municipal",
+    teste: (t) => /Unidade\s+Marca\s+(?:Qtde|Quant)/i.test(t) || /Marca\s+Qtde/i.test(t),
+  },
+  {
     gerador: "contrato_arp",
     leitor: "parser_contrato_arp",
     // exige o QUADRO: 122 dos 174 contratos com a palavra "marca" a trazem so em clausula de obrigacao
