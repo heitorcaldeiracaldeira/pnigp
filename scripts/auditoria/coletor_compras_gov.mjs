@@ -102,7 +102,13 @@ async function main(){
     for(const [path] of ENDPOINTS){
       let pag=1;
       while(true){
-        const j = await api(path,{codigoItemCatalogo:cat, estado:EST, pagina:pag, tamanhoPagina:500});
+        // ⚠️ CONTRATO DA API MUDOU (conferido ao vivo em 06/ago/2026, a versao de julho devolvia 404):
+        //   antes: ?codigoItemCatalogo=<CATMAT>
+        //   agora: ?tipo=codigoItemCatalogo&codigo=<CATMAT>   (tipo e enum: codigoItemCatalogo|codigoPdm)
+        // e tamanhoPagina passou a ter faixa obrigatoria 10..500 -- fora dela responde 400 com
+        // "Informe um numero de paginacao no intervalo de 10 a 500". O envelope segue sendo {resultado:[...]}.
+        // O campo `marca` continua vindo estruturado, junto de precoUnitario, niFornecedor e codigoUasg.
+        const j = await api(path,{tipo:"codigoItemCatalogo", codigo:cat, estado:EST, pagina:pag, tamanhoPagina:500});
         if(!j) break;
         const list = j.resultado||[]; rows+=list.length;
         for(const it of list){
