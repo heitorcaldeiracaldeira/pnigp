@@ -33,7 +33,18 @@ const semAcento = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, ""
 const VAZIO = /^(n\/?c|n\.?c\.?|nao|nao informad[oa]|nao se aplica|n\/a|s\/m|sem marca|propri[ao]s?|marca propria|servicos?|produtos?|generic[ao]s?|divers[ao]s?|fracassado|deserto|-{1,3}|\.*|)$/i;
 const soDigitos = (s) => String(s || "").replace(/\D/g, "");
 const limpa = (s) => String(s || "").replace(/\s+/g, " ").trim();
-const ehVazio = (s) => VAZIO.test(limpa(semAcento(s)));
+// ⚠️ UNIDADE DE MEDIDA NUNCA E MARCA. Vazamento pego em 06/ago quando a fila gravou "MÊS" como marca de um
+// item de R$ 92.589. Este era o unico leitor sem essa trava -- os outros ja a tinham, e a lição ja tinha
+// custado a base anterior (KG em 185 municipios, UNIDADE em 166). Aqui vale para cada PEDACO do campo: "KV
+// METRO" e duas colunas coladas, nao uma marca de duas palavras.
+const UNIDADE_MEDIDA = /^(un|und|unid|unidade|unidades|pc|pç|pcs|peca|peça|pecas|peças|cx|caixa|caixas|kg|kgs|g|gr|grama|gramas|l|lt|lts|litro|litros|ml|mg|mcg|m|m2|m3|mt|mts|metro|metros|cm|mm|km|par|pares|kit|kits|fardo|fardos|pacote|pacotes|pct|bombona|rolo|rolos|resma|resmas|frasco|frascos|galao|galão|saco|sacos|sc|dz|duzia|dúzia|hr|hrs|h|hora|horas|dia|dias|mes|mês|meses|ano|anos|serv|servico|serviço|ton|tonelada|amp|ampola|comp|comprimido|env|envelope|tubo|lata|latas|balde|bisnaga|barra|jogo|conjunto|cj|vidro|pote|bloco|folha|cento|milheiro|diaria|diária|visita|sessao|sessão)$/i;
+const ehVazio = (s) => {
+  const v = limpa(semAcento(s));
+  if (!v) return true;
+  if (VAZIO.test(v)) return true;
+  const toks = v.split(" ");
+  return toks.every((t) => VAZIO.test(t) || UNIDADE_MEDIDA.test(t));
+};
 
 // número tolerante à quebra de coluna: "115,0 0" e "11.500, 00" são um número só
 const RE_DINHEIRO = /\d{1,3}(?:\.\s?\d{3})*\s?,\s?\d\s?\d(?:\s?\d\s?\d)?/g;
