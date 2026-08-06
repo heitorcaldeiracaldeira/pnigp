@@ -46,21 +46,50 @@ async function main() {
     console.log("↻ PK de propostas_sc migrada p/ (cnpj,ano,seq,numero,fornecedor_key) — identidade pelo CNPJ");
   }
 
-  // ROTEADO PELO GERADOR do documento, não pela plataforma do PNCP. `contratacoes_sc.plataforma` (=usuarioNome) é
-  // quem PUBLICOU (o ERP do município); município com ERP Betha/IPM roda o pregão no Portal de Compras Públicas e o
-  // PDF sai com a assinatura do Portal — este mesmo parser lê esses docs (medido: +3.423 propostas em 60 docs "Betha",
-  // +1.153 em 60 "IPM"). Filtrar por plataforma perdia tudo isso. `gerador` é carimbado na ingestão (indexado).
-  // só as CHAVES (rápido) — o texto (blob grande) é buscado por ata no loop; agregar texto de 1k atas numa query trava.
-  const atas = (await q(`SELECT d.cnpj,d.ano,d.seq,d.cod_ibge FROM arquivo_texto_sc d
-    WHERE d.gerador='portal_compras_publicas' AND d.chars > 200
-      AND d.parser_versao IS DISTINCT FROM ${PARSER_VERSAO}
-    GROUP BY d.cnpj,d.ano,d.seq,d.cod_ibge ${LIMIT ? "LIMIT " + LIMIT : ""}`)).rows;
-  console.log(`${atas.length.toLocaleString()} atas do Portal de Compras Públicas a extrair (determinístico, por gerador)`);
+  // ═══ A FILA É O PORTAL ONDE A DISPUTA CORREU, NÃO O GERADOR DO DOCUMENTO ═══
+  //
+  // Estava selecionando `gerador='portal_compras_publicas'` — quem GEROU o PDF. Não é a mesma pergunta que
+  // "onde a disputa correu", e a diferença foi medida em 05/ago/2026, nos dois sentidos:
+  //   · 3.492 documentos gerados pelo Portal pertenciam a processos que correram em OUTRO portal (661 na AZ,
+  //     628 no e-lic, 397 na BNC, 308 na BLL, 231 no Compras.gov). O parser do PCP era aplicado a eles.
+  //   · 18.800 processos que CORRERAM no Portal de Compras Públicas têm documento de outro gerador (17.351
+  //     como 'outro', 1.323 'portal_vencedores') — e esta etapa nunca olhava para eles. É o maior portal do
+  //     estado, com 30.400 processos sem marca.
+  //
+  // Agora a fila vem de app.processo_portal_real (portal_real), que desde a precedência do link é declarada
+  // pelo PNCP onde o PNCP declara. O GERADOR não some: vira ORDEM, não filtro — o documento que o próprio
+  // Portal gerou tem a maior chance de ser a ata legível, então vai primeiro. Quem não for, o parser tenta e
+  // diz. Filtro decide por antecipação; ordem deixa o dado decidir.
+  //
+  // ESTADO por rota, e não `parser_versao` no documento: o carimbo é um número só, sem dono — não distingue
+  // QUAL parser passou nem se era o certo para aquele portal. A rota carrega a versão (`portal:pcp@v4`), então
+  // subir o parser reabre a fila sozinho, que era a única propriedade boa do carimbo antigo.
+  const ROTA = `portal:pcp@v${PARSER_VERSAO}`;
+  const atas = (await q(`SELECT d.cnpj, d.ano, d.seq, d.cod_ibge,
+      bool_or(d.gerador='portal_compras_publicas') doc_do_portal
+    FROM app.processo_portal_real p
+    JOIN arquivo_texto_sc d ON d.cnpj=p.cnpj AND d.ano=p.ano AND d.seq=p.seq AND d.chars > 200
+   WHERE p.portal_real = 'Portal de Compras Públicas'
+     AND NOT EXISTS (SELECT 1 FROM app.marca_rota_feitas f
+                      WHERE f.cnpj=d.cnpj AND f.ano=d.ano AND f.seq=d.seq AND f.rota='${ROTA}')
+   GROUP BY d.cnpj, d.ano, d.seq, d.cod_ibge
+   ORDER BY doc_do_portal DESC, d.ano DESC, d.seq DESC
+   ${LIMIT ? "LIMIT " + LIMIT : ""}`)).rows;
+  const nDoPortal = atas.filter((a) => a.doc_do_portal).length;
+  console.log(`${atas.length.toLocaleString()} processos que correram no Portal de Compras Públicas a extrair`);
+  console.log(`  destes, ${nDoPortal.toLocaleString()} com documento gerado pelo próprio Portal · ${(atas.length - nDoPortal).toLocaleString()} com documento de outro gerador (a novidade)`);
 
   let comProp = 0, done = 0;
   for (const e of atas) {
     try {
-      const tx = (await q(`SELECT texto FROM arquivo_texto_sc WHERE cnpj=$1 AND ano=$2 AND seq=$3 ORDER BY chars DESC LIMIT 1`, [e.cnpj, e.ano, e.seq])).rows[0];
+      // O DOCUMENTO TEM QUE SER A ATA DO PORTAL, NÃO O MAIOR DO PROCESSO. Estava pegando `ORDER BY chars DESC`
+      // sem olhar gerador — e num pregão o maior documento é quase sempre o EDITAL, do ERP do município.
+      // O parser de ata do Portal recebia edital e devolvia nada: 0 em 300 processos na medição de 05/ago,
+      // com a fila já correta por portal_real. O extrai_az.mjs, ao lado, sempre filtrou o gerador aqui — e é
+      // por isso que rende 21,8% enquanto este rendia ~0. Preferir a ata do Portal; sem ela, o maior serve de
+      // tentativa (o processo correu lá, a ata pode ter sido anexada por outro caminho).
+      const tx = (await q(`SELECT texto FROM arquivo_texto_sc WHERE cnpj=$1 AND ano=$2 AND seq=$3 AND chars > 200
+        ORDER BY (gerador='portal_compras_publicas') DESC, chars DESC LIMIT 1`, [e.cnpj, e.ano, e.seq])).rows[0];
       e.texto = tx?.texto || "";
       const recs = parseAtaEcustomize(e.texto).filter((r) => r.codigo && (r.fornecedor || r.cnpj));
       // dedup por (codigo,cnpj) — mantém o de menor valor (proposta final)
@@ -130,15 +159,29 @@ async function main() {
           [e.cnpj, e.ano, e.seq, e.cod_ibge, nForn, L.num.length, M.num.length, P.num.length]);
         comProp++;
       }
-      // estado NO DOCUMENTO (+versão): parser mudou → reprocessa sozinho, sem limpar marcador na mão. parser_versao.mjs
+      // estado NO DOCUMENTO: continua carimbando, porque `lido_em`/`n_registros` são informação do documento e
+      // servem a outros usos. Mas quem governa a FILA agora é a rota, logo abaixo.
       await q(`UPDATE arquivo_texto_sc SET parser_versao=${PARSER_VERSAO}, n_registros=$4, lido_em=now()
         WHERE cnpj=$1 AND ano=$2 AND seq=$3 AND gerador='portal_compras_publicas'`, [e.cnpj, e.ano, e.seq, P.num.length]);
-      await q(`INSERT INTO marca_ata_feitas (cnpj,ano,seq,n_propostas) VALUES ($1,$2,$3,$4) ON CONFLICT (cnpj,ano,seq) DO UPDATE SET n_propostas=EXCLUDED.n_propostas, feito_em=now()`, [e.cnpj, e.ano, e.seq, P.num.length]);
+      // ESTADO POR ROTA — "este portal já foi tentado neste processo, com esta versão de parser, e achou N".
+      // Registra inclusive o zero: sem isso a mesma tentativa infrutífera se repete toda rodada.
+      await q(`INSERT INTO app.marca_rota_feitas (cnpj,ano,seq,rota,achou) VALUES ($1,$2,$3,$4,$5)
+        ON CONFLICT (cnpj,ano,seq,rota) DO UPDATE SET achou=EXCLUDED.achou, feito_em=now()`,
+        [e.cnpj, e.ano, e.seq, ROTA, P.num.length]);
+      if (P.num.length) e._achou = true;
     } catch (err) { if (process.env.DEBUG) console.log("ERRO ata " + e.ano + "/" + e.seq + ": " + err.message); }
     if (++done % 50 === 0) process.stdout.write(`  ${done}/${atas.length} · ${comProp} c/propostas\r`);
   }
+  // RENDIMENTO POR ESTRATO — é o que separa "parser ruim" de "fila errada": o documento do próprio Portal
+  // deveria render muito mais que o de outro gerador. Se render igual, o filtro antigo nunca fez diferença;
+  // se o de outro gerador render zero, a expansão da fila não vale e o gerador volta a ser filtro.
+  const porEstrato = (v) => { const g = atas.filter((a) => !!a.doc_do_portal === v); return { n: g.length, achou: g.filter((a) => a._achou).length }; };
+  const A = porEstrato(true), B = porEstrato(false);
+  console.log(`\n── rendimento desta rodada, por origem do documento ──`);
+  console.log(`   documento do próprio Portal .... ${A.achou}/${A.n}${A.n ? ` (${(100 * A.achou / A.n).toFixed(1)}%)` : ""}`);
+  console.log(`   documento de outro gerador ..... ${B.achou}/${B.n}${B.n ? ` (${(100 * B.achou / B.n).toFixed(1)}%)` : ""}`);
   const s = (await q(`SELECT count(*) prop, count(DISTINCT cnpj_fornecedor) forn, count(DISTINCT lower(marca)) marcas FROM propostas_sc WHERE fonte='ecustomize-ata'`)).rows[0];
-  console.log(`\n✔ ECustomize: ${Number(s.prop).toLocaleString()} propostas · ${Number(s.forn).toLocaleString()} fornecedores · ${Number(s.marcas).toLocaleString()} marcas`);
+  console.log(`acumulado na base (não é desta rodada): ${Number(s.prop).toLocaleString()} propostas · ${Number(s.forn).toLocaleString()} fornecedores · ${Number(s.marcas).toLocaleString()} marcas`);
   await db.end();
 }
 main().catch((e) => { console.error("ERRO:", e.message); process.exit(1); });
