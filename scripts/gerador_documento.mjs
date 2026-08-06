@@ -68,21 +68,31 @@ const ASSINATURAS = [
     teste: (t) => /TIPO:\s*VENCEDORES DA FASE DE DISPUTA/i.test(t) || (/CNPJ\/CPF\s*:/i.test(t) && /Iten[s]?\s+do\s+lote\s*:/i.test(t)),
   },
   {
-    // ═══ BLL E BNC SAO O MESMO GERADOR ═══
-    // Medido: dos 26.638 documentos dos processos cujo portal_real e BNC, 791 casam esta assinatura e sao
-    // lidos por este leitor, rendendo 2.633 marcas. O "PropostasProcesso" de Nova Trento (BNC) e byte a
-    // byte o mesmo layout do de Criciuma (BLL), e os dois carregam anexos em
-    // lanceeletronico.blob.core.windows.net -- e um fornecedor de plataforma so, usado pelos dois portais.
-    // Por isso o rotulo nao e "bll": nomear pelo portal repetiria o erro que este arquivo existe para
-    // corrigir. Nao ha "leitor da BNC" a escrever; ha um gerador servindo dois portais.
-    gerador: "bll_bnc",
+    // ═══ SÃO DOIS GERADORES, E UM LEITOR SÓ ═══
+    // Correção de 06/ago/2026. Eu havia rotulado esta assinatura de "bll_bnc", supondo que a plataforma da
+    // bolsa gerava as duas formas — e o argumento parecia bom: o "PropostasProcesso" de Nova Trento (BNC) é
+    // byte a byte o mesmo do de Criciúma (BLL), e ambos carregam anexos em lanceeletronico.blob.
+    // O cruzamento com a coluna `arquivo_texto_sc.gerador`, classificada em julho, desmente a segunda forma:
+    // "VALORES UNITÁRIOS FINAIS" aparece em 1.854 dos 2.027 documentos marcados como gerador='betha' e em
+    // UM único marcado como 'bll'. A ata de sessão/homologação com quadro de valores finais é do ERP BETHA;
+    // o portal apenas a publica. É a lição de sempre — o ERP gera, o portal relata.
+    // As duas formas compartilham o esqueleto (descritas no leitor como forma A e forma B), então o leitor
+    // continua sendo um só. O que muda é o gerador declarado, que agora é o certo.
+    //   forma A → "VENCEDORES DO PROCESSO" · "Val. Ref." · "LOTE N Num: … Lance:"   = bolsa      (703 docs)
+    //   forma B → "ATA DE …" + "VALORES UNITÁRIOS FINAIS" + tabela de CLASSIFICAÇÃO = Betha    (1.854 docs)
+    // Na prática as duas se excluem: dos documentos dos processos de BLL, BNC e Betha, só 2 trazem ambas.
+    gerador: "bolsa_lance",
     leitor: "parser_bll_resultados",
-    // "VALORES UNITÁRIOS FINAIS" sozinho basta: é o quadro que a BLL imprime no fecho, e aparece também
-    // no documento de CLASSIFICAÇÃO, que não tem "ATA DE" nem "Gerado em:" e por isso escapava do
-    // roteador — era um documento de resultado de verdade caindo em "desconhecido".
     teste: (t) => /VENCEDORES DO PROCESSO/i.test(t)
-      || /VALORES UNIT[ÁA]RIOS FINAIS/i.test(t)
       || (/Gerado em:\s*\d{2}\/\d{2}\/\d{4}/i.test(t) && /Val\.?\s*Ref\.?\s*:/i.test(t) && /Valor\s*Unit\.?\s*:/i.test(t)),
+  },
+  {
+    // "VALORES UNITÁRIOS FINAIS" sozinho basta, e aparece também no documento de CLASSIFICAÇÃO, que não tem
+    // "ATA DE" nem "Gerado em:" e por isso escapava do roteador — era resultado de verdade caindo em
+    // "desconhecido". Mesmo leitor da forma A.
+    gerador: "betha_ata",
+    leitor: "parser_bll_resultados",
+    teste: (t) => /VALORES UNIT[ÁA]RIOS FINAIS/i.test(t),
   },
   {
     // O rodape "Licitar Digital :: <ente> Pagina N de M" e a assinatura mais forte: e o proprio sistema
@@ -91,6 +101,16 @@ const ASSINATURAS = [
     leitor: "parser_licitar_digital",
     teste: (t) => /Licitar Digital\s*::/i.test(t)
       || (/Descri[çc][ãa]o Comprador/i.test(t) && /Marca:\s*[\s\S]{0,60}?Fabricante:/i.test(t)),
+  },
+  {
+    // QUADRO CONSOLIDADO DO CONSORCIO (CINCATARINA e municipios com ERP IPM).
+    // Medido em 80 documentos: 100% citam CINCATARINA/consorcio, so 1% cita IPM Sistemas -- por isso o nome
+    // nao e "ipm". E 73 dos 80 estao em processos do Portal de Compras Publicas: o consorcio gera o
+    // documento, o portal so o publica. Vem ANTES de erp_termo porque 53% desses documentos se chamam
+    // "Termo de Homologacao" e seriam capturados pela assinatura generica de termo.
+    gerador: "consorcio_quadro",
+    leitor: "parser_ipm",
+    teste: (t) => /Total do Fornecedor/i.test(t) && /M\s?a\s?r\s?c\s?a\s*\/\s*M\s?o\s?d\s?e\s?l\s?o/i.test(t),
   },
   {
     gerador: "erp_termo",

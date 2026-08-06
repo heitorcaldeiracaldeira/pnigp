@@ -224,3 +224,67 @@ export function parseAtaIpm(texto) {
 }
 
 export default parseAtaIpm;
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════
+// CAMADA DE RESULTADO — dirigida pelo ITEM, ancorada em VALOR + QUANTIDADE.
+//
+// Medido em 06/ago/2026 sobre 80 documentos desta gramática: 52 renderam linha, 2.778 linhas, 2.740 com
+// marca, 806 marcas distintas (JOIARTE, CIMENTEC, TRACTON, TP-LINK, DALEBOL, IMPLA, IVECO). É o maior
+// rendimento por documento de todos os geradores lidos até aqui.
+//
+// ⚠️ NÃO HÁ CNPJ NESTA GRAMÁTICA. Nos 80 documentos, `cnpjFornecedor` veio nulo em 100% das linhas — o
+// quadro consolidado agrupa por nome de fornecedor, sem o documento. Logo a trava dupla CNPJ+valor, que
+// sustenta os outros leitores, aqui não existe. A segunda grandeza disponível é a QUANTIDADE, que vem do
+// mesmo espelho e é independente do valor: quando as duas batem, a linha está provada.
+//
+// ⚠️ E NÃO É "IPM". Dos 80, 100% citam CINCATARINA/consórcio e apenas 1% cita IPM Sistemas. O formato é o
+// do quadro consolidado do consórcio — que municípios com ERP IPM também emitem. Por isso o gerador se
+// chama `consorcio_quadro` no roteador: nomear pelo ERP seria o mesmo erro de nomear pelo portal.
+const pertoIpm = (a, b, tol = 0.005) => a != null && b != null && Number(b) !== 0
+  && (Math.abs(a - Number(b)) <= 0.02 || Math.abs(a - Number(b)) / Math.abs(Number(b)) <= tol);
+
+/**
+ * @param texto  quadro consolidado (termo de homologação/adjudicação do consórcio)
+ * @param itens  [{numero, quantidade, valor, valor_ref}] do PNCP
+ */
+export function leResultadosIpm(texto, itens = []) {
+  const resumo = { marca: 0, sem_marca_declarada: 0, candidato: 0, linha_nao_lida: 0 };
+  const regs = parseAtaIpm(texto) || [];
+  if (!regs.length) return { achou: false, motivo: "sem linha de item com marca", itens: [], resumo };
+
+  const usadas = new Set();
+  const out = [];
+  for (const i of itens) {
+    const livres = regs.filter((r) => !usadas.has(r));
+    let linha = null, ancora = "nenhuma", valorUsado = null;
+    for (const [campo, nome] of [["valor", "valor"], ["valor_ref", "valor_ref"]]) {
+      if (linha) break;
+      const casam = livres.filter((r) => pertoIpm(r.valorUnitario, i[campo]));
+      if (!casam.length) continue;
+      // a quantidade desempata quando vários itens do processo saíram pelo mesmo preço — é o caso comum
+      // em ata de registro, onde dezenas de itens do mesmo fornecedor têm valores repetidos
+      const porQtd = i.quantidade != null ? casam.filter((r) => pertoIpm(r.quantidade, i.quantidade, 0.01)) : [];
+      if (porQtd.length === 1) { linha = porQtd[0]; ancora = `${nome}+quantidade`; }
+      else if (casam.length === 1) { linha = casam[0]; ancora = nome; }
+      else { linha = (porQtd[0] || casam[0]); ancora = `${nome}+ordem`; }
+      valorUsado = linha.valorUnitario;
+    }
+    if (!linha) {
+      resumo.linha_nao_lida++;
+      out.push({ item_pncp: Number(i.numero), status: "linha_nao_lida", motivo: "valor do item nao aparece no quadro" });
+      continue;
+    }
+    usadas.add(linha);
+
+    const base = {
+      item_pncp: Number(i.numero), fornecedor: linha.fornecedor || null, cnpj: null, ancora,
+      valor_ata: valorUsado, quantidade_lida: linha.quantidade, modelo: linha.modelo || null,
+    };
+    // parseAtaIpm já devolve marca null quando o campo veio vazio (normalizaMarca): vazio é resposta
+    if (!linha.marca) { resumo.sem_marca_declarada++; out.push({ ...base, marca: null, status: "sem_marca_declarada" }); continue; }
+    // sem CNPJ, só o par valor+quantidade sustenta afirmação; valor sozinho ou ordem saem como candidato
+    const st = ancora.includes("quantidade") ? "marca" : "candidato";
+    resumo[st]++;
+    out.push({ ...base, marca: linha.marca, status: st });
+  }
+  return { achou: true, linhas: regs.length, itens: out, resumo };
+}
