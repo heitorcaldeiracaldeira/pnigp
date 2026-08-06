@@ -9,7 +9,10 @@
 // ---- PADRÕES DE MARCA (portal-agnósticos; rodam sobre o texto do doc de resultado, seja qual for o portal) ----
 const NOISE=/^(servi|material|pe[çc]a|diversos?|v[aá]rios?|nacional|importad|pr[oó]pri|sem marca|marca pr|conforme|generic|n\/?c|n\/?a|na|-+|\.+|x+)$/i;
 // além do NOISE: descartar "não informado/informar", "fabricante" solto, e echo de objeto (engenharia/obra/serviço)
-const NAO_MARCA=/n[aã]o\s+inform|fabricante\s*n[aã]o|^fabricante\b|engenharia|constru|^obra|servi[çc]o/i;
+// ⚠️ "conforme ..." nunca é marca: é remissão ao edital/TR/anexo. O NOISE acima já tinha "conforme", mas
+// ancorado em ^...$ — casava "CONFORME" sozinho e deixava passar "CONFORME TR", que foi o que o coletor do
+// Compras.gov gravou como marca em 06/ago/2026. Aqui a âncora é só no início, então pega a frase inteira.
+const NAO_MARCA=/n[aã]o\s+inform|fabricante\s*n[aã]o|^fabricante\b|^conforme\b|engenharia|constru|^obra|servi[çc]o/i;
 export function limpaMarca(s){
   if(!s) return null;
   s=s.replace(/\s+/g," ").trim().replace(/[.,;:\-–]+$/,"").trim();
