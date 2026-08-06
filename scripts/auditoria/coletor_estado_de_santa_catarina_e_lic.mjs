@@ -123,6 +123,17 @@ function mapaCnpj(txt) {
   }
   return map;
 }
+// ═══ A CÉLULA DA MARCA VEM COM O PRÓPRIO RÓTULO DENTRO, E COM CÓDIGOS COLADOS ═══
+// Medido em 06/ago/2026 num pregão do CBM: a coluna traz
+//   "MARCA:HP BIO/REF:SLRM/RMS:10 166360025"  e  "MARCA:HP BIO/REF:ADM ADB//RMS:10166360 029"
+// O licitante digita o rótulo junto do valor, e emenda referência e registro na ANVISA. A marca é HP BIO —
+// o resto é código de produto, que varia por item e faria a MESMA marca virar dezenas de marcas distintas
+// na base. Corta-se no primeiro separador de código.
+const depoisDoRotulo = (s) => String(s || "")
+  .replace(/^\s*MARCA\s*[:\-]?\s*/i, "")
+  .split(/\s*\/\s*(?:REF|RMS|REG|COD|MOD|ANVISA)\b|\s*\b(?:REF|RMS|REG|ANVISA)\s*[:.]/i)[0]
+  .trim();
+
 function parseAta(txt) {
   const out = [];                          // {valor, marca, cnpj}
   const cnpjMap = mapaCnpj(txt);
@@ -150,7 +161,7 @@ function parseAta(txt) {
     for (const r of rows) {
       const belongs = (wname && norm(r.lic).includes(wname.slice(0, 14))) || (wname && norm(r.lic).length && wname.includes(norm(r.lic).slice(0, 14))) || r.val === winnerVal;
       if (!belongs) continue;
-      const mk = limpaMarca(r.marcaRaw);
+      const mk = limpaMarca(depoisDoRotulo(r.marcaRaw));
       if (mk) { marca = mk; break; }
     }
     if (marca) out.push({ valor: winnerVal, marca, cnpj: winnerCnpj });
@@ -172,8 +183,17 @@ async function main() {
     where p.portal_real=$1 ${anoFiltro} ${modFiltro}
       and exists(select 1 from itens_${UF} i where i.cnpj=p.cnpj and i.ano=p.ano and i.seq=p.seq and i.unit_homologado is not null)
       and not exists(select 1 from ${CONF} m where m.cnpj=p.cnpj and m.ano=p.ano and m.seq=p.seq and m.portal=$1)
-      and not exists(select 1 from ${FEITAS} f where f.cnpj=p.cnpj and f.ano=p.ano and f.seq=p.seq)
-    order by c.ano desc, c.seq ${lim}`, [PORTAL])).rows;
+      -- ═══ SÓ APOSENTA O QUE JÁ ESTÁ RESPONDIDO ═══
+      -- 'sem_ata' e 'sem_bridge' NÃO são respostas definitivas: a ata pode ser publicada depois da sessão,
+      -- e a ponte pode falhar por o edital ainda não ter entrado no portal. Retirando esses do acervo para
+      -- sempre, um processo consultado cedo demais nunca mais seria visitado — e o dado existiria no portal
+      -- sem nunca chegar aqui. Medido: dos 12 primeiros pregões de 2024, 3 sem ponte e 1 sem ata.
+      -- 'ok', 'sem_marca' e 'sem_ancora' são fatos sobre o documento lido: esses sim ficam aposentados.
+      and not exists(select 1 from ${FEITAS} f where f.cnpj=p.cnpj and f.ano=p.ano and f.seq=p.seq
+                       and f.status in ('ok','sem_marca','sem_ancora'))
+    -- o cnpj entra no ORDER BY porque seq NÃO é único entre órgãos: sem ele o desempate é arbitrário e duas
+    -- rodadas com o mesmo filtro trazem conjuntos diferentes, o que torna qualquer medição irreproduzível
+    order by c.ano desc, c.seq, p.cnpj ${lim}`, [PORTAL])).rows;
   if (!procs.length) { console.log(`acervo ${PORTAL} fechado — nada a coletar`); await db.end(); return; }
   console.log(`${PORTAL} a coletar: ${procs.length} · host ${HOST} · DRY=${DRY ? 1 : 0}`);
 
