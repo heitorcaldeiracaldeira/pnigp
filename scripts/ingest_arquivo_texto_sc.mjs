@@ -3,7 +3,8 @@
 // lances etc. rodam sobre o TEXTO GUARDADO, sem re-bater no PNCP. RESUMÍVEL (grava = feito), robusto a 429, idempotente.
 // DOCFILTRO define quais documentos baixar (default: atas de sessão — a fonte da marca). node scripts/ingest_arquivo_texto_sc.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
-import { extractText, getDocumentProxy } from "unpdf";
+import { getDocumentProxy } from "unpdf";
+import { extraiComLayout } from "./pdf_layout.mjs";
 import { whereUniversoDoc, ordemFilaDoc, detectaGerador } from "./mapa_atas_plataformas.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
@@ -25,8 +26,14 @@ const PDF_TIMEOUT = Number(process.env.PDF_TIMEOUT || 30000);
 // em 7.340/35.141 por horas). Tira tambem lone surrogates, que o driver serializa como UTF-8 invalido.
 const limpaTexto = (s) => String(s).replace(/\u0000/g, "").replace(/[\uD800-\uDFFF]/g, "");
 
+// ⚠️ EXTRAI COM GEOMETRIA. Até 06/ago/2026 esta função usava extractText(...,{mergePages:true}), que devolve
+// o FLUXO de texto sem posição — e o resultado ficava guardado como UMA ÚNICA LINHA (medido: 98 de 100
+// editais; um deles com 54.441 caracteres numa linha só). Sem linha e sem coluna não há fronteira de célula,
+// e todo leitor a jusante vira recorte por proximidade: foi a origem das 117.364 descrições começando com
+// número e das 34.517 com dotação orçamentária no lugar da especificação.
+// pdf_layout.mjs agrupa por Y (linha) e separa por vão de X (célula). Documento novo já entra legível.
 async function extraiPdf(buf) {   // extração cronometrada — PDF escaneado/malformado não pode pendurar o worker
-  return await comLimite((async () => ((await extractText(await getDocumentProxy(buf), { mergePages: true })).text || ""))(), PDF_TIMEOUT, "pdf-timeout");
+  return await comLimite((async () => await extraiComLayout(await getDocumentProxy(buf), { maxChars: MAXCHARS }))(), PDF_TIMEOUT, "pdf-timeout");
 }
 async function baixaTexto(uri) {
   for (let t = 0; t < 6; t++) {
