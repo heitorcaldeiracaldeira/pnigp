@@ -54,8 +54,33 @@ const perto = (a, b) => a != null && b != null && Number(b) !== 0 && (Math.abs(a
 // rótulos tolerantes à quebra de coluna: "MARC A:", "FABRICA NTE:" e "M ARCA :" contam
 const RE_MARCA = /M\s?A\s?R\s?C\s?A\s?S?\s*[:\/]/gi;
 const RE_FABRIC = /F\s?A\s?B\s?R\s?I\s?C\s?A\s?N\s?T\s?E\s*[:\/]/i;
-// o que ENCERRA o valor de um campo: o rótulo seguinte, o R$, um número, ou fim da janela
-const RE_FIM_CAMPO = /\s*(?:M\s?O\s?D\s?E\s?L\s?O|F\s?A\s?B\s?R\s?I\s?C\s?A\s?N\s?T\s?E|M\s?A\s?R\s?C\s?A|VERS[ÃA]O|R\$|\d)/i;
+// ═══ O RODAPÉ DO BLOCO TAMBÉM ENCERRA O CAMPO ═══
+// Faltava aqui, e era o defeito: em "Marca: Nortene Total do Participante: 395.820,00" o único fim que a
+// lista reconhecia era o `\d` do valor — então o rótulo de rodapé inteiro entrava na marca. Medido em
+// 07/ago: 158 linhas gravadas assim, e "TOTAL DO PARTICIPANTE" chegou a marca de ALTA confiança em 20
+// órgãos no dicionário. São dois rótulos, conforme o gerador: "Total do Participante" (termo do ERP) e
+// "Total do Fornecedor" (quadro do consórcio — já usado como assinatura em gerador_documento.mjs).
+// Cortar aqui recupera a marca real que vinha ANTES do rótulo; não é só descartar lixo.
+// ⚠️ exige o espaço + palavra-chave: "TotalValor Unitário", que aparece colado em cabeçalho, NÃO casa.
+const RE_RODAPE_BLOCO = /T\s?O\s?T\s?A\s?L\s+(?:D\s?[OA]\s+)?(?:P\s?A\s?R\s?T\s?I\s?C\s?I\s?P\s?A\s?N\s?T\s?E|F\s?O\s?R\s?N\s?E\s?C\s?E\s?D\s?O\s?R|G\s?E\s?R\s?A\s?L|L\s?O\s?T\s?E|I\s?T\s?E\s?M)/i;
+
+// ═══ A MESMA FRONTEIRA FALHAVA EM MAIS DOIS PONTOS, E SÓ A MEDIÇÃO EM ESCALA MOSTROU ═══
+// Rodando o leitor sobre 400 termos e olhando a CAUDA das marcas longas (11% passavam de 22 caracteres),
+// os rótulos vazados apareceram por frequência, em vez de um a um:
+//  · "Sistema: Compras - Usuário: <nome>" — o carimbo de rodapé de página do ERP, que cai no meio da tabela;
+//  · "Item Especificação Qtd. Unidade Valor" — o CABEÇALHO da tabela seguinte, quando ela reabre na página.
+// Ambos são estrutura do documento, e por isso são deste leitor.
+// ⚠️ O QUE FICOU DE FORA DE PROPÓSITO: a cauda também traz "PROCESSADOR: INTEL / CORE", "AMD / RYZEN".
+// Isso é CONTEÚDO do que o órgão declarou como marca, não rótulo do documento — cortar exigiria julgar
+// semântica dentro do parser. Marca longa demais é problema do dicionário, que já separa por diversidade
+// de órgãos. Fronteira estrutural aqui; semântica lá.
+const RE_RODAPE_PAGINA = /S\s?i\s?s\s?t\s?e\s?m\s?a\s*:\s*C\s?o\s?m\s?p\s?r\s?a\s?s|U\s?s\s?u\s?[áa]\s?r\s?i\s?o\s*:/i;
+const RE_CABECALHO_TAB = /I\s?t\s?e\s?m\s+E\s?s\s?p\s?e\s?c\s?i\s?f\s?i\s?c\s?a[çc][ãa]o|E\s?s\s?p\s?e\s?c\s?i\s?f\s?i\s?c\s?a[çc][ãa]o\s+Q\s?t\s?d/i;
+// o que ENCERRA o valor de um campo: o rótulo seguinte, o rodapé do bloco ou da página, o cabeçalho que
+// reabre a tabela, o R$, um número, ou fim da janela
+const RE_FIM_CAMPO = new RegExp(
+  `\\s*(?:M\\s?O\\s?D\\s?E\\s?L\\s?O|F\\s?A\\s?B\\s?R\\s?I\\s?C\\s?A\\s?N\\s?T\\s?E|M\\s?A\\s?R\\s?C\\s?A|VERS[ÃA]O` +
+  `|${RE_RODAPE_BLOCO.source}|${RE_RODAPE_PAGINA.source}|${RE_CABECALHO_TAB.source}|R\\$|\\d)`, "i");
 
 // ═══ MARCA E FABRICANTE SÃO CAMPOS DIFERENTES, E O ÓRGÃO ESCOLHE QUAL PREENCHE ═══
 // Medido: nesses termos o campo `Marca:` vem VAZIO e a marca real está em `Fabricante:` —

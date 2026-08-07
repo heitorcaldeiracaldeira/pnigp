@@ -24,6 +24,11 @@ const GENERICO = /^(marca|modelo|serv|servico|material|pe[cç]a|produto|item|uni
 // São DUAS famílias de rodapé, e a segunda só apareceu depois de cortar a primeira: "Total do Participante"
 // (PCP/BLL) e "Total Fornecedor" (SV). Ambas fecham o bloco do licitante — por isso `total ...` genérico.
 const RODAPE = /\s*(total\s+(do\s+)?(participante|fornecedor|lote|item|geral)|total\s+geral|valor\s+total|subtotal)\b[\s:.\-]*$/i;
+// A mesma fronteira falha em mais dois pontos do termo, e ali o rótulo NÃO é o fim da string — ele abre uma
+// cauda que vai até o fim do recorte ("PIATO Item Especificação Qtd. Unidade Va"). Por isso corta-se DAQUI
+// PARA A FRENTE, não só o sufixo. Recupera a marca real presa antes do rótulo (PIATO, TELOS, TECFIL, DTOOLS).
+// O parser_termo_homologacao já fecha o campo nesses pontos; isto aqui limpa o que ficou gravado antes.
+const CAUDA = /\s*(item\s+especifica|especifica\w*\s+qtd|quantidade\s+vl|sistema\s*:\s*compras|usu[áa]rio\s*:)[\s\S]*$/i;
 // critério de julgamento e afins: nunca é marca, mesmo aparecendo no campo.
 const CRITERIO = /^(tecnica\s*e\s*preco|menor\s*preco|maior\s*desconto|melhor\s*tecnica|maior\s*lance|preco\s*global)$/i;
 // rótulo de coluna sozinho e descritor de especificação ("original/genuína conforme edital") não são marca.
@@ -34,8 +39,8 @@ function normMarca(m) {
   if (!m) return { norm: null, suspeita: true, motivo: "vazia" };
   let s = String(m).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
   // corta o rodapé de tabela ANTES de julgar: é ele que faz marca real parecer lixo.
-  const comRodape = RODAPE.test(s);
-  if (comRodape) s = s.replace(RODAPE, "").trim();
+  const comRodape = RODAPE.test(s) || CAUDA.test(s);
+  if (comRodape) s = s.replace(CAUDA, "").replace(RODAPE, "").trim();
   if (!s) return { norm: null, suspeita: true, motivo: "rodape_de_tabela" };
   const low = s.toLowerCase();
   if (DESCRITOR.test(low)) return { norm: null, suspeita: true, motivo: "descritor" };
