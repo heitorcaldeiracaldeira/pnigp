@@ -126,6 +126,38 @@ export const CADEIAS = {
     ],
   },
 
+  // OS COLETORES DE PLATAFORMA vão à internet, e por isso esta cadeia existe: eles NÃO terminam numa corrida.
+  // Medido em 06/ago/2026 ao religá-los: o coletor do PCP tem 19.729 processos na fila e parou sozinho no
+  // nono, com "rate limit persistente" — porque busca o linkSistemaOrigem AO VIVO na API do PNCP, uma chamada
+  // por processo, antes de qualquer download. O desenho deles já assume isso: são idempotentes e retomam de
+  // onde pararam. O que faltava era alguém relançá-los espaçadamente, que é o que esta cadeia faz.
+  //
+  // SEGUE no primeiro erro, de propósito: os quatro são independentes — cada um fala com um host diferente —
+  // e um rate limit no PCP não é razão para o e-lic não rodar. Esconder os três que funcionaram por causa de
+  // um que bateu no teto é justamente o que a regra "aoFalhar: seguir" existe para evitar.
+  //
+  // CONC=1 no PCP e na BLL: os dois furaram o limite com concorrência 3. Aqui devagar não é desperdício —
+  // é a única forma de avançar, porque a alternativa é parar no nono processo de 19.729.
+  coletores: {
+    titulo: "Coletores de plataforma — retomada espaçada (e-lic, PCP, BLL, Compras.gov)",
+    log: "pnigp-coletores.log",
+    trava: { nome: "cadeia_coletores", toleranciaMin: 10 },
+    aoFalhar: "seguir",
+    env: {},
+    passos: [
+      { rotulo: "e-lic (compras.sc)", script: "scripts/auditoria/coletor_estado_de_santa_catarina_e_lic.mjs",
+        env: { LIMIT: "400" }, timeoutMin: 90 },
+      { rotulo: "PCP", script: "scripts/auditoria/coletor_pcp.mjs",
+        env: { LIMIT: "300", CONC: "1" }, timeoutMin: 90 },
+      { rotulo: "BLL", script: "scripts/auditoria/coletor_bll.mjs",
+        env: { LIMIT: "300", CONC: "1" }, timeoutMin: 60 },
+      // NCAT é quantos CATMATs do catálogo se varre por execução; cada um é uma chamada à API. Em 300 a
+      // execução inteira levou minutos e devolveu 318 registros, então 600 cabe folgado numa janela horária.
+      { rotulo: "Compras.gov (banco de precos)", script: "scripts/auditoria/coletor_compras_gov.mjs",
+        env: { NCAT: "600" }, timeoutMin: 60 },
+    ],
+  },
+
   // A RODADA COMPLETA é uma cadeia de cadeias: cada passo chama o runner de novo, no mesmo caminho que o
   // Agendador usa. Não para no primeiro erro porque as cinco são independentes o bastante e, numa rodada de
   // verificação, esconder as quatro que funcionaram por causa de uma que quebrou é pior do que seguir e dizer.
