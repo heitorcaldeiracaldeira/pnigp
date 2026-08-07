@@ -39,6 +39,13 @@ const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }
 const ETAPAS = [
   // 1) EVENTO — quem homologou/des-homologou desde o watermark; reabre o processo e enfileira o doc que falta
   ["auditoria/ao_homologar.mjs",           {},                        "evento: homologou/des-homologou"],
+  // 1b) DRENA a fila que a etapa 1 acabou de encher. Faltava exatamente isto: `ao_homologar` ENFILEIRA o
+  // fetch e estava agendado; `coletor.mjs` é quem ESVAZIA e não era chamado por cadeia, .cmd ou pipeline
+  // nenhum. Produtor agendado, consumidor não — o mesmo gap da marca, um elo antes. Resultado medido em
+  // 07/ago: 13.681 processos parados na fila, o lote mais antigo enfileirado em 21/jul, 17 dias sem ninguém.
+  // Vem ANTES de constroi_doc_tem_marca para que o texto baixado agora já entre na fila de docs desta rodada.
+  // LIMIT com teto: é lote diário, não mutirão. O passivo drena em alguns dias e depois só acompanha o fluxo.
+  ["auditoria/coletor.mjs",                { LIMIT: "3000" },         "drena a fetch_fila (baixa o doc que falta)"],
   // 2) FILA — quais documentos contêm padrão de marca (refresh incremental)
   ["constroi_doc_tem_marca.mjs",           { REFRESH: "1" },          "fila de documentos com marca"],
   // 3) EXTRAÇÃO determinística — cada família lê o seu template. Zero API.
