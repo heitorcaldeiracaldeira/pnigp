@@ -6,7 +6,7 @@ import { spawn } from "child_process"; import path from "path"; import { fileURL
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const N = Number(process.env.NSHARD || 4);
 const CONC = process.env.CONC || "3";
-const TIPOS = process.env.TIPOS || "editais";
+const TIPOS = process.env.TIPOS || "alvo";   // edital/TR primeiro, depois o doc de resultado (tipo 16)
 console.log(`supervisor re-extração: ${N} shards · CONC ${CONC} cada · tipos=${TIPOS}`);
 const filhos = Array.from({ length: N }, (_, i) => {
   const c = spawn(process.execPath, [path.join(__dirname, "reextrai_layout.mjs")], {

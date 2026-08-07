@@ -11,7 +11,8 @@ setlocal
 cd /d C:\Users\PC\pnigp
 set NSHARD=4
 set CONC=3
-set TIPOS=editais
+REM alvo = edital/TR primeiro e, quando acabarem, os documentos de RESULTADO tipo 16, onde mora a marca.
+set TIPOS=alvo
 set JANELA=07:00-02:00
 "%LOCALAPPDATA%\nodejs\node.exe" scripts\run_reextrai_paralelo.mjs
 set RC=%ERRORLEVEL%

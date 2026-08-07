@@ -433,13 +433,46 @@ const CHECK_MS = 60 * 1000;
 const MAX_TENT = 5;
 const killTree = (pid) => { try { execSync(`taskkill /F /T /PID ${pid}`, { stdio: "ignore" }); } catch {} };
 
+// ═══ A JANELA NOTURNA PRECISA DE UM DONO DENTRO DO PROCESSO ═══
+// Na primeira noite (07/ago, 02:00) a ETL rodou 19 fontes, todas ok — e mesmo assim varou até 08:41.
+// Duas causas empilhadas, e nenhuma das duas era "quebrou":
+//  1. O guarda de estagnação NÃO pega fonte LENTA. "Empenhos por contrato" progrediu o tempo todo, por
+//     6h29 seguidas; como o sinal mudava, STALL_MS nunca disparou. Faltava um teto ABSOLUTO por fonte.
+//  2. O único limite de tempo era o `ExecutionTimeLimit` da tarefa do Windows (44 min). Ele mata o `.cmd`,
+//     mas os netos que o node dá spawn ficam ÓRFÃOS e seguem rodando — foi o que invadiu o horário
+//     comercial. Um limite que o Agendador aplica não é limite: a garantia tem de ser deste processo.
+// Por isso os dois relógios abaixo. Ambos matam a ÁRVORE, e nada se perde: as ETLs são idempotentes e
+// resumíveis — a fonte cortada simplesmente volta a ser devida na noite seguinte.
+const TETO_FONTE_MS = Number(process.env.TETO_FONTE_MIN || 90) * 60 * 1000;   // nenhuma fonte segura a janela
+const JANELA_FIM = process.env.JANELA_FIM || "07:00";                          // depois disso não começa nova
+const T0_CICLO = Date.now();
+function dentroDaJanela() {
+  if (process.env.SEM_JANELA === "1") return true;
+  const [h, m] = JANELA_FIM.split(":").map(Number);
+  const agora = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const fim = new Date(agora); fim.setHours(h, m || 0, 0, 0);
+  if (fim <= new Date(T0_CICLO)) fim.setDate(fim.getDate() + 1);   // janela que cruza a meia-noite
+  return agora < fim;
+}
+
 // roda 1 vez sob monitoramento; "ok" | "retry"(estagnado) | "erro(n)"
 function runOnce(f, reinicios) {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [f.script], { cwd: ROOT, env: { ...process.env, ...f.env }, stdio: "ignore" });
     let last = "", lastChange = Date.now(), settled = false, timer = null, avisouCego = false;
+    const t0Fonte = Date.now();
     const fin = (v) => { if (settled) return; settled = true; if (timer) clearInterval(timer); resolve(v); };
     timer = setInterval(async () => {
+      // teto absoluto: vale mesmo com a fonte PROGREDINDO — é o caso que o guarda de estagnação não pega.
+      const rodou = Date.now() - t0Fonte;
+      if (rodou > TETO_FONTE_MS || !dentroDaJanela()) {
+        const porque = rodou > TETO_FONTE_MS
+          ? `passou do teto de ${Math.round(TETO_FONTE_MS / 60000)} min (${Math.round(rodou / 60000)} min)`
+          : `a janela fechou às ${JANELA_FIM}`;
+        log(`!! ${f.id} CORTADO — ${porque}. Volta a ser devida no próximo ciclo.`);
+        killTree(child.pid); fin("teto");
+        return;
+      }
       let p; try { p = await sinal(f.id); } catch { return; }
       if (p.sig !== last) { last = p.sig; lastChange = Date.now(); }
       const idle = Math.round((Date.now() - lastChange) / 1000);
@@ -477,6 +510,13 @@ async function rodar(f) {
                         ultima_falha=NULL, duracao_seg=$1, msg=$2, atualizado_em=now() WHERE id=$3`,
         [seg, `ok em ${seg}s · ${carimboCurtoBR()}`, f.id]).catch(() => {});
       return "ok";
+    }
+    // corte por teto/janela NÃO é falha e NÃO se religa: religar aqui desfaria o próprio teto. Também não
+    // conta para `falhas_seguidas` — a fonte não quebrou, só não coube na noite. Volta devida amanhã.
+    if (ultimo === "teto") {
+      await db.query(`UPDATE etl_catalogo SET ultimo_status='cortado', msg=$1, atualizado_em=now() WHERE id=$2`,
+        [`cortado pelo teto da janela · ${carimboCurtoBR()}`, f.id]).catch(() => {});
+      return "teto";
     }
     await db.query(`UPDATE etl_catalogo SET ultimo_status=$1, msg=$2, atualizado_em=now() WHERE id=$3`,
       [ultimo, `tentativa ${tent}/${MAX_TENT} · ${carimboCurtoBR()}`, f.id]).catch(() => {});
@@ -586,13 +626,18 @@ async function main() {
   // 2) executar devidos, SERIAL por API (grupos diferentes em paralelo)
   const grupos = {};
   for (const p of devidos) (grupos[p.f.api] ??= []).push(p.f);
+  let adiadas = 0;
   await Promise.all(Object.values(grupos).map(async (lista) => {
     for (const f of lista) {
+      // não COMEÇA fonte nova fora da janela — cortar no meio é desperdício que dá para evitar aqui.
+      if (!dentroDaJanela()) { adiadas++; continue; }
       const status = await rodar(f); // rodar() já é supervisionado e grava o estado no catálogo
       await db.query(`UPDATE etl_catalogo SET solicitado=false WHERE id=$1`, [f.id]).catch(() => {}); // limpa pedido manual atendido
       log(`✔ ${f.id}: ${status}`);
     }
   }));
+  // silêncio sobre o que ficou de fora é o que faz "rodou tudo" parecer verdade quando não é.
+  if (adiadas) log(`⏸ ${adiadas} fonte(s) NÃO iniciadas: a janela fechou às ${JANELA_FIM}. Seguem devidas no próximo ciclo.`);
   // 3) validação final + 4) regenerar documentação — só no ciclo completo (run), não no atende-solicitações
   if (MODO === "run") {
     // O código de saída destes sete era DESCARTADO por construção (`c.on("exit", () => res())`). Dois deles

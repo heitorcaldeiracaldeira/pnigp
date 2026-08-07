@@ -38,7 +38,8 @@ const NSHARD = Number(process.env.NSHARD || 1);
 const SHARD = Number(process.env.SHARD || 0);
 const MAXCHARS = Number(process.env.MAXCHARS || 200000);
 const PDF_TIMEOUT = Number(process.env.PDF_TIMEOUT || 45000);
-const TIPOS = (process.env.TIPOS || "editais").toLowerCase();
+// alvo = edital/TR (prioridade 0) + documento de resultado (prioridade 1) · editais | resultado | todos
+const TIPOS = (process.env.TIPOS || "alvo").toLowerCase();
 const LOTE_GRAVA = Number(process.env.LOTE_GRAVA || 20);
 
 // ═══ A JANELA: PARA SOZINHO ÀS 02:00 E VOLTA ÀS 07:00 ═══
@@ -73,8 +74,21 @@ async function baixa(uri) {
 async function main() {
   await db.query(`ALTER TABLE arquivo_texto_${UF} ADD COLUMN IF NOT EXISTS layout_v smallint`);
 
-  const filtroTipo = TIPOS === "todos" ? "" :
-    `and t.tipo_documento in ('Edital','Termo de Referência','Projeto Básico','Estudo Técnico Preliminar','Anexo')`;
+  // ═══ O ALVO INCLUI O DOCUMENTO DE RESULTADO ═══
+  // O alvo original era só edital/TR — que conserta descrição e enriquecimento. Mas a MARCA não mora ali:
+  // o art. 41 veda indicar marca no edital. Ela mora no documento de RESULTADO, que o PNCP classifica como
+  // tipo 16, "Outros Documentos" — 203.893 documentos, medidos em 07/ago como 100% ainda achatados.
+  // Deixá-los de fora significaria refazer a geometria sem que a marca melhorasse um único item.
+  // Entram no mesmo alvo, mas DEPOIS: `prio` faz edital/TR saírem inteiros primeiro, e quando acabarem a
+  // fila desce sozinha para os documentos de resultado — sem precisar de outra decisão nem de outra tarefa.
+  const TIPOS_EDITAL = `'Edital','Termo de Referência','Projeto Básico','Estudo Técnico Preliminar','Anexo'`;
+  const TIPOS_RESULTADO = `'Outros Documentos'`;
+  const filtroTipo =
+    TIPOS === "todos"     ? "" :
+    TIPOS === "editais"   ? `and t.tipo_documento in (${TIPOS_EDITAL})` :
+    TIPOS === "resultado" ? `and t.tipo_documento in (${TIPOS_RESULTADO})` :
+                            `and t.tipo_documento in (${TIPOS_EDITAL},${TIPOS_RESULTADO})`;
+  const prio = `case when t.tipo_documento in (${TIPOS_EDITAL}) then 0 else 1 end`;
   const filtroShard = NSHARD > 1
     ? `and (abs(hashtext(t.cnpj||t.ano::text||t.seq::text||t.sequencial_documento::text)) % ${NSHARD}) = ${SHARD}` : "";
   const lim = LIMIT > 0 ? `limit ${LIMIT}` : "";
@@ -85,7 +99,7 @@ async function main() {
       join arquivos_${UF} a
         on a.cnpj=t.cnpj and a.ano=t.ano and a.seq=t.seq and a.sequencial_documento=t.sequencial_documento
      where t.layout_v is null and a.uri is not null ${filtroTipo} ${filtroShard}
-     order by t.chars desc ${lim}`);
+     order by ${prio}, t.chars desc ${lim}`);
 
   if (!dentroDaJanela()) { console.log(`${carimboBR()} fora da janela ${JANELA} — a madrugada é da ETL. Nada a fazer.`); await db.end(); return; }
   if (!fila.length) { console.log(`${carimboBR()} nada pendente (tipos=${TIPOS}, shard ${SHARD}/${NSHARD})`); await db.end(); return; }
