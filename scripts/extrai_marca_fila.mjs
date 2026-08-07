@@ -57,8 +57,24 @@ const LEITOR = {
 // o melhor estado vence quando dois documentos falam do mesmo item
 const RANK = { marca: 4, sem_marca_declarada: 3, candidato: 2, linha_nao_lida: 1 };
 
+// ═══ QUEDA DE CONEXÃO NÃO É MOTIVO PARA MORRER ═══
+// Medido em 07/ago/2026: a fila caiu com "Connection terminated unexpectedly" no processo 61.150 de 198.346.
+// O Neon fica atrás de um pooler e escala sozinho; a conexão cair no meio de uma varredura de horas é
+// esperado, não excepcional. Morrer ali desperdiça a varredura inteira até o ponto — e como o livro-razão
+// só grava por processo, o que estava em memória se perde.
+async function q(sql, params) {
+  for (let t = 0; t < 5; t++) {
+    try { return await db.query(sql, params); }
+    catch (e) {
+      const transitorio = /Connection terminated|ECONNRESET|timeout|terminating connection|socket hang up/i.test(e.message || "");
+      if (!transitorio || t === 4) throw e;
+      await new Promise((r) => setTimeout(r, 2000 * (t + 1)));
+    }
+  }
+}
+
 async function itensDo(cnpj, ano, seq) {
-  const { rows } = await db.query(`
+  const { rows } = await q(`
     SELECT i.numero, i.unidade, i.quantidade,
            coalesce(r.ni_fornecedor, i.cnpj_fornecedor) cnpj_fornecedor,
            coalesce(r.valor_unitario_homologado, i.unit_homologado, i.valor_total) valor,
@@ -74,7 +90,8 @@ async function main() {
   await db.query(`create table if not exists ${FEITAS}(
     cnpj text, ano int, seq int, status text, geradores text,
     n_marca int default 0, n_vazio int default 0, n_candidato int default 0, n_nao_lido int default 0,
-    atualizado timestamptz default now(), primary key(cnpj,ano,seq))`);
+    n_docs int, atualizado timestamptz default now(), primary key(cnpj,ano,seq))`);
+  await db.query(`alter table ${FEITAS} add column if not exists n_docs int`);
 
   const lim = LIM > 0 ? `limit ${LIM}` : ``;
   const { rows: procs } = await db.query(`
@@ -84,10 +101,18 @@ async function main() {
                    where d.cnpj=p.cnpj and d.ano=p.ano and d.seq=p.seq and d.chars>300)
        and exists(select 1 from itens_${UF} i
                    where i.cnpj=p.cnpj and i.ano=p.ano and i.seq=p.seq)
-       -- 'sem_documento' NAO aposenta: documento chega depois
+       -- ═══ 'sem_documento' APOSENTA, MAS SÓ ENQUANTO O PROCESSO NÃO GANHAR DOCUMENTO NOVO ═══
+       -- Não aposentar de jeito nenhum estava certo em princípio (documento chega depois) e caro na prática:
+       -- medido em 07/ago, uma passada varreu 61.150 processos para achar UMA marca, porque re-visitava os
+       -- 126 mil estéreis antes de alcançar o que faltava. Guardar quantos documentos o processo tinha
+       -- resolve os dois lados: fica aposentado enquanto o número não mudar, e volta sozinho para a fila no
+       -- instante em que um documento novo é ingerido.
        and not exists(select 1 from ${FEITAS} f
                        where f.cnpj=p.cnpj and f.ano=p.ano and f.seq=p.seq
-                         and f.status in ('ok','sem_afirmacao'))
+                         and (f.status in ('ok','sem_afirmacao')
+                              or (f.status='sem_documento' and f.n_docs is not null and f.n_docs =
+                                  (select count(*) from arquivo_texto_${UF} d
+                                    where d.cnpj=p.cnpj and d.ano=p.ano and d.seq=p.seq and d.chars>300))))
      -- ⚠️ NAO ordenar por ano desc: concentra nos processos mais novos, que so tem edital publicado, e uma
      -- fatia de medicao volta quase vazia (medido: 148 de 150 sem documento legivel). Foi o mesmo defeito
      -- achado no coletor do e-lic. md5 da a ordem pseudo-aleatoria REPRODUZIVEL: a fatia e representativa
@@ -103,7 +128,7 @@ async function main() {
 
   for (let i = 0; i < procs.length; i += LOTE) {
     const fatia = procs.slice(i, i + LOTE);
-    const { rows: docs } = await db.query(`
+    const { rows: docs } = await q(`
       select cnpj, ano, seq, titulo, texto from arquivo_texto_${UF}
        where (cnpj,ano,seq) in (${fatia.map((_, j) => `($${j * 3 + 1},$${j * 3 + 2},$${j * 3 + 3})`).join(",")})
          and chars > 300`, fatia.flatMap((p) => [p.cnpj, p.ano, p.seq]));
@@ -151,7 +176,7 @@ async function main() {
       if (status === "sem_documento") semDoc++;
 
       if (!DRY && afirmadas.length) {
-        await db.query(`
+        await q(`
           insert into ${CONF}
             (cnpj,ano,seq,numero,marca,modelo,fornecedor_cnpj,valor,cnpj_ok,valor_ok,portal,fonte_titulo,marca_motivo,atualizado)
           select $1,$2,$3, x.numero, x.marca, x.modelo, x.forn, x.valor, x.cnpjok, x.valorok,
@@ -178,17 +203,17 @@ async function main() {
         gravados += afirmadas.length;
       }
 
-      if (!DRY) await db.query(`
-        insert into ${FEITAS}(cnpj,ano,seq,status,geradores,n_marca,n_vazio,n_candidato,n_nao_lido)
-        values($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      if (!DRY) await q(`
+        insert into ${FEITAS}(cnpj,ano,seq,status,geradores,n_marca,n_vazio,n_candidato,n_nao_lido,n_docs)
+        values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
         on conflict(cnpj,ano,seq) do update set status=excluded.status, geradores=excluded.geradores,
           n_marca=excluded.n_marca, n_vazio=excluded.n_vazio, n_candidato=excluded.n_candidato,
-          n_nao_lido=excluded.n_nao_lido, atualizado=now()`,
+          n_nao_lido=excluded.n_nao_lido, n_docs=excluded.n_docs, atualizado=now()`,
         [p.cnpj, p.ano, p.seq, status, [...gers].join(",") || null,
          linhas.filter((x) => x.status === "marca").length,
          linhas.filter((x) => x.status === "sem_marca_declarada").length,
          linhas.filter((x) => x.status === "candidato").length,
-         linhas.filter((x) => x.status === "linha_nao_lida").length]);
+         linhas.filter((x) => x.status === "linha_nao_lida").length, meus.length]);
 
       if (feitos % 25 === 0 || feitos === procs.length)
         process.stdout.write(`  ${feitos}/${procs.length} · marca ${tot.marca} · vazio ${tot.sem_marca_declarada} · gravadas ${gravados}\r`);
