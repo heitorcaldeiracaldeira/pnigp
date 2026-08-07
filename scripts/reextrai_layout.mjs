@@ -41,6 +41,20 @@ const PDF_TIMEOUT = Number(process.env.PDF_TIMEOUT || 45000);
 const TIPOS = (process.env.TIPOS || "editais").toLowerCase();
 const LOTE_GRAVA = Number(process.env.LOTE_GRAVA || 20);
 
+// ═══ A JANELA: PARA SOZINHO ÀS 02:00 E VOLTA ÀS 07:00 ═══
+// Ordem do Heitor. A madrugada é da ETL das fontes de pesquisa, que também sai para a internet e escreve no
+// mesmo banco — e esta re-extração são 256.850 downloads. A checagem fica DENTRO do laço, não só na partida:
+// uma corrida que começou às 23h tem de parar às 02:00, não seguir a noite toda porque já havia começado.
+// Parar aqui não custa nada: `layout_v` torna tudo retomável, e sair é literalmente pausar.
+const JANELA = process.env.JANELA || "07:00-02:00";
+const [JIni, JFim] = JANELA.split("-").map((h) => { const [a, b] = h.split(":").map(Number); return a * 60 + (b || 0); });
+function dentroDaJanela() {
+  if (process.env.SEM_JANELA === "1") return true;
+  const agora = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const m = agora.getHours() * 60 + agora.getMinutes();
+  return JIni <= JFim ? (m >= JIni && m < JFim) : (m >= JIni || m < JFim);   // janela que cruza a meia-noite
+}
+
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const comLimite = (p, ms, r) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error(r)), ms))]);
 
@@ -73,10 +87,11 @@ async function main() {
      where t.layout_v is null and a.uri is not null ${filtroTipo} ${filtroShard}
      order by t.chars desc ${lim}`);
 
+  if (!dentroDaJanela()) { console.log(`${carimboBR()} fora da janela ${JANELA} — a madrugada é da ETL. Nada a fazer.`); await db.end(); return; }
   if (!fila.length) { console.log(`${carimboBR()} nada pendente (tipos=${TIPOS}, shard ${SHARD}/${NSHARD})`); await db.end(); return; }
   console.log(`${carimboBR()} re-extração com geometria · ${fila.length} documentos · shard ${SHARD}/${NSHARD} · DRY=${DRY ? 1 : 0}`);
 
-  let feitos = 0, ok = 0, falhou = 0, semLinha = 0;
+  let feitos = 0, ok = 0, falhou = 0, semLinha = 0, pausou = false;
   let ganhoLinhas = 0, ganhoCelulas = 0;
   let buffer = [];
 
@@ -100,6 +115,7 @@ async function main() {
   const fatias = Array.from({ length: CONC }, (_, i) => fila.filter((_, j) => j % CONC === i));
   await Promise.all(fatias.map(async (minha) => {
     for (const d of minha) {
+      if (!dentroDaJanela()) { pausou = true; break; }   // 02:00: pausa, não abandona — retoma às 07:00
       try {
         const buf = await baixa(d.uri);
         if (!buf || buf[0] !== 0x25) { falhou++; await marcaFalha(d, 9); continue; }   // 9 = nao e PDF
