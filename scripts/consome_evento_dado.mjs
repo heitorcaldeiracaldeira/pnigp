@@ -64,11 +64,34 @@ if (!trava.ok) {
 await q(`ALTER TABLE pncp_evento ADD COLUMN IF NOT EXISTS alvo_download bool`);
 await q(`ALTER TABLE arquivo_texto_sc ADD COLUMN IF NOT EXISTS excluido_em timestamptz`);
 
-const fila = (await q(`SELECT ctid, * FROM pncp_evento WHERE consumido_dado IS NULL
+// ═══ DEAD-LETTER: O EVENTO QUE SEMPRE FALHA NÃO PODE FICAR NA FILA PARA SEMPRE ═══
+// Até aqui, falha era `continue` sem marcar nada: o evento voltava no lote seguinte, e no seguinte, sem
+// limite e sem contador. Um punhado de eventos insistentes come vaga de lote todo dia e nunca sai.
+// Agora cada falha incrementa `tentativas`; ao chegar em MAX_TENT o evento ESTACIONA e sai da fila.
+// Estacionar NÃO é apagar e NÃO é "consumir": fica em `estacionado_em` com o `ultimo_erro` que o matou,
+// e o rodapé desta rodada diz quantos estão parados ali. A lição do vigia de 06/ago vale aqui: sumir em
+// silêncio é pior que falhar alto. Para reprocessar, basta zerar estacionado_em.
+await q(`ALTER TABLE pncp_evento ADD COLUMN IF NOT EXISTS tentativas int NOT NULL DEFAULT 0`);
+await q(`ALTER TABLE pncp_evento ADD COLUMN IF NOT EXISTS ultimo_erro text`);
+await q(`ALTER TABLE pncp_evento ADD COLUMN IF NOT EXISTS estacionado_em timestamptz`);
+const MAX_TENT = Number(process.env.MAX_TENT || 5);
+
+const fila = (await q(`SELECT ctid, * FROM pncp_evento WHERE consumido_dado IS NULL AND estacionado_em IS NULL
   ORDER BY ocorrido_em LIMIT ${LOTE}`)).rows;
 console.log(`fila: ${fila.length} eventos a consumir${DRY ? " · DRY-RUN" : ""}\n`);
-const feito = { res: 0, item: 0, contr: 0, doc: 0, excl: 0, erro: 0 };
+const feito = { res: 0, item: 0, contr: 0, doc: 0, excl: 0, erro: 0, estacionados: 0 };
 let i = 0;
+
+// conta a falha e estaciona quem esgotou as tentativas. Devolve nada: quem chama segue para o próximo.
+async function falhou(e, motivo) {
+  feito.erro++;
+  if (DRY) return;
+  const n = (e.tentativas || 0) + 1;
+  const parar = n >= MAX_TENT;
+  if (parar) feito.estacionados++;
+  await q(`UPDATE pncp_evento SET tentativas=$1, ultimo_erro=$2, estacionado_em=$3 WHERE ctid=$4`,
+    [n, String(motivo || "").slice(0, 500), parar ? new Date() : null, e.ctid]).catch(() => {});
+}
 
 await Promise.all(Array.from({ length: CONC }, async () => {
   while (i < fila.length) {
@@ -93,7 +116,7 @@ await Promise.all(Array.from({ length: CONC }, async () => {
       // ── cat 5: RESULTADO publicado → busca só ESTE item. É o evento que mais vale.
       else if (e.categoria === 5 && e.item_numero > 0) {
         const rs = await get(`${base}/itens/${e.item_numero}/resultados`);
-        if (rs === null) { feito.erro++; continue; }   // sem marcar: volta na fila
+        if (rs === null) { await falhou(e, "resultado: sem resposta do PNCP"); continue; }   // volta na fila até esgotar
         if (Array.isArray(rs) && rs.length && !DRY) {
           const B = { sr: [], ni: [], no: [], tp: [], qh: [], vu: [], vt: [], pd: [], po: [], nj: [], or: [], si: [], dr: [] };
           for (const r of rs) {
@@ -132,7 +155,7 @@ await Promise.all(Array.from({ length: CONC }, async () => {
       // ── cat 4: ITEM incluído/retificado → rebusca só ESTE item
       else if (e.categoria === 4 && e.item_numero > 0) {
         const it = await get(`${base}/itens/${e.item_numero}`);
-        if (it === null) { feito.erro++; continue; }
+        if (it === null) { await falhou(e, "item: sem resposta do PNCP"); continue; }
         const o = Array.isArray(it) ? it[0] : it;
         if (o && !DRY)
           await q(`UPDATE itens_sc SET descricao=$5, quantidade=$6, unit_estimado=$7, situacao=$8,
@@ -155,13 +178,21 @@ await Promise.all(Array.from({ length: CONC }, async () => {
         feito.contr++;
       }
       if (!DRY) await q(`UPDATE pncp_evento SET consumido_dado=now() WHERE ctid=$1`, [e.ctid]);
-    } catch (err) { feito.erro++; if (feito.erro <= 5) console.log(`  ⚠ ${e.ano}/${e.seq} cat${e.categoria}: ${err.message.slice(0, 70)}`); }
+    } catch (err) { await falhou(e, err.message); if (feito.erro <= 5) console.log(`  ⚠ ${e.ano}/${e.seq} cat${e.categoria}: ${err.message.slice(0, 70)}`); }
   }
 }));
 
 console.log(`✔ consumidos: ${feito.res} resultado · ${feito.item} item · ${feito.contr} contratação · ${feito.doc} documento · ${feito.excl} EXCLUSÃO · ${feito.erro} erros`);
-const p = (await q(`SELECT count(*) FILTER (WHERE consumido_dado IS NULL) pend,
-  count(*) FILTER (WHERE alvo_download) baixar FROM pncp_evento`)).rows[0];
+const p = (await q(`SELECT count(*) FILTER (WHERE consumido_dado IS NULL AND estacionado_em IS NULL) pend,
+  count(*) FILTER (WHERE alvo_download) baixar,
+  count(*) FILTER (WHERE estacionado_em IS NOT NULL) parados FROM pncp_evento`)).rows[0];
 console.log(`  fila restante: ${p.pend} · documentos tipo 16 a baixar: ${p.baixar}`);
+if (feito.estacionados) console.log(`  ⏹ ${feito.estacionados} evento(s) ESTACIONADOS agora (${MAX_TENT} tentativas sem passar)`);
+if (Number(p.parados) > 0) {
+  console.log(`  ⏹ dead-letter: ${p.parados} evento(s) parados no total — não voltam sozinhos.`);
+  const top = (await q(`SELECT ultimo_erro, count(*) n FROM pncp_evento WHERE estacionado_em IS NOT NULL
+    GROUP BY 1 ORDER BY 2 DESC LIMIT 3`)).rows;
+  for (const t of top) console.log(`     ${t.n}× ${String(t.ultimo_erro || "?").slice(0, 90)}`);
+}
 await trava.solta();
 await db.end();
