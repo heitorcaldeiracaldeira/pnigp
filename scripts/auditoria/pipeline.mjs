@@ -29,6 +29,13 @@ const U = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABAS
 // com pool de 1 ela ficaria na fila atrás de um statement de até 300s e a trava pareceria abandonada.
 const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }, max: 2, statement_timeout: 300000 });
 
+// ⚠️ O QUE ESTÁ DE FORA, E POR QUÊ: `extrai_marca_fila.mjs` — a porta ÚNICA de escrita da marca, que roteia
+// por gerador e só grava o afirmado. Hoje ela não é chamada por cadeia, .cmd ou pipeline nenhum: roda à mão.
+// Ficou de fora do ciclo DIÁRIO de propósito, não por esquecimento: é uma varredura de ~200 mil processos, a
+// etapa mais cara de todas, e o seu rendimento depende de os documentos de RESULTADO (tipo 16) já terem sido
+// re-extraídos com geometria — o que está em curso. Varrer antes disso repete o trabalho com matéria-prima
+// achatada. Quando a re-extração alcançar esses documentos, esta é a primeira coisa a entrar aqui.
+//    node scripts/extrai_marca_fila.mjs   (LIMIT=0 para o acervo inteiro)
 const ETAPAS = [
   // 1) EVENTO — quem homologou/des-homologou desde o watermark; reabre o processo e enfileira o doc que falta
   ["auditoria/ao_homologar.mjs",           {},                        "evento: homologou/des-homologou"],
@@ -50,8 +57,17 @@ const ETAPAS = [
   // 5) RESÍDUO com API — só onde o determinístico não leu
   ["extrai_marca_visao.mjs",               { LIMIT: "0" },            "PDF-imagem → visão", true],
   ["ingest_marca_atas_sc.mjs",             { LIMIT: "0", GATE_MARCA: "1" }, "atas no resíduo", true],
-  // 6) CONSOLIDA — sem isto nada chega ao produto
+  // 6) CONSOLIDA — necessário, mas NÃO suficiente (ver 6b)
   ["auditoria/consolida_marca.mjs",        {},                        "ancora por valor → item_marca_conferida"],
+  // 6b) NORMALIZA E MONTA A ALLOWLIST — o elo que faltava, e sem ele o produto exibe ZERO
+  // O comentário acima dizia "sem consolida nada chega ao produto". Medido em 07/ago: consolidar não basta.
+  // `queries.ts` filtra por `c.marca_norm IS NOT NULL` E faz JOIN em `marca_dicionario_${uf}` exigindo
+  // confiança alta/média. Com estas duas etapas de fora, `marca_norm` fica NULA e o JOIN não acha nada —
+  // a tela mostra zero marca por mais que a extração tenha funcionado. Foi exatamente o estado encontrado:
+  // 43.822 linhas conferidas no banco, 0 visíveis. Rodadas as duas: 24.727 linhas e 2.323 marcas na tela.
+  // São baratas (segundos, tabelas pequenas) — não há motivo para ficarem fora do ciclo diário.
+  ["auditoria/normaliza_marca.mjs",        {},                        "marca_norm/modelo_norm + suspeitas"],
+  ["auditoria/monta_dicionario_marca.mjs", {},                        "allowlist por diversidade de órgãos"],
   // 7) ESPECIFICAÇÃO — a visão por item (spec do documento + marca do dia). Base = itens_sc INTEIRA: a spec não
   //    depende de marca, a marca é enriquecimento opcional. Troca atômica, então pode rodar com o app no ar.
   ["constroi_especificacao_item.mjs",      {},                        "spec + marca por item → item_especificacao"],
