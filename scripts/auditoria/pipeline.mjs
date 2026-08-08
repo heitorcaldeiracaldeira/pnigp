@@ -29,13 +29,22 @@ const U = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABAS
 // com pool de 1 ela ficaria na fila atrás de um statement de até 300s e a trava pareceria abandonada.
 const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }, max: 2, statement_timeout: 300000 });
 
-// ⚠️ O QUE ESTÁ DE FORA, E POR QUÊ: `extrai_marca_fila.mjs` — a porta ÚNICA de escrita da marca, que roteia
-// por gerador e só grava o afirmado. Hoje ela não é chamada por cadeia, .cmd ou pipeline nenhum: roda à mão.
-// Ficou de fora do ciclo DIÁRIO de propósito, não por esquecimento: é uma varredura de ~200 mil processos, a
-// etapa mais cara de todas, e o seu rendimento depende de os documentos de RESULTADO (tipo 16) já terem sido
-// re-extraídos com geometria — o que está em curso. Varrer antes disso repete o trabalho com matéria-prima
-// achatada. Quando a re-extração alcançar esses documentos, esta é a primeira coisa a entrar aqui.
-//    node scripts/extrai_marca_fila.mjs   (LIMIT=0 para o acervo inteiro)
+// ═══ TUDO QUE FOI CONSTRUÍDO ENTRA — ORDEM DO HEITOR, 08/ago ═══
+// "passamos a semana estruturando e agora precisa ligar todos". O diagnóstico bate com a medição: a marca
+// cobre 1,45% dos processos homologados não porque falte peça, mas porque as peças prontas não eram
+// chamadas. Varrido o repositório, três centrais estavam soltas — nenhuma delas por decisão:
+//   · marca_estado_processo — a FILA DE TRABALHO roteada pelo portal real; sem ela o resto adivinha o alvo
+//   · extrai_marca_fila     — a PORTA ÚNICA de escrita, que roteia por gerador e só grava o AFIRMADO
+//   · enriquece_marca       — a ESPINHA: despacha por ARQUÉTIPO de portal e é quem realmente BUSCA
+//
+// ⛔ roda_extratores_acervo.mjs NÃO entra, e isso é decisão medida, não esquecimento: ele chama
+//    constroi_doc_tem_marca + os mesmos extrai_* + consolida que já estão nesta lista. Ligá-lo rodaria a
+//    bateria inteira duas vezes por ciclo.
+//
+// ⚠️ Sobre o custo: extrai_marca_fila e enriquece_marca são as duas etapas caras (a primeira varre o
+//    universo de processos; a segunda sai para os portais). Ambas entram com TETO por rodada — é ciclo
+//    diário, não mutirão — e ambas são idempotentes e retomáveis por livro-razão próprio, então o teto
+//    apenas fatia o trabalho entre as noites em vez de perdê-lo.
 const ETAPAS = [
   // 1) EVENTO — quem homologou/des-homologou desde o watermark; reabre o processo e enfileira o doc que falta
   ["auditoria/ao_homologar.mjs",           {},                        "evento: homologou/des-homologou"],
@@ -46,6 +55,10 @@ const ETAPAS = [
   // Vem ANTES de constroi_doc_tem_marca para que o texto baixado agora já entre na fila de docs desta rodada.
   // LIMIT com teto: é lote diário, não mutirão. O passivo drena em alguns dias e depois só acompanha o fluxo.
   ["auditoria/coletor.mjs",                { LIMIT: "3000" },         "drena a fetch_fila (baixa o doc que falta)"],
+  // 1c) ESTADO/FILA — roteia cada processo homologado pelo portal REAL e diz em que estado ele está
+  // (conferida · doc-no-acervo · a-buscar[portal] · sem-rota). É a fila de trabalho de tudo que vem depois:
+  // sem ela, os extratores e a espinha adivinham o alvo em vez de receber a lista.
+  ["marca_estado_processo.mjs",            {},                        "estado da marca por processo (fila roteada)"],
   // 2) FILA — quais documentos contêm padrão de marca (refresh incremental)
   ["constroi_doc_tem_marca.mjs",           { REFRESH: "1" },          "fila de documentos com marca"],
   // 3) EXTRAÇÃO determinística — cada família lê o seu template. Zero API.
@@ -58,6 +71,14 @@ const ETAPAS = [
   ["extrai_portal_vencedores.mjs",         { LIMIT: "0" },            "bloco Vencedores do PCP"],
   ["auditoria/extrai_marca_proposta.mjs",  { LIMIT: "0" },            "marca na PROPOSTA (art.41)"],
   ["extrai_marca_ancora.mjs",              { LIMIT: "0" },            "âncora de valor na linha do vencedor"],
+  // 3b) A PORTA ÚNICA DE ESCRITA — roteia o documento pelo GERADOR (gerador_documento.mjs), chama o leitor
+  // daquele gerador e grava só o que foi AFIRMADO (`marca`/`sem_marca_declarada`), recusando `candidato`.
+  // É esta recusa — e não a lista de leitores — que protege a base do recorte que envenena.
+  ["extrai_marca_fila.mjs",                { LIMIT: "20000" },        "fila por gerador → grava o afirmado"],
+  // 3c) A ESPINHA — despacha por ARQUÉTIPO de portal, não por nome: relatorio_gerado (PCP/Licitanet),
+  // arquivo_blob (BLL/BNC/Licitar), doc_no_acervo (Compras.gov) e gated/pncp (ComprasBR/BBMNET/BB, onde a
+  // ata sai do PNCP porque a lei obriga publicar lá). É a única etapa que efetivamente BUSCA no portal.
+  ["auditoria/enriquece_marca.mjs",        { LIMIT: "2000" },         "despacho por arquétipo (busca no portal)"],
   // 4) CONFERÊNCIA — trava dupla (CNPJ+valor) e item+valor
   ["confere_marca_comprasnet.mjs",         { LIMIT: "0" },            "Compras.gov · trava dupla"],
   ["confere_marca_lote.mjs",               {},                        "confere item_marca_sc por item+valor"],

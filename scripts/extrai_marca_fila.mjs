@@ -31,6 +31,9 @@ import { leResultadosBll } from "./parser_bll_resultados.mjs";
 import { leResultadoOrgao } from "./parser_termo_homologacao.mjs";
 import { leResultadosLicitarDigital } from "./parser_licitar_digital.mjs";
 import { leResultadosIpm } from "./parser_ipm.mjs";
+import { leVencedoresPcp } from "./parser_pcp_vencedores.mjs";
+import { leContratoArp } from "./parser_contrato_arp.mjs";
+import { leTermoMunicipal } from "./parser_termo_municipal.mjs";
 import { carimboBR } from "./hora_br.mjs";
 
 const U = fs.readFileSync("./.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
@@ -42,16 +45,32 @@ const LOTE = Number(process.env.LOTE || 25);
 const CONF = `app.item_marca_conferida_${UF}`;
 const FEITAS = `app.marca_fila_feitas_${UF}`;
 
-// ⛔ parser_contrato_arp e parser_termo_municipal ficam FORA de propósito: os dois foram construídos,
-// medidos e reprovados. O de contrato devolveu ZERO marcas e o municipal 50 em 525 documentos, ambos
-// porque a coluna posicional não tem fronteira confiável. Estão no repositório com o motivo documentado
-// para não refazermos a investigação; ligá-los aqui reintroduziria o recorte que envenena.
+// ═══ TODOS OS LEITORES ENTRAM — ORDEM DO HEITOR, 08/ago ═══
+// O mapa tinha CINCO dos oito leitores que o roteador sabe apontar, e os três de fora estavam por motivos
+// diferentes — um deles não era motivo nenhum:
+//
+//  · parser_pcp_vencedores — NUNCA ESTAVA AQUI, e não havia decisão nenhuma sobre isso. O roteador manda
+//    `pcp` para ele desde sempre e a linha `if (!fn || ...) continue` engolia em SILÊNCIO. Custo medido em
+//    07/ago: 6.475 documentos roteados como pcp, 5.774 deles COM rótulo `Marca:` — a maior densidade de
+//    marca entre todos os geradores. Era o maior buraco isolado da extração, e não aparecia em log nenhum.
+//
+//  · parser_contrato_arp e parser_termo_municipal — estes SIM tinham decisão: foram medidos em 06/ago e
+//    reprovados (contrato devolveu ZERO marcas; municipal, 50 em 525), "porque a coluna posicional não tem
+//    fronteira confiável". Entram agora por ordem do Heitor, e há um fato novo que justifica remedir: a
+//    causa da reprovação era exatamente a GEOMETRIA PERDIDA na extração — o PDF chegava achatado numa linha
+//    só, sem coluna. A re-extração com geometria (em curso) ataca essa causa.
+//    ⚠️ Enquanto a re-extração não alcançar os documentos de resultado, o texto deles ainda é achatado e a
+//    reprovação tende a se repetir. A guarda que protege a base não é este mapa: é a fila só gravar o que
+//    foi AFIRMADO (`marca`/`sem_marca_declarada`) e recusar `candidato`. Medir depois de rodar.
 const LEITOR = {
   parser_az_resultados: leResultadosAz,
   parser_bll_resultados: leResultadosBll,
   parser_termo_homologacao: leResultadoOrgao,
   parser_licitar_digital: leResultadosLicitarDigital,
   parser_ipm: leResultadosIpm,
+  parser_pcp_vencedores: leVencedoresPcp,
+  parser_contrato_arp: leContratoArp,
+  parser_termo_municipal: leTermoMunicipal,
 };
 
 // o melhor estado vence quando dois documentos falam do mesmo item

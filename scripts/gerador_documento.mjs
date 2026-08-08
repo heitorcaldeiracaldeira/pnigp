@@ -43,26 +43,45 @@ const norm = (s) => String(s || "").replace(/\s+/g, " ");
 // Propostas Finais", tirada de um exemplo onde o s minúsculo havia caído na extração — e não casava nada:
 // a guarda era código morto que eu teria reportado como funcionando. O texto real desses relatórios diz
 // "Média dos Preços Obtidos", "Mediana dos Preços Obtidos", "Relatório de Cotação", "FONTES DE PESQUISA".
-const RE_PESQUISA_PRECO = new RegExp([
+// ═══ DOIS NÍVEIS DE SINAL, PORQUE "MENCIONAR NÃO É SER" VOLTOU A SER VIOLADO ═══
+// Este arquivo já registrava a lição: a primeira versão marcava ~4.900 documentos porque incluía a frase
+// "PESQUISA DE PREÇO", e milhares de editais apenas MENCIONAM que houve pesquisa. A lição foi aprendida e
+// depois desfeita — os termos de menção voltaram para a lista única, e a exclusão inchou.
+// Medido em 07/ago sobre os 188.415 documentos de resultado legíveis:
+//    guarda inteira ...................... 32.561 documentos excluídos (17,3%)
+//    só o sinal FORTE .................... 8.569  ← bate com os 8.715 medidos em 06/ago
+//    excesso pelo sinal FRACO ............ 23.992
+//    DESSES, com assinatura PRÓPRIA de resultado ... 1.817 documentos jogados fora à toa
+// Os 1.817 traziam "VENCEDORES DO PROCESSO", "VALORES UNITÁRIOS FINAIS", "TERMO DE HOMOLOGAÇÃO…" — são
+// resultado de verdade, descartados porque a palavra "pesquisa de preço" aparecia em algum lugar do texto.
+//
+// FORTE = o documento CITA compra de terceiro (fonte no PNCP, mediana de preços obtidos, painel de preço).
+//         Exclui SEMPRE, mesmo que o arquivo também traga uma ata: é o caso do PDF mesclado, e a decisão
+//         do Heitor é que nenhuma marca de compra alheia entra, nem por coincidência de valor.
+// FRACO = o documento apenas MENCIONA que houve pesquisa. Sozinho não prova nada: exclui só quando NENHUMA
+//         assinatura de resultado casar — isto é, quando não há o que perder.
+const RE_PESQUISA_FORTE = new RegExp([
   "M[ée]dia(?:na)? do\\s?\\s+Pre[çc]o\\s?\\s+Obtido",
   "Relat[óo]rio de Cota[çc][ãa]o",
   "Painel de Pre[çc]o",
   "Fonte:\\s*http\\s?://www\\.gov\\.br/pncp",
   "Pre[çc]o E\\s?timado Calculado",
+  "FONTES? (?:DE PESQUISAS?|CONSULTADAS)",
+  "IDENTIFICA[ÇC][ÃA]O DAS FONTES",
+  // Achados ao analisar o Licitanet: as duas formas em que esses relatórios declaram estar citando o
+  // PNCP de terceiros — "Fonte: PNCP" e "Preço ( PNCP )". São citação explícita, logo sinal forte.
+  "Fonte:\\s*PNCP\\b",
+  "Pre[çc]o\\s*\\(\\s*PNCP\\s*\\)",
+].join("|"), "i");
+
+const RE_PESQUISA_FRACO = new RegExp([
   "PESQUISA DE PRE[ÇC]O",
   "COTA[ÇC][ÃA]O DE PRE[ÇC]O",
   "MAPA DE PRE[ÇC]O",
   "OR[ÇC]AMENTO ESTIMADO",
-  "FONTES? (?:DE PESQUISAS?|CONSULTADAS)",
-  "IDENTIFICA[ÇC][ÃA]O DAS FONTES",
   "JUSTIFICATIVA DE PESQUISA DE PRE[ÇC]O",
   "FORMUL[ÁA]RIO DE PESQUISA DE PRE[ÇC]O",
-  // Achados ao analisar o Licitanet: 131 documentos de pesquisa de preço escapavam para "desconhecido".
-  // "JUSTIFICATIVA DE PREÇO" (sem o "PESQUISA DE" no meio) e as duas formas em que esses relatórios
-  // declaram estar citando o PNCP de terceiros — "Fonte: PNCP" e "Preço ( PNCP )".
   "JUSTIFICATIVA D[EO]S? PRE[ÇC]O",
-  "Fonte:\\s*PNCP\\b",
-  "Pre[çc]o\\s*\\(\\s*PNCP\\s*\\)",
 ].join("|"), "i");
 
 // Cada gerador é reconhecido por uma assinatura POSITIVA — algo que só ele escreve.
@@ -180,9 +199,14 @@ export function identificaGerador(texto) {
   // outra e é mais simples de garantir: se o documento é (ou contém) pesquisa de preço, ele não entra.
   // O custo é perder a ata que veio grudada nesses 14; o ganho é que nenhuma marca de compra de terceiro
   // tem por onde entrar, nem por coincidência de valor.
-  if (RE_PESQUISA_PRECO.test(t)) return { gerador: "pesquisa_preco", leitor: null, tem_marca: temMarca };
+  // FORTE continua vindo ANTES de tudo: cita compra de terceiro, e nem a ata grudada no mesmo PDF salva.
+  if (RE_PESQUISA_FORTE.test(t)) return { gerador: "pesquisa_preco", leitor: null, tem_marca: temMarca };
   for (const a of ASSINATURAS) {
     if (a.teste(t)) return { gerador: a.gerador, leitor: a.leitor, tem_marca: temMarca };
   }
+  // FRACO só decide DEPOIS, no resíduo: se nenhuma assinatura de resultado casou, a menção é o único sinal
+  // que resta e o documento fica marcado com nome próprio — exclusão silenciosa é a mesma coisa que erro
+  // silencioso. Mas ele nunca mais tira da frente um documento que se identificou como resultado.
+  if (RE_PESQUISA_FRACO.test(t)) return { gerador: "pesquisa_preco", leitor: null, tem_marca: temMarca };
   return { gerador: "desconhecido", leitor: null, tem_marca: temMarca };
 }

@@ -144,13 +144,52 @@ export const CADEIAS = {
     trava: { nome: "cadeia_coletores", toleranciaMin: 10 },
     aoFalhar: "seguir",
     env: {},
+    // ═══ TODOS OS COLETORES CONSTRUÍDOS ENTRAM — ORDEM DO HEITOR, 08/ago ═══
+    // Existiam DOZE coletores no repositório e a cadeia disparava QUATRO. Os outros oito foram construídos,
+    // medidos e nunca ligados — o mesmo padrão que hoje já apareceu na fila de download, no leitor do PCP e
+    // na normalização da marca: a peça existe, ninguém a chama, e nada avisa.
+    //
+    // A ORDEM AQUI NÃO É ARBITRÁRIA: primeiro os que leem o ACERVO (sem rede, sem portal, sem captcha),
+    // depois os que saem para a internet. Assim o barato roda inteiro mesmo que o caro estoure a janela.
+    //
+    // ⚠️ CORREÇÃO DE UM ERRO MEU, 08/ago: eu havia deixado bbmnet e licitacoes-e DE FORA lendo no cabeçalho
+    // deles "GATED por reCAPTCHA" e concluindo que não serviam. O cabeçalho diz o OPOSTO: o captcha é do
+    // PORTAL, e esses coletores existem justamente para não passar por ele. A rota deles é a mesma dos
+    // demais — a Lei 14.133 obriga publicar edital, ata e homologação no PNCP, então a marca sai do acervo
+    // e do blob do PNCP, com ZERO chamada ao portal. Ler metade do cabeçalho custou dois coletores.
+    // O que de fato continua bloqueado é o legado 8.666 que só existe no portal e nunca subiu ao PNCP —
+    // esse é reportado, não forçado. Captcha segue sem ser contornado, porque não precisamos dele.
     passos: [
+      // ── 1) ROTA LIMPA: a marca sai do documento que a bolsa já publicou no PNCP e está no nosso acervo.
+      //    Não toca portal nenhum, então não tem rate limit, login nem captcha para atrapalhar.
+      { rotulo: "acervo dos 5 portais (PCP/BLL/BNC/Licitar/Licitanet)", script: "scripts/auditoria/coletor_acervo_portais.mjs",
+        env: { LIMIT: "0" }, timeoutMin: 120 },
+      { rotulo: "Compras.gov pelo termo de homologacao (acervo)", script: "scripts/auditoria/coletor_compras_gov_termo.mjs",
+        env: { LIMIT: "0" }, timeoutMin: 90 },
+      { rotulo: "ComprasBR AZ pelo doc de resultado (acervo)", script: "scripts/auditoria/coletor_comprasbr_az.mjs",
+        env: { LIMIT: "0" }, timeoutMin: 90 },
+      // BBMNET: a marca vive na "ATA DE SESSÃO" (padrão B, "Marca/Modelo:"), não no termo de homologação.
+      { rotulo: "BBMNET pela ata de sessao (acervo + blob PNCP)", script: "scripts/auditoria/coletor_bbmnet.mjs",
+        env: { LIMIT: "0" }, timeoutMin: 90 },
+      // Licitações-E do BB: acervo primeiro, blob do PNCP para o que não tiver texto.
+      { rotulo: "Licitacoes-E BB (acervo + blob PNCP)", script: "scripts/auditoria/coletor_licita_es_e_bb.mjs",
+        env: { LIMIT: "0" }, timeoutMin: 90 },
+      // ── 2) PORTAL VIVO: saem para a internet. LIMIT/CONC baixos de propósito — o PCP bate rate limit.
       { rotulo: "e-lic (compras.sc)", script: "scripts/auditoria/coletor_estado_de_santa_catarina_e_lic.mjs",
         env: { LIMIT: "400" }, timeoutMin: 90 },
       { rotulo: "PCP", script: "scripts/auditoria/coletor_pcp.mjs",
         env: { LIMIT: "300", CONC: "1" }, timeoutMin: 90 },
       { rotulo: "BLL", script: "scripts/auditoria/coletor_bll.mjs",
         env: { LIMIT: "300", CONC: "1" }, timeoutMin: 60 },
+      { rotulo: "BNC por modalidade (link ProcessView)", script: "scripts/auditoria/coletor_bnc_modalidade.mjs",
+        env: { LIMIT: "300", CONC: "1" }, timeoutMin: 60 },
+      // ⛔ coletor_compras_gov_comprasnet FICA DE FORA, e o motivo é operacional, não preguiça: ele EXIGE um
+      // token de captcha obtido por um humano no navegador (`COMPRASGOV_CAPTCHA`), e o token é curto.
+      // Provado no smoke test de 08/ago: sem o token ele sai com código 2 — numa cadeia automática isso é
+      // falha toda noite, e falha rotineira é ruído que ensina a ignorar log.
+      // A rota AUTÔNOMA para o MESMO portal já está ligada acima: `coletor_compras_gov_termo`, que lê o
+      // "Relatório - Termo de Homologação" do acervo do PNCP, sem humano e sem captcha.
+      // Para rodar o comprasnet pontualmente: COMPRASGOV_CAPTCHA=<token> node scripts/auditoria/coletor_compras_gov_comprasnet.mjs
       // NCAT é quantos CATMATs do catálogo se varre por execução; cada um é uma chamada à API. Em 300 a
       // execução inteira levou minutos e devolveu 318 registros, então 600 cabe folgado numa janela horária.
       { rotulo: "Compras.gov (banco de precos)", script: "scripts/auditoria/coletor_compras_gov.mjs",
