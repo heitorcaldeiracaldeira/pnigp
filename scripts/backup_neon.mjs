@@ -59,28 +59,56 @@ async function main() {
   // conhecido que se repete vira ruído, e ruído é o que ensina a ignorar o log.
   const tabs = (await q(`SELECT table_name FROM information_schema.tables
      WHERE table_schema='public' AND table_type='BASE TABLE' ORDER BY table_name`)).map((r) => r.table_name);
-  let totalReg = 0; const resumo = {}; const falhas = [];
+  // ═══ O TETO PRECISA VIVER AQUI DENTRO, NÃO NO AGENDADOR ═══
+  // A tarefa tem ExecutionTimeLimit de 3h, e isso NÃO PARA o backup: o Agendador mata o `.cmd`, mas o node
+  // que ele lançou fica ÓRFÃO e continua. Medido em 08/ago: a tarefa foi encerrada às 03:30 e o log seguiu
+  // sendo escrito até 09:43 — seis horas depois, consumindo banco e egress durante o horário de trabalho,
+  // sem ninguém saber que ainda estava rodando. É o mesmo defeito que a ETL tinha e que já foi corrigido
+  // lá: limite que o Agendador aplica não é limite, porque ele não alcança os filhos.
+  // Aqui o processo é um só, então parar o laço basta — e parar é seguro: o dump é por tabela, cada uma
+  // fecha o seu arquivo, e as que faltaram entram como falha explícita no manifesto.
+  const TETO_MIN = Number(process.env.TETO_MIN || 170);   // abaixo do PT3H da tarefa, de propósito
+  const t0 = Date.now();
+  let totalReg = 0; const resumo = {}; const falhas = []; let cortado = false;
   for (const t of tabs) {
+    const min = (Date.now() - t0) / 60000;
+    if (min > TETO_MIN) {
+      cortado = true;
+      const faltando = tabs.slice(tabs.indexOf(t));
+      console.log(`\n⏱ TETO DE ${TETO_MIN} MIN atingido (${Math.round(min)} min) — parando com ${faltando.length} tabelas por dumpar.`);
+      for (const f of faltando) { resumo[f] = "nao_dumpada"; falhas.push({ tabela: f, erro: `nao dumpada: teto de ${TETO_MIN} min` }); }
+      break;
+    }
     try { const n = await dumpTabela(t, dir); resumo[t] = n; totalReg += n; console.log(`  ${t}: ${n.toLocaleString("pt-BR")}`); }
     catch (e) { const m = String(e).slice(0, 60); console.log(`  ! ${t}: ${m}`); resumo[t] = "erro"; falhas.push({ tabela: t, erro: m }); }
   }
   const ok = tabs.length - falhas.length;
   fs.writeFileSync(path.join(dir, "_manifest.json"), JSON.stringify({
     ts: stamp, total_registros: totalReg, tabelas_esperadas: tabs.length, tabelas_ok: ok,
-    completo: falhas.length === 0, falhas, tabelas: resumo,
+    completo: falhas.length === 0, cortado_por_tempo: cortado, falhas, tabelas: resumo,
   }, null, 2));
 
-  // ═══ RETENÇÃO SÓ CONTA BACKUP COMPLETO ═══
-  // A regra "manter os últimos 7" contava qualquer pasta, inclusive as vazias. Medido em 08/ago: dos 8
-  // backups em disco, CINCO estavam incompletos e um tinha ZERO arquivo — e a rotação ia empurrando os
-  // completos para fora enquanto guardava as carcaças. Um backup incompleto ocupa a vaga de um bom.
+  // ═══ RETENÇÃO: PRIORIZA O COMPLETO, MAS NUNCA APAGA POR FALTA DE METADADO ═══
+  // A intenção é boa — dos 8 backups em disco, CINCO estavam incompletos e um tinha ZERO arquivo, e a
+  // rotação "últimos 7" empurrava os bons para fora guardando carcaça.
+  // ⚠️ MAS A PRIMEIRA VERSÃO DESTA REGRA DESTRUIU BACKUP BOM, em 08/ago, e a lição é dura: ela tratava
+  // "sem `_manifest.json` com completo:true" como "não completo" — e NENHUM backup anterior tinha esse
+  // campo, porque ele acabou de ser criado. Na primeira execução ela apagou 6 pastas, incluindo os dois
+  // dumps íntegros de 11 GB. Ausência de metadado NOVO não é prova de defeito: é só ausência.
+  // Agora: só apaga o que PROVA estar incompleto (manifesto dizendo `completo:false` ou pasta com <5
+  // arquivos). O desconhecido — backup antigo, sem manifesto — conta como bom e entra na regra dos 7.
   const dirs = fs.readdirSync(baseDir).filter((d) => /^\d{4}-\d{2}-\d{2}/.test(d)).sort();
-  const completos = dirs.filter((d) => {
-    try { return JSON.parse(fs.readFileSync(path.join(baseDir, d, "_manifest.json"), "utf8")).completo === true; }
-    catch { return false; }   // sem manifesto (backup antigo ou abortado) = não conta como completo
-  });
-  const manter = new Set(completos.slice(-7).concat(dirs.slice(-2)));   // 7 completos + os 2 mais recentes
-  for (const d of dirs) if (!manter.has(d)) { fs.rmSync(path.join(baseDir, d), { recursive: true, force: true }); console.log(`  (retenção) removido ${d}`); }
+  const grau = (d) => {
+    const arqs = (() => { try { return fs.readdirSync(path.join(baseDir, d)).length; } catch { return 0; } })();
+    if (arqs < 5) return "vazio";                                   // carcaça: provado inútil
+    try {
+      const m = JSON.parse(fs.readFileSync(path.join(baseDir, d, "_manifest.json"), "utf8"));
+      return m.completo === true ? "completo" : "incompleto";       // manifesto DIZ que faltou tabela
+    } catch { return "desconhecido"; }                              // sem manifesto: NÃO é motivo para apagar
+  };
+  const bons = dirs.filter((d) => grau(d) !== "vazio" && grau(d) !== "incompleto");
+  const manter = new Set(bons.slice(-7).concat(dirs.slice(-2)));    // 7 aproveitáveis + os 2 mais recentes
+  for (const d of dirs) if (!manter.has(d)) { fs.rmSync(path.join(baseDir, d), { recursive: true, force: true }); console.log(`  (retenção) removido ${d} [${grau(d)}]`); }
 
   // ═══ BACKUP INCOMPLETO NÃO PODE REPORTAR SUCESSO ═══
   // A linha anterior imprimia "Backup concluído" com `tabs.length` — o número de tabelas TENTADAS, não das
@@ -89,8 +117,8 @@ async function main() {
   // tabelas perdidas com `getaddrinfo ENOTFOUND` — a conexão com o Neon caiu no meio — e a tarefa foi
   // registrada como terminada normalmente. Backup que falha em silêncio é pior que não ter backup: cria a
   // crença de que existe cópia.
-  console.log(`\n${falhas.length ? "⚠ BACKUP INCOMPLETO" : "✔ backup completo"}: ${dir}`);
-  console.log(`  ${ok}/${tabs.length} tabelas · ${totalReg.toLocaleString("pt-BR")} registros`);
+  console.log(`\n${falhas.length ? "⚠ BACKUP INCOMPLETO" : "✔ backup completo"}${cortado ? " (cortado pelo teto de tempo)" : ""}: ${dir}`);
+  console.log(`  ${ok}/${tabs.length} tabelas · ${totalReg.toLocaleString("pt-BR")} registros · ${Math.round((Date.now() - t0) / 60000)} min`);
   if (falhas.length) {
     console.log(`  ${falhas.length} tabela(s) FALHARAM:`);
     for (const f of falhas.slice(0, 12)) console.log(`    ${f.tabela}: ${f.erro}`);
