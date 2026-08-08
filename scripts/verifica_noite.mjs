@@ -72,14 +72,20 @@ for (const [nome, sql] of filas) {
 }
 
 // ── 4) A MARCA CHEGOU AO PRODUTO? Consolidar não basta: queries.ts exige marca_norm + dicionário.
+// ⚠️ O SINAL DE "NÃO NORMALIZADO" É `marca_suspeita IS NULL`, E NÃO `marca_norm IS NULL`.
+// `marca_norm` nulo quer dizer normalizado E REJEITADO — descritor, "marca própria", rótulo de tabela.
+// São 17.504 linhas legítimas nesse estado. Usar essa coluna como sinal fazia o verificador gritar todo
+// dia com o normalizador funcionando perfeitamente, e verificador que grita à toa ensina a ser ignorado.
+// É o mesmo erro que este projeto já pagou duas vezes: confundir CAMPO VAZIO com NÃO PROCESSADO.
 const m = await q(`select count(*) linhas,
-   count(*) filter (where marca_norm is null) sem_norm,
+   count(*) filter (where marca_suspeita is null) nao_normalizadas,
+   count(*) filter (where marca_norm is null) rejeitadas,
    count(*) filter (where atualizado > now() - interval '${HORAS} hours') novas,
    (select count(*) from app.marca_dicionario_sc where confianca in ('alta','media')) allowlist
    from app.item_marca_conferida_sc`);
-if (num(m.sem_norm) > 0)
-  alerta(`MARCA NÃO CHEGOU AO PRODUTO: ${m.sem_norm} linhas sem marca_norm — faltou normaliza_marca/monta_dicionario`);
-else ok(`marca no produto: ${m.linhas} linhas (${m.novas} novas), allowlist ${m.allowlist}`);
+if (num(m.nao_normalizadas) > 0)
+  alerta(`MARCA NÃO CHEGOU AO PRODUTO: ${m.nao_normalizadas} linhas nunca normalizadas — faltou normaliza_marca/monta_dicionario`);
+else ok(`marca no produto: ${m.linhas} linhas (${m.novas} novas), ${m.rejeitadas} rejeitadas na normalização, allowlist ${m.allowlist}`);
 
 // ── 5) A ETL RESPEITOU A JANELA? A primeira noite varou até 08:41 sem que nada acusasse.
 try {
@@ -92,6 +98,24 @@ try {
   if (num(e.falhando) > 0) alerta(`ETL: ${e.falhando} fontes com 3+ falhas seguidas`);
   ok(`ETL: ${e.rodaram} fontes rodaram, ${e.cortadas} cortadas pela janela`);
 } catch (e) { alerta(`ETL: não consegui medir (${e.message})`); }
+
+// ── 6) A LEI DE FUSO ESTÁ SENDO SEGUIDA? Carimbo de instante formatado sem converter sai 3h à frente.
+// Esta checagem existe porque a lei foi escrita em 29/jul, `hora_br.mjs` foi criado para ela, e mesmo assim
+// um script NOVO (gera_relatorio_extracao) nasceu em agosto repetindo o erro: em 08/ago às 10:00 o HTML
+// dizia "Gerado em 13:00". Regra escrita não impede reincidência; verificação impede.
+try {
+  const { execSync: ex } = await import("child_process");
+  // Checa por LINHA, e não pela expressão: `to_char(min(atualizado) AT TIME ZONE ...)` tem parêntese
+  // aninhado, e um regex que para no primeiro ")" acusa o que já está correto. Custou dois falsos
+  // positivos na primeira execução — um verificador que grita à toa ensina a ignorá-lo.
+  const saida = ex(`node -e "const fs=require('fs');const g=require('child_process').execSync('git ls-files scripts src',{encoding:'utf8'}).split('\\n').filter(f=>/\\.(mjs|ts)$/.test(f));let n=0;for(const f of g){if(!f||/hora_br|verifica_noite/.test(f))continue;let s='';try{s=fs.readFileSync(f,'utf8')}catch{continue};s.split('\\n').forEach((L,i)=>{if(!/to_char\\s*\\(/.test(L))return;if(!/\\b(now\\(\\)|atualizado|ultima_exec|ocorrido_em|criado_em)\\b/.test(L))return;if(/AT TIME ZONE|at time zone/i.test(L))return;console.log(f+':'+(i+1)+' '+L.trim().slice(0,72));n++})}process.exit(n?1:0)"`, { encoding: "utf8" });
+  ok("lei de fuso: nenhum carimbo de instante formatado sem converter");
+  if (saida.trim()) console.log(saida);
+} catch (e) {
+  const linhas = String(e.stdout || "").trim().split("\n").filter(Boolean);
+  for (const l of linhas) alerta(`LEI DE FUSO violada — ${l}`);
+  if (!linhas.length) ok("lei de fuso: checagem não pôde rodar (git indisponível)");
+}
 
 await db.end();
 

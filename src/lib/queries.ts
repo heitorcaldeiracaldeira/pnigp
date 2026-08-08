@@ -896,8 +896,13 @@ export type RankFiscalSC = {
 };
 
 // Data de extração por fonte (etl_catalogo.ultima_exec) — alimenta o carimbo "fonte · competência · extraído em".
+// `ultima_exec` é timestamptz e o servidor corre em UTC: formatar sem converter joga o DIA para a frente em
+// toda extração feita entre 21h e meia-noite de Brasília (que já é o dia seguinte em UTC). O carimbo que o
+// cidadão lê diria "extraído em 09/08" para um dado colhido às 22h do dia 08. Instante converte; data pura
+// (competência, exercício) não — e por isso `sancoes.data_inicio` e `cauc_sc.data_pesquisa`, que são `date`,
+// seguem sem conversão de propósito.
 export async function getCatalogoExtracao(): Promise<Record<string, string>> {
-  const rows = await query<Record<string, unknown>>(`SELECT id, to_char(ultima_exec,'YYYY-MM-DD') d FROM etl_catalogo WHERE ultima_exec IS NOT NULL`).catch(() => []);
+  const rows = await query<Record<string, unknown>>(`SELECT id, to_char(ultima_exec AT TIME ZONE 'America/Sao_Paulo','YYYY-MM-DD') d FROM etl_catalogo WHERE ultima_exec IS NOT NULL`).catch(() => []);
   const m: Record<string, string> = {};
   for (const r of rows) if (r.d) m[String(r.id)] = String(r.d);
   return m;
@@ -4250,7 +4255,8 @@ export async function getRadarCrpSC(): Promise<RadarCrpSCData> {
     SELECT coalesce(sum(valor),0) vol, count(*) n FROM prog WHERE tv`).catch(() => []);
   // feed de novidades: transições de CRP detectadas pela varredura (alerta_crp) — mais recentes/severas primeiro
   const al = await query<Record<string, unknown>>(`
-    SELECT cod_ibge, nome, eh_estado, evento, categoria_para, dias, validade, to_char(criado,'DD/MM/YYYY') criado
+    SELECT cod_ibge, nome, eh_estado, evento, categoria_para, dias, validade,
+           to_char(criado AT TIME ZONE 'America/Sao_Paulo','DD/MM/YYYY') criado
     FROM crp_alertas WHERE evento IN ('entrou_vencido','entrou_30','entrou_90')
     ORDER BY criado DESC, (CASE evento WHEN 'entrou_vencido' THEN 0 WHEN 'entrou_30' THEN 1 ELSE 2 END), id DESC LIMIT 12`).catch(() => []);
   const alertas: CrpAlerta[] = al.map((r) => ({ codIbge: String(r.cod_ibge), nome: String(r.nome), ehEstado: r.eh_estado === true, evento: String(r.evento), categoriaPara: String(r.categoria_para), dias: r.dias != null ? num(r.dias) : null, validade: r.validade ? String(r.validade) : null, criado: r.criado ? String(r.criado) : null }));

@@ -19,7 +19,9 @@ export async function GET(req: Request) {
     const cod = (searchParams.get("cod") || "").replace(/\D/g, "").slice(0, 7);
     const escopo = (searchParams.get("escopo") || "federal").slice(0, 20);
     const rows = await query<{ payload: unknown; atualizado: string }>(
-      `SELECT payload, to_char(atualizado,'YYYY-MM-DD"T"HH24:MI') atualizado FROM caderno_emendas_sc WHERE cod_ibge=$1 AND escopo=$2`,
+      // LEI DE FUSO: `atualizado` é timestamptz e o servidor corre em UTC — sem converter, o caderno diria
+      // ao usuário que foi atualizado 3h à frente do que foi. Instante converte; data pura, não.
+      `SELECT payload, to_char(atualizado AT TIME ZONE 'America/Sao_Paulo','YYYY-MM-DD"T"HH24:MI') atualizado FROM caderno_emendas_sc WHERE cod_ibge=$1 AND escopo=$2`,
       [cod, escopo],
     );
     return NextResponse.json({ caderno: rows[0]?.payload ?? null, atualizado: rows[0]?.atualizado ?? null });

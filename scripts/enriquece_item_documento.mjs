@@ -1,4 +1,4 @@
-// ENRIQUECEDOR — consome o corpus JÁ GUARDADO (arquivo_texto_sc + itens_sc) e, por item, percorre TODOS os
+﻿// ENRIQUECEDOR — consome o corpus JÁ GUARDADO (arquivo_texto_sc + itens_sc) e, por item, percorre TODOS os
 // documentos da construção DO PRIMEIRO AO ÚLTIMO (DFD→ETP→TR→Edital…), localiza a descrição do item em CADA um e
 // grava a comparação. Duas tabelas (ANDAR 2, derivadas — Lei 1):
 //   · app.item_enriquecimento          — 1 linha/item: O QUE TÍNHAMOS (API) · O QUE ENRIQUECEMOS · COMO CHEGAMOS
@@ -7,6 +7,8 @@
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
 import { casa } from "./casa_itens.mjs";
 import { recortaBloco } from "./recorte_bloco.mjs";
+import { casaPorCelula } from "./casa_por_celula.mjs";
+import { escolheRecorte } from "./escolhe_recorte.mjs";
 import { ehEspecificacao } from "./classifica_especificacao.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); const ROOT = path.join(__dirname, "..");
 const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
@@ -80,10 +82,21 @@ async function main() {
   // Aqui é só um SELECT LEVE numa tabela pequena (231k linhas) + anti-join no pkey; nada de varrer os 344MB de texto.
   const lim = LIMIT ? `LIMIT ${LIMIT}` : "";
   const shardW = NSHARD > 1 ? `AND (abs(hashtext(f.cnpj||'-'||f.ano||'-'||f.seq)) % ${NSHARD}) = ${SHARD}` : "";
+  // ═══ REFAZ=1 — REPROCESSA O QUE JÁ FOI ENRIQUECIDO ═══
+  // O anti-join padrão só traz processo INÉDITO, e isso está certo para o ciclo diário. Mas quando o
+  // MÉTODO muda — e mudou em 08/ago, com o casamento por linha de tabela — não havia como remedir sem
+  // apagar a tabela. REFAZ=1 troca o anti-join por um filtro de GEOMETRIA: só processos cujo texto-fonte
+  // já foi re-extraído (`layout_v=1`), que é a fatia onde o método novo tem efeito.
+  const REFAZ = process.env.REFAZ === "1";
+  const filtro = REFAZ
+    ? `EXISTS (SELECT 1 FROM public.arquivo_texto_sc t
+                WHERE t.cnpj=f.cnpj AND t.ano=f.ano AND t.seq=f.seq AND t.layout_v=1)`
+    : `NOT EXISTS (SELECT 1 FROM app.item_enriquecimento e WHERE e.cnpj=f.cnpj AND e.ano=f.ano AND e.seq=f.seq)`;
   const procs = (await q(`
     SELECT f.cnpj, f.ano, f.seq, f.nfases FROM app.fila_enriquecimento f
-    WHERE NOT EXISTS (SELECT 1 FROM app.item_enriquecimento e WHERE e.cnpj=f.cnpj AND e.ano=f.ano AND e.seq=f.seq) ${shardW}
+    WHERE ${filtro} ${shardW}
     ORDER BY f.nfases DESC ${lim}`)).rows;
+  if (REFAZ) console.log(`REFAZ=1 - reprocessando processos com texto ja re-extraido (layout_v=1)`);
   console.log(`[shard ${SHARD}/${NSHARD}] enriquecer: ${procs.length.toLocaleString()} processos · conc ${CONC}`);
 
   let i = 0, done = 0, itensOk = 0, comDesc = 0;
@@ -101,7 +114,14 @@ async function main() {
           .sort((a, b) => ORDER.indexOf(a.tid) - ORDER.indexOf(b.tid));
         if (!docs.length) continue;
         const cod_ibge = docs[0].cod_ibge;
-        const porDoc = docs.map((d) => ({ tid: d.tid, sd: d.sd, ...casa(itens, d.texto) }));
+        // `casa` dá a âncora por TF-IDF; `casaPorCelula` dá a âncora pelo NÚMERO DO ITEM na linha da
+        // tabela, que é chave e não heurística. As duas convivem: a segunda tem precedência onde confirma,
+        // a primeira cobre o documento sem geometria.
+        const porDoc = docs.map((d) => {
+          const c = casa(itens, d.texto);
+          const itensNum = itens.map((it) => ({ numero: it.numeroItem, descricao: it.descricao }));
+          return { tid: d.tid, sd: d.sd, ...c, celulas: casaPorCelula(itensNum, c.docNorm) };
+        });
         const evidRows = [], enrRows = [];   // acumula tudo do processo p/ gravar EM LOTE (1 ida ao banco por tabela)
 
         for (let k = 0; k < itens.length; k++) {
@@ -110,13 +130,36 @@ async function main() {
           const evid = []; const vistos = new Set();
           for (const D of porDoc) {
             const r = D.res[k]; if (!r || r.off == null) continue;
-            const desc = bloco(D.docNorm, r.off, D.res.map((x) => x && x.off));
-            if (!desc) continue;
+            // ═══ O CASAMENTO POR LINHA DE TABELA TEM PRECEDÊNCIA ═══
+            // Quando o documento declara o número do item numa célula própria (`pdf_layout` marcou a coluna
+            // com TAB), isso é CHAVE: `itens_sc.numero` vem da mesma origem que gerou o PDF. Medido em 250
+            // editais / 683 itens, contra a janela do TF-IDF:
+            //   começa no item certo 35,6% → 58,0%   ·   contém ≥2 palavras 60,5% → 61,1%
+            //   não contém nada      20,6% → 17,9%   ·   cobertura: 61,3% dos itens
+            // Os 38,7% que a via nova não confirma ela RECUSA em vez de chutar — descrição do item vizinho
+            // contamina preço normalizado e CATMAT em silêncio, e silêncio é o que mais custou aqui.
+            // ⚠️ SÓ COM CONFIRMAÇÃO ALTA (>=2 palavras significativas do item na própria célula).
+            // Medido: com confirmação fraca (1 palavra) a via piora o conjunto, porque ela roda sobre TODOS
+            // os documentos da construção — DFD, ETP, minuta — e em documento que não é a tabela de itens
+            // "linha que começa com número" casa com cláusula, anexo, cronograma. Uma palavra não separa.
+            // Isolada em editais e com confirmação alta, esta via mede 58,0% de acerto no começo contra
+            // 35,6% da janela; solta, arrasta o conjunto para baixo. Onde não confirma, a janela assume.
+            // ═══ TODOS OS MÉTODOS CONCORREM; VENCE O QUE MEDE MELHOR NESTE DOCUMENTO ═══
+            // Nenhum método ganha em tudo, e forçar um só derruba o conjunto — medido. `escolheRecorte`
+            // gera um candidato por método (célula confirmada pelo nº do item, célula pela âncora, linha,
+            // janela), pontua cada um contra a descrição que a API declara e devolve o vencedor com o nome
+            // do método. Se NENHUM contém uma palavra do item, devolve null: o item não está neste
+            // documento, e "menos ruim" com carimbo de confiança é o que contamina em silêncio.
+            const esc = escolheRecorte(D.docNorm, r.off, D.res.map((x) => x && x.off),
+              itens[k].descricao, D.celulas?.get(String(itens[k].numeroItem)));
+            if (!esc) continue;
+            const desc = esc.desc;
+            const metodoRecorte = esc.metodo;
             const key = desc.slice(0, 140);
             if (vistos.has(key)) continue;   // colapsa documentos repetidos com o mesmo bloco
             vistos.add(key);
             const cls = ehEspecificacao(desc);
-            evid.push({ tid: D.tid, sd: D.sd, ordem: ORDER.indexOf(D.tid), fase: FASE[D.tid] || `tipo ${D.tid}`, desc, score: r.score ?? null, conf: r.conf, docNorm: D.docNorm, off: r.off, ehSpec: cls.ok, specScore: cls.score });
+            evid.push({ tid: D.tid, sd: D.sd, ordem: ORDER.indexOf(D.tid), fase: FASE[D.tid] || `tipo ${D.tid}`, desc, score: r.score ?? null, conf: r.conf, docNorm: D.docNorm, off: r.off, ehSpec: cls.ok, specScore: cls.score, metodoRecorte });
             evidRows.push({ cnpj: p.cnpj, ano: p.ano, seq: p.seq, numero: itens[k].numeroItem, cod_ibge, ordem: ORDER.indexOf(D.tid), fase: FASE[D.tid] || `tipo ${D.tid}`, tipo_id: D.tid, sequencial_documento: D.sd, descricao_no_documento: desc, eh_spec: cls.ok, spec_score: cls.score, score: r.score ?? null, conf: r.conf });
           }
           // CONSOLIDADO — PREFERE um bloco que É especificação (portão); convergência eleva a confiança
@@ -126,7 +169,10 @@ async function main() {
           const conf = consolida(evid.length, best ? best.conf : "baixa");
           let cat = null;
           for (const h of [...evid].sort((a, b) => (PRIO_CAT.indexOf(a.tid) + 99) % 99 - (PRIO_CAT.indexOf(b.tid) + 99) % 99)) { cat = catalogo(h.docNorm, h.off); if (cat) break; }
-          const metodo = !best ? "sem acerto" : evid.length >= 2 ? `convergência (${evid.length} docs)` : "conteúdo";
+          // O método do RECORTE vencedor entra no carimbo: sem ele, não há como saber qual estratégia serve
+          // a qual tipo de edital — e a pergunta "qual é o melhor para cada tipo" vira suposição de novo.
+          const recorteVenc = best?.metodoRecorte ? ` · recorte:${best.metodoRecorte}` : "";
+          const metodo = (!best ? "sem acerto" : evid.length >= 2 ? `convergência (${evid.length} docs)` : "conteúdo") + recorteVenc;
           const trecho = best ? best.docNorm.slice(Math.max(0, best.off - 12), best.off + 48).replace(/\s+/g, " ").trim() : null;
           const fasesDistintas = [...new Set(evid.slice().sort((a, b) => a.ordem - b.ordem).map((e) => e.fase))].join(" → ");
 

@@ -16,7 +16,22 @@ const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").matc
 const PNCP = "https://pncp.gov.br/api/pncp/v1";
 const comLimite = (p, ms) => Promise.race([p, new Promise((_, x) => setTimeout(() => x(new Error("timeout")), ms))]);
 
-const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+// ═══ \n É A LINHA E \t É A COLUNA — NENHUM DOS DOIS SE COLAPSA ═══
+// A versão anterior fazia `replace(/[^a-z0-9]+/g, " ")`, e `[^a-z0-9]` casa `\n`: toda quebra virava espaço.
+// O efeito, medido em 08/ago: a re-extração com geometria já converteu 198.106 documentos-fonte, que estão
+// no banco com 2.000+ linhas cada — e o enriquecimento ACHATAVA tudo de novo aqui, na primeira função.
+// A geometria era reconstruída a um custo alto e descartada uma linha depois. Com o documento virando
+// fluxo, qualquer recorte vira janela por proximidade, e é isso que produzia descrição pegando o cabeçalho
+// da tabela ou o fim do item anterior.
+// É também o que toda ferramenta madura do ramo faz — pdfplumber, Camelot, pdf.js-extract (`pageToLines`):
+// agrupar por Y, delimitar por X, e trabalhar por LINHA/CÉLULA, nunca por janela de N caracteres.
+// ⚠️ NÃO quebra o casamento: `buildIndex` varre com /[a-z0-9]+/g e já ignora todo separador, então o índice
+// de tokens é idêntico com ou sem a quebra. O que muda é só a existência da fronteira para quem recorta.
+const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+  .replace(/[^a-z0-9\n\t]+/g, " ")    // preserva \n (linha) e \t (COLUNA); o resto vira espaço
+  .replace(/ *\t */g, "\t")           // sem espaço sobrando em volta da fronteira de célula
+  .replace(/ *\n */g, "\n")
+  .replace(/\n{2,}/g, "\n").trim();
 const stripLote = (s) => s.replace(/^\s*lote\s*0*\d+\s*[-–:]*\s*/i, "");
 const loteDe = (s) => { const m = /lote\s*0*(\d+)/i.exec(s || ""); return m ? +m[1] : null; };
 const STOP = new Set("para com sem por que dos das uma tipo cor material medida medidas unidade produto qualidade minimo maximo minima maxima aproximado aproximada conforme referencia marca modelo caracteristicas adicionais cada embalagem pacote unid serv svc item lote frete gratis".split(" "));

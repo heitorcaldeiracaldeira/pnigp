@@ -3,6 +3,7 @@
 //   node scripts/gera_relatorio_extracao.mjs         -> se ocioso (sem gravacao em 25min): gera HTML, imprime "DONE <path>"; senao "RUNNING ..."
 //   FORCE=1 node ...                                 -> gera sempre (teste)
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
+import { carimboCurtoBR } from "./hora_br.mjs";   // relógio único dos scripts (LEI DE FUSO)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const U = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const OUT = "C:/Users/PC/extracao-concluida.html";
@@ -36,10 +37,18 @@ try {
   const ext = e.n, comTexto = e.ct, vazios = ext - comTexto, falta = Math.max(0, idxTot - ext);
   const idxT = await q(`SELECT tipo_documento tipo, count(*)::int n FROM arquivos_sc WHERE uri IS NOT NULL GROUP BY 1`);
   const extT = await q(`SELECT tipo_documento tipo, count(*)::int n FROM arquivo_texto_sc GROUP BY 1`);
-  const horas = await q(`SELECT to_char(atualizado,'DD/MM HH24"h"') h, count(*)::int n, min(atualizado) mi
+  // ═══ HORÁRIO DE BRASÍLIA, NÃO UTC ═══
+  // Este relatório nasceu depois da LEI DE FUSO e não a seguiu: `to_char` sobre timestamptz formata no
+  // fuso da SESSÃO, que no Neon é GMT. Em 08/ago às 10:00 o cabeçalho dizia "Gerado em 13:00" — três
+  // horas à frente, num HTML que vai para a tela de alguém. Todos os carimbos de INSTANTE deste arquivo
+  // convertem agora; `hora_br.mjs` é o relógio dos scripts e existe exatamente para isso.
+  // (Data PURA — competência, exercício — continuaria sem converter: ela é rótulo, não instante.)
+  const horas = await q(`SELECT to_char(atualizado AT TIME ZONE 'America/Sao_Paulo','DD/MM HH24"h"') h, count(*)::int n, min(atualizado) mi
     FROM arquivo_texto_sc WHERE atualizado > now() - interval '48 hours' GROUP BY 1 ORDER BY 3`);
-  const jan = (await q(`SELECT to_char(min(atualizado),'DD/MM HH24:MI') ini, to_char(max(atualizado),'DD/MM HH24:MI') fim FROM arquivo_texto_sc WHERE atualizado > now() - interval '48 hours'`))[0];
-  const agora = (await q(`SELECT to_char(now(),'DD/MM/YYYY HH24:MI') t`))[0].t;
+  const jan = (await q(`SELECT to_char(min(atualizado) AT TIME ZONE 'America/Sao_Paulo','DD/MM HH24:MI') ini,
+                               to_char(max(atualizado) AT TIME ZONE 'America/Sao_Paulo','DD/MM HH24:MI') fim
+                          FROM arquivo_texto_sc WHERE atualizado > now() - interval '48 hours'`))[0];
+  const agora = carimboCurtoBR();   // o relógio dos scripts, com o sufixo -03 declarado
 
   const emap = Object.fromEntries(extT.map((r) => [r.tipo, r.n]));
   const tipos = idxT.map((r) => ({ tipo: r.tipo, idx: r.n, ext: emap[r.tipo] || 0 })).sort((a, b) => b.idx - a.idx);
