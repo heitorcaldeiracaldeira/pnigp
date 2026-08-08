@@ -6,6 +6,7 @@
 // NÃO toca no PNCP e NÃO toca no motor do CATMAT. Resumível, idempotente. node scripts/enriquece_item_documento.mjs
 import fs from "fs"; import path from "path"; import { fileURLToPath } from "url"; import pg from "pg";
 import { casa } from "./casa_itens.mjs";
+import { recortaBloco } from "./recorte_bloco.mjs";
 import { ehEspecificacao } from "./classifica_especificacao.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url)); const ROOT = path.join(__dirname, "..");
 const DATABASE_URL = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
@@ -30,13 +31,10 @@ function catalogo(docNorm, off) {
 }
 // BLOCO de spec = do anchor do item ATÉ o anchor do próximo item no MESMO doc (capado)
 const BLOCO_CAP = Number(process.env.BLOCO_CAP || 2500); // teto do bloco de spec (era 600 → truncava multi-atributo)
-function bloco(docNorm, off, offs, cap = BLOCO_CAP) {
-  if (off == null) return null;
-  const nexts = offs.filter((o) => o != null && o > off);
-  const end = Math.min(off + cap, nexts.length ? Math.min(...nexts) : off + cap);
-  const b = docNorm.slice(Math.max(0, off - 60), end).replace(/\s+/g, " ").trim();
-  return b.length >= 12 ? b : null;
-}
+const RECUO = Number(process.env.RECUO || 60);           // contexto antes da âncora (nº do item, unidade)
+
+// A fronteira do recorte vive em recorte_bloco.mjs, com o histórico do defeito e o teste que o trava.
+const bloco = (docNorm, off, offs, cap = BLOCO_CAP) => recortaBloco(docNorm, off, offs, cap, RECUO);
 const consolida = (n, base) => (n === 0 ? "ausente" : n >= 3 ? "alta" : (n >= 2 && RANK[base] >= 2) ? "alta" : base);
 
 async function main() {
