@@ -67,5 +67,20 @@ export function escolheRecorte(docNorm, off, offs, descricaoItem, celulaConfirma
   // Se NENHUM candidato contém uma palavra do item, o item não está naquele documento: não se escolhe o
   // "menos ruim". Devolver lixo com carimbo de confiança é o que contamina preço e CATMAT em silêncio.
   if (!melhor || melhor.nota <= 0) return null;
-  return melhor;
+  return { ...melhor, grau: grauDaNota(melhor.nota) };
+}
+
+// ═══ O GRAU DO RECORTE — A CONFIANÇA PRECISA MEDIR O TEXTO, NÃO SÓ A CONVERGÊNCIA ═══
+// Medido em 08/ago: 929.298 linhas estavam carimbadas com confiança ALTA e tinham a descrição recortada
+// no lugar errado — 58% de todas as "alta". O carimbo media convergência entre documentos ("três docs
+// concordam") e nunca olhava o texto que estava sendo gravado.
+// E convergência de documentos com o MESMO defeito não é evidência: o edital, o TR e o ETP costumam
+// repetir a mesma tabela, então o mesmo recorte errado aparece nos três e a regra o promovia a alta.
+// A nota já existe — é ela que escolhe o vencedor entre os métodos. Aqui ela vira grau, e o grau passa a
+// ser TETO da confiança: convergência pode elevar dentro do teto, nunca acima dele.
+//   nota = cobertura*10 + começo*3 + concisão   (cobertura total + começo certo ≈ 13; metade ≈ 8)
+export function grauDaNota(nota) {
+  if (nota >= 8) return "alta";      // cobre boa parte do item E começa nele
+  if (nota >= 4) return "media";     // cobre parte do item
+  return "baixa";                    // contém pouco do item: pode ser vizinho, cabeçalho, sobra
 }

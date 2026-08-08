@@ -37,6 +37,21 @@ const RECUO = Number(process.env.RECUO || 60);           // contexto antes da â
 
 // A fronteira do recorte vive em recorte_bloco.mjs, com o histórico do defeito e o teste que o trava.
 const bloco = (docNorm, off, offs, cap = BLOCO_CAP) => recortaBloco(docNorm, off, offs, cap, RECUO);
+// ⚠️ TENTATIVA REVERTIDA EM 08/ago — o teto de confiança pelo grau do recorte PIOROU, e fica registrado
+// para não ser refeito. A hipótese era boa: convergência de documentos com o MESMO defeito não é
+// evidência (edital, TR e ETP repetem a mesma tabela, e o mesmo recorte errado aparece nos três).
+// Só que a premissa que a sustentava era FALSA. Eu havia medido "929.298 alta com descrição truncada"
+// usando o percentual de descrições que começam com letra minúscula — e `norm()` faz toLowerCase, então
+// 100% começa minúsculo. A métrica não media truncamento nenhum.
+// Medido do jeito certo (a descrição contém as palavras significativas do item), em 1.760.783 linhas:
+//                        itens      contém o item
+//   antigo / alta       925.252         81,5%
+//   antigo / media      510.089         86,7%
+//   novo (com teto) / alta  212.582     77,7%
+//   novo (com teto) / media   5.742     73,6%
+// O carimbo antigo já acertava 81,5% no `alta`; o teto derrubou para 77,7% ao rebaixar linhas que estavam
+// certas. O que fica em aberto — e NÃO se conserta com teto — é que no antigo `media` acerta MAIS que
+// `alta` (86,7% × 81,5%): a escala está invertida, e isso pede outro tratamento, com medição própria.
 const consolida = (n, base) => (n === 0 ? "ausente" : n >= 3 ? "alta" : (n >= 2 && RANK[base] >= 2) ? "alta" : base);
 
 async function main() {
@@ -155,11 +170,14 @@ async function main() {
             if (!esc) continue;
             const desc = esc.desc;
             const metodoRecorte = esc.metodo;
+            // grau medido do recorte: NÃO entra mais na confiança (o teto foi revertido — piorou), mas
+            // segue disponível na evidência para quem for atacar a escala invertida do carimbo.
+            const grauRecorte = esc.grau;
             const key = desc.slice(0, 140);
             if (vistos.has(key)) continue;   // colapsa documentos repetidos com o mesmo bloco
             vistos.add(key);
             const cls = ehEspecificacao(desc);
-            evid.push({ tid: D.tid, sd: D.sd, ordem: ORDER.indexOf(D.tid), fase: FASE[D.tid] || `tipo ${D.tid}`, desc, score: r.score ?? null, conf: r.conf, docNorm: D.docNorm, off: r.off, ehSpec: cls.ok, specScore: cls.score, metodoRecorte });
+            evid.push({ tid: D.tid, sd: D.sd, ordem: ORDER.indexOf(D.tid), fase: FASE[D.tid] || `tipo ${D.tid}`, desc, score: r.score ?? null, conf: r.conf, docNorm: D.docNorm, off: r.off, ehSpec: cls.ok, specScore: cls.score, metodoRecorte, grauRecorte });
             evidRows.push({ cnpj: p.cnpj, ano: p.ano, seq: p.seq, numero: itens[k].numeroItem, cod_ibge, ordem: ORDER.indexOf(D.tid), fase: FASE[D.tid] || `tipo ${D.tid}`, tipo_id: D.tid, sequencial_documento: D.sd, descricao_no_documento: desc, eh_spec: cls.ok, spec_score: cls.score, score: r.score ?? null, conf: r.conf });
           }
           // CONSOLIDADO — PREFERE um bloco que É especificação (portão); convergência eleva a confiança
