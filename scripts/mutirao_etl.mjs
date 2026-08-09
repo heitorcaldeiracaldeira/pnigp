@@ -31,9 +31,17 @@ const ONDAS = {
     sql: `label ~* '(RGF|RREO|SIOPS|RPPS|Receitas detalhadas|Metas Fiscais|DCL|ASPS|subfun|Indicadores \\(IBGE|Finanças|Acompanhamento|MSC)'
           AND NOT coalesce(desativado,false)`,
   },
+  // ═══ ONDA 2 REDEFINIDA APÓS A ONDA 1 — O ALVO MUDOU ═══
+  // O desenho original mirava "as 20 com falha registrada". A onda 1 resolveu a maioria delas de passagem
+  // (com_falha caiu de 20 para 2), porque muitas só estavam paradas, não quebradas. Insistir no alvo
+  // antigo seria rodar de novo o que já está em dia.
+  // O alvo real agora são as 8 que NUNCA rodaram — nunca tiveram uma linha de dado — mais o resíduo que
+  // sobrou falhando. É diagnóstico, não recuperação: se uma fonte nunca produziu nada, o problema não é
+  // agendamento, e repetir não descobre nada. O que interessa aqui é a MENSAGEM de erro de cada uma.
   2: {
-    nome: "COM FALHA REGISTRADA (medir o erro, não insistir)",
-    sql: `(falhas_seguidas > 0 OR ultimo_status NOT IN ('ok')) AND NOT coalesce(desativado,false)`,
+    nome: "NUNCA RODARAM + o que sobrou falhando (diagnóstico)",
+    sql: `(ultima_exec IS NULL OR falhas_seguidas > 0 OR ultimo_status NOT IN ('ok'))
+          AND NOT coalesce(desativado,false)`,
   },
   3: {
     nome: "O RESTO das atrasadas (e medir duracao_seg de cada uma)",

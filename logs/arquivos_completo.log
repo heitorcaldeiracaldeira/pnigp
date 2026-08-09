@@ -60,3 +60,567 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 arquivos: 30.315 contratações pendentes (modalidades todas) · conc 2
   100/30315 · 100 c/arquivo  200/30315 · 200 c/arquivo  300/30315 · 300 c/arquivo  400/30315 · 400 c/arquivo  500/30315 · 500 c/arquivo  600/30315 · 600 c/arquivo  700/30315 · 699 c/arquivo  800/30315 · 799 c/arquivo  900/30315 · 899 c/arquivo  1000/30315 · 999 c/arquivo  1100/30315 · 1098 c/arquivo  1200/30315 · 1197 c/arquivo  1300/30315 · 1296 c/arquivo  1400/30315 · 1396 c/arquivo  1500/30315 · 1495 c/arquivo  1600/30315 · 1595 c/arquivo  1700/30315 · 1694 c/arquivo  1800/30315 · 1794 c/arquivo  1900/30315 · 1893 c/arquivo  2000/30315 · 1993 c/arquivo  2100/30315 · 2089 c/arquivo  2200/30315 · 2186 c/arquivo  2300/30315 · 2284 c/arquivo  2400/30315 · 2384 c/arquivo  2500/30315 · 2484 c/arquivo  2600/30315 · 2584 c/arquivo  2700/30315 · 2684 c/arquivo  2800/30315 · 2784 c/arquivo  2900/30315 · 2883 c/arquivo  3000/30315 · 2982 c/arquivo  3100/30315 · 3082 c/arquivo  3200/30315 · 3181 c/arquivo  3300/30315 · 3281 c/arquivo  3400/30315 · 3379 c/arquivo  3500/30315 · 3479 c/arquivo  3600/30315 · 3579 c/arquivo  3700/30315 · 3679 c/arquivo  3800/30315 · 3778 c/arquivo  3900/30315 · 3877 c/arquivo  4000/30315 · 3977 c/arquivo  4100/30315 · 4076 c/arquivo  4200/30315 · 4176 c/arquivo  4300/30315 · 4276 c/arquivo  4400/30315 · 4374 c/arquivo  4500/30315 · 4473 c/arquivo  4600/30315 · 4572 c/arquivo  4700/30315 · 4672 c/arquivo  4800/30315 · 4772 c/arquivo  4900/30315 · 4872 c/arquivo  5000/30315 · 4972 c/arquivo  5100/30315 · 5072 c/arquivo  5200/30315 · 5172 c/arquivo  5300/30315 · 5272 c/arquivo  5400/30315 · 5372 c/arquivo  5500/30315 · 5469 c/arquivo  5600/30315 · 5569 c/arquivo  5700/30315 · 5668 c/arquivo  5800/30315 · 5768 c/arquivo  5900/30315 · 5868 c/arquivo  6000/30315 · 5968 c/arquivo  6100/30315 · 6068 c/arquivo  6200/30315 · 6168 c/arquivo  6300/30315 · 6266 c/arquivo  6400/30315 · 6365 c/arquivo  6500/30315 · 6464 c/arquivo  6600/30315 · 6564 c/arquivo  6700/30315 · 6664 c/arquivo  6800/30315 · 6764 c/arquivo  6900/30315 · 6864 c/arquivo  7000/30315 · 6964 c/arquivo  7100/30315 · 7064 c/arquivo  7200/30315 · 7164 c/arquivo  7300/30315 · 7262 c/arquivo  7400/30315 · 7362 c/arquivo  7500/30315 · 7462 c/arquivo  7600/30315 · 7562 c/arquivo  7700/30315 · 7661 c/arquivo  7800/30315 · 7761 c/arquivo  7900/30315 · 7860 c/arquivo  8000/30315 · 7960 c/arquivo  8100/30315 · 8060 c/arquivo  8200/30315 · 8160 c/arquivo  8300/30315 · 8260 c/arquivo  8400/30315 · 8360 c/arquivo  8500/30315 · 8459 c/arquivo  8600/30315 · 8559 c/arquivo  8700/30315 · 8659 c/arquivo  8800/30315 · 8759 c/arquivo  8900/30315 · 8859 c/arquivo  9000/30315 · 8958 c/arquivo  9100/30315 · 9058 c/arquivo  9200/30315 · 9158 c/arquivo  9300/30315 · 9257 c/arquivo  9400/30315 · 9356 c/arquivo  9500/30315 · 9456 c/arquivo  9600/30315 · 9556 c/arquivo  9700/30315 · 9656 c/arquivo  9800/30315 · 9756 c/arquivo  9900/30315 · 9855 c/arquivo  10000/30315 · 9954 c/arquivo  10100/30315 · 10054 c/arquivo  10200/30315 · 10154 c/arquivo  10300/30315 · 10254 c/arquivo  10400/30315 · 10354 c/arquivo  10500/30315 · 10454 c/arquivo  10600/30315 · 10554 c/arquivo  10700/30315 · 10654 c/arquivo  10800/30315 · 10754 c/arquivo  10900/30315 · 10853 c/arquivo  11000/30315 · 10953 c/arquivo  11100/30315 · 11053 c/arquivo  11200/30315 · 11153 c/arquivo  11300/30315 · 11253 c/arquivo  11400/30315 · 11353 c/arquivo  11500/30315 · 11453 c/arquivo  11600/30315 · 11552 c/arquivo  11700/30315 · 11652 c/arquivo  11800/30315 · 11752 c/arquivo  11900/30315 · 11852 c/arquivo  12000/30315 · 11952 c/arquivo  12100/30315 · 12052 c/arquivo  12200/30315 · 12152 c/arquivo  12300/30315 · 12252 c/arquivo  12400/30315 · 12351 c/arquivo  12500/30315 · 12451 c/arquivo  12600/30315 · 12551 c/arquivo  12700/30315 · 12651 c/arquivo  12800/30315 · 12751 c/arquivo  12900/30315 · 12851 c/arquivo  13000/30315 · 12951 c/arquivo  13100/30315 · 13050 c/arquivo  13200/30315 · 13149 c/arquivo  13300/30315 · 13249 c/arquivo  13400/30315 · 13349 c/arquivo  13500/30315 · 13449 c/arquivo  13600/30315 · 13549 c/arquivo  13700/30315 · 13649 c/arquivo  13800/30315 · 13749 c/arquivo  13900/30315 · 13847 c/arquivo  14000/30315 · 13947 c/arquivo  14100/30315 · 14046 c/arquivo  14200/30315 · 14146 c/arquivo  14300/30315 · 14243 c/arquivo  14400/30315 · 14343 c/arquivo  14500/30315 · 14440 c/arquivo  14600/30315 · 14540 c/arquivo  14700/30315 · 14640 c/arquivo  14800/30315 · 14740 c/arquivo  14900/30315 · 14840 c/arquivo  15000/30315 · 14940 c/arquivo  15100/30315 · 15039 c/arquivo  15200/30315 · 15138 c/arquivo  15300/30315 · 15238 c/arquivo  15400/30315 · 15338 c/arquivo  15500/30315 · 15438 c/arquivo  15600/30315 · 15538 c/arquivo  15700/30315 · 15638 c/arquivo  15800/30315 · 15738 c/arquivo  15900/30315 · 15835 c/arquivo  16000/30315 · 15935 c/arquivo  16100/30315 · 16034 c/arquivo  16200/30315 · 16131 c/arquivo  16300/30315 · 16231 c/arquivo  16400/30315 · 16330 c/arquivo  16500/30315 · 16430 c/arquivo  16600/30315 · 16530 c/arquivo  16700/30315 · 16630 c/arquivo  16800/30315 · 16730 c/arquivo  16900/30315 · 16830 c/arquivo  17000/30315 · 16930 c/arquivo  17100/30315 · 17030 c/arquivo  17200/30315 · 17128 c/arquivo  17300/30315 · 17227 c/arquivo  17400/30315 · 17326 c/arquivo  17500/30315 · 17424 c/arquivo  17600/30315 · 17524 c/arquivo  17700/30315 · 17624 c/arquivo  17800/30315 · 17722 c/arquivo  17900/30315 · 17822 c/arquivo  18000/30315 · 17922 c/arquivo  18100/30315 · 18021 c/arquivo  18200/30315 · 18121 c/arquivo  18300/30315 · 18221 c/arquivo  18400/30315 · 18321 c/arquivo  18500/30315 · 18421 c/arquivo  18600/30315 · 18521 c/arquivo  18700/30315 · 18621 c/arquivo  18800/30315 · 18721 c/arquivo  18900/30315 · 18820 c/arquivo  19000/30315 · 18919 c/arquivo  19100/30315 · 19019 c/arquivo  19200/30315 · 19119 c/arquivo  19300/30315 · 19217 c/arquivo  19400/30315 · 19317 c/arquivo  19500/30315 · 19417 c/arquivo  19600/30315 · 19515 c/arquivo  19700/30315 · 19615 c/arquivo  19800/30315 · 19715 c/arquivo  19900/30315 · 19815 c/arquivo  20000/30315 · 19914 c/arquivo  20100/30315 · 20014 c/arquivo  20200/30315 · 20113 c/arquivo  20300/30315 · 20213 c/arquivo  20400/30315 · 20313 c/arquivo  20500/30315 · 20413 c/arquivo  20600/30315 · 20513 c/arquivo  20700/30315 · 20613 c/arquivo  20800/30315 · 20713 c/arquivo  20900/30315 · 20813 c/arquivo  21000/30315 · 20911 c/arquivo  21100/30315 · 21010 c/arquivo  21200/30315 · 21110 c/arquivo  21300/30315 · 21210 c/arquivo  21400/30315 · 21310 c/arquivo  21500/30315 · 21410 c/arquivo  21600/30315 · 21509 c/arquivo  21700/30315 · 21609 c/arquivo  21800/30315 · 21709 c/arquivo  21900/30315 · 21809 c/arquivo  22000/30315 · 21908 c/arquivo  22100/30315 · 22008 c/arquivo  22200/30315 · 22108 c/arquivo  22300/30315 · 22208 c/arquivo  22400/30315 · 22308 c/arquivo  22500/30315 · 22408 c/arquivo  22600/30315 · 22507 c/arquivo  22700/30315 · 22606 c/arquivo  22800/30315 · 22706 c/arquivo  22900/30315 · 22806 c/arquivo  23000/30315 · 22905 c/arquivo  23100/30315 · 23005 c/arquivo  23200/30315 · 23105 c/arquivo  23300/30315 · 23203 c/arquivo  23400/30315 · 23303 c/arquivo  23500/30315 · 23403 c/arquivo  23600/30315 · 23503 c/arquivo  23700/30315 · 23603 c/arquivo  23800/30315 · 23703 c/arquivo  23900/30315 · 23803 c/arquivo  24000/30315 · 23902 c/arquivo  24100/30315 · 24002 c/arquivo  24200/30315 · 24102 c/arquivo  24300/30315 · 24201 c/arquivo  24400/30315 · 24296 c/arquivo  24500/30315 · 24390 c/arquivo  24600/30315 · 24489 c/arquivo  24700/30315 · 24589 c/arquivo  24800/30315 · 24688 c/arquivo  24900/30315 · 24787 c/arquivo  25000/30315 · 24887 c/arquivo  25100/30315 · 24987 c/arquivo  25200/30315 · 25084 c/arquivo  25300/30315 · 25183 c/arquivo  25400/30315 · 25280 c/arquivo  25500/30315 · 25376 c/arquivo  25600/30315 · 25476 c/arquivo  25700/30315 · 25576 c/arquivo  25800/30315 · 25674 c/arquivo  25900/30315 · 25774 c/arquivo  26000/30315 · 25874 c/arquivo  26100/30315 · 25972 c/arquivo  26200/30315 · 26071 c/arquivo  26300/30315 · 26170 c/arquivo  26400/30315 · 26268 c/arquivo  26500/30315 · 26367 c/arquivo  26600/30315 · 26466 c/arquivo  26700/30315 · 26566 c/arquivo  26800/30315 · 26665 c/arquivo  26900/30315 · 26765 c/arquivo  27000/30315 · 26865 c/arquivo  27100/30315 · 26964 c/arquivo  27200/30315 · 27063 c/arquivo  27300/30315 · 27161 c/arquivo  27400/30315 · 27260 c/arquivo  27500/30315 · 27359 c/arquivo  27600/30315 · 27457 c/arquivo  27700/30315 · 27554 c/arquivo  27800/30315 · 27651 c/arquivo  27900/30315 · 27750 c/arquivo  28000/30315 · 27846 c/arquivo  28100/30315 · 27942 c/arquivo  28200/30315 · 28040 c/arquivo  28300/30315 · 28140 c/arquivo  28400/30315 · 28236 c/arquivo  28500/30315 · 28335 c/arquivo  28600/30315 · 28434 c/arquivo  28700/30315 · 28533 c/arquivo  28800/30315 · 28633 c/arquivo  28900/30315 · 28732 c/arquivo  29000/30315 · 28830 c/arquivo  29100/30315 · 28930 c/arquivo  29200/30315 · 29029 c/arquivo  29300/30315 · 29127 c/arquivo  29400/30315 · 29225 c/arquivo  29500/30315 · 29325 c/arquivo  29600/30315 · 29422 c/arquivo  29700/30315 · 29522 c/arquivo  29800/30315 · 29622 c/arquivo  29900/30315 · 29722 c/arquivo  30000/30315 · 29820 c/arquivo  30100/30315 · 29919 c/arquivo  30200/30315 · 30019 c/arquivo  30300/30315 · 30116 c/arquivo
 ✔ arquivos_sc: 627.344 documentos · 240.331 contratações · 150.775 atas
+(node:5952) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 729 contratações pendentes (modalidades todas) · conc 2
+  100/729 · 99 c/arquivo  200/729 · 199 c/arquivo  300/729 · 299 c/arquivo  400/729 · 396 c/arquivo  500/729 · 496 c/arquivo  600/729 · 596 c/arquivo  700/729 · 695 c/arquivo
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:14260) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:49620) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:48432) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:37196) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:21332) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:43752) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:21172) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:35728) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:10556) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:44680) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:39336) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:8096) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:50924) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:42508) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:48712) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:46372) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:41088) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:51012) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:38392) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:19944) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:51464) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:40192) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:51204) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:13896) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:41976) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:5916) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:30088) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:50756) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:28500) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:16936) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:37668) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:51440) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:49824) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:17112) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:16936) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:24676) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:14676) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:12196) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:50816) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:32020) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:45944) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:51032) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:50512) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:22044) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:52048) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas
+(node:12984) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+arquivos: 0 contratações pendentes (modalidades todas) · conc 2
+
+✔ arquivos_sc: 651.073 documentos · 247.236 contratações · 154.909 atas

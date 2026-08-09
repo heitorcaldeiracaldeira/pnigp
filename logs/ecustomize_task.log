@@ -566,4 +566,604 @@ To prepare for this change:
 See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
 (Use `node --trace-warnings ...` to show where the warning was created)
 2.634 atas do Portal de Compras Públicas a extrair (determinístico, por gerador)
-  50/2634 · 46 c/propostas  100/2634 · 94 c/propostas  150/2634 · 139 c/propostas  200/2634 · 186 c/propostas  250/2634 · 234 c/propostas  300/2634 · 278 c/propostas  350/2634 · 319 c/propostas  400/2634 · 365 c/propostas  450/2634 · 410 c/propostas  500/2634 · 459 c/propostas  550/2634 · 505 c/propostas  600/2634 · 549 c/propostas  650/2634 · 595 c/propostas  700/2634 · 642 c/propostas  750/2634 · 687 c/propostas  800/2634 · 734 c/propostas  850/2634 · 779 c/propostas  900/2634 · 823 c/propostas  950/2634 · 869 c/propostas  1000/2634 · 916 c/propostas
+  50/2634 · 46 c/propostas  100/2634 · 94 c/propostas  150/2634 · 139 c/propostas  200/2634 · 186 c/propostas  250/2634 · 234 c/propostas  300/2634 · 278 c/propostas  350/2634 · 319 c/propostas  400/2634 · 365 c/propostas  450/2634 · 410 c/propostas  500/2634 · 459 c/propostas  550/2634 · 505 c/propostas  600/2634 · 549 c/propostas  650/2634 · 595 c/propostas  700/2634 · 642 c/propostas  750/2634 · 687 c/propostas  800/2634 · 734 c/propostas  850/2634 · 779 c/propostas  900/2634 · 823 c/propostas  950/2634 · 869 c/propostas  1000/2634 · 916 c/propostas==== 08/08/2026  9:56:26,40 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:37196) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+36.131 processos que correram no Portal de Compras Públicas a extrair
+  destes, 35.254 com documento gerado pelo próprio Portal · 877 com documento de outro gerador (a novidade)
+  50/36131 · 0 c/propostas  100/36131 · 0 c/propostas  150/36131 · 0 c/propostas  200/36131 · 0 c/propostas  250/36131 · 1 c/propostas  300/36131 · 1 c/propostas  350/36131 · 1 c/propostas  400/36131 · 1 c/propostas  450/36131 · 1 c/propostas  500/36131 · 1 c/propostas  550/36131 · 1 c/propostas  600/36131 · 2 c/propostas  650/36131 · 2 c/propostas  700/36131 · 2 c/propostas  750/36131 · 3 c/propostas  800/36131 · 3 c/propostas  850/36131 · 3 c/propostas  900/36131 · 3 c/propostas  950/36131 · 3 c/propostas  1000/36131 · 3 c/propostas  1050/36131 · 3 c/propostas  1100/36131 · 3 c/propostas  1150/36131 · 3 c/propostas  1200/36131 · 3 c/propostas  1250/36131 · 3 c/propostas==== 08/08/2026 10:26:26,41 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:20952) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+34.881 processos que correram no Portal de Compras Públicas a extrair
+  destes, 34.004 com documento gerado pelo próprio Portal · 877 com documento de outro gerador (a novidade)
+  50/34881 · 0 c/propostas  100/34881 · 0 c/propostas  150/34881 · 0 c/propostas  200/34881 · 0 c/propostas  250/34881 · 0 c/propostas  300/34881 · 0 c/propostas  350/34881 · 0 c/propostas  400/34881 · 1 c/propostas  450/34881 · 1 c/propostas  500/34881 · 1 c/propostas  550/34881 · 2 c/propostas  600/34881 · 2 c/propostas  650/34881 · 2 c/propostas  700/34881 · 3 c/propostas  750/34881 · 4 c/propostas  800/34881 · 4 c/propostas  850/34881 · 4 c/propostas  900/34881 · 4 c/propostas  950/34881 · 4 c/propostas  1000/34881 · 5 c/propostas  1050/34881 · 5 c/propostas  1100/34881 · 6 c/propostas  1150/34881 · 6 c/propostas  1200/34881 · 6 c/propostas  1250/34881 · 6 c/propostas  1300/34881 · 6 c/propostas  1350/34881 · 6 c/propostas  1400/34881 · 6 c/propostas  1450/34881 · 6 c/propostas  1500/34881 · 6 c/propostas  1550/34881 · 6 c/propostas  1600/34881 · 6 c/propostas  1650/34881 · 6 c/propostas  1700/34881 · 6 c/propostas  1750/34881 · 6 c/propostas  1800/34881 · 6 c/propostas  1850/34881 · 6 c/propostas  1900/34881 · 6 c/propostas  1950/34881 · 6 c/propostas  2000/34881 · 6 c/propostas  2050/34881 · 6 c/propostas  2100/34881 · 6 c/propostas  2150/34881 · 6 c/propostas  2200/34881 · 6 c/propostas  2250/34881 · 6 c/propostas  2300/34881 · 6 c/propostas  2350/34881 · 6 c/propostas  2400/34881 · 6 c/propostas  2450/34881 · 7 c/propostas  2500/34881 · 8 c/propostas  2550/34881 · 8 c/propostas  2600/34881 · 8 c/propostas  2650/34881 · 8 c/propostas  2700/34881 · 8 c/propostas  2750/34881 · 8 c/propostas  2800/34881 · 8 c/propostas^C==== 08/08/2026 11:11:26,44 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:33776) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+32.068 processos que correram no Portal de Compras Públicas a extrair
+  destes, 31.191 com documento gerado pelo próprio Portal · 877 com documento de outro gerador (a novidade)
+^C==== 08/08/2026 11:26:26,43 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:48648) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+32.034 processos que correram no Portal de Compras Públicas a extrair
+  destes, 31.157 com documento gerado pelo próprio Portal · 877 com documento de outro gerador (a novidade)
+  50/32034 · 0 c/propostas  100/32034 · 0 c/propostas  150/32034 · 2 c/propostas  200/32034 · 2 c/propostas  250/32034 · 2 c/propostas  300/32034 · 2 c/propostas  350/32034 · 2 c/propostas  400/32034 · 2 c/propostas  450/32034 · 2 c/propostas  500/32034 · 2 c/propostas  550/32034 · 2 c/propostas  600/32034 · 2 c/propostas  650/32034 · 3 c/propostas  700/32034 · 3 c/propostas  750/32034 · 4 c/propostas  800/32034 · 4 c/propostas  850/32034 · 5 c/propostas  900/32034 · 6 c/propostas  950/32034 · 6 c/propostas  1000/32034 · 6 c/propostas  1050/32034 · 6 c/propostas  1100/32034 · 7 c/propostas  1150/32034 · 7 c/propostas  1200/32034 · 7 c/propostas  1250/32034 · 8 c/propostas  1300/32034 · 11 c/propostas  1350/32034 · 11 c/propostas  1400/32034 · 11 c/propostas  1450/32034 · 12 c/propostas  1500/32034 · 12 c/propostas  1550/32034 · 13 c/propostas  1600/32034 · 13 c/propostas  1650/32034 · 13 c/propostas  1700/32034 · 14 c/propostas  1750/32034 · 16 c/propostas  1800/32034 · 18 c/propostas  1850/32034 · 18 c/propostas  1900/32034 · 20 c/propostas  1950/32034 · 21 c/propostas  2000/32034 · 23 c/propostas  2050/32034 · 24 c/propostas  2100/32034 · 25 c/propostas  2150/32034 · 26 c/propostas  2200/32034 · 26 c/propostas  2250/32034 · 27 c/propostas  2300/32034 · 30 c/propostas  2350/32034 · 30 c/propostas  2400/32034 · 32 c/propostas  2450/32034 · 33 c/propostas  2500/32034 · 34 c/propostas  2550/32034 · 34 c/propostas  2600/32034 · 35 c/propostas  2650/32034 · 36 c/propostas  2700/32034 · 37 c/propostas  2750/32034 · 38 c/propostas  2800/32034 · 38 c/propostas  2850/32034 · 38 c/propostas  2900/32034 · 38 c/propostas  2950/32034 · 38 c/propostas  3000/32034 · 39 c/propostas  3050/32034 · 39 c/propostas  3100/32034 · 40 c/propostas  3150/32034 · 42 c/propostas  3200/32034 · 43 c/propostas  3250/32034 · 45 c/propostas  3300/32034 · 45 c/propostas  3350/32034 · 46 c/propostas  3400/32034 · 49 c/propostas  3450/32034 · 49 c/propostas  3500/32034 · 52 c/propostas  3550/32034 · 52 c/propostas  3600/32034 · 55 c/propostas  3650/32034 · 57 c/propostas  3700/32034 · 58 c/propostas  3750/32034 · 58 c/propostas  3800/32034 · 59 c/propostas  3850/32034 · 64 c/propostas  3900/32034 · 68 c/propostas  3950/32034 · 68 c/propostas  4000/32034 · 68 c/propostas  4050/32034 · 68 c/propostas  4100/32034 · 69 c/propostas  4150/32034 · 69 c/propostas  4200/32034 · 73 c/propostas  4250/32034 · 79 c/propostas  4300/32034 · 81 c/propostas  4350/32034 · 81 c/propostas  4400/32034 · 81 c/propostas  4450/32034 · 82 c/propostas  4500/32034 · 83 c/propostas  4550/32034 · 83 c/propostas  4600/32034 · 83 c/propostas  4650/32034 · 85 c/propostas  4700/32034 · 85 c/propostas  4750/32034 · 86 c/propostas  4800/32034 · 86 c/propostas  4850/32034 · 86 c/propostas  4900/32034 · 89 c/propostas  4950/32034 · 89 c/propostas  5000/32034 · 92 c/propostas  5050/32034 · 99 c/propostas  5100/32034 · 100 c/propostas  5150/32034 · 102 c/propostas  5200/32034 · 102 c/propostas  5250/32034 · 104 c/propostas  5300/32034 · 106 c/propostas  5350/32034 · 106 c/propostas  5400/32034 · 108 c/propostas  5450/32034 · 109 c/propostas  5500/32034 · 109 c/propostas  5550/32034 · 109 c/propostas  5600/32034 · 110 c/propostas  5650/32034 · 110 c/propostas  5700/32034 · 111 c/propostas  5750/32034 · 113 c/propostas  5800/32034 · 115 c/propostas  5850/32034 · 116 c/propostas  5900/32034 · 118 c/propostas  5950/32034 · 119 c/propostas  6000/32034 · 120 c/propostas  6050/32034 · 121 c/propostas  6100/32034 · 122 c/propostas  6150/32034 · 124 c/propostas  6200/32034 · 126 c/propostas  6250/32034 · 128 c/propostas  6300/32034 · 130 c/propostas  6350/32034 · 134 c/propostas  6400/32034 · 135 c/propostas  6450/32034 · 142 c/propostas  6500/32034 · 145 c/propostas  6550/32034 · 146 c/propostas  6600/32034 · 146 c/propostas  6650/32034 · 148 c/propostas  6700/32034 · 153 c/propostas  6750/32034 · 156 c/propostas  6800/32034 · 157 c/propostas  6850/32034 · 158 c/propostas  6900/32034 · 159 c/propostas  6950/32034 · 162 c/propostas  7000/32034 · 162 c/propostas  7050/32034 · 163 c/propostas  7100/32034 · 164 c/propostas  7150/32034 · 165 c/propostas  7200/32034 · 166 c/propostas  7250/32034 · 168 c/propostas  7300/32034 · 171 c/propostas  7350/32034 · 172 c/propostas  7400/32034 · 172 c/propostas  7450/32034 · 173 c/propostas  7500/32034 · 175 c/propostas  7550/32034 · 178 c/propostas^C==== 08/08/2026 13:56:26,50 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:51576) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+24.471 processos que correram no Portal de Compras Públicas a extrair
+  destes, 23.594 com documento gerado pelo próprio Portal · 877 com documento de outro gerador (a novidade)
+  50/24471 · 0 c/propostas  100/24471 · 2 c/propostas  150/24471 · 5 c/propostas  200/24471 · 7 c/propostas  250/24471 · 9 c/propostas  300/24471 · 12 c/propostas  350/24471 · 15 c/propostas  400/24471 · 16 c/propostas  450/24471 · 17 c/propostas  500/24471 · 18 c/propostas  550/24471 · 19 c/propostas  600/24471 · 22 c/propostas  650/24471 · 23 c/propostas  700/24471 · 24 c/propostas  750/24471 · 25 c/propostas  800/24471 · 27 c/propostas  850/24471 · 28 c/propostas  900/24471 · 30 c/propostas  950/24471 · 31 c/propostas  1000/24471 · 35 c/propostas  1050/24471 · 38 c/propostas  1100/24471 · 40 c/propostas  1150/24471 · 42 c/propostas  1200/24471 · 45 c/propostas  1250/24471 · 48 c/propostas  1300/24471 · 49 c/propostas  1350/24471 · 51 c/propostas==== 08/08/2026 14:26:26,55 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:868) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+23.123 processos que correram no Portal de Compras Públicas a extrair
+  destes, 22.246 com documento gerado pelo próprio Portal · 877 com documento de outro gerador (a novidade)
+  50/23123 · 0 c/propostas  100/23123 · 1 c/propostas  150/23123 · 3 c/propostas  200/23123 · 3 c/propostas  250/23123 · 5 c/propostas  300/23123 · 6 c/propostas  350/23123 · 7 c/propostas  400/23123 · 7 c/propostas  450/23123 · 8 c/propostas  500/23123 · 8 c/propostas  550/23123 · 10 c/propostas  600/23123 · 11 c/propostas  650/23123 · 11 c/propostas  700/23123 · 13 c/propostas  750/23123 · 16 c/propostas  800/23123 · 16 c/propostas  850/23123 · 19 c/propostas  900/23123 · 21 c/propostas  950/23123 · 22 c/propostas  1000/23123 · 23 c/propostas  1050/23123 · 24 c/propostas  1100/23123 · 24 c/propostas  1150/23123 · 24 c/propostas  1200/23123 · 28 c/propostas  1250/23123 · 29 c/propostas  1300/23123 · 30 c/propostas  1350/23123 · 30 c/propostas  1400/23123 · 32 c/propostas  1450/23123 · 32 c/propostas  1500/23123 · 33 c/propostas  1550/23123 · 36 c/propostas  1600/23123 · 37 c/propostas  1650/23123 · 41 c/propostas  1700/23123 · 41 c/propostas  1750/23123 · 41 c/propostas  1800/23123 · 44 c/propostas  1850/23123 · 46 c/propostas  1900/23123 · 46 c/propostas  1950/23123 · 46 c/propostas  2000/23123 · 48 c/propostas  2050/23123 · 48 c/propostas  2100/23123 · 51 c/propostas  2150/23123 · 52 c/propostas  2200/23123 · 52 c/propostas  2250/23123 · 53 c/propostas  2300/23123 · 56 c/propostas  2350/23123 · 56 c/propostas  2400/23123 · 58 c/propostas  2450/23123 · 58 c/propostas  2500/23123 · 61 c/propostas  2550/23123 · 61 c/propostas  2600/23123 · 61 c/propostas  2650/23123 · 62 c/propostas  2700/23123 · 64 c/propostas  2750/23123 · 64 c/propostas  2800/23123 · 66 c/propostas  2850/23123 · 68 c/propostas  2900/23123 · 70 c/propostas  2950/23123 · 72 c/propostas  3000/23123 · 76 c/propostas  3050/23123 · 77 c/propostas  3100/23123 · 78 c/propostas  3150/23123 · 79 c/propostas  3200/23123 · 80 c/propostas  3250/23123 · 83 c/propostas  3300/23123 · 85 c/propostas  3350/23123 · 87 c/propostas  3400/23123 · 89 c/propostas  3450/23123 · 89 c/propostas  3500/23123 · 90 c/propostas  3550/23123 · 91 c/propostas  3600/23123 · 94 c/propostas  3650/23123 · 95 c/propostas  3700/23123 · 98 c/propostas  3750/23123 · 99 c/propostas  3800/23123 · 102 c/propostas  3850/23123 · 104 c/propostas  3900/23123 · 105 c/propostas  3950/23123 · 107 c/propostas  4000/23123 · 109 c/propostas  4050/23123 · 109 c/propostas  4100/23123 · 111 c/propostas  4150/23123 · 113 c/propostas  4200/23123 · 115 c/propostas  4250/23123 · 115 c/propostas  4300/23123 · 116 c/propostas  4350/23123 · 119 c/propostas  4400/23123 · 120 c/propostas  4450/23123 · 123 c/propostas  4500/23123 · 125 c/propostas  4550/23123 · 127 c/propostas  4600/23123 · 130 c/propostas  4650/23123 · 130 c/propostas  4700/23123 · 131 c/propostas  4750/23123 · 133 c/propostas  4800/23123 · 134 c/propostas  4850/23123 · 137 c/propostas  4900/23123 · 138 c/propostas  4950/23123 · 140 c/propostas  5000/23123 · 142 c/propostas  5050/23123 · 143 c/propostas  5100/23123 · 143 c/propostas  5150/23123 · 147 c/propostas  5200/23123 · 149 c/propostas  5250/23123 · 150 c/propostas  5300/23123 · 153 c/propostas  5350/23123 · 154 c/propostas  5400/23123 · 154 c/propostas  5450/23123 · 156 c/propostas  5500/23123 · 156 c/propostas  5550/23123 · 158 c/propostas  5600/23123 · 158 c/propostas  5650/23123 · 159 c/propostas  5700/23123 · 161 c/propostas  5750/23123 · 161 c/propostas  5800/23123 · 163 c/propostas  5850/23123 · 164 c/propostas  5900/23123 · 165 c/propostas  5950/23123 · 165 c/propostas  6000/23123 · 166 c/propostas  6050/23123 · 166 c/propostas  6100/23123 · 168 c/propostas  6150/23123 · 168 c/propostas  6200/23123 · 168 c/propostas  6250/23123 · 169 c/propostas  6300/23123 · 170 c/propostas  6350/23123 · 171 c/propostas  6400/23123 · 171 c/propostas  6450/23123 · 171 c/propostas  6500/23123 · 171 c/propostas  6550/23123 · 171 c/propostas  6600/23123 · 171 c/propostas  6650/23123 · 172 c/propostas  6700/23123 · 172 c/propostas  6750/23123 · 175 c/propostas  6800/23123 · 175 c/propostas  6850/23123 · 177 c/propostas  6900/23123 · 178 c/propostas  6950/23123 · 180 c/propostas  7000/23123 · 180 c/propostas  7050/23123 · 181 c/propostas  7100/23123 · 181 c/propostas  7150/23123 · 181 c/propostas  7200/23123 · 181 c/propostas  7250/23123 · 183 c/propostas  7300/23123 · 184 c/propostas  7350/23123 · 185 c/propostas  7400/23123 · 185 c/propostas  7450/23123 · 186 c/propostas  7500/23123 · 187 c/propostas  7550/23123 · 187 c/propostas  7600/23123 · 187 c/propostas  7650/23123 · 190 c/propostas  7700/23123 · 191 c/propostas  7750/23123 · 191 c/propostas  7800/23123 · 191 c/propostas  7850/23123 · 191 c/propostas  7900/23123 · 191 c/propostas  7950/23123 · 191 c/propostas  8000/23123 · 191 c/propostas  8050/23123 · 191 c/propostas  8100/23123 · 191 c/propostas  8150/23123 · 191 c/propostas  8200/23123 · 191 c/propostas  8250/23123 · 191 c/propostas  8300/23123 · 191 c/propostas  8350/23123 · 191 c/propostas  8400/23123 · 191 c/propostas  8450/23123 · 191 c/propostas  8500/23123 · 192 c/propostas  8550/23123 · 194 c/propostas  8600/23123 · 194 c/propostas  8650/23123 · 194 c/propostas  8700/23123 · 195 c/propostas  8750/23123 · 196 c/propostas  8800/23123 · 196 c/propostas  8850/23123 · 197 c/propostas  8900/23123 · 198 c/propostas  8950/23123 · 198 c/propostas  9000/23123 · 200 c/propostas  9050/23123 · 204 c/propostas  9100/23123 · 204 c/propostas  9150/23123 · 206 c/propostas  9200/23123 · 206 c/propostas  9250/23123 · 206 c/propostas  9300/23123 · 207 c/propostas  9350/23123 · 207 c/propostas  9400/23123 · 207 c/propostas  9450/23123 · 207 c/propostas  9500/23123 · 207 c/propostas==== 08/08/2026 17:41:26,70 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:17720) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+13.651 processos que correram no Portal de Compras Públicas a extrair
+  destes, 12.774 com documento gerado pelo próprio Portal · 877 com documento de outro gerador (a novidade)
+  50/13651 · 0 c/propostas  100/13651 · 2 c/propostas  150/13651 · 4 c/propostas  200/13651 · 6 c/propostas  250/13651 · 7 c/propostas  300/13651 · 8 c/propostas  350/13651 · 8 c/propostas  400/13651 · 9 c/propostas  450/13651 · 9 c/propostas  500/13651 · 9 c/propostas  550/13651 · 9 c/propostas  600/13651 · 10 c/propostas  650/13651 · 10 c/propostas  700/13651 · 10 c/propostas  750/13651 · 10 c/propostas  800/13651 · 11 c/propostas  850/13651 · 13 c/propostas  900/13651 · 14 c/propostas  950/13651 · 14 c/propostas  1000/13651 · 14 c/propostas  1050/13651 · 14 c/propostas  1100/13651 · 15 c/propostas  1150/13651 · 15 c/propostas  1200/13651 · 15 c/propostas  1250/13651 · 15 c/propostas  1300/13651 · 18 c/propostas  1350/13651 · 20 c/propostas  1400/13651 · 21 c/propostas  1450/13651 · 23 c/propostas  1500/13651 · 23 c/propostas  1550/13651 · 25 c/propostas  1600/13651 · 26 c/propostas  1650/13651 · 27 c/propostas  1700/13651 · 28 c/propostas  1750/13651 · 29 c/propostas  1800/13651 · 29 c/propostas  1850/13651 · 29 c/propostas  1900/13651 · 29 c/propostas  1950/13651 · 30 c/propostas  2000/13651 · 31 c/propostas  2050/13651 · 33 c/propostas  2100/13651 · 34 c/propostas  2150/13651 · 35 c/propostas  2200/13651 · 35 c/propostas  2250/13651 · 35 c/propostas  2300/13651 · 35 c/propostas  2350/13651 · 35 c/propostas  2400/13651 · 35 c/propostas  2450/13651 · 36 c/propostas  2500/13651 · 36 c/propostas  2550/13651 · 37 c/propostas  2600/13651 · 37 c/propostas  2650/13651 · 38 c/propostas  2700/13651 · 39 c/propostas  2750/13651 · 40 c/propostas  2800/13651 · 40 c/propostas  2850/13651 · 44 c/propostas  2900/13651 · 44 c/propostas  2950/13651 · 46 c/propostas  3000/13651 · 49 c/propostas  3050/13651 · 50 c/propostas  3100/13651 · 50 c/propostas  3150/13651 · 50 c/propostas  3200/13651 · 51 c/propostas  3250/13651 · 52 c/propostas  3300/13651 · 52 c/propostas  3350/13651 · 53 c/propostas  3400/13651 · 54 c/propostas  3450/13651 · 55 c/propostas  3500/13651 · 55 c/propostas  3550/13651 · 56 c/propostas  3600/13651 · 58 c/propostas  3650/13651 · 58 c/propostas  3700/13651 · 58 c/propostas  3750/13651 · 60 c/propostas  3800/13651 · 60 c/propostas  3850/13651 · 60 c/propostas  3900/13651 · 62 c/propostas  3950/13651 · 62 c/propostas  4000/13651 · 63 c/propostas  4050/13651 · 63 c/propostas  4100/13651 · 63 c/propostas  4150/13651 · 64 c/propostas  4200/13651 · 64 c/propostas  4250/13651 · 65 c/propostas  4300/13651 · 65 c/propostas  4350/13651 · 65 c/propostas  4400/13651 · 65 c/propostas  4450/13651 · 65 c/propostas  4500/13651 · 66 c/propostas  4550/13651 · 67 c/propostas  4600/13651 · 68 c/propostas  4650/13651 · 69 c/propostas  4700/13651 · 71 c/propostas  4750/13651 · 73 c/propostas  4800/13651 · 74 c/propostas  4850/13651 · 76 c/propostas  4900/13651 · 77 c/propostas  4950/13651 · 77 c/propostas  5000/13651 · 77 c/propostas  5050/13651 · 77 c/propostas  5100/13651 · 77 c/propostas  5150/13651 · 78 c/propostas  5200/13651 · 78 c/propostas  5250/13651 · 79 c/propostas  5300/13651 · 79 c/propostas  5350/13651 · 79 c/propostas  5400/13651 · 80 c/propostas  5450/13651 · 82 c/propostas  5500/13651 · 82 c/propostas  5550/13651 · 83 c/propostas  5600/13651 · 84 c/propostas  5650/13651 · 85 c/propostas  5700/13651 · 86 c/propostas  5750/13651 · 86 c/propostas  5800/13651 · 86 c/propostas  5850/13651 · 86 c/propostas  5900/13651 · 86 c/propostas  5950/13651 · 87 c/propostas  6000/13651 · 87 c/propostas  6050/13651 · 88 c/propostas  6100/13651 · 88 c/propostas  6150/13651 · 89 c/propostas  6200/13651 · 89 c/propostas  6250/13651 · 90 c/propostas  6300/13651 · 91 c/propostas  6350/13651 · 91 c/propostas  6400/13651 · 92 c/propostas  6450/13651 · 92 c/propostas  6500/13651 · 93 c/propostas  6550/13651 · 94 c/propostas  6600/13651 · 94 c/propostas  6650/13651 · 94 c/propostas  6700/13651 · 94 c/propostas  6750/13651 · 94 c/propostas  6800/13651 · 94 c/propostas  6850/13651 · 96 c/propostas  6900/13651 · 96 c/propostas  6950/13651 · 96 c/propostas  7000/13651 · 96 c/propostas  7050/13651 · 96 c/propostas  7100/13651 · 96 c/propostas  7150/13651 · 97 c/propostas  7200/13651 · 97 c/propostas  7250/13651 · 97 c/propostas  7300/13651 · 99 c/propostas  7350/13651 · 99 c/propostas  7400/13651 · 99 c/propostas  7450/13651 · 99 c/propostas  7500/13651 · 99 c/propostas  7550/13651 · 99 c/propostas  7600/13651 · 100 c/propostas  7650/13651 · 101 c/propostas  7700/13651 · 104 c/propostas  7750/13651 · 104 c/propostas  7800/13651 · 105 c/propostas  7850/13651 · 107 c/propostas  7900/13651 · 107 c/propostas  7950/13651 · 108 c/propostas  8000/13651 · 110 c/propostas  8050/13651 · 111 c/propostas  8100/13651 · 111 c/propostas  8150/13651 · 112 c/propostas  8200/13651 · 114 c/propostas  8250/13651 · 114 c/propostas  8300/13651 · 114 c/propostas  8350/13651 · 114 c/propostas  8400/13651 · 114 c/propostas  8450/13651 · 114 c/propostas  8500/13651 · 114 c/propostas  8550/13651 · 115 c/propostas  8600/13651 · 116 c/propostas  8650/13651 · 116 c/propostas  8700/13651 · 117 c/propostas  8750/13651 · 117 c/propostas  8800/13651 · 118 c/propostas  8850/13651 · 118 c/propostas  8900/13651 · 118 c/propostas  8950/13651 · 118 c/propostas  9000/13651 · 118 c/propostas  9050/13651 · 118 c/propostas  9100/13651 · 118 c/propostas  9150/13651 · 118 c/propostas  9200/13651 · 119 c/propostas  9250/13651 · 119 c/propostas  9300/13651 · 119 c/propostas  9350/13651 · 120 c/propostas  9400/13651 · 120 c/propostas  9450/13651 · 121 c/propostas  9500/13651 · 122 c/propostas  9550/13651 · 122 c/propostas  9600/13651 · 124 c/propostas  9650/13651 · 124 c/propostas  9700/13651 · 124 c/propostas  9750/13651 · 124 c/propostas  9800/13651 · 124 c/propostas  9850/13651 · 124 c/propostas  9900/13651 · 125 c/propostas  9950/13651 · 125 c/propostas  10000/13651 · 125 c/propostas  10050/13651 · 125 c/propostas  10100/13651 · 126 c/propostas  10150/13651 · 126 c/propostas  10200/13651 · 128 c/propostas  10250/13651 · 128 c/propostas  10300/13651 · 128 c/propostas  10350/13651 · 128 c/propostas  10400/13651 · 128 c/propostas  10450/13651 · 128 c/propostas  10500/13651 · 128 c/propostas  10550/13651 · 128 c/propostas  10600/13651 · 128 c/propostas  10650/13651 · 128 c/propostas  10700/13651 · 128 c/propostas  10750/13651 · 128 c/propostas  10800/13651 · 128 c/propostas  10850/13651 · 128 c/propostas  10900/13651 · 128 c/propostas  10950/13651 · 128 c/propostas  11000/13651 · 128 c/propostas  11050/13651 · 128 c/propostas  11100/13651 · 129 c/propostas  11150/13651 · 130 c/propostas  11200/13651 · 130 c/propostas  11250/13651 · 130 c/propostas  11300/13651 · 130 c/propostas  11350/13651 · 130 c/propostas  11400/13651 · 130 c/propostas  11450/13651 · 130 c/propostas  11500/13651 · 130 c/propostas  11550/13651 · 130 c/propostas  11600/13651 · 131 c/propostas  11650/13651 · 131 c/propostas  11700/13651 · 133 c/propostas  11750/13651 · 134 c/propostas  11800/13651 · 137 c/propostas  11850/13651 · 138 c/propostas  11900/13651 · 138 c/propostas  11950/13651 · 138 c/propostas  12000/13651 · 140 c/propostas  12050/13651 · 140 c/propostas  12100/13651 · 142 c/propostas  12150/13651 · 144 c/propostas  12200/13651 · 147 c/propostas  12250/13651 · 147 c/propostas  12300/13651 · 149 c/propostas  12350/13651 · 149 c/propostas  12400/13651 · 149 c/propostas  12450/13651 · 150 c/propostas  12500/13651 · 150 c/propostas  12550/13651 · 152 c/propostas  12600/13651 · 153 c/propostas  12650/13651 · 154 c/propostas  12700/13651 · 155 c/propostas  12750/13651 · 155 c/propostas  12800/13651 · 155 c/propostas  12850/13651 · 155 c/propostas  12900/13651 · 155 c/propostas  12950/13651 · 155 c/propostas  13000/13651 · 155 c/propostas  13050/13651 · 155 c/propostas  13100/13651 · 155 c/propostas  13150/13651 · 155 c/propostas  13200/13651 · 155 c/propostas  13250/13651 · 155 c/propostas  13300/13651 · 155 c/propostas  13350/13651 · 155 c/propostas  13400/13651 · 155 c/propostas  13450/13651 · 156 c/propostas  13500/13651 · 157 c/propostas  13550/13651 · 157 c/propostas  13600/13651 · 158 c/propostas  13650/13651 · 158 c/propostas
+── rendimento desta rodada, por origem do documento ──
+   documento do próprio Portal .... 155/12774 (1.2%)
+   documento de outro gerador ..... 3/877 (0.3%)
+acumulado na base (não é desta rodada): 10.948 propostas · 2.484 fornecedores · 1.227 marcas
+==== 08/08/2026 21:36:22,33 :: EXTRAI BETHA ==== 
+(node:45508) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+1.074 atas Betha-nativas a extrair (determinístico)
+
+  ⚠ falhou 2025/4: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2026/89: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/251: ON CONFLICT DO UPDATE command cannot affect row a second time
+  50/1074 · 0 c/marca · 3 erros  100/1074 · 2 c/marca · 3 erros  150/1074 · 2 c/marca · 3 erros  200/1074 · 2 c/marca · 3 erros  250/1074 · 2 c/marca · 3 erros
+  ⚠ falhou 2025/176: ON CONFLICT DO UPDATE command cannot affect row a second time
+  300/1074 · 2 c/marca · 4 erros
+  ⚠ falhou 2024/238: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/117: ON CONFLICT DO UPDATE command cannot affect row a second time
+  350/1074 · 2 c/marca · 6 erros
+  ⚠ falhou 2024/215: ON CONFLICT DO UPDATE command cannot affect row a second time
+  400/1074 · 2 c/marca · 7 erros  450/1074 · 2 c/marca · 7 erros  500/1074 · 2 c/marca · 7 erros
+  ⚠ falhou 2025/43: ON CONFLICT DO UPDATE command cannot affect row a second time
+  550/1074 · 2 c/marca · 8 erros  600/1074 · 2 c/marca · 8 erros
+  ⚠ falhou 2024/246: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/45: ON CONFLICT DO UPDATE command cannot affect row a second time
+  650/1074 · 2 c/marca · 10 erros  700/1074 · 2 c/marca · 10 erros  750/1074 · 2 c/marca · 11 erros  800/1074 · 2 c/marca · 12 erros  850/1074 · 2 c/marca · 12 erros  900/1074 · 2 c/marca · 12 erros  950/1074 · 2 c/marca · 13 erros  1000/1074 · 2 c/marca · 15 erros  1050/1074 · 3 c/marca · 15 erros
+✔ Betha: 15 itens gravados · 3 atas c/ marca · 15 erros
+  item_marca_sc total: 539 itens com marca · 230 marcas distintas
+==== 08/08/2026 21:56:26,79 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:50180) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+61 processos que correram no Portal de Compras Públicas a extrair
+  destes, 61 com documento gerado pelo próprio Portal · 0 com documento de outro gerador (a novidade)
+  50/61 · 0 c/propostas
+── rendimento desta rodada, por origem do documento ──
+   documento do próprio Portal .... 0/61 (0.0%)
+   documento de outro gerador ..... 0/0
+acumulado na base (não é desta rodada): 10.948 propostas · 2.484 fornecedores · 1.227 marcas
+==== 08/08/2026 21:58:04,54 :: EXTRAI BETHA ==== 
+(node:40972) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+15 atas Betha-nativas a extrair (determinístico)
+
+  ⚠ falhou 2025/4: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2026/89: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/251: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/176: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/238: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/117: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/43: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/246: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/45: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/53: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+✔ Betha: 0 itens gravados · 0 atas c/ marca · 13 erros
+  item_marca_sc total: 539 itens com marca · 230 marcas distintas
+==== 08/08/2026 22:11:26,79 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:39928) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+28 processos que correram no Portal de Compras Públicas a extrair
+  destes, 28 com documento gerado pelo próprio Portal · 0 com documento de outro gerador (a novidade)
+
+── rendimento desta rodada, por origem do documento ──
+   documento do próprio Portal .... 0/28 (0.0%)
+   documento de outro gerador ..... 0/0
+acumulado na base (não é desta rodada): 10.948 propostas · 2.484 fornecedores · 1.227 marcas
+==== 08/08/2026 22:12:19,25 :: EXTRAI BETHA ==== 
+(node:50680) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+13 atas Betha-nativas a extrair (determinístico)
+
+  ⚠ falhou 2025/4: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2026/89: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/251: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/176: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/117: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/78: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/228: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+✔ Betha: 0 itens gravados · 0 atas c/ marca · 7 erros
+  item_marca_sc total: 539 itens com marca · 230 marcas distintas
+==== 08/08/2026 22:26:26,83 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:23064) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+24 processos que correram no Portal de Compras Públicas a extrair
+  destes, 24 com documento gerado pelo próprio Portal · 0 com documento de outro gerador (a novidade)
+
+── rendimento desta rodada, por origem do documento ──
+   documento do próprio Portal .... 0/24 (0.0%)
+   documento de outro gerador ..... 0/0
+acumulado na base (não é desta rodada): 10.948 propostas · 2.484 fornecedores · 1.227 marcas
+==== 08/08/2026 22:27:14,96 :: EXTRAI BETHA ==== 
+(node:40316) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+7 atas Betha-nativas a extrair (determinístico)
+
+  ⚠ falhou 2025/4: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2026/89: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/251: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/176: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/117: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/78: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/228: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+✔ Betha: 0 itens gravados · 0 atas c/ marca · 7 erros
+  item_marca_sc total: 539 itens com marca · 230 marcas distintas
+==== 08/08/2026 22:41:26,81 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:39164) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+22 processos que correram no Portal de Compras Públicas a extrair
+  destes, 22 com documento gerado pelo próprio Portal · 0 com documento de outro gerador (a novidade)
+
+── rendimento desta rodada, por origem do documento ──
+   documento do próprio Portal .... 0/22 (0.0%)
+   documento de outro gerador ..... 0/0
+acumulado na base (não é desta rodada): 10.948 propostas · 2.484 fornecedores · 1.227 marcas
+==== 08/08/2026 22:42:15,16 :: EXTRAI BETHA ==== 
+(node:28752) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+7 atas Betha-nativas a extrair (determinístico)
+
+  ⚠ falhou 2025/4: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/176: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/78: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/228: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+✔ Betha: 0 itens gravados · 0 atas c/ marca · 4 erros
+  item_marca_sc total: 539 itens com marca · 230 marcas distintas
+==== 08/08/2026 22:56:26,85 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:46636) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+21 processos que correram no Portal de Compras Públicas a extrair
+  destes, 21 com documento gerado pelo próprio Portal · 0 com documento de outro gerador (a novidade)
+
+── rendimento desta rodada, por origem do documento ──
+   documento do próprio Portal .... 0/21 (0.0%)
+   documento de outro gerador ..... 0/0
+acumulado na base (não é desta rodada): 10.948 propostas · 2.484 fornecedores · 1.227 marcas
+==== 08/08/2026 22:57:13,15 :: EXTRAI BETHA ==== 
+(node:6796) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+4 atas Betha-nativas a extrair (determinístico)
+
+  ⚠ falhou 2025/4: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/176: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/78: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/228: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+✔ Betha: 0 itens gravados · 0 atas c/ marca · 4 erros
+  item_marca_sc total: 539 itens com marca · 230 marcas distintas
+==== 08/08/2026 23:11:26,82 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:47000) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+20 processos que correram no Portal de Compras Públicas a extrair
+  destes, 20 com documento gerado pelo próprio Portal · 0 com documento de outro gerador (a novidade)
+
+── rendimento desta rodada, por origem do documento ──
+   documento do próprio Portal .... 0/20 (0.0%)
+   documento de outro gerador ..... 0/0
+acumulado na base (não é desta rodada): 10.948 propostas · 2.484 fornecedores · 1.227 marcas
+==== 08/08/2026 23:12:03,17 :: EXTRAI BETHA ==== 
+(node:32684) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+4 atas Betha-nativas a extrair (determinístico)
+
+  ⚠ falhou 2025/4: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/176: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/78: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/228: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+✔ Betha: 0 itens gravados · 0 atas c/ marca · 4 erros
+  item_marca_sc total: 539 itens com marca · 230 marcas distintas
+==== 08/08/2026 23:26:26,84 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:31688) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+14 processos que correram no Portal de Compras Públicas a extrair
+  destes, 14 com documento gerado pelo próprio Portal · 0 com documento de outro gerador (a novidade)
+
+── rendimento desta rodada, por origem do documento ──
+   documento do próprio Portal .... 0/14 (0.0%)
+   documento de outro gerador ..... 0/0
+acumulado na base (não é desta rodada): 10.948 propostas · 2.484 fornecedores · 1.227 marcas
+==== 08/08/2026 23:26:56,06 :: EXTRAI BETHA ==== 
+(node:50228) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+4 atas Betha-nativas a extrair (determinístico)
+
+  ⚠ falhou 2025/4: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/176: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/78: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/228: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+✔ Betha: 0 itens gravados · 0 atas c/ marca · 4 erros
+  item_marca_sc total: 539 itens com marca · 230 marcas distintas
+==== 08/08/2026 23:41:26,85 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:45128) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+12 processos que correram no Portal de Compras Públicas a extrair
+  destes, 12 com documento gerado pelo próprio Portal · 0 com documento de outro gerador (a novidade)
+
+── rendimento desta rodada, por origem do documento ──
+   documento do próprio Portal .... 0/12 (0.0%)
+   documento de outro gerador ..... 0/0
+acumulado na base (não é desta rodada): 10.948 propostas · 2.484 fornecedores · 1.227 marcas
+==== 08/08/2026 23:41:53,21 :: EXTRAI BETHA ==== 
+(node:16936) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+4 atas Betha-nativas a extrair (determinístico)
+
+  ⚠ falhou 2025/4: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/176: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/228: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+✔ Betha: 0 itens gravados · 0 atas c/ marca · 3 erros
+  item_marca_sc total: 539 itens com marca · 230 marcas distintas
+==== 08/08/2026 23:56:26,84 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:12788) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+11 processos que correram no Portal de Compras Públicas a extrair
+  destes, 11 com documento gerado pelo próprio Portal · 0 com documento de outro gerador (a novidade)
+
+── rendimento desta rodada, por origem do documento ──
+   documento do próprio Portal .... 0/11 (0.0%)
+   documento de outro gerador ..... 0/0
+acumulado na base (não é desta rodada): 10.948 propostas · 2.484 fornecedores · 1.227 marcas
+==== 08/08/2026 23:56:47,63 :: EXTRAI BETHA ==== 
+(node:44648) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+3 atas Betha-nativas a extrair (determinístico)
+
+  ⚠ falhou 2025/4: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/176: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/228: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+✔ Betha: 0 itens gravados · 0 atas c/ marca · 3 erros
+  item_marca_sc total: 539 itens com marca · 230 marcas distintas
+==== 09/08/2026  0:11:26,85 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:7556) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+9 processos que correram no Portal de Compras Públicas a extrair
+  destes, 9 com documento gerado pelo próprio Portal · 0 com documento de outro gerador (a novidade)
+
+── rendimento desta rodada, por origem do documento ──
+   documento do próprio Portal .... 0/9 (0.0%)
+   documento de outro gerador ..... 0/0
+acumulado na base (não é desta rodada): 10.948 propostas · 2.484 fornecedores · 1.227 marcas
+==== 09/08/2026  0:11:44,60 :: EXTRAI BETHA ==== 
+(node:12420) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+3 atas Betha-nativas a extrair (determinístico)
+
+  ⚠ falhou 2025/4: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/176: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2024/228: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+✔ Betha: 0 itens gravados · 0 atas c/ marca · 3 erros
+  item_marca_sc total: 539 itens com marca · 230 marcas distintas
+==== 09/08/2026  0:26:26,86 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:8780) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+7 processos que correram no Portal de Compras Públicas a extrair
+  destes, 7 com documento gerado pelo próprio Portal · 0 com documento de outro gerador (a novidade)
+
+── rendimento desta rodada, por origem do documento ──
+   documento do próprio Portal .... 0/7 (0.0%)
+   documento de outro gerador ..... 0/0
+acumulado na base (não é desta rodada): 10.948 propostas · 2.484 fornecedores · 1.227 marcas
+==== 09/08/2026  0:26:41,17 :: EXTRAI BETHA ==== 
+(node:50472) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+3 atas Betha-nativas a extrair (determinístico)
+
+  ⚠ falhou 2025/4: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/176: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+✔ Betha: 0 itens gravados · 0 atas c/ marca · 2 erros
+  item_marca_sc total: 539 itens com marca · 230 marcas distintas
+==== 09/08/2026  0:41:26,87 :: EXTRAI PORTAL COMPRAS PUBLICAS ==== 
+(node:12456) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+5 processos que correram no Portal de Compras Públicas a extrair
+  destes, 5 com documento gerado pelo próprio Portal · 0 com documento de outro gerador (a novidade)
+
+── rendimento desta rodada, por origem do documento ──
+   documento do próprio Portal .... 0/5 (0.0%)
+   documento de outro gerador ..... 0/0
+acumulado na base (não é desta rodada): 10.948 propostas · 2.484 fornecedores · 1.227 marcas
+==== 09/08/2026  0:41:37,63 :: EXTRAI BETHA ==== 
+(node:39580) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+2 atas Betha-nativas a extrair (determinístico)
+
+  ⚠ falhou 2025/4: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+  ⚠ falhou 2025/176: ON CONFLICT DO UPDATE command cannot affect row a second time
+
+✔ Betha: 0 itens gravados · 0 atas c/ marca · 2 erros
+  item_marca_sc total: 539 itens com marca · 230 marcas distintas
