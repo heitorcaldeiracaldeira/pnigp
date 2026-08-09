@@ -1,7 +1,11 @@
 // IBGE Censo 2022 — dados por SETOR CENSITÁRIO (menor unidade): população, domicílios, densidade, bairro. Base do mapa intraurbano. Fonte: IBGE FTP Agregados por Setores. State-agnostic.
 import fs from "fs"; import pg from "pg"; import readline from "readline";
 const UFC = { SC: "42", SP: "35" }[process.env.UF || "SC"] || "42";
-const CSV = process.argv[2] || process.env.SETOR_CSV;
+// Sem argumento, BUSCA sozinho no FTP do IBGE (versão mais recente). Antes disto o script quebrava em
+// `fs.createReadStream(undefined)` sempre que o orquestrador o chamava — e o orquestrador nunca passa
+// argumento. Ficou semanas com "erro(1)" sem produzir uma linha, porque o erro era descartado.
+const { garanteArquivo } = await import("./baixa_setores_ibge.mjs");
+const CSV = process.argv[2] || process.env.SETOR_CSV || await garanteArquivo("basico");
 const uq = (x) => (x || "").replace(/^"|"$/g, "");
 const nInt = (x) => { const n = parseInt(uq(x).replace(/\D/g, "")); return isNaN(n) ? 0 : n; };
 const nFlt = (x) => { const n = parseFloat(uq(x).replace(",", ".")); return isNaN(n) ? 0 : n; };

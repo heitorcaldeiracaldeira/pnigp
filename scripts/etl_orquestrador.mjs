@@ -458,7 +458,24 @@ function dentroDaJanela() {
 // roda 1 vez sob monitoramento; "ok" | "retry"(estagnado) | "erro(n)"
 function runOnce(f, reinicios) {
   return new Promise((resolve) => {
-    const child = spawn(process.execPath, [f.script], { cwd: ROOT, env: { ...process.env, ...f.env }, stdio: "ignore" });
+    // ═══ DEFEITO 1: O ERRO ERA JOGADO FORA ANTES DE CHEGAR A ALGUÉM ═══
+    // `stdio: "ignore"` descartava stdout E stderr do filho, então tudo que sobrava era o código de saída.
+    // Medido em 08/ago: 5 fontes esgotavam as 5 tentativas em ~6 SEGUNDOS cada e o registro dizia apenas
+    // "erro(1)". Uma fonte que morre em 6 segundos não está lutando com rede — está quebrando na primeira
+    // linha, exatamente como os 12 ETLs do DATASUS que morriam por um `export` que nunca existiu. A causa
+    // estava escrita no stderr do filho, e nós a apagávamos.
+    // Agora captura-se a ÚLTIMA linha de erro, que vai para `msg` no catálogo. Só a última: o objetivo é
+    // diagnóstico no lugar onde alguém olha, não copiar log inteiro para dentro do banco.
+    const child = spawn(process.execPath, [f.script], { cwd: ROOT, env: { ...process.env, ...f.env }, stdio: ["ignore", "pipe", "pipe"] });
+    let ultimoErro = "";
+    const capta = (buf) => {
+      for (const l of String(buf).split(/\r?\n/)) {
+        const t = l.trim();
+        if (t && /error|erro|cannot|undefined|not found|econn|timeout|denied|invalid|fail/i.test(t)) ultimoErro = t.slice(0, 200);
+      }
+    };
+    child.stdout?.on("data", capta);
+    child.stderr?.on("data", capta);
     let last = "", lastChange = Date.now(), settled = false, timer = null, avisouCego = false;
     const t0Fonte = Date.now();
     const fin = (v) => { if (settled) return; settled = true; if (timer) clearInterval(timer); resolve(v); };
@@ -477,17 +494,31 @@ function runOnce(f, reinicios) {
       if (p.sig !== last) { last = p.sig; lastChange = Date.now(); }
       const idle = Math.round((Date.now() - lastChange) / 1000);
       await db.query(`UPDATE etl_catalogo SET msg=$1, atualizado_em=now() WHERE id=$2`, [`rodando: ${p.n} regs · ${reinicios} reinício(s)${idle > 120 ? ` · quieto ${idle}s` : ""}`, f.id]).catch(() => {});
-      if (Date.now() - lastChange > STALL_MS) {
+      // a mesma tolerância crescente aqui e no corte abaixo — senão a checagem externa dispara com o valor
+      // fixo e o crescimento nunca chega a valer
+      if (Date.now() - lastChange > STALL_MS * (1 + reinicios)) {
         if (p.cego) {  // sem carimbo de tempo: quieto não prova parado. Avisa uma vez e deixa correr até sair sozinho.
           if (!avisouCego) { avisouCego = true; log(`   ${f.id}: ${idle}s sem sinal, mas a tabela não tem carimbo de tempo — deixando correr (não dá para provar estagnação)`); }
           lastChange = Date.now();
           return;
         }
-        log(`!! ${f.id} ESTAGNADO (${idle}s) — matando e religando`); killTree(child.pid); fin("retry");
+        // ═══ DEFEITO 2: O GUARDA MATAVA FONTE LENTA, EM LAÇO, PARA SEMPRE ═══
+        // Medido em 08/ago: `cadprev_full` estagnou aos 1.200s, foi morto e religado — CINCO vezes, sempre
+        // os mesmos 20 minutos cravados, consumindo 1h48 sem produzir nada. `cnes_equipamentos`,
+        // `cnes_profissionais` e `nf` fizeram o mesmo. Vinte minutos exatos e repetidos não é travamento:
+        // é o ritmo daquela fonte, ou um timeout do servidor dela. Matar e religar reproduz o resultado.
+        // Agora a tolerância CRESCE a cada reinício (20 → 40 → 60 min…): se a primeira suspeita de
+        // estagnação estava errada, a segunda dá mais corda em vez de repetir o mesmo erro mais rápido.
+        const tolerancia = STALL_MS * (1 + reinicios);
+        if (Date.now() - lastChange > tolerancia) {
+          log(`!! ${f.id} ESTAGNADO (${idle}s, tolerância ${Math.round(tolerancia / 60000)} min) — matando e religando`);
+          killTree(child.pid); fin("retry");
+        }
       }
     }, CHECK_MS);
-    child.on("exit", (code) => fin(code === 0 ? "ok" : `erro(${code})`));
-    child.on("error", () => fin("erro(spawn)"));
+    // devolve a MENSAGEM junto com o código: sem ela, "erro(1)" não diz nada a ninguém
+    child.on("exit", (code) => fin(code === 0 ? "ok" : `erro(${code})${ultimoErro ? ` · ${ultimoErro}` : ""}`));
+    child.on("error", (e) => fin(`erro(spawn) · ${String(e).slice(0, 120)}`));
   });
 }
 
@@ -523,11 +554,18 @@ async function rodar(f) {
     log(`  ${f.id}: ${ultimo} — religando em 5s`);
     await sleep(5000);
   }
-  // esgotou as tentativas: marca a falha SEM tocar em ultima_exec, e conta para o recuo
+  // esgotou as tentativas: marca a falha SEM tocar em ultima_exec, e conta para o recuo.
+  // ═══ DEFEITO 3: A MENSAGEM MORRIA AQUI ═══
+  // `msg` recebia só "falhou 5/5 · <data>", e `ultimo_status` só "erro(1)". Quem abrisse o catálogo depois
+  // via que falhou e nada sobre o PORQUÊ — foi o que deixou 5 fontes com "erro(1)" por mais de um mês sem
+  // ninguém saber que era erro determinístico de primeira linha. Agora a última linha de erro capturada do
+  // filho vai junto, no lugar onde alguém de fato olha.
+  const detalhe = String(ultimo).includes("·") ? String(ultimo).split("·").slice(1).join("·").trim() : "";
   await db.query(`UPDATE etl_catalogo SET ultimo_status=$1, ultima_falha=now(),
                     falhas_seguidas=COALESCE(falhas_seguidas,0)+1,
                     msg=$2, atualizado_em=now() WHERE id=$3`,
-    [ultimo, `falhou ${MAX_TENT}/${MAX_TENT} · ${carimboCurtoBR()}`, f.id]).catch(() => {});
+    [String(ultimo).split("·")[0].trim(),
+     `falhou ${MAX_TENT}/${MAX_TENT} · ${carimboCurtoBR()}${detalhe ? ` · ${detalhe}` : ""}`, f.id]).catch(() => {});
   return ultimo;
 }
 

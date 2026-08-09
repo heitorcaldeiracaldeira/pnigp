@@ -1,7 +1,9 @@
 // Extrai a malha (polígonos) dos setores censitários do GPKG do IBGE → GeoJSON por município (simplificado) + densidade. Base do mapa choropleth intraurbano.
 import fs from "fs"; import pg from "pg"; import initSqlJs from "sql.js"; import wkx from "wkx";
 const UFC = { SC: "42", SP: "35" }[process.env.UF || "SC"] || "42";
-const GPKG = process.argv[2];
+// Sem argumento, BUSCA sozinho a malha do IBGE (versão mais recente, por UF). Ver baixa_setores_ibge.mjs.
+const { garanteArquivo } = await import("./baixa_setores_ibge.mjs");
+const GPKG = process.argv[2] || await garanteArquivo("gpkg");
 const P = 5; // casas decimais (~1m)
 const round = (x) => Math.round(x * 10 ** P) / 10 ** P;
 // arredonda + remove pontos consecutivos iguais (compressão sem lib)

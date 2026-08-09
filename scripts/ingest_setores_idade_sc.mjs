@@ -1,7 +1,11 @@
 // Adiciona % de IDOSOS (60+) por setor censitário (demografia_BR: V01006=total, V01040=60-69, V01041=70+) → setores_censitarios_sc + injeta no geojson do mapa. State-agnostic.
 import fs from "fs"; import pg from "pg"; import readline from "readline";
 const UFC = { SC: "42", SP: "35" }[process.env.UF || "SC"] || "42";
-const CSV = process.argv[2];
+// Sem argumento, BUSCA sozinho no FTP do IBGE (versao mais recente). Ver baixa_setores_ibge.mjs:
+// estes scripts esperavam CSV passado a mao e o orquestrador nunca passa — quebravam em
+// fs.createReadStream(undefined) e ficaram semanas com "erro(1)" sem produzir uma linha.
+const { garanteArquivo } = await import("./baixa_setores_ibge.mjs");
+const CSV = process.argv[2] || await garanteArquivo("demografia");
 const uq = (x) => (x || "").replace(/^"|"$/g, "");
 const nI = (x) => { const n = parseInt(uq(x).replace(/\D/g, "")); return isNaN(n) ? 0 : n; };
 const U = fs.readFileSync("C:/Users/PC/pnigp/.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
