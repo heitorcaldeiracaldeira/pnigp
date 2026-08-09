@@ -28,7 +28,10 @@ const UF = (process.env.UF || "SC").toUpperCase();
 const CONJUNTOS = {
   basico:     { dir: `${BASE}/Agregados_por_Setor_csv`, re: /^Agregados_por_setores_basico_BR[^"]*\.zip$/i },
   demografia: { dir: `${BASE}/Agregados_por_Setor_csv`, re: /^Agregados_por_setores_demografia_BR[^"]*\.zip$/i },
-  gpkg:       { dir: `${BASE}/malha_com_atributos/setores/gpkg/UF`, re: new RegExp(`^.*${UF}.*\\.(gpkg|zip)$`, "i") },
+  // A malha é organizada em PASTA POR UF (AC/, AL/, …, SC/), não em arquivo por UF no mesmo diretório —
+  // conferido no índice do FTP. Descer até a pasta do estado também evita baixar a malha nacional inteira
+  // quando só interessa uma UF: o projeto é state-agnostic e cada instância cuida do seu estado.
+  gpkg:       { dir: `${BASE}/malha_com_atributos/setores/gpkg/UF/${UF}`, re: /\.(gpkg|zip)$/i },
 };
 
 // lista o índice HTTP do FTP e devolve o nome do arquivo MAIS RECENTE que casa o padrão.
