@@ -14,6 +14,10 @@ set CONC=3
 REM alvo = edital/TR primeiro e, quando acabarem, os documentos de RESULTADO tipo 16, onde mora a marca.
 set TIPOS=alvo
 set JANELA=07:00-02:00
-"%LOCALAPPDATA%\nodejs\node.exe" scripts\run_reextrai_paralelo.mjs
+REM ESCREVE LOG. Ate 09/ago esta tarefa nao registrava nada: rodava de hora em hora e a saida ia para o
+REM vazio. Quando o pacote `unpdf` sumiu do node_modules, a re-extracao passou a morrer na largada com
+REM ERR_MODULE_NOT_FOUND -- de hora em hora, por horas -- e o Agendador registrava rc=0 porque o supervisor
+REM saia limpo. Sem log, "parada" e indistinguivel de "trabalhando", e so a contagem no banco denunciou.
+"%LOCALAPPDATA%\nodejs\node.exe" scripts\run_reextrai_paralelo.mjs >> logs\reextrai.log 2>&1
 set RC=%ERRORLEVEL%
 endlocal & exit /b %RC%
