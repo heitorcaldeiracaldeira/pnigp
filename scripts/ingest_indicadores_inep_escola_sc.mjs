@@ -24,7 +24,7 @@ async function run() {
     const zip = path.join(os.tmpdir(), `inepesc_${ind}.zip`);
     try { execFileSync("curl", ["-s", "-L", "--max-time", "200", "--retry", "5", "--retry-all-errors", "-A", "Mozilla/5.0", "-o", zip, `${BASE}/${ind}_${ANO}_ESCOLAS.zip`], { stdio: "ignore" }); } catch { console.log(`  ${ind}: download falhou`); continue; }
     if (!fs.existsSync(zip) || fs.statSync(zip).size < 10000) { console.log(`  ${ind}: zip vazio`); continue; }
-    execFileSync("unzip", ["-o", "-j", zip, "-d", os.tmpdir()], { stdio: "ignore" });
+    { const { extrai } = await import("./descompacta.mjs"); extrai(zip, os.tmpdir()); }  // unzip nao existe no PATH da tarefa agendada
     const xlsx = path.join(os.tmpdir(), `${ind}_ESCOLAS_${ANO}.xlsx`);
     if (!fs.existsSync(xlsx)) { console.log(`  ${ind}: xlsx não encontrado`); continue; }
     const wb = XLSX.readFile(xlsx); const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "" });

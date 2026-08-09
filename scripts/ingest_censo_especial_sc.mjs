@@ -21,9 +21,14 @@ async function run() {
   // extrai o CSV de matrícula para disco (90MB) e lê em streaming
   const tmp = path.join(os.tmpdir(), `matricula_${ANO}.csv`);
   console.log("extraindo Tabela_Matricula…");
-  execFileSync("unzip", ["-o", "-j", ZIP, ENTRY, "-d", os.tmpdir()], { stdio: "ignore" });
+  // `unzip` NÃO existe no PATH das tarefas agendadas (cmd.exe) — existe só no Git Bash. Esta fonte falhava
+  // com `spawnSync unzip ENOENT` desde julho, e a mensagem só apareceu quando o orquestrador parou de
+  // descartar o stderr do filho. `descompacta.mjs` usa `tar -xf`, nativo do Windows 10+.
+  const { extrai, maiorArquivo } = await import("./descompacta.mjs");
+  const dirTmp = path.join(os.tmpdir(), `censo_especial_${ANO}`);
+  extrai(ZIP, dirTmp);
   const real = path.join(os.tmpdir(), `Tabela_Matricula_${ANO}.csv`);
-  const src = fs.existsSync(real) ? real : tmp;
+  const src = fs.existsSync(real) ? real : (maiorArquivo(dirTmp, ".csv") || tmp);
 
   const rl = readline.createInterface({ input: fs.createReadStream(src, { encoding: "latin1" }), crlfDelay: Infinity });
   let head = null, idx = {}, linha = 0;
