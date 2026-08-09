@@ -87,6 +87,15 @@ await db.query(`
 // morrem junto com a tabela velha).
 const IX = [["ix_iesp_proc", "cnpj,ano,seq"], ["ix_iesp_ibge", "cod_ibge"], ["ix_iesp_catmat", "catmat"],
             ["ix_iesp_marca", "marca_melhor"], ["ix_iesp_pdm", "codigo_pdm"]];
+// ═══ LIMPA O RESÍDUO DA EXECUÇÃO ANTERIOR ANTES DE CRIAR ═══
+// Medido em 09/ago: a construção falhava com `relation "ix_iesp_proc_n" already exists` — e falhava TODA
+// vez, o que explica `item_especificacao` estar parada em 04/ago enquanto 1,5 milhão de itens já tinham
+// sido reprocessados. O trabalho era feito e morria no último passo, com o erro indo para um .err que
+// ninguém lia.
+// O ciclo é: cria índice `_n` na tabela nova → troca as tabelas → renomeia `_n` para o nome final. Se uma
+// execução morre ENTRE criar e renomear, os `_n` sobrevivem órfãos e a próxima colide. O `.catch(() => {})`
+// do rename (abaixo) garantia o resíduo: rename que falha em silêncio deixa exatamente esse estado.
+for (const [nome] of IX) await db.query(`drop index if exists app.${nome}_n`);
 for (const [nome, cols] of IX) await db.query(`create index ${nome}_n on app.item_especificacao_novo(${cols})`);
 
 await db.query(`begin;
@@ -95,7 +104,16 @@ await db.query(`begin;
   alter table app.item_especificacao_novo rename to item_especificacao;
   commit`);
 await db.query(`drop table if exists app.item_especificacao_old`);
-for (const [nome] of IX) await db.query(`alter index ${nome}_n rename to ${nome}`).catch(() => {});
+// ═══ O RENAME PRECISA DO SCHEMA — E NUNCA TEVE ═══
+// `alter index ix_iesp_proc_n ...` sem qualificar procura no search_path (public); os índices vivem em
+// `app`, junto da tabela. O rename falhava com `relation ... does not exist` em TODA execução, e o
+// `.catch(() => {})` engolia — por isso os índices ficaram com sufixo `_n` desde que este desenho existe,
+// e por isso a execução seguinte colidia com `already exists`. Um erro silencioso alimentando o outro.
+// Só apareceu quando o catch passou a dizer o que aconteceu.
+for (const [nome] of IX) {
+  await db.query(`alter index app.${nome}_n rename to ${nome}`)
+    .catch((e) => console.log(`  ! índice ${nome}_n não renomeou: ${String(e.message).slice(0, 80)}`));
+}
 
 console.log(`construída em ${((Date.now() - t0) / 1000).toFixed(0)}s`);
 console.table((await db.query(`select count(*) itens,
