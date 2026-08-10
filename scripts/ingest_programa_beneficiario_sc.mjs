@@ -46,14 +46,28 @@ async function main() {
 
   console.log(`Coletando programa_beneficiario (UF=${UF})…`);
   let n = 0, resolv = 0;
-  for await (const arr of paginar("fundoafundo/programa_beneficiario", `uf_beneficiario_programa=eq.${UF}`)) {
+  // ═══ O CAMPO DE UF MUDOU DE NOME, E O FILTRO PASSOU A SER IGNORADO EM SILÊNCIO ═══
+  // Era `uf_beneficiario_programa`; no host novo chama-se `uf_ente_beneficiario_programa`. Pedindo pelo
+  // nome antigo, a API NÃO recusa — devolve o Brasil inteiro (31.026 linhas em vez de 1.578) com o campo
+  // vazio. Foi o que aconteceu na primeira execução após a migração: a tabela de SC ganhou 29.443 linhas
+  // nacionais e o script terminou com sucesso. Filtro que não é recusado quando errado é a pior espécie.
+  // (No `planos-acao` o mesmo erro dava HTTP 422; aqui, silêncio. Não dá para confiar que a API reclama.)
+  //
+  // E a API nova é MELHOR: entrega `codigo_ibge_municipio_ente_beneficiario_programa`, o código IBGE
+  // direto. Some o casamento por NOME, que resolvia só 423 de 1.583 e podia casar "Bom Jesus" de outro
+  // estado com o nosso. Fonte autoritativa no lugar de heurística.
+  for await (const arr of paginar("fundoafundo/programa_beneficiario", `uf_ente_beneficiario_programa=${UF}`)) {
     for (const b of arr) {
-      const cod = mapEnte.get(norm(b.nome_beneficiario_programa)) || null;
+      const ibge = b.codigo_ibge_municipio_ente_beneficiario_programa;
+      const cod = (ibge != null && String(ibge).length === 7) ? String(ibge)
+                : (mapEnte.get(norm(b.nome_beneficiario_programa)) || null);   // recuo para o nome, se faltar
       if (cod) resolv++;
       await q(`INSERT INTO programa_beneficiario_sc (id_beneficiario,id_programa,cod_ibge,nome,uf,tipo,valor,numero_emenda,parlamentar)
                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
                ON CONFLICT (id_beneficiario) DO UPDATE SET cod_ibge=EXCLUDED.cod_ibge, tipo=EXCLUDED.tipo, valor=EXCLUDED.valor`,
-        [String(b.id_beneficiario_programa), b.id_programa != null ? String(b.id_programa) : null, cod, b.nome_beneficiario_programa || null, b.uf_beneficiario_programa || null, b.tipo_beneficiario_programa || null, num(b.valor_beneficiario_programa), b.numero_emenda_beneficiario_programa || null, b.nome_parlamentar_beneficiario_programa || null]);
+        [String(b.id_beneficiario_programa), b.id_programa != null ? String(b.id_programa) : null, cod, b.nome_beneficiario_programa || null,
+         b.uf_ente_beneficiario_programa || b.uf_beneficiario_programa || null,   // nome novo, com o antigo de recuo
+         b.tipo_beneficiario_programa || null, num(b.valor_beneficiario_programa), b.numero_emenda_beneficiario_programa || null, b.nome_parlamentar_beneficiario_programa || null]);
       n++;
     }
     console.log(`  ...${n} beneficiários (${resolv} resolvidos a ente)`);

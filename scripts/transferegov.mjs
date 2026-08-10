@@ -61,8 +61,16 @@ export async function* paginar(recurso, filtros = {}, tam = 500) {
   const base = novo ? NOVO : ANTIGO;                       // sem tradução conhecida, segue no antigo
   const caminho = novo || recurso;
   const host = process.env.TRANSFEREGOV_HOST || base;
+  // ⚠️ QUINTA COISA QUE MUDOU, e eu tinha deixado passar: a SINTAXE DO FILTRO.
+  // O host antigo é PostgREST e usa operador no valor (`uf=eq.SC`, `ano=gte.2024`). O novo recebe o valor
+  // puro (`uf=SC`) e devolve HTTP 422 para o prefixo — foi assim que o `transferegov_api` quebrou na
+  // primeira execução real, depois de a migração ter passado no teste dos seis recursos SEM filtro.
+  // Lição: recurso testado sem filtro não prova recurso com filtro.
+  const limpos = novo
+    ? Object.fromEntries(Object.entries(filtros).map(([k, v]) => [k, String(v).replace(/^(eq|gte|lte|gt|lt|neq)\./, "")]))
+    : filtros;
   for (let pagina = 1; ; pagina++) {
-    const qs = new URLSearchParams({ ...filtros, pagina: String(pagina), tamanho_da_pagina: String(tam) });
+    const qs = new URLSearchParams({ ...limpos, pagina: String(pagina), tamanho_da_pagina: String(tam) });
     const j = await pega(`${host}/${caminho}?${qs}`);
     // o host antigo devolve array cru; o novo, envelope. Aceitar os dois deixa a migração ser gradual.
     const linhas = Array.isArray(j) ? j : (j?.data || []);
