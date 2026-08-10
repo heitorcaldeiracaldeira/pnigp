@@ -1,7 +1,16 @@
 // Número de TURMAS por escola e por etapa (creche/pré/fund AI/AF/médio/EJA/especial) + rede. Fonte: INEP Censo Escolar (microdados escola). State-agnostic.
 import fs from "fs"; import pg from "pg"; import readline from "readline";
 const UFC = { SC: "42", SP: "35" }[process.env.UF || "SC"] || "42";
-const CSV = process.argv[2];
+// ⚠️ ESTE SCRIPT SÓ FUNCIONAVA COM O CAMINHO PASSADO À MÃO
+// `process.argv[2]` sem argumento é `undefined`, e era isso que chegava no createReadStream: o
+// `ERR_INVALID_ARG_TYPE` que aparecia no catálogo desde julho não era arquivo corrompido nem fonte fora do
+// ar — era a ausência de qualquer download. A tabela nunca teve uma linha. Agora, sem argumento, ele busca
+// da fonte compartilhada do Censo Escolar (o mesmo zip que outras quatro ETLs usam).
+const { zipCensoEscolar, extraiDoCenso } = await import("./fonte_censo_escolar.mjs");
+const CSV = process.argv[2] || (() => {
+  const c = zipCensoEscolar();
+  return extraiDoCenso(c.zip, /microdados_ed_basica.*\.csv$/i, `${process.env.TEMP || "/tmp"}/censo_turmas_${c.ano}`);
+})();
 const nI = (x) => { const n = parseInt(String(x || "").trim()); return isNaN(n) ? 0 : n; };
 const DEP = { 1: "Federal", 2: "Estadual", 3: "Municipal", 4: "Privada" };
 const U = fs.readFileSync("C:/Users/PC/pnigp/.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();

@@ -10,7 +10,15 @@ const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "
 const NORM = `lower(btrim(regexp_replace(regexp_replace(i.descricao,'<[^>]*>','','g'),'\\s+',' ','g')))`;
 
 async function main() {
-  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2, statement_timeout: 1800000 });
+  // ═══ TEMP TABLE É POR SESSÃO, E UM POOL NÃO TEM UMA SESSÃO SÓ ═══
+  // Este script cria três tabelas temporárias (_proc_ata, _pub, _fence) e as consulta adiante. Rodando
+  // sobre um Pool, cada query pode cair numa CONEXÃO DIFERENTE: a temp nascia na conexão A e a consulta
+  // seguinte ia para a B, onde ela não existe. Daí `relation "_proc_ata" does not exist` — que parece erro
+  // de SQL e é, na verdade, erro de conexão. Mesma família da trava que não sobrevive ao pooler do Neon.
+  // Uma sessão dedicada para o build inteiro resolve; o pool só serve para pegá-la.
+  const pool = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2, statement_timeout: 1800000 });
+  pool.on("error", () => {});
+  const db = await pool.connect();
   db.on("error", () => {});
   const q = (s, p) => db.query(s, p);
 
@@ -84,6 +92,7 @@ async function main() {
     count(*) FILTER (WHERE forma='escala') escala FROM precos_referencia_basica_sc`)).rows[0];
   console.log(`\n✔ precos_referencia_basica_sc · ${Number(s.grupos).toLocaleString()} grupos (CATMAT×base×forma) · ${Number(s.compras).toLocaleString()} compras`);
   console.log(`  ${Number(s.excl).toLocaleString()} pontos excluídos pela curadoria IQR · ${Number(s.escala).toLocaleString()} grupos com forma escala`);
-  await db.end();
+  db.release();
+  await pool.end();
 }
 main().catch((e) => { console.error("ERRO:", e.message); process.exit(1); });

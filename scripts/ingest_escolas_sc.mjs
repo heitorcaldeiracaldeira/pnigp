@@ -37,9 +37,13 @@ async function main() {
   for (const col of ["latitude DOUBLE PRECISION", "longitude DOUBLE PRECISION", "bairro TEXT", "endereco TEXT", "docentes INTEGER", "profissionais INTEGER", "transp_publico INTEGER", "transp_mun INTEGER", "perfil JSONB", "n_turmas INTEGER"]) await db.query(`ALTER TABLE escolas_sc ADD COLUMN IF NOT EXISTS ${col}`);
   const q = async (s, p) => { for (let t = 0; t < 8; t++) { try { return await db.query(s, p); } catch { await sleep(1200 * (t + 1)); } } throw new Error("db"); };
 
-  console.log("Baixando microdados…");
-  const r = await fetch(URL, { signal: AbortSignal.timeout(180000) });
-  const buf = Buffer.from(await r.arrayBuffer());
+  // ⚠️ 537 MB NÃO CABEM EM 180 SEGUNDOS
+  // Era `fetch(URL, { signal: AbortSignal.timeout(180000) })`: para o zip de microdados dar certo seria
+  // preciso 3 MB/s sustentados. Estourava, jogava fora TUDO que já tinha baixado e recomeçava do zero na
+  // execução seguinte — o `listOnTimeout` que aparecia no catálogo. Nunca ia convergir.
+  // A fonte compartilhada baixa uma vez, RETOMA de onde parou e serve as outras quatro ETLs do mesmo zip.
+  const { zipCensoEscolar } = await import("./fonte_censo_escolar.mjs");
+  const buf = fs.readFileSync(zipCensoEscolar().zip);
   console.log(`baixado ${Math.round(buf.length / 1024 / 1024)} MB · extraindo CSV…`);
   // matrículas + transporte por escola — arquivo de matrículas é AGREGADO por escola (QT_MAT_BAS por CO_ENTIDADE)
   let matMap = null, transpMap = null, perfilMap = null;

@@ -5,7 +5,9 @@
 import fs from "fs"; import os from "os"; import path from "path"; import readline from "readline"; import { execFileSync } from "child_process"; import pg from "pg";
 const DATABASE_URL = fs.readFileSync("C:/Users/PC/pnigp/.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const ANO = process.env.ANO || "2025";
-const ZIP = process.env.ZIP || "C:/Users/PC/AppData/Local/Temp/claude/C--Users-PC/ba9cc77b-9f1b-4cbc-90a2-e9a04839ff68/scratchpad/censo2025.zip";
+// ⚠️ apontava para o scratchpad de uma sessão antiga (`.../ba9cc77b-.../censo2025.zip`), que já não existe:
+// o arquivo tinha sido baixado à mão uma vez e o caminho ficou cravado. Agora vem da fonte compartilhada.
+const ZIP = process.env.ZIP || (await import("./fonte_censo_escolar.mjs")).zipCensoEscolar().zip;
 const ENTRY = `microdados_censo_escolar_${ANO}/dados/Tabela_Matricula_${ANO}.csv`;
 const nn = (v) => { const x = Number(String(v || "").trim()); return Number.isFinite(x) ? x : 0; };
 // segmentos FUNDEB → coluna Censo (agregado por escola). Integral separado onde o FUNDEB pondera diferente.
