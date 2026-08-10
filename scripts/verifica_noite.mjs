@@ -99,6 +99,37 @@ try {
   ok(`ETL: ${e.rodaram} fontes rodaram, ${e.cortadas} cortadas pela janela`);
 } catch (e) { alerta(`ETL: não consegui medir (${e.message})`); }
 
+// ── 5b) "ok" QUER DIZER QUE TERMINOU, NÃO QUE GRAVOU ═══════════════════════════════════════════════
+// Medido em 10/ago: NOVE fontes marcadas `ok` no catálogo tinham a tabela VAZIA. A pior delas, `empenhos`,
+// gastava 389 minutos por ciclo — 35% do tempo de TODAS as 138 fontes — para escrever zero linha, e o
+// catálogo dizia ok porque o processo terminava com código 0.
+//   nf 17min · sia_producao 3min · medicamentos_alto_custo 12s · lpg 4s · novopac 3s · precos_nacional 2s
+// As que terminam em 2-4 segundos nem chegam a coletar: saem cedo e devolvem sucesso.
+// O guardião de frescor não pega isso — ele mede o ANO do dado, e tabela vazia não tem ano nenhum.
+// Aqui a pergunta é outra e complementar: a tabela foi ESCRITA? Não checar isso foi o que deixou fontes
+// produzindo nada por meses enquanto o painel mostrava 162 ok.
+try {
+  const DIAS_ESCRITA = Number(process.env.DIAS_ESCRITA || 45);
+  const alvos = (await db.query(`SELECT c.table_schema s, c.table_name t, c.column_name col
+     FROM information_schema.columns c
+     JOIN information_schema.tables tb ON tb.table_schema=c.table_schema AND tb.table_name=c.table_name AND tb.table_type='BASE TABLE'
+    WHERE c.table_schema IN ('public','app') AND c.column_name IN ('atualizado','atualizado_em')
+      AND c.table_name NOT LIKE 'bkp_%' AND c.table_name NOT LIKE '_legado%'`)).rows;
+  const vazias = [], paradas = [];
+  for (const a of alvos) {
+    try {
+      const r = (await db.query(`SELECT count(*) n, max(${a.col}) ult FROM "${a.s}"."${a.t}"`)).rows[0];
+      const nome = a.s === "public" ? a.t : `${a.s}.${a.t}`;
+      if (Number(r.n) === 0) vazias.push(nome);
+      else if (r.ult && (Date.now() - new Date(r.ult)) / 86400000 >= DIAS_ESCRITA) paradas.push(`${nome} (${Math.round((Date.now() - new Date(r.ult)) / 86400000)}d)`);
+    } catch { /* tabela sumiu no meio da varredura: ignora */ }
+  }
+  // nomear é o ponto: alerta que diz só "há 9 vazias" obriga a investigar do zero toda vez
+  if (vazias.length) alerta(`TABELAS VAZIAS (${vazias.length}) — fonte pode estar dizendo ok sem gravar: ${vazias.slice(0, 12).join(", ")}${vazias.length > 12 ? ` +${vazias.length - 12}` : ""}`);
+  if (paradas.length) alerta(`SEM ESCRITA há ${DIAS_ESCRITA}+ dias (${paradas.length}): ${paradas.slice(0, 10).join(", ")}`);
+  ok(`escrita: ${alvos.length} tabelas com carimbo verificadas`);
+} catch (e) { alerta(`escrita: não consegui medir (${e.message})`); }
+
 // ── 6) A LEI DE FUSO ESTÁ SENDO SEGUIDA? Carimbo de instante formatado sem converter sai 3h à frente.
 // Esta checagem existe porque a lei foi escrita em 29/jul, `hora_br.mjs` foi criado para ela, e mesmo assim
 // um script NOVO (gera_relatorio_extracao) nasceu em agosto repetindo o erro: em 08/ago às 10:00 o HTML
