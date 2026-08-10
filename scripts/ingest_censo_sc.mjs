@@ -8,8 +8,15 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"; // download.inep.gov.br tem cade
 const UF = process.env.UF || "SC";
 const UF_PREFIX = { SC: "42", BA: "29", SP: "35" }[UF] || "42";
 const UF_NOME = { SC: "Santa Catarina", BA: "Bahia", SP: "São Paulo" }[UF] || "Santa Catarina";
-const ANO = process.env.CENSO_ANO || "2024";
-const URL = `https://download.inep.gov.br/dados_abertos/sinopses_estatisticas/sinopses_estatisticas_censo_escolar_${ANO}.zip`;
+// ═══ A URL MUDOU DE NOME, E O ANO ESTAVA CRAVADO ═══
+// Medido em 10/ago: `sinopses_estatisticas_censo_escolar_2024.zip` devolve 404 (página de erro de 3.050
+// bytes) — o INEP passou a publicar no SINGULAR: `sinopse_estatistica_censo_escolar_2024.zip`. E já existe
+// 2025, enquanto o script pedia 2024 fixo. Duas coisas que só a sondagem mostra, porque o erro que chegava
+// ao catálogo era só "falhou".
+const SINOPSE = (a) => [
+  `https://download.inep.gov.br/dados_abertos/sinopses_estatisticas/sinopse_estatistica_censo_escolar_${a}.zip`,
+  `https://download.inep.gov.br/dados_abertos/sinopses_estatisticas/sinopses_estatisticas_censo_escolar_${a}.zip`,  // nome antigo
+];
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 // colunas da Tabela 1.1 (verificadas): E=Total Ed. Básica · etapas
 const COLS = { E: "Total", F: "Educação Infantil", G: "Creche", H: "Pré-Escola", I: "Ensino Fundamental", J: "Anos Iniciais", K: "Anos Finais", L: "Ensino Médio", P: "Educação Profissional", X: "EJA", AA: "Educação Especial" };
@@ -35,10 +42,31 @@ async function main() {
   await db.query(`CREATE TABLE IF NOT EXISTS censo_matricula_sc (cod_ibge TEXT, ano INTEGER, etapa TEXT, matriculas INTEGER, PRIMARY KEY (cod_ibge, ano, etapa))`);
   const q = async (s, p) => { for (let t = 0; t < 8; t++) { try { return await db.query(s, p); } catch { await sleep(1000 * (t + 1)); } } throw new Error("db"); };
 
-  process.stdout.write(`Baixando Sinopse Censo ${ANO} (~144MB) ... `);
-  let outer; for (let t = 0; t < 4; t++) { try { const r = await fetch(URL, { signal: AbortSignal.timeout(240000) }); if (!r.ok) throw 0; outer = Buffer.from(await r.arrayBuffer()); break; } catch (e) { await sleep(3000 * (t + 1)); } }
-  if (!outer) { console.log("falhou"); process.exit(1); }
-  console.log("ok");
+  // ═══ 144 MB NÃO CABEM EM 240 SEGUNDOS NUMA ORIGEM QUE ENTREGA ~450 KB/s ═══
+  // Era `fetch(..., timeout 240s)`, sem retomada: estourava, jogava fora tudo e recomeçava do zero nas
+  // quatro tentativas. `curl -C -` retoma; --speed-limit aborta se ESTAGNAR, não por ser grande e lento.
+  const { execFileSync } = await import("child_process");
+  const { zipIntegro } = await import("./descompacta.mjs");
+  const os = (await import("os")).default;
+  const topo = process.env.CENSO_ANO ? Number(process.env.CENSO_ANO) : new Date().getFullYear();
+  const piso = process.env.CENSO_ANO ? Number(process.env.CENSO_ANO) : topo - 3;
+  let ANO = null, zip = null;
+  for (let a = topo; a >= piso && !zip; a--) {
+    for (const url of SINOPSE(a)) {
+      const dest = path.join(os.tmpdir(), `sinopse_censo_${a}.zip`);
+      if (zipIntegro(dest)) { ANO = a; zip = dest; break; }
+      process.stdout.write(`Baixando Sinopse Censo ${a} ... `);
+      try {
+        execFileSync("curl", ["-sS", "--fail", "-L", "-C", "-", "--max-time", "3600", "--speed-limit", "1024",
+          "--speed-time", "60", "--retry", "3", "--retry-all-errors", "-A", "Mozilla/5.0", "-o", dest, url], { stdio: "ignore" });
+      } catch { console.log("não publicado nesta URL"); continue; }
+      if (zipIntegro(dest)) { console.log("ok"); ANO = a; zip = dest; break; }
+      console.log("veio truncado");
+    }
+  }
+  if (!zip) { console.log(`Sinopse: nenhum ano de ${piso} a ${topo} disponível`); process.exit(1); }
+  const outer = fs.readFileSync(zip);
+  console.log(`Sinopse do Censo ${ANO} (${(outer.length / 1e6).toFixed(0)} MB)`);
   const xlsx = unzipEntry(outer, /\.xlsx$/);
   const ssXml = unzipEntry(xlsx, /xl\/sharedStrings\.xml$/).toString("utf8");
   const strings = []; for (const si of ssXml.split("<si>").slice(1)) strings.push([...si.matchAll(/<t[^>]*>([\s\S]*?)<\/t>/g)].map((m) => m[1]).join("").replace(/&amp;/g, "&"));

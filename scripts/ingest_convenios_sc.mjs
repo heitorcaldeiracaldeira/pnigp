@@ -28,9 +28,22 @@ async function main() {
   db.on("error", () => {});
   await db.query(`CREATE TABLE IF NOT EXISTS convenios_captados_sc (cod_ibge TEXT, id BIGINT, numero TEXT, objeto TEXT, orgao TEXT, situacao TEXT, valor NUMERIC, valor_liberado NUMERIC, dt_inicio DATE, dt_fim DATE, ano INTEGER, convenente TEXT, PRIMARY KEY (cod_ibge, id))`);
   await db.query(`CREATE TABLE IF NOT EXISTS convenios_check (cod_ibge TEXT PRIMARY KEY)`);
+  // ═══ O CHECKPOINT NÃO VENCIA: "já fiz" virou "nunca mais" ═══
+  // `convenios_check` existe para dar RETOMADA — a API do Portal da Transparência tem limite de 90 req/min
+  // e uma varredura dos 295 municípios leva tempo, então marcar quem já foi evita recomeçar do zero.
+  // Só que a marca era eterna: com os 295 na tabela, toda execução pulava todo mundo e imprimia
+  // "0 nesta rodada", indefinidamente. Convênio novo assinado depois da primeira carga nunca entraria.
+  // Retomada e recusa de trabalho são coisas diferentes: a marca precisa de VALIDADE.
+  // sem DEFAULT: linha antiga fica com NULL = "não sei quando foi visto", que conta como VENCIDA.
+  // (com DEFAULT now(), o próprio ALTER carimbaria todo mundo como visto hoje — a marca eterna de novo,
+  //  só que disfarçada de recente.)
+  await db.query(`ALTER TABLE convenios_check ADD COLUMN IF NOT EXISTS atualizado TIMESTAMPTZ`);
+  const DIAS = Number(process.env.RECHECA_DIAS || 30);
   const q = async (s, p) => { for (let t = 0; t < 8; t++) { try { return await db.query(s, p); } catch { await sleep(1200 * (t + 1)); } } throw new Error("db"); };
   const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' ORDER BY cod_ibge`)).rows;
-  const feitos = new Set((await db.query(`SELECT cod_ibge FROM convenios_check`)).rows.map((r) => r.cod_ibge));
+  const feitos = new Set((await db.query(`SELECT cod_ibge FROM convenios_check
+    WHERE atualizado IS NOT NULL AND atualizado > now() - ($1 || ' days')::interval`, [DIAS])).rows.map((r) => r.cod_ibge));
+  console.log(`${entes.length} municípios · ${feitos.size} verificados nos últimos ${DIAS} dias · ${entes.length - feitos.size} a rever`);
   let proc = 0, grav = 0;
   for (const e of entes) {
     if (feitos.has(e.cod_ibge)) continue;
@@ -52,7 +65,9 @@ async function main() {
       if (arr.length < 15) break; // última página
       pag++;
     }
-    await q(`INSERT INTO convenios_check (cod_ibge) VALUES ($1) ON CONFLICT DO NOTHING`, [e.cod_ibge]);
+    // DO NOTHING deixaria o carimbo velho e o município voltaria à fila em toda execução: tem de RENOVAR
+    await q(`INSERT INTO convenios_check (cod_ibge, atualizado) VALUES ($1, now())
+             ON CONFLICT (cod_ibge) DO UPDATE SET atualizado = now()`, [e.cod_ibge]);
     proc++;
     if (proc % 30 === 0) console.log(`  ${proc}/${entes.length} municípios · ${grav} convênios municipais`);
     } catch (err) { console.log(`  ! ${e.cod_ibge} falhou (${err.message}) — segue; será refeito no próximo ciclo`); }
