@@ -27,6 +27,11 @@ async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2, keepAlive: true });
   db.on("error", () => {});
   await db.query(`CREATE TABLE IF NOT EXISTS convenios_captados_sc (cod_ibge TEXT, id BIGINT, numero TEXT, objeto TEXT, orgao TEXT, situacao TEXT, valor NUMERIC, valor_liberado NUMERIC, dt_inicio DATE, dt_fim DATE, ano INTEGER, convenente TEXT, PRIMARY KEY (cod_ibge, id))`);
+  // a chave de verdade é a natural: o `id` da API muda a cada coleta (ver comentário no INSERT).
+  // Coluna GERADA pelo banco + índice único = a repetição fica IMPEDIDA, não apenas desaconselhada.
+  await db.query(`ALTER TABLE convenios_captados_sc ADD COLUMN IF NOT EXISTS chave TEXT
+    GENERATED ALWAYS AS (cod_ibge || '|' || coalesce(numero,'') || '|' || coalesce(convenente,'') || '|' || coalesce(left(objeto,200),'')) STORED`);
+  await db.query(`CREATE UNIQUE INDEX IF NOT EXISTS ux_conv_chave ON convenios_captados_sc (chave)`);
   await db.query(`CREATE TABLE IF NOT EXISTS convenios_check (cod_ibge TEXT PRIMARY KEY)`);
   // ═══ O CHECKPOINT NÃO VENCIA: "já fiz" virou "nunca mais" ═══
   // `convenios_check` existe para dar RETOMADA — a API do Portal da Transparência tem limite de 90 req/min
@@ -57,8 +62,21 @@ async function main() {
         if (!ehMunicipal(c.convenente?.tipo)) continue; // só prefeitura/adm municipal
         const dt = (s) => (s && /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : null);
         const ini = dt(c.dataInicioVigencia);
+        // ═══ O `id` DA API NÃO É ESTÁVEL — A CHAVE ESTAVA NO CAMPO ERRADO ═══
+        // Medido em 10/ago: o MESMO convênio volta com id NOVO a cada coleta. `CR.NR.0143654-14` do
+        // município 4202206 estava na base com QUATRO ids (345382165, 353878307, 359561507, 365141682).
+        // Com `ON CONFLICT (cod_ibge,id)`, cada rodada inseria tudo de novo: a tabela tinha 43.238 linhas
+        // para 22.121 convênios reais. O checkpoint eterno escondia isso por nunca deixar rodar duas vezes
+        // — consertar o checkpoint foi o que revelou o defeito de baixo.
+        // A chave agora é NATURAL (município + número + convenente + objeto), numa coluna GERADA pelo
+        // banco, com índice único. E as cópias NÃO eram iguais: em 2.219 grupos o valor tinha mudado e em
+        // 315 a situação — são fotografias de momentos distintos, então o UPDATE precisa trazer os campos
+        // que se movem, e o `id` mais recente junto.
         await q(`INSERT INTO convenios_captados_sc (cod_ibge,id,numero,objeto,orgao,situacao,valor,valor_liberado,dt_inicio,dt_fim,ano,convenente)
-                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT (cod_ibge,id) DO UPDATE SET valor=EXCLUDED.valor, valor_liberado=EXCLUDED.valor_liberado, situacao=EXCLUDED.situacao`,
+                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+                 ON CONFLICT (chave) DO UPDATE SET id=EXCLUDED.id, valor=EXCLUDED.valor,
+                   valor_liberado=EXCLUDED.valor_liberado, situacao=EXCLUDED.situacao,
+                   dt_fim=EXCLUDED.dt_fim, orgao=EXCLUDED.orgao`,
           [e.cod_ibge, c.id, c.dimConvenio?.numero || null, c.dimConvenio?.objeto || null, c.orgao?.nome || c.orgao?.sigla || null, c.situacao || null, num(c.valor), num(c.valorLiberado), ini, dt(c.dataFinalVigencia), ini ? +ini.slice(0, 4) : null, c.convenente?.nome || null]);
         total++; grav++;
       }
