@@ -14,10 +14,29 @@ async function run() {
   const byCod = new Set((await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M'`)).rows.map((e) => e.cod_ibge));
   const dir = process.env.DIR || os.tmpdir();
   const xp = path.join(dir, "capag.xlsx");
-  if (!fs.existsSync(xp) || fs.statSync(xp).size < 1e5) {
+  // ═══ DOWNLOAD TRUNCADO FICAVA PRESO NO CACHE PARA SEMPRE ═══
+  // Medido em 10/ago: a fonte falhava com `Bad compressed size: 0 != 636`. O arquivo em cache tinha 17 MB
+  // — passava folgado no teste `size < 1e5` — mas começava com `PK` e NÃO tinha o diretório central do ZIP
+  // no fim: era um download CORTADO no meio. Um xlsx é um zip, e sem o EOCD ele não abre.
+  // O cache por `existsSync` congelava esse arquivo: baixou errado uma vez, falhou todas as seguintes, e
+  // nunca tentou de novo. Tamanho não prova integridade — a estrutura prova.
+  const zipIntegro = (p) => {
+    try {
+      const fd = fs.openSync(p, "r"); const tam = fs.statSync(p).size;
+      const ini = Buffer.alloc(4); fs.readSync(fd, ini, 0, 4, 0);
+      const fim = Buffer.alloc(Math.min(66000, tam)); fs.readSync(fd, fim, 0, fim.length, Math.max(0, tam - fim.length));
+      fs.closeSync(fd);
+      return ini.toString("latin1", 0, 2) === "PK" && fim.includes(Buffer.from("PK\x05\x06"));  // EOCD
+    } catch { return false; }
+  };
+  if (!fs.existsSync(xp) || fs.statSync(xp).size < 1e5 || !zipIntegro(xp)) {
+    try { fs.rmSync(xp, { force: true }); } catch { /* ignora */ }
     const j = JSON.parse(execFileSync("curl", ["-s", "-L", "--max-time", "40", "-A", "Mozilla/5.0", CKAN], { encoding: "utf8" }));
     const res = (j.result?.resources || []).filter((r) => /xls/i.test(r.format));
-    execFileSync("curl", ["-s", "-L", "--max-time", "90", "-A", "Mozilla/5.0", "-o", xp, res[res.length - 1].url], { stdio: "ignore" });
+    // --retry + --fail: baixar 17 MB truncado e chamar de sucesso foi exatamente o que criou o cache podre
+    execFileSync("curl", ["-sSL", "--fail", "--max-time", "300", "--retry", "3", "--retry-all-errors",
+      "-A", "Mozilla/5.0", "-o", xp, res[res.length - 1].url], { stdio: "ignore" });
+    if (!zipIntegro(xp)) throw new Error(`CAPAG: download veio truncado (${fs.statSync(xp).size} bytes, sem EOCD)`);
   }
   const wb = XLSX.readFile(xp);
   const ws = wb.Sheets["Prévia da CAPAG"] || wb.Sheets[wb.SheetNames[0]];

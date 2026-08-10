@@ -11,9 +11,10 @@ const SETOR = (c) => { const n = +c; if (n === 25) return "Agropecuária"; if (n
 const PORTE = (c) => { const n = +c; if (n <= 1) return "Sem vínculo"; if (n <= 4) return "Micro (até 19)"; if (n <= 6) return "Pequena (20-99)"; if (n <= 8) return "Média (100-499)"; return "Grande (500+)"; };
 
 async function stream7z(zPath, cols, onRow) {
-  const _7z = await import("7zip-min"); const unpack = _7z.default?.unpack || _7z.unpack;
+  // descompacta.mjs: tar -xf nativo do Windows, com fallback. 7zip-min saia com "code 2".
+  const { extrai } = await import("./descompacta.mjs");
   const out = zPath + "_out";
-  if (!fs.existsSync(out)) await new Promise((res, rej) => unpack(zPath, out, (e) => e ? rej(e) : res()));
+  if (!fs.existsSync(out)) extrai(zPath, path.dirname(out));
   const data = fs.readdirSync(out).filter((f) => fs.statSync(path.join(out, f)).size > 1e5); // arquivo grande (.COMT/.txt)
   for (const f of data) {
     const rl = readline.createInterface({ input: fs.createReadStream(path.join(out, f), { encoding: "latin1" }), crlfDelay: Infinity });
