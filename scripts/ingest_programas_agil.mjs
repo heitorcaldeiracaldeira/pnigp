@@ -1,13 +1,16 @@
 // ETL — programas "gestão ágil" do Transferegov (fundoafundo/programa_gestao_agil), somados ao catálogo programas_transferegov.
 // Complementa fundoafundo/programa. node scripts/ingest_programas_agil.mjs
 import fs from "fs"; import pg from "pg";
+import { tudo } from "./transferegov.mjs";
 const DATABASE_URL = fs.readFileSync("C:/Users/PC/pnigp/.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
-const API = "https://api.transferegov.gestao.gov.br";
 
 async function main() {
-  const r = await fetch(`${API}/fundoafundo/programa_gestao_agil?limit=2000`, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(60000) });
-  if (!r.ok) throw new Error("api " + r.status);
-  const arr = await r.json();
+  // ⚠️ MIGRADO PARA O HOST NOVO (o antigo é desligado em 31/08/2026 — Comunicado Transferegov nº 23/2026).
+  // A chamada direta trazia dois problemas além do host: `?limit=2000` não existe no contrato novo (a
+  // paginação virou `pagina`/`tamanho_da_pagina`), e a resposta deixou de ser array cru — agora vem em
+  // `{data: [...]}`. Um `arr.length` sobre o envelope daria `undefined` e a fonte gravaria ZERO em
+  // silêncio, que é bem pior que um erro. O cliente cuida das duas coisas.
+  const arr = await tudo("fundoafundo/programa_gestao_agil");
   console.log(`gestão ágil recebidos: ${arr.length}`);
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 2 });
   db.on("error", () => {});

@@ -45,6 +45,16 @@ async function main() {
   await db.query(`ALTER TABLE convenios_check ADD COLUMN IF NOT EXISTS atualizado TIMESTAMPTZ`);
   const DIAS = Number(process.env.RECHECA_DIAS || 30);
   const q = async (s, p) => { for (let t = 0; t < 8; t++) { try { return await db.query(s, p); } catch { await sleep(1200 * (t + 1)); } } throw new Error("db"); };
+  // ═══ DUAS INSTÂNCIAS NA MESMA API DE 90 req/min DERRUBAM AS DUAS ═══
+  // Aconteceu DUAS VEZES em 10/ago: às 05:03 e às 09:09 o orquestrador disparou esta fonte enquanto uma
+  // varredura manual já estava em curso, e o catálogo registrou "falhou 5/5" nas duas. Não era bug de
+  // coleta — era competição pelo limite de requisições do Portal da Transparência, com as duas instâncias
+  // levando 429 e desistindo. Falha fantasma: some quando se roda sozinho, e volta no próximo encontro.
+  // A trava do projeto já existia e esta fonte não a usava. Sair sem trabalho NÃO é erro: código 0, para
+  // não poluir o catálogo com uma falha que é, na verdade, "o outro está fazendo".
+  const { pegaTrava } = await import("./trava_processo.mjs");
+  const trava = await pegaTrava(db, "convenios");
+  if (!trava.ok) { console.log(`já rodando em ${trava.donoAtual} — saindo sem trabalho`); await db.end(); return; }
   const entes = (await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M' ORDER BY cod_ibge`)).rows;
   const feitos = new Set((await db.query(`SELECT cod_ibge FROM convenios_check
     WHERE atualizado IS NOT NULL AND atualizado > now() - ($1 || ' days')::interval`, [DIAS])).rows.map((r) => r.cod_ibge));
@@ -106,6 +116,7 @@ async function main() {
   }
   const r = await db.query(`SELECT count(distinct cod_ibge) e, count(*) n, round(sum(valor)/1e6) mi FROM convenios_captados_sc`);
   console.log(`Convênios concluído: ${grav} nesta rodada · ${JSON.stringify(r.rows[0])}`);
+  await trava.solta();   // sem soltar, a próxima rodada esperaria a batida envelhecer sem motivo
   await db.end();
 }
 main().catch((e) => { console.error("ERRO:", e); process.exit(1); });

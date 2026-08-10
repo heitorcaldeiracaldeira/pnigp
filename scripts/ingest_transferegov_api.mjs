@@ -6,7 +6,7 @@ import fs from "fs"; import path from "path"; import { fileURLToPath } from "url
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATABASE_URL = fs.readFileSync(path.join(__dirname, "..", ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const UF = process.env.UF || "SC";
-const API = "https://api.transferegov.gestao.gov.br";
+import { paginar as clientePaginar } from "./transferegov.mjs";
 const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 const num = (v) => { const n = Number(v); return isNaN(n) || v == null ? null : n; };
 const dt = (s) => (s && /^\d{4}-\d{2}-\d{2}/.test(String(s)) ? String(s).slice(0, 10) : null);
@@ -18,16 +18,20 @@ async function api(url, headers = {}) {
   }
   return null;
 }
-// PostgREST paginado via Range
+// ⚠️ MIGRADO PARA O HOST NOVO — o antigo é desligado em 31/08/2026 (Comunicado Transferegov nº 23/2026).
+// Isto aqui era paginação PostgREST por header `Range: 0-999`, que o contrato novo não tem: virou
+// `pagina` + `tamanho_da_pagina`, e a resposta deixou de ser array cru para vir em `{data: [...]}`.
+// A tradução de host, caminho, paginação e envelope mora em `transferegov.mjs`, num lugar só — foi o que
+// permitiu migrar três ETLs sem reescrever nenhuma delas por dentro.
+// Este gerador segue entregando LOTES (e não linhas), que é o que os consumidores abaixo esperam.
 async function* paginar(recurso, qs = "") {
-  let off = 0; const lim = 1000;
-  while (true) {
-    const r = await api(`${API}/${recurso}?${qs}`, { Range: `${off}-${off + lim - 1}`, "Range-Unit": "items" });
-    if (!r || !r.ok) break;
-    const arr = await r.json(); if (!arr.length) break;
-    yield arr; if (arr.length < lim) break; off += lim;
-    await sleep(300);
+  const filtros = Object.fromEntries(new URLSearchParams(qs));
+  let lote = [];
+  for await (const linha of clientePaginar(recurso, filtros, 500)) {
+    lote.push(linha);
+    if (lote.length >= 1000) { yield lote; lote = []; }
   }
+  if (lote.length) yield lote;
 }
 
 async function main() {
