@@ -96,6 +96,30 @@ function listar(dir) {
   return out;
 }
 
+/**
+ * O arquivo é um ZIP INTEIRO? (assinatura `PK` no começo + diretório central `PK\x05\x06` no fim)
+ *
+ * ═══ POR QUE TAMANHO NÃO BASTA ═══
+ * Medido em 10/ago na CAPAG: o arquivo em cache tinha 17 MB — passava folgado em qualquer teste de tamanho
+ * — mas era um download CORTADO no meio. Começava com `PK` e não tinha o EOCD no fim. Um xlsx é um zip, e
+ * sem o diretório central ele não abre: `Bad compressed size: 0 != 636`, todo dia, desde julho.
+ * O cache por `existsSync` congela esse arquivo para sempre: baixou errado uma vez, falha todas as
+ * seguintes e nunca mais tenta. Quem valida por tamanho valida a coisa errada — a ESTRUTURA prova.
+ * Terceira fonte a precisar disto (capag, aneel_gd, inep), então mora aqui.
+ */
+export function zipIntegro(p) {
+  try {
+    const tam = fs.statSync(p).size;
+    if (tam < 1e4) return false;
+    const fd = fs.openSync(p, "r");
+    const ini = Buffer.alloc(4); fs.readSync(fd, ini, 0, 4, 0);
+    // o EOCD fica no fim, mas o comentário do zip pode empurrá-lo até 64 KB para trás
+    const fim = Buffer.alloc(Math.min(66000, tam)); fs.readSync(fd, fim, 0, fim.length, Math.max(0, tam - fim.length));
+    fs.closeSync(fd);
+    return ini.toString("latin1", 0, 2) === "PK" && fim.includes(Buffer.from("PK\x05\x06"));
+  } catch { return false; }
+}
+
 /** Acha dentro de `destino` o maior arquivo com a extensão pedida — costuma ser o de dados. */
 export function maiorArquivo(destino, ext) {
   const c = listar(destino).filter((f) => f.toLowerCase().endsWith(ext.toLowerCase()));
