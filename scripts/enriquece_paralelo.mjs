@@ -6,30 +6,30 @@ import path from "path"; import { fileURLToPath } from "url"; import fs from "fs
 import { constroiFila } from "./constroi_fila_enriquecimento.mjs";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// ═══ TRAVA: PARADO ATÉ A RE-EXTRAÇÃO COBRIR OS EDITAIS — ORDEM DO HEITOR, 08/ago ═══
-// Medido em 08/ago sobre as 1.749.931 descrições vindas de documento: 1.426.043 (81,5%) começam com
-// letra MINÚSCULA, e a consulta de controle — as que começam com maiúscula — voltou VAZIA. Nenhuma.
-// Não é estilo: é o recorte cortando no meio da palavra. O que está gravado hoje se parece com isto:
-//     BRUNFELSIA UNIFLORA     → "a grandiflora manaca da flor grande 145 r 9 77 r 1 416 65 9"
-//     DISJUNTOR BIFÁSICO 10 A → "egundo nbr iec 60898 3 2021 36 un 20 31 38 627 60 disjuntor"
-// "egundo" é "segundo" sem o s. E 58% dessas linhas estão rotuladas como confiança ALTA — o rótulo não
-// mede o que promete. O lixo contamina o que se deriva dele: preço normalizado e CATMAT.
-// A CAUSA é a mesma de tudo em 07/ago: o texto do edital foi extraído SEM GEOMETRIA, num fluxo de linha
-// única, então não há fronteira de célula e todo recorte vira janela por proximidade. Rodar de novo com a
-// mesma régua só multiplica o dano — foi por isso que a tarefa foi desligada, e não porque falhava.
-// ⚠️ ESTA TRAVA VIVE AQUI, e não só no Agendador, porque `roda_tudo.cmd` (a Rodada completa, manual)
-// chama este script no passo 3/5 — desligar a tarefa não bastaria.
-// PARA RELIGAR: quando a re-extração tiver alcançado os editais, rode
-//     node scripts/verifica_noite.mjs        (mostra o avanço da re-extração)
-//   e então: DESTRAVA_ENRIQUECIMENTO=1 node scripts/enriquece_paralelo.mjs
-//   ou apague este bloco. Antes disso, medir de novo o % que começa em minúscula: é o termômetro.
-if (process.env.DESTRAVA_ENRIQUECIMENTO !== "1") {
-  console.log([
-    "⛔ ENRIQUECIMENTO DA DESCRIÇÃO PARADO por decisão de 08/ago.",
-    "   Motivo: 81,5% das descrições vindas de documento começam no MEIO da palavra — o texto do edital",
-    "   ainda está sem geometria, e rodar agora só produz mais lixo com a mesma régua.",
-    "   Religue com DESTRAVA_ENRIQUECIMENTO=1 quando a re-extração tiver coberto os editais.",
-  ].join("\n"));
+// ═══ TRAVA LEVANTADA EM 10/ago — ORDEM DO HEITOR. HISTÓRICO ABAIXO, PORQUE O MOTIVO ESTAVA MEIO ERRADO ═══
+// A tarefa foi desligada em 08/ago e a justificativa escrita aqui era: "81,5% das descrições vindas de
+// documento começam com letra MINÚSCULA, e a consulta de controle — as que começam com maiúscula — voltou
+// VAZIA". ESSA MEDIDA NÃO VALIA NADA: o `norm()` do pipeline faz `.toLowerCase()`, então 100% começam em
+// minúscula POR CONSTRUÇÃO, e o "controle" só podia voltar vazio. Medi uma propriedade do meu próprio
+// código e li como propriedade do dado. Fica registrado para ninguém reusar esse termômetro.
+//
+// O MOTIVO DE VERDADE era outro e continuava de pé: o texto do edital fora extraído SEM GEOMETRIA, num
+// fluxo de linha única — sem fronteira de célula, todo recorte degenera em janela por proximidade, e o
+// resultado saía cortado no meio da palavra ("egundo" por "segundo"). Isso contamina o que se deriva:
+// preço normalizado e CATMAT. Rodar com a mesma régua multiplicaria o dano.
+//
+// O CRITÉRIO CERTO PARA RELIGAR — e o que foi de fato medido em 10/ago por
+// `scripts/analise_religar_enriquecimento.mjs`:
+//   1. o método novo (roteador) tem de vencer o antigo: 70,8% × 49,0% de recorte começando certo  ✓
+//   2. o trabalho inédito tem de ter GEOMETRIA: 532 de 660 processos (80,6%)                      ✓
+//   com a re-extração em 235.493 documentos com geometria contra 44.300 ainda achatados.
+// O item 2 é o que importa: enquanto o inédito for majoritariamente achatado, religar só gera lixo novo.
+//
+// ⚠️ A TRAVA VIVIA AQUI, e não só no Agendador, porque `roda_tudo.cmd` (a Rodada completa, manual) chama
+// este script no passo 3/5 — desligar a tarefa não bastaria. Se for preciso parar de novo, o lugar é este.
+// Para parar: PARA_ENRIQUECIMENTO=1 (ou reponha o bloco), e escreva o motivo COM A MEDIDA que o sustenta.
+if (process.env.PARA_ENRIQUECIMENTO === "1") {
+  console.log("⛔ ENRIQUECIMENTO DA DESCRIÇÃO PARADO por PARA_ENRIQUECIMENTO=1.");
   process.exit(0);   // sai LIMPO: não é falha, é decisão — não deve poluir o log de erro da rodada
 }
 const N = Math.max(1, (Number(process.env.NCORE) || os.cpus().length));  // todos os núcleos
