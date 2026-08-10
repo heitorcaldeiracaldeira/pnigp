@@ -45,12 +45,32 @@ await db.query(`
     i.porte_fornecedor, i.beneficio_lc, i.economia_pct, i.situacao,
     -- DESCRIÇÃO: API × documento (só entra quando acrescenta)
     left(i.descricao, 500) descricao_api,
-    case when e.descricao_documento is not null and length(e.descricao_documento) >= 160
-          and (e.descricao_e_spec or length(e.descricao_documento) > 1.5 * length(coalesce(i.descricao,'')))
+    -- ═══ A RÉGUA DE 160 MEDIA TEXTO SUJO, E O TEXTO FICOU LIMPO ═══
+    -- O piso de 160 caracteres existia para barrar fragmento de tabela de preço, e cumpria o papel: em
+    -- 10/ago de manhã, amostrar o que entraria a 80 mostrou lixo ("eco unit preco total 1 38608 15 un r
+    -- 20 00..."). Aí o recorte ganhou limpeza de ruído tabular, o texto encolheu 8,4% em média, e a MESMA
+    -- régua passou a barrar o que ela existia para proteger: documento_curto saltou de 822.597 para
+    -- 968.137 e a cobertura CAIU de 754.701 para 625.699. Melhorar o recorte piorou o produto.
+    -- Amostrado de novo, agora sobre o texto limpo, os barrados com confiança alta são especificação
+    -- exata -- "gaiola de agulhas 8x11x10 soprador", "carburador c1q s167c", "rolamento esfera 6201
+    -- rocadeira" -- curtos PORQUE limpos. Comprimento era um substituto para qualidade; agora existe a
+    -- medida direta (o grau, que já pesa cobertura, começo e preservação de número do item).
+    -- Então: caminho longo como sempre, OU grau alto com régua menor. A exigência de ACRESCENTAR algo
+    -- sobre a descrição da API continua nos dois -- o que muda é o tamanho exigido, não o critério.
+    case when e.descricao_documento is not null
+          and ( (length(e.descricao_documento) >= 160
+                 and (e.descricao_e_spec or length(e.descricao_documento) > 1.5 * length(coalesce(i.descricao,''))))
+             or (e.confianca = 'alta' and length(e.descricao_documento) >= 60
+                 and (e.descricao_e_spec or length(e.descricao_documento) > length(coalesce(i.descricao,'')))) )
          then left(coalesce(e.descricao_refinada, e.descricao_documento), 2500) end descricao_spec,
     e.descricao_e_spec, e.metodo metodo_spec, e.fonte_documento, e.n_docs,
     (e.descricao_documento ~* '${RUIDO}') tem_ruido_edital,
     case when e.descricao_documento is null then 'sem_documento'
+         -- rótulo próprio para o caminho novo: dá para auditar quanto do produto veio por grau e não por
+         -- tamanho, em vez de a mudança sumir dentro de 'spec_do_documento'
+         when length(e.descricao_documento) < 160 and e.confianca = 'alta' and length(e.descricao_documento) >= 60
+              and (e.descricao_e_spec or length(e.descricao_documento) > length(coalesce(i.descricao,'')))
+              then 'curto_mas_confiavel'
          when length(e.descricao_documento) < 160 then 'documento_curto'
          when e.descricao_e_spec then 'spec_do_documento'
          when length(e.descricao_documento) > 1.5 * length(coalesce(i.descricao,'')) then 'documento_mais_rico'
