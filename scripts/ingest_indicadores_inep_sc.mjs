@@ -30,7 +30,7 @@ async function run() {
       const zip = path.join(os.tmpdir(), `inep_${arq}.zip`);
       try { execFileSync("curl", ["-s", "-L", "--max-time", "180", "--retry", "5", "--retry-all-errors", "-A", "Mozilla/5.0", "-o", zip, url], { stdio: "ignore" }); } catch { console.log(`  ${ind}: download falhou`); continue; }
       if (!fs.existsSync(zip) || fs.statSync(zip).size < 10000) { console.log(`  ${ind}: zip vazio`); continue; }
-      { const { extrai } = await import("./descompacta.mjs"); extrai(zip, os.tmpdir()); }  // unzip nao existe no PATH da tarefa agendada
+      { const { extraiPlano } = await import("./descompacta.mjs"); extraiPlano(zip, os.tmpdir()); }  // ACHATA como o antigo `unzip -j`: o script espera o xlsx na raiz do tmpdir
     }
     if (!fs.existsSync(xlsx)) { console.log(`  ${ind}: xlsx não encontrado`); continue; }
     const rows = XLSX.utils.sheet_to_json(XLSX.readFile(xlsx).Sheets[XLSX.readFile(xlsx).SheetNames[0]], { header: 1, defval: "" });

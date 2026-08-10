@@ -18,6 +18,29 @@ import fs from "fs"; import path from "path";
 const existe = (cmd) => { try { execSync(`${cmd} --version`, { stdio: "ignore" }); return true; } catch { return false; } };
 
 /**
+ * Extrai e ACHATA: todo arquivo vai para a raiz de `destino`, sem subpastas.
+ *
+ * ═══ POR QUE ISTO PRECISOU EXISTIR ═══
+ * `unzip -j` (junk paths) joga tudo na raiz, e os scripts do INEP contavam com isso: eles montam o caminho
+ * esperado (`${arq}_${ANO}.xlsx`) direto no tmpdir e testam `existsSync`. Meu primeiro conserto trocou
+ * `unzip -j` por `tar -xf`, que PRESERVA a estrutura — o xlsx foi parar numa subpasta e o teste falhou.
+ * Medido em 09/ago: a fonte rodou 10 minutos, imprimiu "xlsx não encontrado" quatro vezes, terminou com ✔
+ * e gravou ZERO linhas — a tabela seguiu congelada em 08/jul. Conserto meu criando falha silenciosa nova.
+ * Quem substitui `unzip -j` tem de replicar o `-j`, não só o "descompactar".
+ */
+export function extraiPlano(arquivo, destino) {
+  const tmp = path.join(destino, `_tmp_${Date.now()}`);
+  const arquivos = extrai(arquivo, tmp);
+  const finais = [];
+  for (const f of arquivos) {
+    const alvo = path.join(destino, path.basename(f));
+    try { fs.copyFileSync(f, alvo); finais.push(alvo); } catch { /* nome repetido: o primeiro vence, como no -j */ }
+  }
+  try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* ignora */ }
+  return finais;
+}
+
+/**
  * Extrai `arquivo` (zip/7z/tar.gz) dentro de `destino`, tentando cada mecanismo disponível.
  * @returns {string[]} caminhos dos arquivos extraídos
  */
