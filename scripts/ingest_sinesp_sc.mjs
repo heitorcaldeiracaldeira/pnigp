@@ -14,7 +14,26 @@ async function run() {
   const byCod = new Set((await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M'`)).rows.map((e) => e.cod_ibge));
   const dir = process.env.DIR || os.tmpdir();
   const xp = path.join(dir, "sinesp_mun.xlsx");
-  if (!fs.existsSync(xp) || fs.statSync(xp).size < 1e5) { console.log("baixando SINESP (~10MB)…"); execFileSync("curl", ["-s", "-L", "--max-time", "180", "-A", "Mozilla/5.0", "-o", xp, XURL], { stdio: "ignore" }); }
+  // ═══ A FONTE MORREU: `dados.mj.gov.br` NÃO EXISTE MAIS ═══
+  // Medido em 10/ago: NXDOMAIN no resolvedor local E no 8.8.8.8 — o domínio foi desativado, não é queda
+  // nem bloqueio. O curl saía com código 6 ("couldn't resolve host") e o catálogo mostrava só
+  // `Command failed: curl -s -L --max-time 180 …`, que parece problema de rede nosso e não é.
+  // As páginas oficiais do MJ (gov.br/mj) AINDA linkam para esse domínio, e o portal de dados abertos do
+  // Ministério saiu do ar: o que restou público são painéis Power BI, não arquivo para baixar.
+  // Reaver isto é ESCREVER UM COLETOR de Power BI, não consertar um download — decisão de escopo, não bug.
+  // Até lá, falha explicando a causa em vez de devolver erro cru de curl.
+  if (!fs.existsSync(xp) || fs.statSync(xp).size < 1e5) {
+    console.log("baixando SINESP (~10MB)…");
+    try {
+      execFileSync("curl", ["-sS", "--fail", "-L", "--max-time", "300", "--speed-limit", "1024", "--speed-time", "60",
+        "--retry", "2", "--retry-all-errors", "-A", "Mozilla/5.0", "-o", xp, XURL], { stdio: "ignore" });
+    } catch (e) {
+      const host = new URL(XURL).host;
+      throw new Error(`SINESP: a fonte saiu do ar — ${host} não resolve (domínio desativado). `
+        + `O portal de dados abertos do MJ foi descontinuado e hoje só há painel Power BI. `
+        + `Reaver exige um coletor novo, não um download. (curl: ${String(e.message).slice(0, 60)})`);
+    }
+  }
   const wb = XLSX.readFile(xp);
   if (!wb.Sheets[UF]) { console.log(`⚠ aba ${UF} não existe`); await db.end(); return; }
   const rows = XLSX.utils.sheet_to_json(wb.Sheets[UF], { header: 1, defval: "" });

@@ -59,7 +59,10 @@ async function stream7z(zPath, cols, onRow) {
   // descompacta.mjs: tar -xf nativo do Windows, com fallback. 7zip-min saia com "code 2".
   const { extrai } = await import("./descompacta.mjs");
   const out = zPath + "_out";
-  if (!fs.existsSync(out)) extrai(zPath, path.dirname(out));
+  // ⚠️ extraía para `path.dirname(out)` — o diretório PAI — então `out` nunca era criado e o readdirSync
+  // logo abaixo estourava com ENOENT apontando para uma pasta que o próprio script deveria ter feito.
+  // O destino é `out`, não o pai de `out`.
+  if (!fs.existsSync(out)) extrai(zPath, out);
   const data = fs.readdirSync(out).filter((f) => fs.statSync(path.join(out, f)).size > 1e5); // arquivo grande (.COMT/.txt)
   for (const f of data) {
     const rl = readline.createInterface({ input: fs.createReadStream(path.join(out, f), { encoding: "latin1" }), crlfDelay: Infinity });

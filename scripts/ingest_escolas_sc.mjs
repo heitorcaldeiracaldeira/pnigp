@@ -11,14 +11,20 @@ const sleep = (ms) => new Promise((s) => setTimeout(s, ms));
 const um = (v) => String(v).trim() === "1";
 
 // unzip — acha a entrada cujo nome termina em `sufixo` no diretório central e infla
+// ⚠️ CASAVA POR `endsWith`, E O INEP PASSOU A VERSIONAR O NOME DO ARQUIVO
+// O Censo 2025 saiu como `microdados_censo_escolar_2025_v2` e cada CSV ganhou sufixo de versão:
+// `Tabela_Escola_2025_V2.csv`. Pedindo `Tabela_Escola_2025.csv`, o endsWith nunca casava —
+// "entrada não encontrada", que soa como zip corrompido e era só o nome ter mudado.
+// Agora o sufixo pedido vira um padrão que tolera o `_V2` (e o `_V3` que vier depois).
 function unzipEntry(buf, sufixo) {
+  const alvo = new RegExp(sufixo.replace(/\.csv$/i, "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(_v\\d+)?\\.csv$", "i");
   let eo = -1;
   for (let i = buf.length - 22; i >= 0 && i > buf.length - 22 - 65536; i--) if (buf.readUInt32LE(i) === 0x06054b50) { eo = i; break; }
   let p = buf.readUInt32LE(eo + 16); const n = buf.readUInt16LE(eo + 10);
   for (let k = 0; k < n; k++) {
     const method = buf.readUInt16LE(p + 10), compSize = buf.readUInt32LE(p + 20), nameLen = buf.readUInt16LE(p + 28), extraLen = buf.readUInt16LE(p + 30), commLen = buf.readUInt16LE(p + 32), lho = buf.readUInt32LE(p + 42);
     const name = buf.toString("latin1", p + 46, p + 46 + nameLen);
-    if (name.toLowerCase().endsWith(sufixo.toLowerCase())) {
+    if (alvo.test(name)) {
       const lN = buf.readUInt16LE(lho + 26), lE = buf.readUInt16LE(lho + 28), ds = lho + 30 + lN + lE;
       const comp = buf.subarray(ds, ds + compSize);
       return (method === 0 ? Buffer.from(comp) : zlib.inflateRawSync(comp)).toString("latin1");

@@ -24,9 +24,12 @@ async function run() {
   const muni = new Map(ents.filter((e) => Number(e.dependencia) === 3).map((e) => [String(e.co_entidade), e.cod_ibge]));
   console.log(`escolas municipais SC: ${muni.size}`);
 
+  // `unzip` não existe no PATH das tarefas agendadas (cmd.exe) — só no Git Bash: era o `spawnSync unzip
+  // ENOENT`. E o caminho interno cravado (`microdados_censo_escolar_2025/dados/…`) também não valia mais:
+  // o Censo 2025 saiu como `..._2025_v2` e o CSV virou `Tabela_Matricula_2025_V2.csv`. Casar por padrão.
   console.log("extraindo Tabela_Matricula…");
-  execFileSync("unzip", ["-o", "-j", ZIP, ENTRY, "-d", os.tmpdir()], { stdio: "ignore" });
-  const src = path.join(os.tmpdir(), `Tabela_Matricula_${ANO}.csv`);
+  const { extraiDoCenso } = await import("./fonte_censo_escolar.mjs");
+  const src = extraiDoCenso(ZIP, /Tabela_Matricula.*\.csv$/i, path.join(os.tmpdir(), `fundeb_censo_${ANO}`));
   const rl = readline.createInterface({ input: fs.createReadStream(src, { encoding: "latin1" }), crlfDelay: Infinity });
   let head = null, ix = {}; const M = new Map();
   const segKeys = Object.keys(SEG);
