@@ -74,9 +74,23 @@ async function main() {
         // que se movem, e o `id` mais recente junto.
         await q(`INSERT INTO convenios_captados_sc (cod_ibge,id,numero,objeto,orgao,situacao,valor,valor_liberado,dt_inicio,dt_fim,ano,convenente)
                  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
-                 ON CONFLICT (chave) DO UPDATE SET id=EXCLUDED.id, valor=EXCLUDED.valor,
-                   valor_liberado=EXCLUDED.valor_liberado, situacao=EXCLUDED.situacao,
-                   dt_fim=EXCLUDED.dt_fim, orgao=EXCLUDED.orgao`,
+                 -- ═══ A FONTE SERVE O VALOR DIVIDIDO POR 10.000, DE FORMA INTERMITENTE ═══
+                 -- Medido em 10/ago sobre os pares duplicados que a base tinha: 2.185 de 2.223 divergências
+                 -- de valor (98,3%) têm razão EXATAMENTE 10.000. Não é ruído de coleta — é a mesma API
+                 -- devolvendo ora R$ 110.000, ora R$ 11, para o mesmo convênio.
+                 -- Qual lado é o certo: o lado baixo tem média R$ 34,49 e 2.107 dos 2.185 abaixo de R$ 100
+                 -- (absurdo para convênio federal); o lado alto tem média R$ 344.947, que bate com a média
+                 -- de toda a base (R$ 343.417). O alto é o real; 730 linhas foram corrigidas.
+                 -- Sem esta guarda, cada coleta que pegasse a fonte no momento ruim rebaixaria o valor de
+                 -- novo — e o total de captação do município encolheria sem ninguém ver.
+                 ON CONFLICT (chave) DO UPDATE SET id=EXCLUDED.id,
+                   valor = CASE WHEN convenios_captados_sc.valor > 0 AND EXCLUDED.valor > 0
+                                 AND round((convenios_captados_sc.valor / EXCLUDED.valor)::numeric, 0) = 10000
+                                THEN convenios_captados_sc.valor ELSE EXCLUDED.valor END,
+                   valor_liberado = CASE WHEN convenios_captados_sc.valor_liberado > 0 AND EXCLUDED.valor_liberado > 0
+                                 AND round((convenios_captados_sc.valor_liberado / EXCLUDED.valor_liberado)::numeric, 0) = 10000
+                                THEN convenios_captados_sc.valor_liberado ELSE EXCLUDED.valor_liberado END,
+                   situacao=EXCLUDED.situacao, dt_fim=EXCLUDED.dt_fim, orgao=EXCLUDED.orgao`,
           [e.cod_ibge, c.id, c.dimConvenio?.numero || null, c.dimConvenio?.objeto || null, c.orgao?.nome || c.orgao?.sigla || null, c.situacao || null, num(c.valor), num(c.valorLiberado), ini, dt(c.dataFinalVigencia), ini ? +ini.slice(0, 4) : null, c.convenente?.nome || null]);
         total++; grav++;
       }
