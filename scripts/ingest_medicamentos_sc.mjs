@@ -20,6 +20,8 @@ async function run() {
   { const ent = new AdmZip(sp).getEntries().find((e) => /tb_procedimento\.txt$/i.test(e.entryName)); for (const l of ent.getData().toString("latin1").split(/\r?\n/)) { if (l.length < 261 || !l.startsWith("06")) continue; p2n.set(l.slice(0, 10), l.slice(10, 70).trim()); } }
 
   const M = new Map(); // cod -> {valor, qtd, meds:Map(nome->valor)}
+  // agregado: mês faltando não deixa buraco, deixa NÚMERO ERRADO com cara de válido. Ver ingest_apac_sc.
+  let obtidos = 0;
   for (const aamm of MESES) {
     const dp = path.join(dir, `PA${UF}${aamm}.dbc`);
     if (!fs.existsSync(dp) || fs.statSync(dp).size < 1e4) { try { execFileSync("curl", ["-s", "--max-time", "180", `ftp://ftp.datasus.gov.br/dissemin/publicos/SIASUS/200801_/Dados/PA${UF}${aamm}.dbc`, "-o", dp], { stdio: "ignore" }); } catch (e) {} }
@@ -35,16 +37,28 @@ async function run() {
       if (!M.has(cod)) M.set(cod, { valor: 0, qtd: 0, meds: new Map() });
       const m = M.get(cod); m.valor += v; m.qtd += q; const nm = p2n.get(proc) || proc; m.meds.set(nm, (m.meds.get(nm) || 0) + v);
     }
+    obtidos++;
     console.log(`  ✓ ${aamm}: processado`);
   }
 
   await db.query(`CREATE TABLE IF NOT EXISTS medicamentos_alto_custo_sc (cod_ibge TEXT PRIMARY KEY, periodo TEXT, valor NUMERIC, quantidade BIGINT, top_meds JSONB, atualizado TIMESTAMPTZ DEFAULT now())`);
-  await db.query(`TRUNCATE medicamentos_alto_custo_sc`);
   const per = MESES[0] + "-" + MESES[MESES.length - 1];
-  for (const [cod, m] of M) {
-    const top = [...m.meds.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([nome, v]) => ({ nome: nome.slice(0, 40), valor: Math.round(v) }));
-    await db.query(`INSERT INTO medicamentos_alto_custo_sc (cod_ibge,periodo,valor,quantidade,top_meds,atualizado) VALUES ($1,$2,$3,$4,$5,now())`, [cod, per, Math.round(m.valor), m.qtd, JSON.stringify(top)]);
+  if (obtidos < MESES.length) {
+    console.log(`⚠ medicamentos_alto_custo_sc: só ${obtidos}/${MESES.length} meses — total subestimado; tabela NÃO tocada.`);
+    await db.end(); process.exit(1);
   }
+  await db.query("BEGIN");
+  try {
+    await db.query(`DELETE FROM medicamentos_alto_custo_sc WHERE periodo = $1`, [per]);
+    const L = [...M.entries()].map(([cod, m]) => {
+      const top = [...m.meds.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([nome, v]) => ({ nome: nome.slice(0, 40), valor: Math.round(v) }));
+      return [cod, per, Math.round(m.valor), m.qtd, JSON.stringify(top)];
+    });
+    if (L.length) await db.query(`INSERT INTO medicamentos_alto_custo_sc (cod_ibge,periodo,valor,quantidade,top_meds)
+      SELECT c,p,v,q,t::jsonb FROM unnest($1::text[],$2::text[],$3::numeric[],$4::bigint[],$5::text[]) AS z(c,p,v,q,t)`,
+      [L.map((x) => x[0]), L.map((x) => x[1]), L.map((x) => x[2]), L.map((x) => x[3]), L.map((x) => x[4])]);
+    await db.query("COMMIT");
+  } catch (e) { await db.query("ROLLBACK"); throw e; }
   const chk = (await db.query(`SELECT count(*) m, round(sum(valor)/1e6) mi, sum(quantidade) q FROM medicamentos_alto_custo_sc`)).rows[0];
   console.log(`✔ medicamentos_alto_custo_sc: ${chk.m} municípios · R$ ${chk.mi} mi · ${Number(chk.q).toLocaleString("pt-BR")} unidades dispensadas (${per})`);
   await db.end();

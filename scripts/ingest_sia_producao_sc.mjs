@@ -25,6 +25,8 @@ async function run() {
   console.log(`SIGTAP: ${proc2cpl.size} procedimentos`);
 
   const M = new Map(); // cod -> {basica:{q,v}, media:{q,v}, alta:{q,v}}
+  // agregado: mês faltando não deixa buraco, deixa NÚMERO ERRADO com cara de válido. Ver ingest_apac_sc.
+  let obtidos = 0;
   for (const aamm of MESES) {
     const dp = path.join(dir, `PA${UF}${aamm}.dbc`);
     if (!fs.existsSync(dp) || fs.statSync(dp).size < 1e4) { try { execFileSync("curl", ["-s", "--max-time", "180", `ftp://ftp.datasus.gov.br/dissemin/publicos/SIASUS/200801_/Dados/PA${UF}${aamm}.dbc`, "-o", dp], { stdio: "ignore" }); } catch (e) {} }
@@ -43,17 +45,29 @@ async function run() {
       const rec2 = M.get(cod); const g = rec2[cpl]; g.q += q; g.v += v;
       if (cpl !== "basica") { const gr = proc.slice(0, 2); const gg = rec2.grupos.get(gr) || { q: 0, v: 0 }; gg.q += q; gg.v += v; rec2.grupos.set(gr, gg); } // MAC por grupo SIGTAP
     }
+    obtidos++;
     console.log(`  ✓ ${aamm}: processado (${d.nrec.toLocaleString("pt-BR")} registros)`);
   }
 
   await db.query(`CREATE TABLE IF NOT EXISTS sia_producao_sc (cod_ibge TEXT PRIMARY KEY, periodo TEXT, q_basica BIGINT, v_basica NUMERIC, q_media BIGINT, v_media NUMERIC, q_alta BIGINT, v_alta NUMERIC, mac_grupos JSONB, atualizado TIMESTAMPTZ DEFAULT now())`);
   await db.query(`ALTER TABLE sia_producao_sc ADD COLUMN IF NOT EXISTS mac_grupos JSONB`).catch(() => {});
-  await db.query(`TRUNCATE sia_producao_sc`);
   const per = MESES[0] + "-" + MESES[MESES.length - 1];
-  for (const [cod, g] of M) {
-    const grupos = [...g.grupos.entries()].map(([gr, x]) => ({ grupo: GRUPO[gr] || gr, quantidade: x.q, valor: Math.round(x.v) })).sort((a, b) => b.valor - a.valor);
-    await db.query(`INSERT INTO sia_producao_sc (cod_ibge,periodo,q_basica,v_basica,q_media,v_media,q_alta,v_alta,mac_grupos,atualizado) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,now())`, [cod, per, g.basica.q, Math.round(g.basica.v), g.media.q, Math.round(g.media.v), g.alta.q, Math.round(g.alta.v), JSON.stringify(grupos)]);
+  if (obtidos < MESES.length) {
+    console.log(`⚠ sia_producao_sc: só ${obtidos}/${MESES.length} meses — total subestimado; tabela NÃO tocada.`);
+    await db.end(); process.exit(1);
   }
+  await db.query("BEGIN");
+  try {
+    await db.query(`DELETE FROM sia_producao_sc WHERE periodo = $1`, [per]);
+    const L = [...M.entries()].map(([cod, g]) => {
+      const grupos = [...g.grupos.entries()].map(([gr, x]) => ({ grupo: GRUPO[gr] || gr, quantidade: x.q, valor: Math.round(x.v) })).sort((a, b) => b.valor - a.valor);
+      return [cod, per, g.basica.q, Math.round(g.basica.v), g.media.q, Math.round(g.media.v), g.alta.q, Math.round(g.alta.v), JSON.stringify(grupos)];
+    });
+    if (L.length) await db.query(`INSERT INTO sia_producao_sc (cod_ibge,periodo,q_basica,v_basica,q_media,v_media,q_alta,v_alta,mac_grupos)
+      SELECT c,p,qb,vb,qm,vm,qa,va,g::jsonb FROM unnest($1::text[],$2::text[],$3::int[],$4::numeric[],$5::int[],$6::numeric[],$7::int[],$8::numeric[],$9::text[]) AS z(c,p,qb,vb,qm,vm,qa,va,g)`,
+      [0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => L.map((x) => x[i])));
+    await db.query("COMMIT");
+  } catch (e) { await db.query("ROLLBACK"); throw e; }
   const chk = (await db.query(`SELECT count(*) m, round(sum(v_media+v_alta)/1e6) mac, round(sum(v_basica)/1e6) ab FROM sia_producao_sc`)).rows[0];
   console.log(`✔ sia_producao_sc: ${chk.m} municípios · R$ ${chk.ab} mi atenção básica · R$ ${chk.mac} mi média+alta complexidade (${per})`);
   await db.end();

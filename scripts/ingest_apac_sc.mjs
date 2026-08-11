@@ -15,10 +15,17 @@ async function run() {
   const by6 = new Map((await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M'`)).rows.map((e) => [e.cod_ibge.slice(0, 6), e.cod_ibge]));
   const dir = process.env.DIR || os.tmpdir();
   const M = new Map(); // cod -> {onco:{n,v}, dialise:{n,v}}
+  // ⚠️ AGREGADO É DIFERENTE DE SÉRIE: aqui todas as competências viram UM total por município.
+  // Se um mês falha, o número não fica FALTANDO — fica ERRADO, e com cara de válido. R$ 210 mi com um mês
+  // ausente engana mais que tabela vazia, porque ninguém desconfia de um número plausível.
+  // Por isso o critério aqui é mais duro que nas séries: agregado só substitui o anterior se estiver
+  // COMPLETO. Incompleto, o dado antigo (que estava completo) fica, e a rodada falha.
+  let esperados = 0, obtidos = 0;
 
   for (const grp of GRUPOS) {
     for (const tp of grp.tipos) {
       for (const aamm of MESES) {
+        esperados++;
         const dp = path.join(dir, `${tp}${UF}${aamm}.dbc`);
         if (!fs.existsSync(dp) || fs.statSync(dp).size < 1e3) { try { execFileSync("curl", ["-s", "--max-time", "150", `ftp://ftp.datasus.gov.br/dissemin/publicos/SIASUS/200801_/Dados/${tp}${UF}${aamm}.dbc`, "-o", dp], { stdio: "ignore" }); } catch (e) {} }
         if (!fs.existsSync(dp) || fs.statSync(dp).size < 1e3) { console.log(`  ⚠ ${tp} ${aamm}: sem arquivo`); continue; }
@@ -31,15 +38,29 @@ async function run() {
           if (!M.has(cod)) M.set(cod, { onco: { n: 0, v: 0 }, dialise: { n: 0, v: 0 } });
           const o = M.get(cod)[grp.g]; o.n++; o.v += v;
         }
+        obtidos++;
         console.log(`  ✓ ${tp} ${aamm}: ${d.nrec} APAC`);
       }
     }
   }
 
   await db.query(`CREATE TABLE IF NOT EXISTS apac_sc (cod_ibge TEXT PRIMARY KEY, periodo TEXT, onco_apac INTEGER, onco_valor NUMERIC, dialise_apac INTEGER, dialise_valor NUMERIC, atualizado TIMESTAMPTZ DEFAULT now())`);
-  await db.query(`TRUNCATE apac_sc`);
   const per = MESES[0] + "-" + MESES[MESES.length - 1];
-  for (const [cod, m] of M) await db.query(`INSERT INTO apac_sc (cod_ibge,periodo,onco_apac,onco_valor,dialise_apac,dialise_valor,atualizado) VALUES ($1,$2,$3,$4,$5,$6,now())`, [cod, per, m.onco.n, Math.round(m.onco.v), m.dialise.n, Math.round(m.dialise.v)]);
+  if (obtidos < esperados) {
+    console.log(`⚠ apac_sc: só ${obtidos}/${esperados} arquivos vieram — o total ficaria SUBESTIMADO.`);
+    console.log(`  A tabela NÃO foi tocada: o dado anterior, completo, vale mais que um agregado furado.`);
+    await db.end(); process.exit(1);
+  }
+  // substitui só este período, em transação — TRUNCATE apagaria também qualquer outro período guardado
+  await db.query("BEGIN");
+  try {
+    await db.query(`DELETE FROM apac_sc WHERE periodo = $1`, [per]);
+    const L = [...M.entries()].map(([cod, m]) => [cod, per, m.onco.n, Math.round(m.onco.v), m.dialise.n, Math.round(m.dialise.v)]);
+    if (L.length) await db.query(`INSERT INTO apac_sc (cod_ibge,periodo,onco_apac,onco_valor,dialise_apac,dialise_valor)
+      SELECT c,p,oa,ov,da,dv FROM unnest($1::text[],$2::text[],$3::int[],$4::numeric[],$5::int[],$6::numeric[]) AS z(c,p,oa,ov,da,dv)`,
+      [L.map((x) => x[0]), L.map((x) => x[1]), L.map((x) => x[2]), L.map((x) => x[3]), L.map((x) => x[4]), L.map((x) => x[5])]);
+    await db.query("COMMIT");
+  } catch (e) { await db.query("ROLLBACK"); throw e; }
   const chk = (await db.query(`SELECT count(*) m, round(sum(onco_valor)/1e6) o, round(sum(dialise_valor)/1e6) d FROM apac_sc`)).rows[0];
   console.log(`✔ apac_sc: ${chk.m} municípios · R$ ${chk.o} mi oncologia · R$ ${chk.d} mi diálise (${per})`);
   await db.end();

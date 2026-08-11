@@ -15,6 +15,8 @@ async function run() {
   const dir = process.env.DIR || os.tmpdir();
   const M = new Map(); // cod -> {atend, reg}
 
+  // agregado: mês faltando não deixa buraco, deixa NÚMERO ERRADO com cara de válido. Ver ingest_apac_sc.
+  let obtidos = 0;
   for (const aamm of MESES) {
     const dp = path.join(dir, `PS${UF}${aamm}.dbc`);
     if (!fs.existsSync(dp) || fs.statSync(dp).size < 1e3) { try { execFileSync("curl", ["-s", "--max-time", "150", `ftp://ftp.datasus.gov.br/dissemin/publicos/SIASUS/200801_/Dados/PS${UF}${aamm}.dbc`, "-o", dp], { stdio: "ignore" }); } catch (e) {} }
@@ -27,13 +29,25 @@ async function run() {
       const at = ca ? (parseInt(d.buf.subarray(rec + ca.off, rec + ca.off + ca.len).toString("latin1"), 10) || 0) : 0;
       if (!M.has(cod)) M.set(cod, { atend: 0, reg: 0 }); const o = M.get(cod); o.atend += at; o.reg++;
     }
+    obtidos++;
     console.log(`  ✓ ${aamm}: ${d.nrec} registros RAAS-PS`);
   }
 
   await db.query(`CREATE TABLE IF NOT EXISTS raas_saude_mental_sc (cod_ibge TEXT PRIMARY KEY, periodo TEXT, atendimentos INTEGER, registros INTEGER, atualizado TIMESTAMPTZ DEFAULT now())`);
-  await db.query(`TRUNCATE raas_saude_mental_sc`);
   const per = MESES[0] + "-" + MESES[MESES.length - 1];
-  for (const [cod, o] of M) await db.query(`INSERT INTO raas_saude_mental_sc (cod_ibge,periodo,atendimentos,registros,atualizado) VALUES ($1,$2,$3,$4,now())`, [cod, per, o.atend, o.reg]);
+  if (obtidos < MESES.length) {
+    console.log(`⚠ raas_saude_mental_sc: só ${obtidos}/${MESES.length} meses — total subestimado; tabela NÃO tocada.`);
+    await db.end(); process.exit(1);
+  }
+  await db.query("BEGIN");
+  try {
+    await db.query(`DELETE FROM raas_saude_mental_sc WHERE periodo = $1`, [per]);
+    const L = [...M.entries()].map(([cod, o]) => [cod, per, o.atend, o.reg]);
+    if (L.length) await db.query(`INSERT INTO raas_saude_mental_sc (cod_ibge,periodo,atendimentos,registros)
+      SELECT c,p,a,r FROM unnest($1::text[],$2::text[],$3::int[],$4::int[]) AS z(c,p,a,r)`,
+      [L.map((x) => x[0]), L.map((x) => x[1]), L.map((x) => x[2]), L.map((x) => x[3])]);
+    await db.query("COMMIT");
+  } catch (e) { await db.query("ROLLBACK"); throw e; }
   const chk = (await db.query(`SELECT count(*) m, sum(atendimentos) a, sum(registros) r FROM raas_saude_mental_sc`)).rows[0];
   console.log(`✔ raas_saude_mental_sc: ${chk.m} municípios · ${Number(chk.a).toLocaleString("pt-BR")} atendimentos psicossociais · ${Number(chk.r).toLocaleString("pt-BR")} registros (${per})`);
   await db.end();
