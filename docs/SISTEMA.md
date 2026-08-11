@@ -1,6 +1,6 @@
 # PNIGP — Documentação do Sistema (gerada automaticamente)
 
-> Gerada em 2026-08-09 03:30 -03 por `scripts/gerar_documentacao.mjs`. Reflete o estado real do código e do banco. **Não editar à mão.**
+> Gerada em 2026-08-10 06:34 -03 por `scripts/gerar_documentacao.mjs`. Reflete o estado real do código e do banco. **Não editar à mão.**
 
 ## 1. Banco de dados (Neon)
 
@@ -15,18 +15,18 @@
 | `acompanhamento_sc` | 251 | 8 (cod_ibge, ano, bimestre, receita_prevista, receita_realizada, despesa_dotacao, despesa_empenhada, atualizado) |
 | `agropecuaria_sc` | 295 | 9 (cod_ibge, ano, estab_total, estab_familiar, estab_nao_familiar, area_total_ha, area_familiar_ha, area_nao_familiar_ha…) |
 | `alfabetizacao_sc` | 295 | 3 (cod_ibge, taxa, atualizado) |
-| `ana_outorgas_sc` | 293 | 9 (cod_ibge, n_outorgas, vazao_total, volume_total, atualizado, n_superficial, n_subterranea, por_finalidade…) |
+| `ana_outorgas_sc` | 265 | 9 (cod_ibge, n_outorgas, vazao_total, volume_total, atualizado, n_superficial, n_subterranea, por_finalidade…) |
 | `anatel_bl_sc` | 295 | 5 (cod_ibge, ano_atual, acessos, serie, atualizado) |
 | `aneel_gd_sc` | 295 | 6 (cod_ibge, n_empreendimentos, potencia_kw, top_fontes, serie, atualizado) |
-| `anp_precos_sc` | 3.369 | 7 (cod_ibge, ano, semestre, produto, preco_medio, n_coletas, atualizado) |
+| `anp_precos_sc` | 3.370 | 7 (cod_ibge, ano, semestre, produto, preco_medio, n_coletas, atualizado) |
 | `anp_vendas_sc` | 28.841 | 5 (cod_ibge, ano, produto, vendas, atualizado) |
 | `ans_cobertura_sc` | 295 | 8 (cod_ibge, ano, benef_medica, benef_total, populacao, taxa_cobertura, atualizado, pop_ano) |
 | `apac_sc` | 294 | 7 (cod_ibge, periodo, onco_apac, onco_valor, dialise_apac, dialise_valor, atualizado) |
 | `arboviroses_sc` | 5.900 | 7 (cod_ibge, doenca, ano, casos, incidencia_100k, nivel_max, atualizado) |
 | `arquivo_binario_sc` | 0 | 14 (cnpj, ano, seq, sequencial_documento, cod_ibge, numero_controle, tipo_documento, storage…) |
-| `arquivo_texto_sc` | 649.471 | 17 (cnpj, ano, seq, sequencial_documento, cod_ibge, tipo_documento, titulo, texto…) |
-| `arquivos_proc_feitos` | 248.233 | 3 (numero_controle, n, feito_em) |
-| `arquivos_sc` | 651.073 | 14 (cnpj, ano, seq, sequencial_documento, cod_ibge, tipo_documento_id, tipo_documento, titulo…) |
+| `arquivo_texto_sc` | 649.752 | 17 (cnpj, ano, seq, sequencial_documento, cod_ibge, tipo_documento, titulo, texto…) |
+| `arquivos_proc_feitos` | 248.571 | 3 (numero_controle, n, feito_em) |
+| `arquivos_sc` | 652.208 | 14 (cnpj, ano, seq, sequencial_documento, cod_ibge, tipo_documento_id, tipo_documento, titulo…) |
 | `assistencia_repasse_sc` | 6.177 | 7 (cod_ibge, ano, fnas_total, fnas_psb, fnas_pse, meses, atualizado_em) |
 | `assistencia_social_sc` | 295 | 24 (cod_ibge, municipio, anomes_ref, populacao, cras, creas, acolhimento, hab_por_cras…) |
 | `atas_check` | 780 | 3 (cnpj_orgao, checado, n) |
@@ -60,11 +60,11 @@
 | `bolsa_atleta_sc` | 88 | 6 (cod_ibge, ano, n_atletas, valor_pago, top_modalidades, atualizado) |
 | `bps_precos_ref` | 12.658 | 6 (cod_catmat, descricao, mediana, media, minimo, atualizado) |
 | `caderno_emendas_sc` | 1 | 4 (cod_ibge, escopo, payload, atualizado) |
-| `cadprev_dair_aplicacoes_resgate` | 195.336 | 19 (cod_ibge, nr_cnpj_entidade, sg_uf, no_ente, dt_mes, dt_ano, no_segmeto, tp_ativo…) |
-| `cadprev_dair_carteira` | 367.163 | 17 (cod_ibge, nr_cnpj_entidade, sg_uf, no_ente, dt_mes_bimestre, dt_ano, no_segmento, no_tipo_ativo…) |
-| `cadprev_dair_forma_gestao` | 8.599 | 17 (cod_ibge, nr_cnpj_entidade, sg_uf, no_ente, dt_mes, dt_ano, dt_envio, no_objeto_contratacao…) |
-| `cadprev_dair_fundo_invest_analisados` | 101.495 | 14 (cod_ibge, nr_cnpj_entidade, sg_uf, no_ente, dt_mes, dt_ano, dt_envio, nr_cnpj_empresa…) |
-| `cadprev_dair_governanca` | 25.607 | 26 (cod_ibge, nr_cnpj_entidade, no_ente, sg_uf, dt_mes, dt_ano, dt_envio, nr_norma_fundamento…) |
+| `cadprev_dair_aplicacoes_resgate` | 198.163 | 19 (cod_ibge, nr_cnpj_entidade, sg_uf, no_ente, dt_mes, dt_ano, no_segmeto, tp_ativo…) |
+| `cadprev_dair_carteira` | 373.591 | 17 (cod_ibge, nr_cnpj_entidade, sg_uf, no_ente, dt_mes_bimestre, dt_ano, no_segmento, no_tipo_ativo…) |
+| `cadprev_dair_forma_gestao` | 8.703 | 17 (cod_ibge, nr_cnpj_entidade, sg_uf, no_ente, dt_mes, dt_ano, dt_envio, no_objeto_contratacao…) |
+| `cadprev_dair_fundo_invest_analisados` | 102.352 | 14 (cod_ibge, nr_cnpj_entidade, sg_uf, no_ente, dt_mes, dt_ano, dt_envio, nr_cnpj_empresa…) |
+| `cadprev_dair_governanca` | 25.882 | 26 (cod_ibge, nr_cnpj_entidade, no_ente, sg_uf, dt_mes, dt_ano, dt_envio, nr_norma_fundamento…) |
 | `cadprev_dair_identificacao` | 9.556 | 13 (cod_ibge, nr_cnpj_entidade, sg_uf, no_ente, dt_mes, dt_ano, dt_envio, te_finalidade…) |
 | `cadprev_dair_instituicao_credenciada` | 500.000 | 12 (cod_ibge, nr_cnpj_entidade, sg_uf, no_ente, dt_mes, dt_ano, nr_cnpj_empresa, no_empresa…) |
 | `cadprev_dair_regime_ata` | 19.099 | 11 (cod_ibge, nr_cnpj_entidade, sg_uf, no_ente, dt_mes, dt_ano, dt_envio, no_orgao…) |
@@ -97,30 +97,30 @@
 | `cadprev_draa_valores_compromissos` | 69.077 | 14 (cod_ibge, nr_cnpj_entidade, sg_uf, no_ente, dt_exercicio, dt_envio, te_situacao, tp_plano…) |
 | `cadprev_rpps_aliquota` | 1.907 | 11 (cod_ibge, nr_cnpj_entidade, no_ente, sg_uf, ds_plano_segregacao, no_sujeito_passivo, vl_aliquota, dt_inicio_vigencia…) |
 | `cadprev_rpps_regime_previdenciario` | 816 | 12 (cod_ibge, nr_cnpj_entidade, sg_uf, no_ente, tp_regime, dt_inicio, dt_fim, no_tipo_legislacao…) |
-| `cadprev_sync_log` | 75 | 5 (id, recurso, uf, linhas, ts) |
+| `cadprev_sync_log` | 94 | 5 (id, recurso, uf, linhas, ts) |
 | `caf_sc` | 295 | 6 (cod_ibge, competencia, caf_fisica, caf_rural, caf_juridica, atualizado) |
 | `caged_sc` | 5.014 | 7 (cod_ibge, ano, mes, saldo, admissoes, desligamentos, atualizado) |
 | `capag_sc` | 271 | 9 (cod_ibge, nota, endividamento, endiv_nota, poupanca, poup_nota, liquidez, liq_nota…) |
 | `captacao_transferegov_sc` | 1.277 | 14 (id_plano, cod_ibge, uf, id_programa, situacao, valor_total_repasse, valor_voluntario, valor_total…) |
 | `car_sc` | 295 | 4 (cod_ibge, imoveis_total, imoveis_ativos, atualizado) |
-| `catalogo_govbr_sc` | 23.732 | 7 (nivel, tipo, cod, nome, classe, grupo, atualizado_em) |
+| `catalogo_govbr_sc` | 23.696 | 7 (nivel, tipo, cod, nome, classe, grupo, atualizado_em) |
 | `catmat_catalogo` | 343.323 | 8 (codigo_item, nome_pdm, nome_classe, descricao, codigo_pdm, codigo_classe, ncm, atualizado) |
 | `catmat_pdm` | 20.332 | 5 (codigo_pdm, nome_pdm, nome_classe, n_itens, item_ex) |
 | `cauc_detalhe_sc` | 8.290 | 5 (cod_ibge, codigo, status, validade, atualizado) |
 | `cauc_sc` | 296 | 7 (cod_ibge, data_pesquisa, apto, n_pendencias, pendencias, grupos_pendentes, atualizado) |
 | `cemaden_sc` | 174 | 4 (cod_ibge, estacoes, ativas, atualizado) |
 | `censo_corraca_sc` | 295 | 8 (cod_ibge, total, branca, preta, amarela, parda, indigena, atualizado) |
-| `censo_matricula_sc` | 3.256 | 4 (cod_ibge, ano, etapa, matriculas) |
-| `cfem_sc` | 1.892 | 5 (cod_ibge, ano, valor, top_substancias, atualizado) |
+| `censo_matricula_sc` | 6.512 | 4 (cod_ibge, ano, etapa, matriculas) |
+| `cfem_sc` | 3.644 | 5 (cod_ibge, ano, valor, top_substancias, atualizado) |
 | `cmed_pmvg` | 25.702 | 11 (ggrem, substancia, laboratorio, produto, apresentacao, classe, regime, pmvg_0…) |
-| `cnes_equipamentos_estab` | 7.005 | 6 (codigo_cnes, total, imagem, vida, sus, atualizado) |
+| `cnes_equipamentos_estab` | 11.736 | 6 (codigo_cnes, total, imagem, vida, sus, atualizado) |
 | `cnes_equipamentos_sc` | 885 | 7 (cod_ibge, ano, total, imagem, vida, sus, atualizado) |
-| `cnes_equipes_estab` | 155 | 4 (codigo_cnes, n_equipes, n_esf, atualizado) |
+| `cnes_equipes_estab` | 1.726 | 4 (codigo_cnes, n_equipes, n_esf, atualizado) |
 | `cnes_equipes_sc` | 1.769 | 5 (cod_ibge, ano, n_equipes, n_esf, atualizado) |
 | `cnes_estab_check` | 295 | 2 (cod_ibge, n) |
 | `cnes_leitos_estab` | 309 | 5 (codigo_cnes, total, sus, uti, atualizado) |
 | `cnes_leitos_sc` | 473 | 6 (cod_ibge, ano, total, sus, uti, atualizado) |
-| `cnes_profissionais_estab` | 7.244 | 3 (codigo_cnes, profissionais, atualizado) |
+| `cnes_profissionais_estab` | 7.807 | 3 (codigo_cnes, profissionais, atualizado) |
 | `cnes_profissionais_sc` | 885 | 8 (cod_ibge, ano, medicos, enfermeiros, dentistas, tec_enf, acs, atualizado) |
 | `cnes_sc` | 295 | 10 (cod_ibge, total, sus_amb, hospitalar, cirurgico, obstetrico, neonatal, por_tipo…) |
 | `cnpj_loc` | 56.133 | 10 (cnpj, razao_social, municipio, uf, atualizado, situacao, situacao_motivo, abertura…) |
@@ -128,23 +128,23 @@
 | `cobertura_aps_sc` | 295 | 6 (cod_ibge, populacao, esf, cobertura, competencia, atualizado) |
 | `cobertura_vacinal_sc` | 37.290 | 5 (cod_ibge, ano, vacina, cobertura, atualizado) |
 | `coleta_heartbeat` | 1 | 6 (id, ts, progresso, etapa, reinicios, msg) |
-| `coleta_incremental_log` | 19 | 9 (rodada_em, uf, janela_ini, janela_fim, vistos, mudaram, iguais, novos…) |
+| `coleta_incremental_log` | 20 | 9 (rodada_em, uf, janela_ini, janela_fim, vistos, mudaram, iguais, novos…) |
 | `coleta_qa` | 1 | 6 (id, ts, status, suspeitos, alertas, regras) |
 | `compras_publicas` | 106 | 11 (ente_tipo, ente_id, ano, valor_contratado_pc, pct_pregao_eletronico, pct_dispensa, economia_pregao, fornecedores_mil…) |
 | `compras_sc` | 1.118 | 10 (cod_ibge, ano, n_contratos, valor_estimado, valor_homologado, economia_pct, dispensa_pct, por_modalidade…) |
 | `compras_sc_vazios` | 247 | 1 (cod_ibge) |
-| `contratacao_disputa_sc` | 695 | 10 (cod_ibge, cnpj, ano, seq, n_licitantes, n_lances, n_itens_marca, atualizado…) |
+| `contratacao_disputa_sc` | 993 | 10 (cod_ibge, cnpj, ano, seq, n_licitantes, n_lances, n_itens_marca, atualizado…) |
 | `contratacoes` | 1.035 | 13 (id, ente_tipo, ente_id, numero, objeto, orgao, modalidade, valor_estimado…) |
-| `contratacoes_sc` | 248.571 | 35 (cod_ibge, cnpj, ano, seq, esfera, plataforma, modalidade_id, modalidade…) |
+| `contratacoes_sc` | 248.572 | 35 (cod_ibge, cnpj, ano, seq, esfera, plataforma, modalidade_id, modalidade…) |
 | `contrato_sc` | 10.559 | 30 (cnpj, ano, seq, cod_ibge, uf, municipio_nome, numero_controle_pncp, numero_controle_compra…) |
-| `contratos_sc` | 2.019.329 | 14 (id, cod_ibge, numero_controle_compra, cnpj_compra, ano_compra, seq_compra, fornecedor, ni_fornecedor…) |
+| `contratos_sc` | 2.114.250 | 14 (id, cod_ibge, numero_controle_compra, cnpj_compra, ano_compra, seq_compra, fornecedor, ni_fornecedor…) |
 | `contratos_sc_feitos` | 295 | 2 (cod_ibge, n) |
 | `contratos_sc_feitos_inc` | 295 | 2 (cod_ibge, n) |
-| `convenios_captados_sc` | 21.484 | 12 (cod_ibge, id, numero, objeto, orgao, situacao, valor, valor_liberado…) |
-| `convenios_check` | 295 | 1 (cod_ibge) |
+| `convenios_captados_sc` | 43.238 | 12 (cod_ibge, id, numero, objeto, orgao, situacao, valor, valor_liberado…) |
+| `convenios_check` | 295 | 2 (cod_ibge, atualizado) |
 | `convenios_sc` | 13.071 | 10 (nr_convenio, id_proposta, cod_ibge, municipio, ano, situacao, vl_global, vl_repasse…) |
 | `crp_alerta_estado` | 296 | 4 (cod_ibge, categoria, dias, atualizado) |
-| `crp_alertas` | 514 | 11 (id, cod_ibge, nome, eh_estado, evento, categoria_de, categoria_para, dias…) |
+| `crp_alertas` | 561 | 11 (id, cod_ibge, nome, eh_estado, evento, categoria_de, categoria_para, dias…) |
 | `cvat_aps_sc` | 1.031 | 9 (cod_ibge, quadrimestre, equipe, otimo, bom, suficiente, regular, total…) |
 | `datatran_sc` | 1.280 | 6 (cod_ibge, ano, n_acidentes, mortos, feridos, atualizado) |
 | `desastres_sc` | 295 | 10 (cod_ibge, n_desastres, n_recentes, mortos, afetados, desalojados, ano_ultimo, top_tipos…) |
@@ -157,15 +157,15 @@
 | `emendas_est_objetos_sc` | 4.078 | 6 (id, ano, area, objeto, valor, atualizado) |
 | `emendas_estaduais_exec_sc` | 1 | 3 (cod_ibge, valor_pago, atualizado) |
 | `emendas_execucao_sc` | 691 | 14 (codigo_emenda, ano, cod_ibge, localidade, tipo, autor, funcao, subfuncao…) |
-| `emendas_indicacao_sc` | 9.630 | 19 (id_proposta, nr_emenda, cod_ibge, municipio, parlamentar, tipo_parlamentar, impositivo, programa…) |
+| `emendas_indicacao_sc` | 9.633 | 19 (id_proposta, nr_emenda, cod_ibge, municipio, parlamentar, tipo_parlamentar, impositivo, programa…) |
 | `empenho_sc` | 73 | 10 (cnpj, ano, seq, sequencial_empenho, cod_ibge, numero_empenho, valor, data_emissao…) |
 | `empenhos_check` | 23.557 | 5 (cnpj_compra, ano_compra, seq_compra, checado, n) |
 | `empenhos_sc` | 0 | 10 (cod_ibge, cnpj_compra, ano_compra, seq_compra, seq_empenho, numero, valor, data…) |
 | `entes_sc` | 296 | 14 (cod_ibge, nome, uf, tipo, populacao, pop_indigena, latitude, longitude…) |
-| `equipamentos_esporte_sc` | 7.160 | 10 (id, cat, nome, tipo, cod_ibge, municipio, latitude, longitude…) |
-| `equipamentos_justica_sc` | 724 | 11 (id, cat, nome, tipo, cod_ibge, municipio, latitude, longitude…) |
+| `equipamentos_esporte_sc` | 7.213 | 10 (id, cat, nome, tipo, cod_ibge, municipio, latitude, longitude…) |
+| `equipamentos_justica_sc` | 729 | 11 (id, cat, nome, tipo, cod_ibge, municipio, latitude, longitude…) |
 | `equipamentos_suas_sc` | 1.669 | 17 (codigo_cadsuas, cod_ibge, nome, tipo, nr_identificador, uf, municipio, atualizado…) |
-| `escola_turmas_sc` | 0 | 14 (co_entidade, cod_ibge, ano, nome, rede, tur_total, tur_creche, tur_pre…) |
+| `escola_turmas_sc` | 6.541 | 14 (co_entidade, cod_ibge, ano, nome, rede, tur_total, tur_creche, tur_pre…) |
 | `escolas_hist_sc` | 64.566 | 16 (co_entidade, ano, cod_ibge, dependencia, nome, localizacao, matriculas, docentes…) |
 | `escolas_sc` | 6.750 | 27 (co_entidade, cod_ibge, ano, nome, dependencia, localizacao, matriculas, tem_agua…) |
 | `estabelecimentos_saude_sc` | 35.458 | 17 (codigo_cnes, cod_ibge, nome, tipo_codigo, tipo, gestao, esfera, sus_ambulatorial…) |
@@ -185,7 +185,7 @@
 | `fnde_simad_check` | 7.965 | 3 (cod_ibge, ano, n) |
 | `fnde_simad_sc` | 207.012 | 12 (cod_ibge, ano, data_pgto, ob, valor, parcela, programa, cnpj_recebedor…) |
 | `fns_repasse_sc` | 45.630 | 8 (cod_ibge, ano, bloco_cod, bloco_nome, area_cod, area_nome, vl_total, vl_liquido) |
-| `frescor_log` | 22 | 6 (id, rodado_em, total, ok, resumo, problemas) |
+| `frescor_log` | 28 | 6 (id, rodado_em, total, ok, resumo, problemas) |
 | `frota_sc` | 289 | 6 (cod_ibge, ano, total, automovel, motocicleta, atualizado) |
 | `fundeb_hist_sc` | 1.142 | 8 (cod_ibge, ano, matriculas, ponderadas, receita, vaaf_calc, breakdown, atualizado) |
 | `fundeb_matriculas_sc` | 295 | 19 (cod_ibge, ano, creche, creche_int, pre, pre_int, fund_ai, fund_ai_int…) |
@@ -211,75 +211,75 @@
 | `indices_pnigp` | 130 | 9 (municipio_id, ano, iceb, invp, igp360, cap_planejamento, cap_fiscal, cap_gestao…) |
 | `indices_pnigp_estados` | 135 | 9 (estado_id, ano, iceb, invp, igp360, cap_planejamento, cap_fiscal, cap_gestao…) |
 | `instrumento_cobranca_sc` | 2.048 | 25 (cnpj, ano, sequencial_contrato, sequencial_instrumento, cod_ibge, uf, municipio_nome, esfera…) |
-| `item_apresentacao_desc_sc` | 29.859 | 7 (chave, unidade_basica, fator, conf, metodo, n_itens, atualizado) |
-| `item_apresentacao_sc` | 2.396 | 9 (unidade, unidade_basica, fator, forma, dimensao, conf, metodo, n_itens…) |
+| `item_apresentacao_desc_sc` | 47.878 | 7 (chave, unidade_basica, fator, conf, metodo, n_itens, atualizado) |
+| `item_apresentacao_sc` | 3.052 | 9 (unidade, unidade_basica, fator, forma, dimensao, conf, metodo, n_itens…) |
 | `item_catmat_map` | 38.889 | 10 (chave, codigo_pdm, nome_pdm, nome_classe, sim, n_itens, atualizado, aceito…) |
 | `item_especificacao_sc` | 2 | 10 (cnpj, ano, seq, numero, descricao_pncp, especificacao, origem_tipo_documento, origem_sequencial…) |
 | `item_homologado_sc` | 1.125.941 | 31 (cod_ibge, cnpj, ano, seq, numero, municipio_nome, modalidade, srp…) |
 | `item_marca_gabarito_sc` | 1.200 | 12 (cnpj, ano, seq, numero, grupo, modalidade, descricao, tem_marca…) |
-| `item_marca_sc` | 1.400 | 12 (cod_ibge, cnpj, ano, seq, numero, descricao, produto_ata, modelo…) |
+| `item_marca_sc` | 12.127 | 12 (cod_ibge, cnpj, ano, seq, numero, descricao, produto_ata, modelo…) |
 | `item_nota_fiscal_sc` | 484 | 17 (cnpj, ano, sequencial_contrato, sequencial_instrumento, numero_produto, cod_ibge, chave_nfe, numero_controle_compra…) |
-| `item_resultado_sc` | 1.690.207 | 23 (cod_ibge, cnpj, ano, seq, numero, sequencial_resultado, ni_fornecedor, nome_razao_social_fornecedor…) |
-| `itens_classificacao_sc` | 727.757 | 14 (descr_norm, tipo, cat_nivel, cat_cod, cat_nome, cat_classe, shared, cobertura…) |
-| `itens_proc_feitos` | 248.201 | 4 (numero_controle, n, feito_em, versao) |
-| `itens_sc` | 2.263.753 | 49 (cod_ibge, cnpj, ano, seq, numero, descricao, unidade, quantidade…) |
+| `item_resultado_sc` | 1.690.238 | 23 (cod_ibge, cnpj, ano, seq, numero, sequencial_resultado, ni_fornecedor, nome_razao_social_fornecedor…) |
+| `itens_classificacao_sc` | 733.313 | 14 (descr_norm, tipo, cat_nivel, cat_cod, cat_nome, cat_classe, shared, cobertura…) |
+| `itens_proc_feitos` | 248.539 | 4 (numero_controle, n, feito_em, versao) |
+| `itens_sc` | 2.267.832 | 49 (cod_ibge, cnpj, ano, seq, numero, descricao, unidade, quantidade…) |
 | `itens_sc_feitos` | 0 | 2 (cod_ibge, ano) |
 | `lances_sc` | 10.948 | 10 (cnpj, ano, seq, numero, cod_ibge, ordem, fornecedor, valor…) |
-| `lpg_sc` | 286 | 6 (cod_ibge, transferido, saldo, utilizado, pct_utilizado, atualizado) |
-| `marca_ancora_feitas` | 69 | 6 (cnpj, ano, seq, n_marca, via_haiku, feito_em) |
-| `marca_ata_feitas` | 1.074 | 6 (cnpj, ano, seq, n_marcas, feito_em, n_propostas) |
-| `marca_tpl_feitas` | 144.359 | 5 (cnpj, ano, seq, n_marca, feito_em) |
+| `lpg_sc` | 0 | 6 (cod_ibge, transferido, saldo, utilizado, pct_utilizado, atualizado) |
+| `marca_ancora_feitas` | 17.389 | 6 (cnpj, ano, seq, n_marca, via_haiku, feito_em) |
+| `marca_ata_feitas` | 37.889 | 6 (cnpj, ano, seq, n_marcas, feito_em, n_propostas) |
+| `marca_tpl_feitas` | 147.755 | 5 (cnpj, ano, seq, n_marca, feito_em) |
 | `mcmv_sc` | 295 | 7 (cod_ibge, uh_financiadas, vlr_financiamento, vlr_subsidio, ano_min, ano_max, atualizado) |
-| `medicamentos_alto_custo_sc` | 295 | 6 (cod_ibge, periodo, valor, quantidade, top_meds, atualizado) |
+| `medicamentos_alto_custo_sc` | 0 | 6 (cod_ibge, periodo, valor, quantidade, top_meds, atualizado) |
 | `metas` | 130 | 6 (id, municipio_id, indicador_id, ano_alvo, valor_alvo, descricao) |
 | `metas_estados` | 135 | 6 (id, estado_id, indicador_id, ano_alvo, valor_alvo, descricao) |
 | `metas_fiscais_feitos` | 2.368 | 2 (cod_ibge, ano) |
 | `metas_fiscais_sc` | 1.417 | 12 (cod_ibge, ano, meta_primario, resultado_primario, meta_nominal, resultado_nominal, receita_prim_prev, receita_prim_real…) |
 | `mi_social_serie_sc` | 1.238.760 | 4 (cod_ibge, anomes, indicador, valor) |
-| `mislabel_unidade_sc` | 1.478 | 13 (cod_ibge, nome_pdm, descricao, unidade, unit_homologado, unidade_basica, pub, med…) |
+| `mislabel_unidade_sc` | 1.900 | 13 (cod_ibge, nome_pdm, descricao, unidade, unit_homologado, unidade_basica, pub, med…) |
 | `msc_despesa_sc` | 3.435 | 7 (cod_ibge, ano, tipo, categoria, valor, total_rreo, atualizado) |
-| `munic_sc` | 14.750 | 8 (cod_ibge, indicador, grupo, label, tem, atualizado, valor, ano) |
+| `munic_sc` | 30.385 | 8 (cod_ibge, indicador, grupo, label, tem, atualizado, valor, ano) |
 | `municipios` | 26 | 9 (id, codigo_ibge, nome, uf, regiao, populacao, porte, prefeito…) |
 | `municipios_geo` | 295 | 2 (cod_ibge, geom) |
-| `museus_sc` | 110 | 3 (cod_ibge, museus, atualizado) |
+| `museus_sc` | 111 | 3 (cod_ibge, museus, atualizado) |
 | `nf_check` | 780 | 3 (cnpj_orgao, checado, n) |
 | `nf_sc` | 0 | 11 (cod_ibge, cnpj_orgao, ano, seq_contrato, seq_instrumento, tipo, numero, chave_nfe…) |
 | `notificacao_cadastro` | 1 | 20 (id, cod_ibge, nome, cpf, matricula, cargo, secretaria, perfil…) |
 | `notificacao_impacto` | 287 | 7 (id, cod_ibge, alerta_id, tipo_impacto, valor, descricao, registrado_em) |
-| `notificacao_log` | 5.211 | 11 (id, cod_ibge, alerta_id, chave_delta, destinatario_id, canal, severidade, enviado_em…) |
+| `notificacao_log` | 5.476 | 11 (id, cod_ibge, alerta_id, chave_delta, destinatario_id, canal, severidade, enviado_em…) |
 | `notificacao_regras` | 55 | 12 (alerta_id, titulo, secretaria, natureza, severidade, tem_prazo, fonte_dado, solucao_i10…) |
-| `novopac_sc` | 27 | 5 (cod_ibge, projetos, valor_previsto, em_andamento, atualizado) |
+| `novopac_sc` | 0 | 5 (cod_ibge, projetos, valor_previsto, em_andamento, atualizado) |
 | `obras_sc` | 2.156 | 14 (id_unico, cod_ibge, nome, situacao, especie, natureza, valor, origem…) |
 | `orgaos_municipais_sc` | 872 | 2 (cod_ibge, cnpj) |
 | `orgaos_sc_feitos` | 295 | 1 (cod_ibge) |
-| `paa_sc` | 56 | 6 (cod_ibge, formalizado, executado, devolvido, ultimo_ano, atualizado) |
+| `paa_sc` | 57 | 6 (cod_ibge, formalizado, executado, devolvido, ultimo_ano, atualizado) |
 | `painel_gold` | 31.725 | 13 (id_compra_item, descricao_item, descricao_detalhada, codigo_item, codigo_pdm, nome_pdm, codigo_classe, nome_classe…) |
 | `pca_sc` | 67 | 6 (cod_ibge, n_itens, valor_total, por_categoria, por_ano, top) |
 | `pca_sc_feitos` | 295 | 2 (cod_ibge, n) |
 | `pdde_saldo_sc` | 295 | 5 (cod_ibge, ano, saldo, escolas, atualizado) |
 | `pdde_sc` | 1.148 | 5 (cod_ibge, ano, vl_total, n_escolas, qt_alunos) |
-| `pg_stat_statements` | 2.023 | 52 (userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time…) |
+| `pg_stat_statements` | 1.926 | 52 (userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time…) |
 | `pg_stat_statements_info` | 1 | 2 (dealloc, stats_reset) |
 | `pib_municipal_sc` | 295 | 8 (cod_ibge, ano, pib, pib_per_capita, atualizado, serie, componentes, componentes_serie) |
 | `pix_municipio_sc` | 7.375 | 8 (cod_ibge, ano_mes, vl_recebido, vl_recebido_pj, vl_pago, qt_recebido, n_pes_receb_pj, atualizado) |
 | `pnae_agri_sc` | 286 | 6 (cod_ibge, ano, valor_transferido, valor_agri, percentual, atualizado) |
-| `pncp_evento` | 98.561 | 22 (cnpj, ano, seq, cod_ibge, categoria, acao, item_numero, resultado_sequencial…) |
+| `pncp_evento` | 98.604 | 22 (cnpj, ano, seq, cod_ibge, categoria, acao, item_numero, resultado_sequencial…) |
 | `pnld_reserva_sc` | 7 | 6 (cod_ibge, ano, qtd_demandada, qtd_autorizada, qtd_atendimento, n_volumes) |
 | `populacao_faixa_sc` | 295 | 11 (cod_ibge, total, pop_0_14, pop_15_59, pop_60, pop_80, pct_idosos, razao_dependencia…) |
 | `populacao_idade_sc` | 295 | 8 (cod_ibge, ano, creche_0_3, pre_4_5, fund_6_14, medio_15_17, pop_0_17, idades) |
-| `precatorios_entes_sc` | 293 | 7 (cd_entidade, de_entidade, cod_ibge, regime, valor, qtde, atualizado) |
-| `precatorios_sc` | 239 | 5 (cod_ibge, total_valor, total_qtde, n_entes, atualizado) |
+| `precatorios_entes_sc` | 298 | 7 (cd_entidade, de_entidade, cod_ibge, regime, valor, qtde, atualizado) |
+| `precatorios_sc` | 241 | 5 (cod_ibge, total_valor, total_qtde, n_entes, atualizado) |
 | `precos_catmat_map` | 836 | 6 (chave, codigo_pdm, nome_pdm, nome_classe, item_ex, sim) |
-| `precos_nacional_ref` | 971 | 11 (codigo_pdm, unidade, forma, mediana, p25, p75, media, desvio…) |
-| `precos_referencia_basica_sc` | 4.787 | 12 (codigo_pdm, nome_pdm, nome_classe, unidade_basica, forma, n_compras, n_munis, n_excluidos…) |
+| `precos_nacional_ref` | 0 | 11 (codigo_pdm, unidade, forma, mediana, p25, p75, media, desvio…) |
+| `precos_referencia_basica_sc` | 5.326 | 12 (codigo_pdm, nome_pdm, nome_classe, unidade_basica, forma, n_compras, n_munis, n_excluidos…) |
 | `precos_referencia_sc` | 2.067 | 13 (chave, unidade, mediana, p25, p75, n_itens, n_munis, catmat_pdm…) |
 | `previne_sc` | 5.310 | 7 (cod_ibge, competencia, indicador, ind_nome, numerador, denominador, pct) |
 | `processo_fase_sc` | 239.492 | 17 (cnpj, ano, seq, cod_ibge, municipio_nome, modalidade, modalidade_id, objeto…) |
-| `processo_trava` | 1 | 4 (nome, dono, desde, batida) |
+| `processo_trava` | 2 | 4 (nome, dono, desde, batida) |
 | `processos_ata_sc` | 12.566 | 3 (cnpj, seq, ano) |
 | `processos_feitos` | 55 | 4 (modalidade, ano, n, concluido_em) |
-| `processos_sc` | 248.571 | 11 (cnpj_orgao, ano, sequencial, cod_ibge, numero_controle, modalidade_id, modalidade, objeto…) |
-| `prodes_sc` | 4.206 | 5 (cod_ibge, ano, area_km2, n_poligonos, atualizado) |
+| `processos_sc` | 248.572 | 11 (cnpj_orgao, ano, sequencial, cod_ibge, numero_controle, modalidade_id, modalidade, objeto…) |
+| `prodes_sc` | 4.347 | 5 (cod_ibge, ano, area_km2, n_poligonos, atualizado) |
 | `producao_aps_serie_sc` | 19.461 | 5 (cod_ibge, competencia, aprovadas, total, atualizado) |
 | `producao_aps_sisab_sc` | 263 | 5 (cod_ibge, fichas_aprovadas, fichas_total, competencia, atualizado) |
 | `programa_beneficiario_sc` | 1.583 | 9 (id_beneficiario, id_programa, cod_ibge, nome, uf, tipo, valor, numero_emenda…) |
@@ -294,7 +294,7 @@
 | `quilombos_sc` | 12 | 4 (cod_ibge, n_comunidades, comunidades, atualizado) |
 | `raas_saude_mental_sc` | 108 | 5 (cod_ibge, periodo, atendimentos, registros, atualizado) |
 | `radar_captacao_sc` | 4.590 | 8 (cod_ibge, id_programa, nome_programa, orgao, modalidade, dt_ini_prop, dt_fim_prop, situacao) |
-| `rais_sc` | 295 | 9 (cod_ibge, ano, estoque, massa_salarial, remun_media, por_setor, estabelecimentos, por_porte…) |
+| `rais_sc` | 590 | 9 (cod_ibge, ano, estoque, massa_salarial, remun_media, por_setor, estabelecimentos, por_porte…) |
 | `ranking_detalhe_sc` | 7.792 | 7 (cod_ibge, ano, verificacao, dimensao, anexo, descricao, atualizado) |
 | `ranking_tesouro_sc` | 2.065 | 10 (cod_ibge, ano, nota, posicao, pct_acertos, di, dii, diii…) |
 | `receitas_det_check` | 1.480 | 2 (cod_ibge, ano) |
@@ -307,7 +307,7 @@
 | `rpps_crp_sc` | 14.373 | 9 (cod_ibge, nr_cnpj_entidade, no_ente, sg_uf, nr_crp, ds_situacao, tp_crp, dt_emissao…) |
 | `rpps_sc` | 329 | 9 (cod_ibge, ano, receita, despesa, resultado, contrib_segurados, contrib_patronais, aposentadorias…) |
 | `rreo_const_sc` | 1.271 | 9 (cod_ibge, ano, educacao_pct, educacao_min, educacao_valor, fundeb_pct, rcl, saude_pct…) |
-| `saeb_sc` | 12.341 | 7 (cod_ibge, ano, etapa, rede, matematica, portugues, atualizado) |
+| `saeb_sc` | 0 | 7 (cod_ibge, ano, etapa, rede, matematica, portugues, atualizado) |
 | `salario_educacao_sc` | 566 | 5 (cod_ibge, ano, salario_educacao, fnde_total, atualizado) |
 | `salic_sc` | 177 | 6 (cod_ibge, projetos, aprovado, captado, gap, atualizado) |
 | `sancoes` | 25.548 | 11 (id, fonte, ni, tipo_pessoa, nome, tipo_sancao, orgao, data_inicio…) |
@@ -317,11 +317,11 @@
 | `serie_anotacao` | 0 | 6 (id, escopo, cod_ibge, ano, texto, criado) |
 | `setores_censitarios_sc` | 16.736 | 11 (cod_setor, cod_ibge, bairro, area_km2, populacao, domicilios, densidade_dom, atualizado…) |
 | `setores_geo_sc` | 295 | 4 (cod_ibge, n_setores, geojson, atualizado) |
-| `sia_producao_sc` | 295 | 10 (cod_ibge, periodo, q_basica, v_basica, q_media, v_media, q_alta, v_alta…) |
+| `sia_producao_sc` | 0 | 10 (cod_ibge, periodo, q_basica, v_basica, q_media, v_media, q_alta, v_alta…) |
 | `sih_sc` | 590 | 6 (cod_ibge, ano, internacoes, valor_total, obitos_hosp, atualizado) |
 | `sim_sc` | 1.770 | 8 (cod_ibge, ano, obitos, causas_externas, circulatorio, neoplasias, infantil, atualizado) |
 | `simad_municipio` | 294 | 3 (cod_ibge, cod_simad, nome) |
-| `sinan_agravos_sc` | 1.361 | 5 (cod_ibge, agravo, ano, casos, atualizado) |
+| `sinan_agravos_sc` | 224 | 5 (cod_ibge, agravo, ano, casos, atualizado) |
 | `sinan_dengue_sc` | 2.065 | 6 (cod_ibge, ano, casos, incidencia_100k, nivel_max, atualizado) |
 | `sinasc_sc` | 1.180 | 8 (cod_ibge, ano, nascimentos, baixo_peso, prematuros, prenatal_7mais, mae_adolescente, atualizado) |
 | `sinesp_vitimas_sc` | 295 | 6 (cod_ibge, vitimas_total, ano_ini, ano_fim, serie, atualizado) |
@@ -332,7 +332,7 @@
 | `snis_residuos_sc` | 0 | 9 (cod_ibge, ano, cod_psv, prestador, sigla, abrangencia, natureza, indicadores…) |
 | `snis_sc` | 2.427 | 17 (cod_ibge, ano, cod_psv, prestador, sigla, abrangencia, natureza, servico…) |
 | `sobrepreco_compras_sc` | 5.879 | 15 (cod_ibge, chave, unidade, descricao, ano, quantidade, unit_pago, unit_ref…) |
-| `sobrepreco_medicamentos_sc` | 339 | 11 (id, cod_ibge, descricao, dose, paga, teto, excesso_pct, quantidade…) |
+| `sobrepreco_medicamentos_sc` | 401 | 11 (id, cod_ibge, descricao, dose, paga, teto, excesso_pct, quantidade…) |
 | `spatial_ref_sys` | 8.500 | 5 (srid, auth_name, auth_srid, srtext, proj4text) |
 | `suas_saldo_sc` | 295 | 5 (cod_ibge, competencia, repasse_mes, saldo, atualizado) |
 | `suas_sc` | 295 | 10 (cod_ibge, municipio, anomes, cras, creas, acolhimento, populacao, hab_por_cras…) |
@@ -354,7 +354,7 @@
 | `tcesc_trilha` | 967.776 | 8 (linha_hash, idparticipante, tipologia, numero_tipologia, observacao, cpf_cnpj_trilha, nome_trilha, atualizado) |
 | `transferencias_cgu_sc` | 87.623 | 7 (cod_ibge, ano_mes, tipo_transferencia, orgao, funcao, valor, atualizado) |
 | `transferencias_sc` | 295 | 8 (cod_ibge, n_instrumentos, valor_total, valor_liberado, por_situacao, por_orgao, top, por_ano) |
-| `transferencias_stn_sc` | 166.626 | 6 (cod_ibge, item, ano, mes, valor, fonte) |
+| `transferencias_stn_sc` | 168.075 | 6 (cod_ibge, item, ano, mes, valor, fonte) |
 | `vaar_fundeb_sc` | 295 | 5 (cod_ibge, ano, habilitado, beneficiario, atualizado) |
 | `vaat_fundeb_sc` | 290 | 7 (cod_ibge, ano, vaat, vaat_min, compl_vaat, recebe_vaat, atualizado) |
 | `variacao_interna_sc` | 3.919 | 10 (cod_ibge, descricao, unidade, n_compras, menor, maior, razao, qtd_total…) |
@@ -519,6 +519,7 @@
 | `scripts/constroi_fila_enriquecimento.mjs` | CONSTRÓI a fila materializada do enriquecimento — 1 VARREDURA (não 12). Os shards depois leem fatias LEVES daqui, em vez de cada um varrer os 344MB de arquivo_texto_sc. É o ajuste  |
 | `scripts/constroi_tce_apontamento_processo.mjs` | LIGA O APONTAMENTO DO TCE AO NOSSO PROCESSO — de "13 contratados sem funcionário" para "QUAIS contratos".  Sem isto o quadro é um número que ninguém consegue verificar. Com isto o |
 | `scripts/constroi_tce_apontamentos.mjs` | QUADRO DE APONTAMENTOS DO TCE/SC por município — derivada (Lei 1).  Desenho escolhido pelo Heitor (04/ago/2026), opção B: ESPELHO + INTENSIDADE PRÓPRIA. Mostra o que o TCE marcou,  |
+| `scripts/descompacta.mjs` | DESCOMPACTAÇÃO PORTÁTIL — um caminho que funciona onde as ETLs de fato rodam.  ═══ POR QUE ISTO EXISTE ═══ Medido em 09/ago, depois que o orquestrador parou de descartar o stderr d |
 | `scripts/detecta_layout.mjs` | DETECTA O LAYOUT RODANDO OS PARSERS — não por assinatura.  POR QUE: assinatura de texto NÃO prova que o parser lê. Medido 2026-07-15 numa simulação (que evitou a regressão):   · a  |
 | `scripts/detecta_portal_real.mjs` | DETECTA o portal REAL da compra (a bolsa onde a disputa rodou) a partir do EDITAL — não do rótulo `plataforma` (que é o ERP/relay). É o roteador: sabendo o portal real × modalidade |
 | `scripts/diag_fila_portais.mjs` | DIAGNÓSTICO DA FILA INTEIRA — para cada portal, duas perguntas que levam a caminhos diferentes:   1. quantos processos têm ATA no PNCP?          → vale escrever LEITOR (barato, dad |
@@ -561,6 +562,7 @@
 | `scripts/find_bundle.mjs` | — |
 | `scripts/folha_jsession.mjs` | — |
 | `scripts/folha_longpoll.mjs` | — |
+| `scripts/fonte_censo_escolar.mjs` | FONTE COMPARTILHADA — o zip de microdados do Censo Escolar do INEP (~537 MB).  ═══ POR QUE ISTO EXISTE ═══ Medido em 10/ago: CINCO ETLs precisam deste mesmo arquivo (censo_especial |
 | `scripts/gabarito_marca_descricao.mjs` | GABARITO — A MARCA ESTÁ NA DESCRIÇÃO DO ITEM? (amostra rotulada; método do CATMAT, ver [[pnigp-catmat-classificacao]])  ═══ POR QUE ESTE SCRIPT EXISTE ═══ Medir presença de marca e |
 | `scripts/gen_docx_competitiva.mjs` | Gera o .docx da Análise Competitiva (Node puro, sem dependência). node scripts/gen_docx_competitiva.mjs |
 | `scripts/geocode_equipamentos_cep.mjs` | Fallback de geocodificação por CEP — para os equipamentos do SUAS cujo endereço completo o Nominatim não encontrou. CEP→coordenada via AwesomeAPI (cep.awesomeapi.com.br). Marca geo |
@@ -1198,178 +1200,178 @@
 
 | Fonte | Provedor | Ano + recente | Última coleta | Situação |
 |---|---|---|---|---|
-| Outorgas de uso da água por município (ANA, finalidade+série) | ana | — | há 35d | em dia |
-| Barragens por município (ANA/SNISB — dano potencial + risco) | ana | 2025 | há 33d | em dia |
-| Banda larga fixa por município (ANATEL, série 2007+) | anatel | — | há 35d | em dia |
-| Geração distribuída de energia por município (ANEEL, série) | aneel | — | há 35d | em dia |
-| CFEM — royalties de mineração por município (ANM, distribuição) | anm | 2022 | há 36d | em dia |
-| Preços de combustíveis por município (ANP, semestral, série 2004+) | anp | 2021 | há 36d | em dia |
-| Vendas de combustíveis por município (ANP, série 1990+) | anp | 2024 | há 35d | em dia |
-| Cobertura de planos de saúde por município (ANS — pressão sobre o SUS) | ans | 2026 | há 35d | em dia |
-| CMED/Anvisa PMVG — preço-teto legal de medicamentos (Conformidade Gov, auto-descobre URL); referência nacional p/ sobrepreço em saúde (SC = ICMS 17%) | anvisa | 2025 | há 5d | em dia |
-| Desastres S2ID por município (Atlas Digital CEPED-UFSC/MIDR, série 1991+) | atlas | — | há 35d | em dia |
-| IDHM + subíndices por município (Atlas Brasil PNUD, Censo 2010) | atlasbrasil | 2025 | há 33d | em dia |
-| Sistema financeiro por município (BCB Olinda — agências/cooperativas/correspondentes + Pix série) | bcb | — | há 5d | em dia |
-| ESTBAN — volumes bancários por município (BCB, crédito/poupança, série) | bcb | — | há 5d | em dia |
-| PRONAF / Crédito Rural por município — valor contratado por ano (BCB SICOR/Matriz do Crédito Rural, OData; cdEstado=25) | bcb | 2025 | há 2d | em dia |
-| BNDES desembolsos por município (crédito produtivo, série 1995+) | bndes | 2026 | há 36d | em dia |
-| Espelho completo CADPREV (37 recursos: DAIR/DIPR/DRAA/RPPS_*) | cadprev | — | há 12d | em dia |
-| Alertas de CRP (transições vencido/a vencer — varredura) | cadprev | — | há 5d | em dia |
-| Déficit atuarial RPPS (CADPREV/DRAA) | cadprev | — | há 11h | em dia |
-| Regularidade previdenciária CRP (CADPREV — Consulta Pública) | cadprev | — | há 2h | pendente |
-| Equipamentos SUAS — fallback de geo por CEP (AwesomeAPI) | cadsuas | — | há 2h | pendente |
-| Equipamentos SUAS — endereço/telefone (CadSUAS detalhe, HTTP) | cadsuas | — | há 6h | em dia |
-| Equipamentos SUAS — geocodificação (Nominatim/OSM por endereço) | cadsuas | — | há 6h | em dia |
-| Equipamentos SUAS por unidade (CadSUAS, Playwright): CRAS/CREAS/Centro POP/Acolhimento + nome/nº | cadsuas | — | há 6h | em dia |
-| Estações de monitoramento de risco CEMADEN por município (defesa civil) | cemaden | 2025 | há 32d | em dia |
-| Transferências (CGU) | cgu | — | há 19d | em dia |
-| Transferências federais à prefeitura (CGU download em massa) | cgu | 2025 | há 2h | pendente |
-| Habitação — MCMV (Minha Casa Minha Vida), unidades financiadas por município (Min. Cidades, gov.br/cidades — sem WAF); alimenta o casamento oportunidade×necessidade | cidades | 2025 | há 40d | em dia |
-| Saneamento SINISA por município (água/esgoto/resíduos, Min. Cidades, ref 2024) | cidades | 2024 | há 6h | em dia |
-| CNES — rede de saúde (Min. Saúde) | cnes | 2026 | há 19d | em dia |
-| Unidades de conservação por município (MMA CNUC, interseção PostGIS) | cnuc | — | há 35d | em dia |
-| Catálogo oficial CATMAT/CATSER (Compras.gov.br) — espinha de classificação | compras | — | há 13d | em dia |
-| Referência NACIONAL de preços por CATMAT (Painel de Preços/Compras.gov.br), por unidade e por forma (avulso×escala) — enriquece o Banco de Preços e o sobrepreço | compras | 2025 | há 27d | em dia |
-| PAA compras agricultura familiar por município (Conab) | conab | 2025 | há 33d | em dia |
-| Bancada federal do estado (deputados + senadores) p/ módulo de Captação de Emendas — APIs Câmara + Senado | congresso | 2025 | há 5d | em dia |
-| Lei Paulo Gustavo execução/saldo por município (MinC) | cultura | 2025 | há 33d | em dia |
-| Comunidades quilombolas certificadas por município (Palmares) | cultura | — | há 34d | em dia |
-| Lei Rouanet SALIC — aprovado/captado por município (MinC) | cultura | 2025 | há 2d | em dia |
-| APAC oncologia e diálise por município (SIA-APAC) | datasus | — | há 34d | em dia |
-| Equipamentos médicos por estabelecimento (CNES EQ) | datasus | 2024 | há 34d | em dia |
-| Equipes de saúde (ESF) por município/estabelecimento (CNES EP) | datasus | 2024 | há 34d | em dia |
-| Estabelecimentos de saúde por município (CNES — rede p/ regulação, API DEMAS) | datasus | 2025 | há 2h | pendente |
-| Leitos hospitalares por estabelecimento (CNES LT) | datasus | 2024 | há 34d | em dia |
-| Profissionais de saúde por município/estabelecimento (CNES PF) | datasus | 2024 | há 34d | em dia |
-| Medicamentos de alto custo CEAF por município (SIA grupo 06) | datasus | — | há 34d | em dia |
-| Previne Brasil — indicadores APS (SISAB) | datasus | — | há 5d | em dia |
-| Saúde mental CAPS/RAAS por município (SIA-RAAS-PS) | datasus | — | há 34d | em dia |
-| SIA — produção ambulatorial (DATASUS) | datasus | 2025 | há 19d | em dia |
-| Produção ambulatorial SUS por complexidade (DATASUS SIA + SIGTAP) | datasus | — | há 34d | em dia |
-| Internações SUS por município (DATASUS SIH DBC mensal) | datasus | 2024 | há 2h | em dia |
-| SIH — produção hospitalar (DATASUS TabNet) | datasus | 2025 | há 2h | pendente |
-| Óbitos por município (DATASUS SIM, descompressor DBC próprio) | datasus | 2024 | há 35d | em dia |
-| Agravos de notificação SINAN por município (tuberculose/hanseníase/violência) | datasus | 2024 | há 34d | em dia |
-| Nascimentos por município (DATASUS SINASC DBC) | datasus | 2022 | há 34d | em dia |
-| Apresentação Camada 2 (descrição → quantidade do conteúdo p/ itens-container); derivado de itens_sc + Camada 1, via SQL | derivado | 2025 | há 27d | em dia |
-| Apresentação Camada LLM (Haiku extrai qtd do resíduo ambíguo, com abstenção); derivado, usa ANTHROPIC_API_KEY + cache | derivado | 2025 | há 27d | em dia |
-| Apresentação Camada 1 (rótulo → unidade básica + fator de desempacotamento); derivado de itens_sc, via SQL | derivado | 2025 | há 27d | em dia |
-| Compras por ente/ano — DERIVADA do espelho (contratacoes_sc, sem re-fetch) | derivado | 2026 | há 2h | pendente |
-| Red-flag de unidade trocada no lançamento — item que destoa ≥100× da mediana do grupo CATMAT+base (efeito colateral do Passe 2); derivado | derivado | 2025 | há 27d | em dia |
-| Referência por UNIDADE BÁSICA (Passe 2) — CATMAT+base+forma, mediana + curadoria IQR (IN 65 art.6); derivado de itens_sc + item_catmat_map + apresentação | derivado | 2025 | há 27d | em dia |
-| Análise de compras por PREÇO UNITÁRIO — livro de preços de referência de SC + sobrepreço por município (derivado de itens_sc, via SQL) | derivado | 2025 | há 4d | em dia |
-| Red flags de fornecedores — concentração + sanção (CEIS/CNEP) + sobrepreço por fornecedor (derivado de contratos/itens/sancoes, via SQL) | derivado | 2025 | há 5d | em dia |
-| Re-derivação por fatia (evento → derivadas do ente) | derivado | 2025 | há 1h | pendente |
-| Indícios de sobrepreço em medicamentos (compras do município vs teto legal PMVG, por substância+dosagem); derivado de cmed_pmvg + itens_sc | derivado | 2025 | há 39d | em dia |
-| Reconstrução do sobrepreço com DUPLO benchmark — mediana de SC + referência nacional + desvio/CV (IN 65); derivado de itens_sc + precos_referencia_sc + precos_nacional_ref | derivado | 2025 | há 4d | em dia |
-| Variação INTERNA de preços — mesmo município comprou o mesmo item a preços diferentes (derivado de itens_sc, via SQL) | derivado | 2025 | há 5d | em dia |
-| Bolsa Atleta por município (Min. Esporte — atletas + valor) | esporte | 2025 | há 2h | pendente |
-| Matrículas FUNDEB oficiais (FNDE Antonieta de Barros) | fnde | 2026 | há 36d | em dia |
-| Parâmetros FUNDEB — fatores/VAAT/VAAR (FNDE) | fnde | 2026 | há 36d | em dia |
-| PDDE por município (FNDE — Plataforma Antonieta de Barros) | fnde | 2024 | há 37d | em dia |
-| PDDE saldo parado (verba escolar não executada) por município (FNDE Antonieta de Barros) | fnde | 2025 | há 1h | pendente |
-| PNAE % agricultura familiar (mínimo legal 30%) por município (FNDE) | fnde | 2025 | há 33d | em dia |
-| PNLD reserva técnica — demanda de livros (FNDE — Antonieta de Barros) | fnde | 2025 | há 5d | em dia |
-| Repasses federais FNS por bloco (Consulta Consolidada) | fns | 2026 | há 19d | em dia |
-| Autos de infração ambiental por município (IBAMA, série 1990+) | ibama | — | há 4d | em dia |
-| Áreas embargadas por município (IBAMA CSV) | ibama | — | há 2h | pendente |
-| Agricultura e agricultura familiar por município — Censo Agropecuário 2017 (IBGE/SIDRA t/6778+6883): estabelecimentos + área, familiar vs não-familiar | ibge | 2025 | há 39d | em dia |
-| Taxa de alfabetização 15+ Censo 2022 (IBGE SIDRA 9543) | ibge | 2025 | há 32d | em dia |
-| População por cor/raça Censo 2022 (IBGE SIDRA 9605) | ibge | 2025 | há 33d | em dia |
-| Domicílios + densidade domiciliar Censo 2022 (IBGE SIDRA 4712) | ibge | 2025 | há 32d | em dia |
-| Georreferência dos entes (centroide/área/região — IBGE malhas; base p/ frete e variação de preço) | ibge | 2025 | há 46d | em dia |
-| Indicadores (IBGE/CGU) | ibge | 2024 | há 11h | em dia |
-| População indígena (IBGE Censo 2022) | ibge | — | há 50d | em dia |
-| IBGE MUNIC — instrumentos de gestão (planos/conselhos/fundos/instrumentos legais) por município, da BASE DE DADOS oficial (xlsx), não SIDRA | ibge | 2025 | há 40d | em dia |
-| PIB municipal preços correntes + per capita (IBGE SIDRA 5938) | ibge | 2025 | há 33d | em dia |
-| População por faixa etária Censo 2022 + idosos/dependência (IBGE SIDRA 9514) | ibge | 2025 | há 33d | em dia |
-| Saneamento por município (água/esgoto/lixo) — IBGE Censo 2022 via SIDRA (cobertura por domicílio) | ibge | 2025 | há 43d | em dia |
-| Setores censitários Censo 2022 — perfil intraurbano (IBGE FTP) | ibge | 2025 | há 2h | em dia |
-| % crianças 0-14 por setor → variável do mapa intraurbano (IBGE demografia) | ibge | 2025 | há 1h | em dia |
-| Malha (polígonos) dos setores → mapa choropleth (IBGE GPKG) | ibge | 2025 | nunca | em dia |
-| % idosos por setor censitário → variável do mapa intraurbano (IBGE demografia) | ibge | 2025 | nunca | em dia |
-| Museus por município (IBRAM MuseusBr) | ibram | 2025 | há 32d | em dia |
-| Assentamentos reforma agrária por município (INCRA/MDA SIPRA) | incra | — | há 35d | em dia |
-| Censo Escolar — matrículas (INEP Sinopse) | inep | 2025 | há 48d | em dia |
-| Educação especial/AEE por município (INEP Censo microdata) | inep | 2025 | há 36d | em dia |
-| Número de turmas por etapa/rede (INEP Censo Escolar) | inep | 2025 | há 32d | em dia |
-| Escolas por município + infraestrutura (INEP Censo Escolar) | inep | 2025 | há 47d | em dia |
-| Taxa de evasão por etapa (INEP Fluxo/Transição) | inep | 2025 | há 32d | em dia |
-| FNDE liberações por município (SIMAD, Playwright) | inep | 2025 | há 47d | em dia |
-| IDEB — indicadores educacionais (INEP) | inep | 2025 | há 48d | em dia |
-| Indicadores educacionais INEP (AFD/TDI/ATU/rendimento por município) | inep | 2025 | há 36d | em dia |
-| Indicadores INEP por escola (georreferenciado) | inep | 2025 | há 36d | em dia |
-| SAEB proficiência Port/Mat por etapa (INEP) | inep | 2025 | há 27d | em dia |
-| Arboviroses (dengue/zika/chikungunya) por município (InfoDengue/SINAN) | infodengue | 2025 | há 4d | em dia |
-| Dengue por município (SINAN via InfoDengue, série + incidência) | infodengue | 2025 | há 5d | em dia |
-| Desmatamento PRODES por município (INPE, interseção PostGIS) | inpe | 2024 | há 35d | em dia |
-| Focos de calor por município (INPE BDQueimadas, mensal) | inpe | 2026 | há 2d | em dia |
-| IEGM — qualidade da gestão (TCE-SC/IRB, dados abertos) | irb | 2025 | há 38d | em dia |
-| Cobertura vacinal SÉRIE 2015-2026 por município/vacina (SI-PNI LocalizaSUS, engine Qlik set-analysis) | localizasus | 2026 | há 34d | em dia |
-| CAF — Cadastro Nacional da Agricultura Familiar (ex-DAP) por município: nº de agricultores familiares (MDA, XLSX mensal) | mda | 2025 | há 5d | em dia |
-| IGD-M gestão PBF/CadÚnico por município (MDS/SAGI Solr) | mds | — | há 1h | pendente |
-| SUAS repasse+SALDO na mesa por município (MDS/SAGI Solr) — recurso não usado | mds | 2025 | há 4d | em dia |
+| Outorgas de uso da água por município (ANA, finalidade+série) | ana | — | há 1d | em dia |
+| Barragens por município (ANA/SNISB — dano potencial + risco) | ana | 2025 | há 5h | em dia |
+| Banda larga fixa por município (ANATEL, série 2007+) | anatel | — | há 5h | em dia |
+| Geração distribuída de energia por município (ANEEL, série) | aneel | — | há 2h | em dia |
+| CFEM — royalties de mineração por município (ANM, distribuição) | anm | 2026 | há 1d | em dia |
+| Preços de combustíveis por município (ANP, semestral, série 2004+) | anp | 2021 | há 1d | em dia |
+| Vendas de combustíveis por município (ANP, série 1990+) | anp | 2024 | há 5h | em dia |
+| Cobertura de planos de saúde por município (ANS — pressão sobre o SUS) | ans | 2026 | há 1d | em dia |
+| CMED/Anvisa PMVG — preço-teto legal de medicamentos (Conformidade Gov, auto-descobre URL); referência nacional p/ sobrepreço em saúde (SC = ICMS 17%) | anvisa | 2025 | há 6d | em dia |
+| Desastres S2ID por município (Atlas Digital CEPED-UFSC/MIDR, série 1991+) | atlas | — | há 5h | em dia |
+| IDHM + subíndices por município (Atlas Brasil PNUD, Censo 2010) | atlasbrasil | 2025 | há 1d | em dia |
+| Sistema financeiro por município (BCB Olinda — agências/cooperativas/correspondentes + Pix série) | bcb | — | há 6d | em dia |
+| ESTBAN — volumes bancários por município (BCB, crédito/poupança, série) | bcb | — | há 6d | em dia |
+| PRONAF / Crédito Rural por município — valor contratado por ano (BCB SICOR/Matriz do Crédito Rural, OData; cdEstado=25) | bcb | 2025 | há 4h | em dia |
+| BNDES desembolsos por município (crédito produtivo, série 1995+) | bndes | 2026 | há 1d | em dia |
+| Espelho completo CADPREV (37 recursos: DAIR/DIPR/DRAA/RPPS_*) | cadprev | — | há 13d | em dia |
+| Alertas de CRP (transições vencido/a vencer — varredura) | cadprev | — | há 5h | em dia |
+| Déficit atuarial RPPS (CADPREV/DRAA) | cadprev | — | há 5h | em dia |
+| Regularidade previdenciária CRP (CADPREV — Consulta Pública) | cadprev | — | há 5h | em dia |
+| Equipamentos SUAS — fallback de geo por CEP (AwesomeAPI) | cadsuas | — | há 0h | pendente |
+| Equipamentos SUAS — endereço/telefone (CadSUAS detalhe, HTTP) | cadsuas | — | há 5h | em dia |
+| Equipamentos SUAS — geocodificação (Nominatim/OSM por endereço) | cadsuas | — | há 5h | em dia |
+| Equipamentos SUAS por unidade (CadSUAS, Playwright): CRAS/CREAS/Centro POP/Acolhimento + nome/nº | cadsuas | — | há 5h | em dia |
+| Estações de monitoramento de risco CEMADEN por município (defesa civil) | cemaden | 2025 | há 5h | em dia |
+| Transferências (CGU) | cgu | — | há 5h | em dia |
+| Transferências federais à prefeitura (CGU download em massa) | cgu | 2025 | há 5h | em dia |
+| Habitação — MCMV (Minha Casa Minha Vida), unidades financiadas por município (Min. Cidades, gov.br/cidades — sem WAF); alimenta o casamento oportunidade×necessidade | cidades | 2025 | há 1d | em dia |
+| Saneamento SINISA por município (água/esgoto/resíduos, Min. Cidades, ref 2024) | cidades | 2024 | há 1d | em dia |
+| CNES — rede de saúde (Min. Saúde) | cnes | 2026 | há 5h | em dia |
+| Unidades de conservação por município (MMA CNUC, interseção PostGIS) | cnuc | — | há 1d | em dia |
+| Catálogo oficial CATMAT/CATSER (Compras.gov.br) — espinha de classificação | compras | — | há 5h | em dia |
+| Referência NACIONAL de preços por CATMAT (Painel de Preços/Compras.gov.br), por unidade e por forma (avulso×escala) — enriquece o Banco de Preços e o sobrepreço | compras | 2025 | há 0h | pendente |
+| PAA compras agricultura familiar por município (Conab) | conab | 2025 | há 5h | em dia |
+| Bancada federal do estado (deputados + senadores) p/ módulo de Captação de Emendas — APIs Câmara + Senado | congresso | 2025 | há 6d | em dia |
+| Lei Paulo Gustavo execução/saldo por município (MinC) | cultura | 2025 | há 5h | em dia |
+| Comunidades quilombolas certificadas por município (Palmares) | cultura | — | há 5h | em dia |
+| Lei Rouanet SALIC — aprovado/captado por município (MinC) | cultura | 2025 | há 3d | em dia |
+| APAC oncologia e diálise por município (SIA-APAC) | datasus | — | há 3h | em dia |
+| Equipamentos médicos por estabelecimento (CNES EQ) | datasus | 2024 | há 1d | em dia |
+| Equipes de saúde (ESF) por município/estabelecimento (CNES EP) | datasus | 2024 | há 1d | em dia |
+| Estabelecimentos de saúde por município (CNES — rede p/ regulação, API DEMAS) | datasus | 2025 | há 5h | em dia |
+| Leitos hospitalares por estabelecimento (CNES LT) | datasus | 2024 | há 1d | em dia |
+| Profissionais de saúde por município/estabelecimento (CNES PF) | datasus | 2024 | há 35d | em dia |
+| Medicamentos de alto custo CEAF por município (SIA grupo 06) | datasus | — | há 5h | em dia |
+| Previne Brasil — indicadores APS (SISAB) | datasus | — | há 6d | em dia |
+| Saúde mental CAPS/RAAS por município (SIA-RAAS-PS) | datasus | — | há 3h | em dia |
+| SIA — produção ambulatorial (DATASUS) | datasus | 2025 | há 3h | em dia |
+| Produção ambulatorial SUS por complexidade (DATASUS SIA + SIGTAP) | datasus | — | há 1d | em dia |
+| Internações SUS por município (DATASUS SIH DBC mensal) | datasus | 2024 | há 1d | em dia |
+| SIH — produção hospitalar (DATASUS TabNet) | datasus | 2025 | há 5h | em dia |
+| Óbitos por município (DATASUS SIM, descompressor DBC próprio) | datasus | 2024 | há 1d | em dia |
+| Agravos de notificação SINAN por município (tuberculose/hanseníase/violência) | datasus | 2023 | há 23h | em dia |
+| Nascimentos por município (DATASUS SINASC DBC) | datasus | 2022 | há 23h | em dia |
+| Apresentação Camada 2 (descrição → quantidade do conteúdo p/ itens-container); derivado de itens_sc + Camada 1, via SQL | derivado | 2025 | há 5h | em dia |
+| Apresentação Camada LLM (Haiku extrai qtd do resíduo ambíguo, com abstenção); derivado, usa ANTHROPIC_API_KEY + cache | derivado | 2025 | há 4h | em dia |
+| Apresentação Camada 1 (rótulo → unidade básica + fator de desempacotamento); derivado de itens_sc, via SQL | derivado | 2025 | há 5h | em dia |
+| Compras por ente/ano — DERIVADA do espelho (contratacoes_sc, sem re-fetch) | derivado | 2026 | há 3h | em dia |
+| Red-flag de unidade trocada no lançamento — item que destoa ≥100× da mediana do grupo CATMAT+base (efeito colateral do Passe 2); derivado | derivado | 2025 | há 5h | em dia |
+| Referência por UNIDADE BÁSICA (Passe 2) — CATMAT+base+forma, mediana + curadoria IQR (IN 65 art.6); derivado de itens_sc + item_catmat_map + apresentação | derivado | 2025 | há 2h | em dia |
+| Análise de compras por PREÇO UNITÁRIO — livro de preços de referência de SC + sobrepreço por município (derivado de itens_sc, via SQL) | derivado | 2025 | há 6d | em dia |
+| Red flags de fornecedores — concentração + sanção (CEIS/CNEP) + sobrepreço por fornecedor (derivado de contratos/itens/sancoes, via SQL) | derivado | 2025 | há 6d | em dia |
+| Re-derivação por fatia (evento → derivadas do ente) | derivado | 2025 | há 3h | em dia |
+| Indícios de sobrepreço em medicamentos (compras do município vs teto legal PMVG, por substância+dosagem); derivado de cmed_pmvg + itens_sc | derivado | 2025 | há 1d | em dia |
+| Reconstrução do sobrepreço com DUPLO benchmark — mediana de SC + referência nacional + desvio/CV (IN 65); derivado de itens_sc + precos_referencia_sc + precos_nacional_ref | derivado | 2025 | há 5d | em dia |
+| Variação INTERNA de preços — mesmo município comprou o mesmo item a preços diferentes (derivado de itens_sc, via SQL) | derivado | 2025 | há 6d | em dia |
+| Bolsa Atleta por município (Min. Esporte — atletas + valor) | esporte | 2025 | há 0h | pendente |
+| Matrículas FUNDEB oficiais (FNDE Antonieta de Barros) | fnde | 2026 | há 1d | em dia |
+| Parâmetros FUNDEB — fatores/VAAT/VAAR (FNDE) | fnde | 2026 | há 1d | em dia |
+| PDDE por município (FNDE — Plataforma Antonieta de Barros) | fnde | 2024 | há 1d | em dia |
+| PDDE saldo parado (verba escolar não executada) por município (FNDE Antonieta de Barros) | fnde | 2025 | há 5h | em dia |
+| PNAE % agricultura familiar (mínimo legal 30%) por município (FNDE) | fnde | 2025 | há 5h | em dia |
+| PNLD reserva técnica — demanda de livros (FNDE — Antonieta de Barros) | fnde | 2025 | há 6d | em dia |
+| Repasses federais FNS por bloco (Consulta Consolidada) | fns | 2026 | há 1d | em dia |
+| Autos de infração ambiental por município (IBAMA, série 1990+) | ibama | — | há 6d | em dia |
+| Áreas embargadas por município (IBAMA CSV) | ibama | — | há 5h | em dia |
+| Agricultura e agricultura familiar por município — Censo Agropecuário 2017 (IBGE/SIDRA t/6778+6883): estabelecimentos + área, familiar vs não-familiar | ibge | 2025 | há 4h | em dia |
+| Taxa de alfabetização 15+ Censo 2022 (IBGE SIDRA 9543) | ibge | 2025 | há 5h | em dia |
+| População por cor/raça Censo 2022 (IBGE SIDRA 9605) | ibge | 2025 | há 1d | em dia |
+| Domicílios + densidade domiciliar Censo 2022 (IBGE SIDRA 4712) | ibge | 2025 | há 5h | em dia |
+| Georreferência dos entes (centroide/área/região — IBGE malhas; base p/ frete e variação de preço) | ibge | 2025 | há 4h | em dia |
+| Indicadores (IBGE/CGU) | ibge | 2024 | há 2d | em dia |
+| População indígena (IBGE Censo 2022) | ibge | — | há 4h | em dia |
+| IBGE MUNIC — instrumentos de gestão (planos/conselhos/fundos/instrumentos legais) por município, da BASE DE DADOS oficial (xlsx), não SIDRA | ibge | 2025 | há 2h | em dia |
+| PIB municipal preços correntes + per capita (IBGE SIDRA 5938) | ibge | 2025 | há 5h | em dia |
+| População por faixa etária Censo 2022 + idosos/dependência (IBGE SIDRA 9514) | ibge | 2025 | há 5h | em dia |
+| Saneamento por município (água/esgoto/lixo) — IBGE Censo 2022 via SIDRA (cobertura por domicílio) | ibge | 2025 | há 1d | em dia |
+| Setores censitários Censo 2022 — perfil intraurbano (IBGE FTP) | ibge | 2025 | há 5h | em dia |
+| % crianças 0-14 por setor → variável do mapa intraurbano (IBGE demografia) | ibge | 2025 | há 1d | em dia |
+| Malha (polígonos) dos setores → mapa choropleth (IBGE GPKG) | ibge | 2025 | há 4h | em dia |
+| % idosos por setor censitário → variável do mapa intraurbano (IBGE demografia) | ibge | 2025 | há 1d | em dia |
+| Museus por município (IBRAM MuseusBr) | ibram | 2025 | há 1d | em dia |
+| Assentamentos reforma agrária por município (INCRA/MDA SIPRA) | incra | — | há 5h | em dia |
+| Censo Escolar — matrículas (INEP Sinopse) | inep | 2025 | há 1h | em dia |
+| Educação especial/AEE por município (INEP Censo microdata) | inep | 2025 | há 2h | em dia |
+| Número de turmas por etapa/rede (INEP Censo Escolar) | inep | 2025 | há 2h | em dia |
+| Escolas por município + infraestrutura (INEP Censo Escolar) | inep | 2025 | há 0h | em dia |
+| Taxa de evasão por etapa (INEP Fluxo/Transição) | inep | 2025 | há 33d | em dia |
+| FNDE liberações por município (SIMAD, Playwright) | inep | 2025 | há 5h | em dia |
+| IDEB — indicadores educacionais (INEP) | inep | 2025 | há 1d | em dia |
+| Indicadores educacionais INEP (AFD/TDI/ATU/rendimento por município) | inep | 2025 | há 2h | em dia |
+| Indicadores INEP por escola (georreferenciado) | inep | 2025 | há 1h | em dia |
+| SAEB proficiência Port/Mat por etapa (INEP) | inep | 2025 | há 5h | em dia |
+| Arboviroses (dengue/zika/chikungunya) por município (InfoDengue/SINAN) | infodengue | 2025 | há 6d | em dia |
+| Dengue por município (SINAN via InfoDengue, série + incidência) | infodengue | 2025 | há 6d | em dia |
+| Desmatamento PRODES por município (INPE, interseção PostGIS) | inpe | 2025 | há 1d | em dia |
+| Focos de calor por município (INPE BDQueimadas, mensal) | inpe | 2026 | há 3d | em dia |
+| IEGM — qualidade da gestão (TCE-SC/IRB, dados abertos) | irb | 2025 | há 1d | em dia |
+| Cobertura vacinal SÉRIE 2015-2026 por município/vacina (SI-PNI LocalizaSUS, engine Qlik set-analysis) | localizasus | 2026 | há 5h | em dia |
+| CAF — Cadastro Nacional da Agricultura Familiar (ex-DAP) por município: nº de agricultores familiares (MDA, XLSX mensal) | mda | 2025 | há 6d | em dia |
+| IGD-M gestão PBF/CadÚnico por município (MDS/SAGI Solr) | mds | — | há 5h | em dia |
+| SUAS repasse+SALDO na mesa por município (MDS/SAGI Solr) — recurso não usado | mds | 2025 | há 6d | em dia |
 | Guardião de frescor (série + última competência) | meta | — | há 0h | em dia |
-| Saldo de empregos formais por município (Novo CAGED/MTE, mensal) | mte | 2026 | há 4d | em dia |
-| RAIS — estoque de emprego formal por município (MTE, anual) | mte | 2024 | há 35d | em dia |
-| Novo PAC obras por município (ObrasGov/Casa Civil) | obrasgov | 2025 | há 2h | pendente |
-| Obras por município — detalhe (ObrasGov) | obrasgov | 2025 | há 6h | em dia |
-| Equipamentos esportivos georreferenciados (OSM — mapa camada Esporte) | osm | — | há 35d | em dia |
-| Equipamentos segurança/justiça/defesa civil georreferenciados (OSM + SAP/SC): polícia, bombeiros, defesa civil, prisional, socioeducativo | osm | — | há 43d | em dia |
-| Atas de Registro de Preço (PNCP Consulta) | pncp | — | há 4d | em dia |
-| Classificação dos itens → CATMAT/CATSER (dicionário, matcher v2) | pncp | — | há 4d | em dia |
-| Busca diária do PNCP (compras/contratos/atas — ano corrente) | pncp | — | há 30d | em dia |
-| Contratos (PNCP ano corrente, append) | pncp | 2027 | há 23d | em dia |
-| Empenhos por contrato (PNCP Lei 14.133 — acende quando publicarem) | pncp | — | há 2d | em dia |
-| Consumo de eventos → espelho (a fatia que o evento aponta) | pncp | 2025 | há 1h | pendente |
-| Coleta incremental PNCP — o que mudou (enche a fila de eventos) | pncp | 2025 | há 1h | pendente |
-| Itens de TODOS os processos (preço unitário) | pncp | 2025 | há 5d | em dia |
-| Notas fiscais / instrumentos de cobrança (PNCP — acende quando publicarem) | pncp | — | há 0h | pendente |
-| PCA (PNCP) | pncp | — | há 13d | em dia |
-| Preço de referência por item (mediana SC) + classificação ata/efetivada — base da análise de preços | pncp | 2025 | há 47d | em dia |
-| Contratações PNCP — TODAS (entidade Contratação espelhando o PNCP: modalidade/plataforma/SRP/estimado×homologado; via bulk por data) | pncp | 2025 | há 5d | em dia |
-| Sazonalidade de preço por categoria (melhor mês de compra, SC) | pncp | 2025 | há 46d | em dia |
-| Acidentes em rodovias federais por município (PRF DATATRAN, série 2015+) | prf | 2025 | há 4d | em dia |
-| Localidade dos fornecedores (CNPJ→UF/município) | receita | — | há 5d | em dia |
-| Arrecadação federal por município (RFB, série 2019+) | rfb | 2025 | há 35d | em dia |
-| Frota de veículos por município (SENATRAN) | senatran | 2025 | há 35d | em dia |
-| Qualidade (15 indicadores) + Vínculo/CVAT — novo cofinanciamento (SIAPS) | siaps | 2025 | há 2h | pendente |
-| CAR — Cadastro Ambiental Rural: nº de imóveis rurais por município (SICAR GeoServer WFS, contagem por município) | sicar | 2025 | há 39d | em dia |
-| Acompanhamento intra-anual da execução (RREO do bimestre vigente) — receita prevista×realizada e despesa orçada×empenhada por município | siconfi | 2025 | há 11h | em dia |
-| Acompanhamento por função (intra-anual) — orçado×realizado por função até o bimestre vigente (RREO Anexo 02 parcial) | siconfi | 2025 | há 10h | em dia |
-| CNPJs do governo municipal (SICONFI+órgãos+RPPS) | siconfi | 2025 | há 11h | em dia |
-| Despesa por subfunção (RREO an.2 — drill) | siconfi | 2025 | há 11h | em dia |
-| Finanças (SICONFI RREO an.1/2) | siconfi | 2025 | há 11h | em dia |
-| Metas Fiscais LDO (RREO an.6) | siconfi | 2025 | há 11h | em dia |
-| MSC ancorada ao RREO — despesa empenhada por natureza e fonte (forma da MSC × total exato do RREO; reconcilia por construção) | siconfi | 2025 | há 10h | em dia |
-| Receitas detalhadas (ICMS/FPM/IPTU/FUNDEB — RREO an.3) | siconfi | 2025 | há 11h | em dia |
-| Pessoal/DCL (RGF) | siconfi | 2025 | há 11h | em dia |
-| Previdência RPPS (RREO Anexo 04) | siconfi | 2025 | há 11h | em dia |
-| Educação/RCL (RREO an.14/3) | siconfi | 2025 | há 11h | em dia |
-| Salário-Educação por município (SICONFI DCA) | siconfi | 2025 | há 27d | em dia |
-| Estatísticas vitais por município (IBGE Registro Civil — nascidos/óbitos, série) | sidra | 2024 | há 4d | em dia |
-| Produção agropecuária (PAM/PPM) + empresas (CEMPRE) por município (IBGE SIDRA) | sidra | — | há 35d | em dia |
-| Vítimas de crimes violentos letais por município (SINESP/MJSP, dados abertos) | sinesp | — | há 35d | em dia |
-| Catálogo de Ações Orçamentárias Federais (SIOP dados abertos) — o que emenda financia por setor; cruza com acao_orcamentaria da indicação | siop | 2025 | há 38d | em dia |
-| Saúde ASPS (SIOPS) | siops | 2025 | há 11h | em dia |
-| Indicadores Previne + ISF (SISAB indicadorPainel — 10 quadrimestres) | sisab | 2025 | há 33d | em dia |
-| Produção da APS (SISAB — fichas aprovadas, série mensal 2021+) | sisab | 2025 | há 4d | em dia |
-| SNIS Água/Esgoto por município e prestador (atendimento, perdas, tratamento) — app Ministério das Cidades via Playwright; state-agnostic (UF/ANO) | snis | 2025 | há 43d | em dia |
-| CAPAG capacidade de pagamento por município (STN/Tesouro) | tesouro | — | há 35d | em dia |
-| Regularidade fiscal CAUC/CADIN (Tesouro) | tesouro | — | há 1h | pendente |
-| Ranking da Qualidade da Informação Fiscal (Tesouro) por município | tesouro | 2025 | há 32d | em dia |
-| Transferências da União por município, MENSAL (FPM/FUNDEB/ITR/Lei Kandir/CIDE/FEX/IOF/LC176) — CSV oficial STN/Tesouro Transparente; NACIONAL, state-agnostic (UF env) | tesouro | 2025 | há 12d | em dia |
-| Precatórios por município (estoque e quantidade) — API do TJSC, Regime Especial de Precatórios; replicável por UF (CNJ Res. 303) | tjsc | 2025 | há 43d | em dia |
-| Assistência social COMPLETA (MDS MI Social): série anual de repasse FNAS 2005→ + CadÚnico + Bolsa Família | transferegov | 2025 | há 5h | em dia |
-| Convênios e contratos de repasse por município (SICONV/Transferegov, repositório detru — proposta+convenio) | transferegov | 2025 | há 11d | em dia |
-| Emendas — INDICAÇÃO (SICONV/Transferegov, repositório detru: parlamentar, impositivo, valor destinado) | transferegov | 2025 | há 13d | em dia |
-| Emendas — EXECUÇÃO orçamentária federal (Portal da Transparência: empenhado×pago → recurso na mesa) | transferegov | 2026 | há 11d | em dia |
-| Elegibilidade dos programas (Transferegov: quem pode captar cada programa — base do casamento oportunidade×necessidade) | transferegov | 2025 | há 11d | em dia |
-| Catálogo de programas Transferegov — gestão ágil (fundoafundo/programa_gestao_agil); complementa o catálogo unificado de 335 programas | transferegov | 2025 | há 1h | pendente |
-| Programas federais curados de saúde/educação (Novo PAC, Requalifica UBS, Proinfância — casamento com carência; FNS/FNDE sem feed) | transferegov | 2025 | há 12d | em dia |
-| Radar de Captação — programas + planos (Transferegov fundo a fundo, API viva) | transferegov | 2025 | há 1h | pendente |
-| Assistência social / FNAS por município (MDS · MI Social/CadSUAS: CRAS, CREAS — déficit p/ casamento) | transferegov | 2025 | há 12d | em dia |
-| Sanções a empresas/pessoas (CEIS + CNEP) — API Portal da Transparência; cruza com fornecedores (fornecedor sancionado) | transparencia | 2025 | há 5d | em dia |
+| Saldo de empregos formais por município (Novo CAGED/MTE, mensal) | mte | 2026 | há 6d | em dia |
+| RAIS — estoque de emprego formal por município (MTE, anual) | mte | 2025 | há 2h | em dia |
+| Novo PAC obras por município (ObrasGov/Casa Civil) | obrasgov | 2025 | há 5h | em dia |
+| Obras por município — detalhe (ObrasGov) | obrasgov | 2025 | há 1d | em dia |
+| Equipamentos esportivos georreferenciados (OSM — mapa camada Esporte) | osm | — | há 1d | em dia |
+| Equipamentos segurança/justiça/defesa civil georreferenciados (OSM + SAP/SC): polícia, bombeiros, defesa civil, prisional, socioeducativo | osm | — | há 1d | em dia |
+| Atas de Registro de Preço (PNCP Consulta) | pncp | — | há 6d | em dia |
+| Classificação dos itens → CATMAT/CATSER (dicionário, matcher v2) | pncp | — | há 4h | em dia |
+| Busca diária do PNCP (compras/contratos/atas — ano corrente) | pncp | — | há 32d | em dia |
+| Contratos (PNCP ano corrente, append) | pncp | 2027 | há 24d | em dia |
+| Empenhos por contrato (PNCP Lei 14.133 — acende quando publicarem) | pncp | — | há 3d | em dia |
+| Consumo de eventos → espelho (a fatia que o evento aponta) | pncp | 2025 | há 0h | pendente |
+| Coleta incremental PNCP — o que mudou (enche a fila de eventos) | pncp | 2025 | há 4h | em dia |
+| Itens de TODOS os processos (preço unitário) | pncp | 2025 | há 6d | em dia |
+| Notas fiscais / instrumentos de cobrança (PNCP — acende quando publicarem) | pncp | — | há 1d | em dia |
+| PCA (PNCP) | pncp | — | há 5h | em dia |
+| Preço de referência por item (mediana SC) + classificação ata/efetivada — base da análise de preços | pncp | 2025 | há 48d | em dia |
+| Contratações PNCP — TODAS (entidade Contratação espelhando o PNCP: modalidade/plataforma/SRP/estimado×homologado; via bulk por data) | pncp | 2025 | há 6d | em dia |
+| Sazonalidade de preço por categoria (melhor mês de compra, SC) | pncp | 2025 | há 47d | em dia |
+| Acidentes em rodovias federais por município (PRF DATATRAN, série 2015+) | prf | 2025 | há 6d | em dia |
+| Localidade dos fornecedores (CNPJ→UF/município) | receita | — | há 6d | em dia |
+| Arrecadação federal por município (RFB, série 2019+) | rfb | 2025 | há 1d | em dia |
+| Frota de veículos por município (SENATRAN) | senatran | 2025 | há 1d | em dia |
+| Qualidade (15 indicadores) + Vínculo/CVAT — novo cofinanciamento (SIAPS) | siaps | 2025 | há 5h | em dia |
+| CAR — Cadastro Ambiental Rural: nº de imóveis rurais por município (SICAR GeoServer WFS, contagem por município) | sicar | 2025 | há 1d | em dia |
+| Acompanhamento intra-anual da execução (RREO do bimestre vigente) — receita prevista×realizada e despesa orçada×empenhada por município | siconfi | 2025 | há 2d | em dia |
+| Acompanhamento por função (intra-anual) — orçado×realizado por função até o bimestre vigente (RREO Anexo 02 parcial) | siconfi | 2025 | há 2d | em dia |
+| CNPJs do governo municipal (SICONFI+órgãos+RPPS) | siconfi | 2025 | há 2d | em dia |
+| Despesa por subfunção (RREO an.2 — drill) | siconfi | 2025 | há 5h | em dia |
+| Finanças (SICONFI RREO an.1/2) | siconfi | 2025 | há 5h | em dia |
+| Metas Fiscais LDO (RREO an.6) | siconfi | 2025 | há 5h | em dia |
+| MSC ancorada ao RREO — despesa empenhada por natureza e fonte (forma da MSC × total exato do RREO; reconcilia por construção) | siconfi | 2025 | há 2d | em dia |
+| Receitas detalhadas (ICMS/FPM/IPTU/FUNDEB — RREO an.3) | siconfi | 2025 | há 5h | em dia |
+| Pessoal/DCL (RGF) | siconfi | 2025 | há 5h | em dia |
+| Previdência RPPS (RREO Anexo 04) | siconfi | 2025 | há 5h | em dia |
+| Educação/RCL (RREO an.14/3) | siconfi | 2025 | há 5h | em dia |
+| Salário-Educação por município (SICONFI DCA) | siconfi | 2025 | há 1d | em dia |
+| Estatísticas vitais por município (IBGE Registro Civil — nascidos/óbitos, série) | sidra | 2024 | há 5d | em dia |
+| Produção agropecuária (PAM/PPM) + empresas (CEMPRE) por município (IBGE SIDRA) | sidra | — | há 1d | em dia |
+| Vítimas de crimes violentos letais por município (SINESP/MJSP, dados abertos) | sinesp | — | há 36d | em dia |
+| Catálogo de Ações Orçamentárias Federais (SIOP dados abertos) — o que emenda financia por setor; cruza com acao_orcamentaria da indicação | siop | 2025 | há 1d | em dia |
+| Saúde ASPS (SIOPS) | siops | 2025 | há 5h | em dia |
+| Indicadores Previne + ISF (SISAB indicadorPainel — 10 quadrimestres) | sisab | 2025 | há 1d | em dia |
+| Produção da APS (SISAB — fichas aprovadas, série mensal 2021+) | sisab | 2025 | há 6d | em dia |
+| SNIS Água/Esgoto por município e prestador (atendimento, perdas, tratamento) — app Ministério das Cidades via Playwright; state-agnostic (UF/ANO) | snis | 2025 | há 1d | em dia |
+| CAPAG capacidade de pagamento por município (STN/Tesouro) | tesouro | — | há 2h | em dia |
+| Regularidade fiscal CAUC/CADIN (Tesouro) | tesouro | — | há 1d | em dia |
+| Ranking da Qualidade da Informação Fiscal (Tesouro) por município | tesouro | 2025 | há 1d | em dia |
+| Transferências da União por município, MENSAL (FPM/FUNDEB/ITR/Lei Kandir/CIDE/FEX/IOF/LC176) — CSV oficial STN/Tesouro Transparente; NACIONAL, state-agnostic (UF env) | tesouro | 2025 | há 1d | em dia |
+| Precatórios por município (estoque e quantidade) — API do TJSC, Regime Especial de Precatórios; replicável por UF (CNJ Res. 303) | tjsc | 2025 | há 5h | em dia |
+| Assistência social COMPLETA (MDS MI Social): série anual de repasse FNAS 2005→ + CadÚnico + Bolsa Família | transferegov | 2025 | há 1d | em dia |
+| Convênios e contratos de repasse por município (SICONV/Transferegov, repositório detru — proposta+convenio) | transferegov | 2025 | há 12d | em dia |
+| Emendas — INDICAÇÃO (SICONV/Transferegov, repositório detru: parlamentar, impositivo, valor destinado) | transferegov | 2025 | há 1d | em dia |
+| Emendas — EXECUÇÃO orçamentária federal (Portal da Transparência: empenhado×pago → recurso na mesa) | transferegov | 2026 | há 4h | em dia |
+| Elegibilidade dos programas (Transferegov: quem pode captar cada programa — base do casamento oportunidade×necessidade) | transferegov | 2025 | há 1d | em dia |
+| Catálogo de programas Transferegov — gestão ágil (fundoafundo/programa_gestao_agil); complementa o catálogo unificado de 335 programas | transferegov | 2025 | há 4h | em dia |
+| Programas federais curados de saúde/educação (Novo PAC, Requalifica UBS, Proinfância — casamento com carência; FNS/FNDE sem feed) | transferegov | 2025 | há 4h | em dia |
+| Radar de Captação — programas + planos (Transferegov fundo a fundo, API viva) | transferegov | 2025 | há 5h | em dia |
+| Assistência social / FNAS por município (MDS · MI Social/CadSUAS: CRAS, CREAS — déficit p/ casamento) | transferegov | 2025 | há 4h | em dia |
+| Sanções a empresas/pessoas (CEIS + CNEP) — API Portal da Transparência; cruza com fornecedores (fornecedor sancionado) | transparencia | 2025 | há 6d | em dia |
 
 ## 4. Rotas e APIs (Next.js)
 
@@ -1425,7 +1427,7 @@
 
 ## 6. Integridade (última validação)
 
-- status: **ok** · registros suspeitos (excluídos): 6 · sobrepreço unitário: 18840
+- status: **ok** · registros suspeitos (excluídos): 6 · sobrepreço unitário: 18868
 
 ## 7. Fontes oficiais dos dados (proveniência)
 
