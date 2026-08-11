@@ -22,6 +22,9 @@ async function run() {
   const dir = process.env.DIR || os.tmpdir();
   const M = new Map(); // cod -> {n, vaz, vol, super, fin:Map, anos:Map}
 
+  // agregado: as bases somam num total por município. Base faltando não deixa buraco visível — deixa
+  // número menor com cara de certo. Mesmo critério do ingest_apac_sc: só troca se estiver completo.
+  let obtidos = 0;
   for (const base of BASES) {
     const cp = path.join(dir, `ana_out_${base.key}.csv`);
     if (!fs.existsSync(cp) || fs.statSync(cp).size < 1e5) { console.log(`  baixando ${base.key}…`); try { execFileSync("curl", ["-s", "-L", "--max-time", "240", "-A", "Mozilla/5.0", "-o", cp, `${B}/${base.id}/csv?layers=0`], { stdio: "ignore" }); } catch (e) {} }
@@ -40,11 +43,16 @@ async function run() {
       const ano = +(String(c[ix.dt] || "").match(/(19|20)\d{2}/)?.[0] || 0); if (ano >= 1990 && ano <= 2026) m.anos.set(ano, (m.anos.get(ano) || 0) + 1);
       n++;
     }
+    obtidos++;
     console.log(`  ✓ ${base.key}: ${n} outorgas ${UF}`);
   }
 
   await db.query(`CREATE TABLE IF NOT EXISTS ana_outorgas_sc (cod_ibge TEXT PRIMARY KEY, n_outorgas INTEGER, vazao_total NUMERIC, volume_total NUMERIC, n_superficial INTEGER, n_subterranea INTEGER, por_finalidade JSONB, serie JSONB, atualizado TIMESTAMPTZ DEFAULT now())`);
   await db.query(`ALTER TABLE ana_outorgas_sc ADD COLUMN IF NOT EXISTS n_superficial INTEGER, ADD COLUMN IF NOT EXISTS n_subterranea INTEGER, ADD COLUMN IF NOT EXISTS por_finalidade JSONB, ADD COLUMN IF NOT EXISTS serie JSONB`);
+  if (obtidos < BASES.length) {
+    console.log(`⚠ ana_outorgas_sc: só ${obtidos}/${BASES.length} bases vieram — totais subestimados; tabela NÃO tocada.`);
+    await db.end(); process.exit(1);
+  }
   await db.query(`TRUNCATE ana_outorgas_sc`);
   for (const [cod, m] of M) {
     const fin = [...m.fin.entries()].sort((a, b) => b[1] - a[1]).map(([finalidade, n]) => ({ finalidade, n }));

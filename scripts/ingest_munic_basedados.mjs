@@ -74,10 +74,23 @@ async function main() {
   await db.query(`CREATE TABLE IF NOT EXISTS munic_sc (cod_ibge TEXT, indicador TEXT, grupo TEXT, label TEXT, tem BOOLEAN, atualizado timestamptz DEFAULT now(), PRIMARY KEY (cod_ibge, indicador))`);
   await db.query(`ALTER TABLE munic_sc ADD COLUMN IF NOT EXISTS valor TEXT`);
   await db.query(`ALTER TABLE munic_sc ADD COLUMN IF NOT EXISTS ano INT`);
-  if (!process.env.APPEND) await db.query(`TRUNCATE munic_sc`);
-
+  // ⚠️ ERA `TRUNCATE munic_sc` ANTES DO LAÇO DAS EDIÇÕES.
+  // O MUNIC é rotativo: cada edição traz temas diferentes, e a tabela só faz sentido com todas juntas.
+  // Truncando antes, uma edição que falhasse no download deixava a tabela com o que já tinha entrado e
+  // sem o resto — e as edições ANTIGAS, que ninguém ia recarregar, sumiam. Falha de rede numa edição
+  // custava os temas exclusivos dela (Legislação, Educação, Saúde só existem em 2021).
+  // Agora carrega tudo primeiro e só então substitui, por EDIÇÃO, dentro de uma transação.
   let total = 0;
-  for (const ed of edicoes) total += await ingereEdicao(ed, db);
+  const carregadas = [];
+  for (const ed of edicoes) {
+    try { total += await ingereEdicao(ed, db, carregadas); }
+    catch (e) { console.log(`  ⚠ MUNIC ${ed.ano}: ${String(e.message).slice(0, 70)} — edição anterior preservada`); }
+  }
+  if (!carregadas.length) { console.log("⚠ nenhuma edição carregou — tabela intacta"); await db.end(); process.exit(1); }
+  if (carregadas.length < edicoes.length) {
+    console.log(`  ⚠ ${carregadas.length}/${edicoes.length} edições carregaram; as demais mantêm o dado anterior`);
+    process.exitCode = 1;
+  }
   const tot = await db.query(`SELECT count(distinct cod_ibge) m, count(distinct indicador) i, count(*) FILTER(WHERE tem) tem FROM munic_sc`);
   const porAno = await db.query(`SELECT ano, count(distinct indicador) i FROM munic_sc GROUP BY ano ORDER BY ano`);
   console.log(`✔ munic_sc: ${total} células · ${tot.rows[0].m} municípios SC · ${tot.rows[0].i} indicadores · ${tot.rows[0].tem} "tem"`);
@@ -85,7 +98,10 @@ async function main() {
   await db.end();
 }
 
-async function ingereEdicao(ed, db) {
+// `carregadas` recebe o ano da edição que de fato entrou — é o que permite ao chamador saber se a carga
+// foi completa sem inspecionar a tabela. Sem TRUNCATE, o `ON CONFLICT (cod_ibge,indicador)` já faz a
+// edição mais nova vencer, e as edições vão da mais antiga para a mais nova de propósito.
+async function ingereEdicao(ed, db, carregadas = []) {
   const arq = ed.local || baixaEdicao(ed);
   console.log(`\nMUNIC ${ed.ano} — lendo ${ed.nome}…`);
   const wb = xlsx.readFile(arq);
@@ -147,6 +163,7 @@ async function ingereEdicao(ed, db) {
     grav += L.length;
     console.log(`  ${sheet}: ${lista.length} indicadores · ${L.length} células`);
   }
+  carregadas.push(ed.ano);
   return grav;
 }
 main().catch((e) => { console.error("ERRO:", e.message); console.error(e.stack); process.exit(1); });

@@ -15,6 +15,7 @@ async function run() {
   const dir = process.env.DIR || os.tmpdir();
   const rows = []; // {cod, ano, vacina, cobertura}
 
+  const carregados = [];   // anos que REALMENTE vieram — ver carga_fatiada.mjs
   for (const ano of ANOS) {
     const yy = String(ano).slice(2);
     const dp = path.join(dir, `CPNI${UF}${yy}.dbf`);
@@ -30,12 +31,18 @@ async function run() {
       const cob = pctBR(g(i, "COBERT")); if (cob == null) continue;
       rows.push([cod, ano, vac, Math.min(cob, 200)]); n++;
     }
+    carregados.push(ano);
     console.log(`  ✓ ${ano}: ${n} registros (município×vacina)`);
   }
 
   await db.query(`CREATE TABLE IF NOT EXISTS cobertura_vacinal_sc (cod_ibge TEXT, ano INTEGER, vacina TEXT, cobertura NUMERIC, atualizado TIMESTAMPTZ DEFAULT now(), PRIMARY KEY (cod_ibge, ano, vacina))`);
-  await db.query(`TRUNCATE cobertura_vacinal_sc`);
-  for (let i = 0; i < rows.length; i += 500) { const chunk = rows.slice(i, i + 500); const vals = chunk.map((_, j) => `($${j*4+1},$${j*4+2},$${j*4+3},$${j*4+4},now())`).join(","); await db.query(`INSERT INTO cobertura_vacinal_sc (cod_ibge,ano,vacina,cobertura,atualizado) VALUES ${vals} ON CONFLICT DO NOTHING`, chunk.flat()); }
+  // ⚠️ Era TRUNCATE + insert do que veio: um ano falho levava junto os anos já corretos. Como esta fonte
+  // guarda série 2015-2026, isso significava perder onze anos porque um arquivo não baixou.
+  const { substituiFatias, relata } = await import("./carga_fatiada.mjs");
+  await substituiFatias(db, { tabela: "cobertura_vacinal_sc", fatiaCols: ["ano"],
+    fatias: carregados.map((a) => [a]), colunas: ["cod_ibge", "ano", "vacina", "cobertura"],
+    tipos: ["text", "int", "text", "numeric"], linhas: rows });
+  relata("cobertura_vacinal_sc", carregados, ANOS);
   const chk = (await db.query(`SELECT max(ano) ma, count(distinct cod_ibge) m, round(avg(cobertura),1) a FROM cobertura_vacinal_sc WHERE ano=(SELECT max(ano) FROM cobertura_vacinal_sc)`)).rows[0];
   console.log(`✔ cobertura_vacinal_sc: ${rows.length} linhas · ${chk.m} municípios · cobertura média ${chk.a}% em ${chk.ma}`);
   await db.end();

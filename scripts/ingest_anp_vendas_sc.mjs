@@ -20,6 +20,7 @@ async function run() {
   const dir = process.env.DIR || os.tmpdir();
   const M = new Map(); // cod|ano|produto -> vendas
 
+  const carregados = [];   // produtos que REALMENTE vieram — ver carga_fatiada.mjs
   for (const p of PROD) {
     const cp = path.join(dir, `anp_${p.key}.csv`);
     if (!fs.existsSync(cp) || fs.statSync(cp).size < 1e4) { try { execFileSync("curl", ["-s", "-L", "--max-time", "120", "-A", "Mozilla/5.0", "-o", cp, p.url], { stdio: "ignore" }); } catch (e) {} }
@@ -33,18 +34,19 @@ async function run() {
       const ano = +c[ix.ano] || 0; if (ano < 1990) continue;
       M.set(`${cod}|${ano}|${p.key}`, numf(c[ix.vendas])); n++;
     }
+    carregados.push(p.key);
     console.log(`  ✓ ${p.key}: ${n} linhas ${UFCOD}`);
   }
 
   await db.query(`CREATE TABLE IF NOT EXISTS anp_vendas_sc (cod_ibge TEXT, ano INTEGER, produto TEXT, vendas NUMERIC, atualizado TIMESTAMPTZ DEFAULT now(), PRIMARY KEY (cod_ibge, ano, produto))`);
-  await db.query(`TRUNCATE anp_vendas_sc`);
-  const ent = [...M.entries()]; let up = 0;
-  for (let i = 0; i < ent.length; i += 500) {
-    const batch = ent.slice(i, i + 500);
-    const vals = batch.map((_, j) => `($${j * 4 + 1},$${j * 4 + 2},$${j * 4 + 3},$${j * 4 + 4},now())`).join(",");
-    const params = batch.flatMap(([k, v]) => { const [cod, ano, prod] = k.split("|"); return [cod, +ano, prod, Math.round(v)]; });
-    await db.query(`INSERT INTO anp_vendas_sc (cod_ibge,ano,produto,vendas,atualizado) VALUES ${vals} ON CONFLICT (cod_ibge,ano,produto) DO UPDATE SET vendas=EXCLUDED.vendas`, params); up += batch.length;
-  }
+  // ⚠️ Era TRUNCATE + insert do que veio: o produto que falhasse levava junto TODOS os outros já corretos.
+  // Aqui a fatia é o PRODUTO (gasolina, diesel…), não o ano: cada arquivo traz a série inteira de um deles.
+  const { substituiFatias, relata } = await import("./carga_fatiada.mjs");
+  const L = [...M.entries()].map(([k, v]) => { const [cod, ano, prod] = k.split("|"); return [cod, +ano, prod, Math.round(v)]; });
+  const up = await substituiFatias(db, { tabela: "anp_vendas_sc", fatiaCols: ["produto"],
+    fatias: carregados.map((p) => [p]), colunas: ["cod_ibge", "ano", "produto", "vendas"],
+    tipos: ["text", "int", "text", "numeric"], linhas: L });
+  relata("anp_vendas_sc", carregados, PROD.map((p) => p.key));
   const chk = (await db.query(`SELECT count(distinct cod_ibge) m, max(ano) ma, round(sum(vendas) FILTER (WHERE produto='diesel' AND ano=(SELECT max(ano) FROM anp_vendas_sc))/1e6) diesel_mi FROM anp_vendas_sc`)).rows[0];
   console.log(`✔ anp_vendas_sc: ${chk.m} municípios · ${up} linhas · último ano ${chk.ma} · diesel ${chk.diesel_mi} milhões L`);
   await db.end();
