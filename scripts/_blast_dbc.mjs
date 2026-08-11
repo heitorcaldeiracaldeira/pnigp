@@ -65,7 +65,24 @@ export function blast(compressed) {
   if (lit > 1) throw new Error("blast: flag de literal inválida (" + lit + ")");
   const dict = s.bits(8);           // log2(dicionário) : 4,5,6 → 1024/2048/4096
   if (dict < 4 || dict > 6) throw new Error("blast: dicionário inválido (" + dict + ")");
-  const out = [];
+  // ═══ ERA UM ARRAY JS, E ISSO TINHA TETO ═══
+  // A saída era `const out = []` com um `push` por BYTE descompactado, e `Buffer.from(out)` no fim.
+  // O limite de FixedArray do V8 é ~536 milhões de elementos: passar disso lança "Invalid array length".
+  // Medido em 10/ago: os DBC pequenos (CNES, SIM, SINASC) passavam e os GRANDES do SIA não —
+  // PASC2410.dbc tem 97 MB comprimidos e estoura ao descompactar. Falha determinística POR TAMANHO,
+  // e por isso parecia intermitente: dependia de qual fonte se olhava.
+  // E o consumidor engolia: `catch { console.log("⚠ …") ; continue }` transformava o estouro em aviso,
+  // o script terminava com ✔ e a tabela ficava VAZIA. Erro determinístico mascarado por resiliência —
+  // exatamente o que já custou os doze ETLs de saúde da vez do alias que faltava.
+  // Um Uint8Array que dobra de capacidade não tem esse teto, gasta 1 byte por byte (contra 8 do array de
+  // SMIs) e ainda é mais rápido, porque não há boxing nem realocação de FixedArray a cada crescimento.
+  let cap = 1 << 20, n = 0;
+  let out = new Uint8Array(cap);
+  const cresce = (precisa) => {
+    if (n + precisa <= cap) return;
+    while (cap < n + precisa) cap *= 2;
+    const novo = new Uint8Array(cap); novo.set(out.subarray(0, n)); out = novo;
+  };
   for (;;) {
     if (s.bits(1)) {                                   // 1 = par comprimento/distância
       const symbol = s.decode(lencode);
@@ -73,12 +90,16 @@ export function blast(compressed) {
       if (len === 519) break;                          // código de fim
       const dbits = len === 2 ? 2 : dict;
       const dist = (s.decode(distcode) << dbits) + s.bits(dbits) + 1;
-      for (let i = 0; i < len; i++) out.push(out[out.length - dist]);   // cópia LZ (trata sobreposição)
+      cresce(len);
+      // cópia LZ byte a byte: a origem pode se sobrepor ao destino (dist < len), então NÃO dá para usar
+      // copyWithin em bloco — o padrão que se repete depende dos bytes recém-escritos.
+      for (let i = 0; i < len; i++) { out[n] = out[n - dist]; n++; }
     } else {                                           // 0 = literal
-      out.push(lit ? s.decode(litcode) : s.bits(8));
+      cresce(1);
+      out[n++] = lit ? s.decode(litcode) : s.bits(8);
     }
   }
-  return Buffer.from(out);
+  return Buffer.from(out.buffer, 0, n);
 }
 
 /** .dbc (DATASUS) → .dbf. O cabeçalho DBF é copiado íntegro; os registros vêm do blast. */
