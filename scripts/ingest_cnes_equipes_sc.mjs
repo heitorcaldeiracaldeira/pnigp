@@ -14,6 +14,7 @@ async function run() {
   const by6 = new Map((await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M'`)).rows.map((e) => [e.cod_ibge.slice(0, 6), e.cod_ibge]));
   const dir = process.env.DIR || os.tmpdir();
   const M = new Map();       // cod -> Map(ano -> {total, esf})
+  const carregados = [];     // anos que REALMENTE vieram — ver carga_fatiada.mjs
   const porEstab = new Map(); // codigo_cnes -> {total, esf} (último ano)
   const anoMax = Math.max(...ANOS);
 
@@ -35,15 +36,32 @@ async function run() {
       if (ano === anoMax) { const cnes = fld(d, rec, "CNES"); const e = porEstab.get(cnes) || { total: 0, esf: 0 }; e.total++; if (isEsf) e.esf++; porEstab.set(cnes, e); }
       n++;
     }
+    carregados.push(ano);
     console.log(`  ✓ ${ano}: ${n} equipes ${UF}`);
   }
 
   await db.query(`CREATE TABLE IF NOT EXISTS cnes_equipes_sc (cod_ibge TEXT, ano INTEGER, n_equipes INTEGER, n_esf INTEGER, atualizado TIMESTAMPTZ DEFAULT now(), PRIMARY KEY (cod_ibge, ano))`);
   await db.query(`CREATE TABLE IF NOT EXISTS cnes_equipes_estab (codigo_cnes TEXT PRIMARY KEY, n_equipes INTEGER, n_esf INTEGER, atualizado TIMESTAMPTZ DEFAULT now())`);
-  await db.query(`TRUNCATE cnes_equipes_sc`); await db.query(`TRUNCATE cnes_equipes_estab`);
-  let up = 0;
-  for (const [cod, anos] of M) for (const [ano, a] of anos) { await db.query(`INSERT INTO cnes_equipes_sc (cod_ibge,ano,n_equipes,n_esf,atualizado) VALUES ($1,$2,$3,$4,now())`, [cod, ano, a.total, a.esf]); up++; }
-  for (const [cnes, e] of porEstab) await db.query(`INSERT INTO cnes_equipes_estab (codigo_cnes,n_equipes,n_esf,atualizado) VALUES ($1,$2,$3,now())`, [cnes, e.total, e.esf]);
+  // ⚠️ Era TRUNCATE das duas + insert do que veio: um ano falho levava junto os anos já corretos.
+  const { substituiFatias, relata } = await import("./carga_fatiada.mjs");
+  const L = [];
+  for (const [cod, anos] of M) for (const [ano, a] of anos) L.push([cod, ano, a.total, a.esf]);
+  const up = await substituiFatias(db, { tabela: "cnes_equipes_sc", fatiaCols: ["ano"],
+    fatias: carregados.map((a) => [a]), colunas: ["cod_ibge", "ano", "n_equipes", "n_esf"],
+    tipos: ["text", "int", "int", "int"], linhas: L });
+  // retrato do ano mais recente: só se troca quando esse ano vier. Retrato antigo > retrato nenhum.
+  if (carregados.includes(anoMax) && porEstab.size) {
+    await db.query("BEGIN");
+    try {
+      await db.query(`TRUNCATE cnes_equipes_estab`);
+      const E = [...porEstab.entries()].map(([c, e]) => [c, e.total, e.esf]);
+      await db.query(`INSERT INTO cnes_equipes_estab (codigo_cnes,n_equipes,n_esf)
+        SELECT c,t,e FROM unnest($1::text[],$2::int[],$3::int[]) AS z(c,t,e)`,
+        [E.map((x) => x[0]), E.map((x) => x[1]), E.map((x) => x[2])]);
+      await db.query("COMMIT");
+    } catch (e) { await db.query("ROLLBACK"); throw e; }
+  } else if (!carregados.includes(anoMax)) console.log(`  ⚠ ${anoMax} não carregou — cnes_equipes_estab mantida`);
+  relata("cnes_equipes_sc", carregados, ANOS);
   const chk = (await db.query(`SELECT max(ano) ma, sum(n_equipes) FILTER (WHERE ano=(SELECT max(ano) FROM cnes_equipes_sc)) t, sum(n_esf) FILTER (WHERE ano=(SELECT max(ano) FROM cnes_equipes_sc)) e FROM cnes_equipes_sc`)).rows[0];
   console.log(`✔ cnes_equipes_sc: ${up} linhas · ${chk.ma}: ${chk.t} equipes (${chk.e} ESF) em ${UF} · ${porEstab.size} estabelecimentos com equipe`);
   await db.end();

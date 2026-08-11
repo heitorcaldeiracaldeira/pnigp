@@ -16,6 +16,7 @@ async function run() {
   const by6 = new Map((await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M'`)).rows.map((e) => [e.cod_ibge.slice(0, 6), e.cod_ibge]));
   const dir = process.env.DIR || os.tmpdir();
   const M = new Map();        // cod -> Map(ano -> {cat: Set(cpf)})
+  const carregados = [];      // anos que REALMENTE vieram — ver carga_fatiada.mjs
   const porEstab = new Map();  // cnes -> Set(cpf) (último ano)
   const anoMax = Math.max(...ANOS);
 
@@ -34,15 +35,30 @@ async function run() {
       let a = mm.get(ano); if (!a) { a = {}; for (const k of CATS) a[k] = new Set(); mm.set(ano, a); } a[c].add(cpf);
       if (ano === anoMax) { const cnes = fld(d, rec, "CNES"); let s = porEstab.get(cnes); if (!s) { s = new Set(); porEstab.set(cnes, s); } s.add(cpf); }
     }
+    carregados.push(ano);
     console.log(`  ✓ ${ano}: ${d.nrec.toLocaleString("pt-BR")} vínculos ${UF}`);
   }
 
   await db.query(`CREATE TABLE IF NOT EXISTS cnes_profissionais_sc (cod_ibge TEXT, ano INTEGER, medicos INTEGER, enfermeiros INTEGER, dentistas INTEGER, tec_enf INTEGER, acs INTEGER, atualizado TIMESTAMPTZ DEFAULT now(), PRIMARY KEY (cod_ibge, ano))`);
   await db.query(`CREATE TABLE IF NOT EXISTS cnes_profissionais_estab (codigo_cnes TEXT PRIMARY KEY, profissionais INTEGER, atualizado TIMESTAMPTZ DEFAULT now())`);
-  await db.query(`TRUNCATE cnes_profissionais_sc`); await db.query(`TRUNCATE cnes_profissionais_estab`);
-  let up = 0;
-  for (const [cod, anos] of M) for (const [ano, a] of anos) { await db.query(`INSERT INTO cnes_profissionais_sc (cod_ibge,ano,medicos,enfermeiros,dentistas,tec_enf,acs,atualizado) VALUES ($1,$2,$3,$4,$5,$6,$7,now())`, [cod, ano, a.medico.size, a.enfermeiro.size, a.dentista.size, a.tec_enf.size, a.acs.size]); up++; }
-  for (const [cnes, s] of porEstab) await db.query(`INSERT INTO cnes_profissionais_estab (codigo_cnes,profissionais,atualizado) VALUES ($1,$2,now())`, [cnes, s.size]);
+  // ⚠️ Era TRUNCATE das duas + insert do que veio: um ano falho levava junto os anos já corretos.
+  const { substituiFatias, relata } = await import("./carga_fatiada.mjs");
+  const L = [];
+  for (const [cod, anos] of M) for (const [ano, a] of anos) L.push([cod, ano, a.medico.size, a.enfermeiro.size, a.dentista.size, a.tec_enf.size, a.acs.size]);
+  const up = await substituiFatias(db, { tabela: "cnes_profissionais_sc", fatiaCols: ["ano"],
+    fatias: carregados.map((a) => [a]), colunas: ["cod_ibge", "ano", "medicos", "enfermeiros", "dentistas", "tec_enf", "acs"],
+    tipos: ["text", "int", "int", "int", "int", "int", "int"], linhas: L });
+  if (carregados.includes(anoMax) && porEstab.size) {
+    await db.query("BEGIN");
+    try {
+      await db.query(`TRUNCATE cnes_profissionais_estab`);
+      const E = [...porEstab.entries()].map(([c, s]) => [c, s.size]);
+      await db.query(`INSERT INTO cnes_profissionais_estab (codigo_cnes,profissionais)
+        SELECT c,p FROM unnest($1::text[],$2::int[]) AS z(c,p)`, [E.map((x) => x[0]), E.map((x) => x[1])]);
+      await db.query("COMMIT");
+    } catch (e) { await db.query("ROLLBACK"); throw e; }
+  } else if (!carregados.includes(anoMax)) console.log(`  ⚠ ${anoMax} não carregou — cnes_profissionais_estab mantida`);
+  relata("cnes_profissionais_sc", carregados, ANOS);
   const chk = (await db.query(`SELECT max(ano) ma, sum(medicos) FILTER (WHERE ano=(SELECT max(ano) FROM cnes_profissionais_sc)) m, sum(enfermeiros) FILTER (WHERE ano=(SELECT max(ano) FROM cnes_profissionais_sc)) e FROM cnes_profissionais_sc`)).rows[0];
   console.log(`✔ cnes_profissionais: ${up} linhas · ${chk.ma}: ${chk.m} médicos, ${chk.e} enfermeiros em ${UF} · ${porEstab.size} estabelecimentos`);
   await db.end();

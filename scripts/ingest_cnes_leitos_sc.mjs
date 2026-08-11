@@ -14,6 +14,7 @@ async function run() {
   const by6 = new Map((await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M'`)).rows.map((e) => [e.cod_ibge.slice(0, 6), e.cod_ibge]));
   const dir = process.env.DIR || os.tmpdir();
   const M = new Map(); const porEstab = new Map(); const anoMax = Math.max(...ANOS);
+  const carregados = [];   // anos que REALMENTE vieram — o TRUNCATE apagava tudo mesmo quando só um chegava
 
   for (const ano of ANOS) {
     const yy = String(ano).slice(2);
@@ -29,15 +30,36 @@ async function run() {
       if (!M.has(cod)) M.set(cod, new Map()); const mm = M.get(cod); const a = mm.get(ano) || { total: 0, sus: 0, uti: 0 }; add(a); mm.set(ano, a);
       if (ano === anoMax) { const cnes = fld(d, rec, "CNES"); const e = porEstab.get(cnes) || { total: 0, sus: 0, uti: 0 }; add(e); porEstab.set(cnes, e); }
     }
+    carregados.push(ano);
     console.log(`  ✓ ${ano}: ${d.nrec} registros ${UF}`);
   }
 
   await db.query(`CREATE TABLE IF NOT EXISTS cnes_leitos_sc (cod_ibge TEXT, ano INTEGER, total INTEGER, sus INTEGER, uti INTEGER, atualizado TIMESTAMPTZ DEFAULT now(), PRIMARY KEY (cod_ibge, ano))`);
   await db.query(`CREATE TABLE IF NOT EXISTS cnes_leitos_estab (codigo_cnes TEXT PRIMARY KEY, total INTEGER, sus INTEGER, uti INTEGER, atualizado TIMESTAMPTZ DEFAULT now())`);
-  await db.query(`TRUNCATE cnes_leitos_sc`); await db.query(`TRUNCATE cnes_leitos_estab`);
-  let up = 0;
-  for (const [cod, anos] of M) for (const [ano, a] of anos) { await db.query(`INSERT INTO cnes_leitos_sc (cod_ibge,ano,total,sus,uti,atualizado) VALUES ($1,$2,$3,$4,$5,now())`, [cod, ano, a.total, a.sus, a.uti]); up++; }
-  for (const [cnes, e] of porEstab) await db.query(`INSERT INTO cnes_leitos_estab (codigo_cnes,total,sus,uti,atualizado) VALUES ($1,$2,$3,$4,now())`, [cnes, e.total, e.sus, e.uti]);
+  // ⚠️ Era `TRUNCATE` das duas tabelas + insert do que a rodada conseguiu: um ano que falhasse levava
+  // junto TODOS os anos que já estavam certos. Agora substitui só as fatias (anos) que de fato vieram.
+  const { substituiFatias, relata } = await import("./carga_fatiada.mjs");
+  const L = [];
+  for (const [cod, anos] of M) for (const [ano, a] of anos) L.push([cod, ano, a.total, a.sus, a.uti]);
+  const up = await substituiFatias(db, { tabela: "cnes_leitos_sc", fatiaCols: ["ano"],
+    fatias: carregados.map((a) => [a]), colunas: ["cod_ibge", "ano", "total", "sus", "uti"],
+    tipos: ["text", "int", "int", "int", "int"], linhas: L });
+  // a tabela por ESTABELECIMENTO é um retrato do ano mais recente, não uma série: só faz sentido trocá-la
+  // se o ano mais recente tiver carregado. Se não veio, o retrato antigo vale mais que retrato nenhum.
+  if (carregados.includes(anoMax) && porEstab.size) {
+    await db.query("BEGIN");
+    try {
+      await db.query(`TRUNCATE cnes_leitos_estab`);
+      const E = [...porEstab.entries()].map(([cnes, e]) => [cnes, e.total, e.sus, e.uti]);
+      await db.query(`INSERT INTO cnes_leitos_estab (codigo_cnes,total,sus,uti)
+        SELECT c,t,s,u FROM unnest($1::text[],$2::int[],$3::int[],$4::int[]) AS z(c,t,s,u)`,
+        [E.map((x) => x[0]), E.map((x) => x[1]), E.map((x) => x[2]), E.map((x) => x[3])]);
+      await db.query("COMMIT");
+    } catch (e) { await db.query("ROLLBACK"); throw e; }
+  } else if (!carregados.includes(anoMax)) {
+    console.log(`  ⚠ ${anoMax} não carregou — cnes_leitos_estab mantida como estava (retrato anterior)`);
+  }
+  relata("cnes_leitos_sc", carregados, ANOS);
   const chk = (await db.query(`SELECT max(ano) ma, sum(total) FILTER (WHERE ano=(SELECT max(ano) FROM cnes_leitos_sc)) t, sum(sus) FILTER (WHERE ano=(SELECT max(ano) FROM cnes_leitos_sc)) s, sum(uti) FILTER (WHERE ano=(SELECT max(ano) FROM cnes_leitos_sc)) u FROM cnes_leitos_sc`)).rows[0];
   console.log(`✔ cnes_leitos: ${up} linhas · ${chk.ma}: ${chk.t} leitos (${chk.s} SUS, ${chk.u} UTI) em ${UF} · ${porEstab.size} estabelecimentos`);
   await db.end();
