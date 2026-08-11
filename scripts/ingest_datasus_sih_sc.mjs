@@ -15,6 +15,7 @@ async function run() {
   const by6 = new Map((await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M'`)).rows.map((e) => [e.cod_ibge.slice(0, 6), e.cod_ibge]));
   const dir = process.env.DIR || os.tmpdir();
   const M = new Map();
+  const carregados = [];   // anos que REALMENTE vieram — ver carga_fatiada.mjs
   for (const ano of ANOS) {
     const yy = String(ano).slice(2);
     for (let mes = 1; mes <= 12; mes++) {
@@ -32,12 +33,19 @@ async function run() {
       }
     }
     const tot = [...M.values()].reduce((s, cm) => s + (cm.get(ano)?.intern || 0), 0);
+    carregados.push(ano);
     console.log(`  ✓ ${ano}: ${tot} internações ${UF}`);
   }
   await db.query(`CREATE TABLE IF NOT EXISTS sih_sc (cod_ibge TEXT, ano INTEGER, internacoes INTEGER, valor_total NUMERIC, obitos_hosp INTEGER, atualizado TIMESTAMPTZ DEFAULT now(), PRIMARY KEY (cod_ibge, ano))`);
-  await db.query(`TRUNCATE sih_sc`);
+  // ⚠️ Era TRUNCATE + insert do que veio: um ano falho levava junto os anos já corretos.
+  const { substituiFatias, relata } = await import("./carga_fatiada.mjs");
   let up = 0;
-  for (const [cod, anos] of M) for (const [ano, a] of anos) { await db.query(`INSERT INTO sih_sc (cod_ibge,ano,internacoes,valor_total,obitos_hosp,atualizado) VALUES ($1,$2,$3,$4,$5,now())`, [cod, ano, a.intern, Math.round(a.valor), a.obitos]); up++; }
+  const L = [];
+  for (const [cod, anos] of M) for (const [ano, a] of anos) L.push([cod, ano, a.intern, Math.round(a.valor), a.obitos]);
+  up = await substituiFatias(db, { tabela: "sih_sc", fatiaCols: ["ano"], fatias: carregados.map((a) => [a]),
+    colunas: ["cod_ibge", "ano", "internacoes", "valor_total", "obitos_hosp"],
+    tipos: ["text", "int", "int", "numeric", "int"], linhas: L });
+  relata("sih_sc", carregados, ANOS);
   const chk = (await db.query(`SELECT count(distinct cod_ibge) m, max(ano) ma, sum(internacoes) FILTER (WHERE ano=(SELECT max(ano) FROM sih_sc)) i, round(sum(valor_total) FILTER (WHERE ano=(SELECT max(ano) FROM sih_sc))/1e6) mi FROM sih_sc`)).rows[0];
   console.log(`✔ sih_sc: ${chk.m} municípios · ${up} linhas · ${chk.ma}: ${Number(chk.i).toLocaleString("pt-BR")} internações · R$ ${chk.mi} mi`);
   await db.end();

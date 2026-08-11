@@ -4,8 +4,10 @@ import fs from "fs"; import os from "os"; import path from "path"; import { exec
 import { decompressDbc } from "./_blast_dbc.mjs";
 const DATABASE_URL = fs.readFileSync("C:/Users/PC/pnigp/.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
 const UF = process.env.UF || "SC";
-const ANOS = (process.env.ANOS || "2019,2020,2021,2022,2023,2024").split(",").map(Number);
-const FTP = `ftp://ftp.datasus.gov.br/dissemin/publicos/SIM/CID10/DORES/DO${UF}`;
+// O definitivo (CID10/DORES) vai até 2024; o preliminar (PRELIM/DORES) tem 2025 e 2026 — medido em 11/ago.
+// Olhando só o definitivo, a série perdia dois anos já publicados. Pede os dois, na ordem certa.
+const ANOS = (process.env.ANOS || "2019,2020,2021,2022,2023,2024,2025,2026").split(",").map(Number);
+const FTP_BASES = ["SIM/CID10/DORES", "SIM/PRELIM/DORES"];
 
 // lê um DBF (Buffer) e retorna {campos:{nome:{off,len}}, hlen, rlen, nrec, buf}
 function parseDbf(buf) {
@@ -22,10 +24,15 @@ async function run() {
   const by6 = new Map((await db.query(`SELECT cod_ibge FROM entes_sc WHERE tipo='M'`)).rows.map((e) => [e.cod_ibge.slice(0, 6), e.cod_ibge]));
   const dir = process.env.DIR || os.tmpdir();
   const M = new Map(); // cod -> Map(ano -> {obitos, ext, circ, neo, inf})
+  const carregados = [];   // anos que REALMENTE vieram — ver carga_fatiada.mjs
 
   for (const ano of ANOS) {
     const dp = path.join(dir, `DO${UF}${ano}.dbc`);
-    if (!fs.existsSync(dp) || fs.statSync(dp).size < 1e4) { try { execFileSync("curl", ["-s", "--max-time", "120", `${FTP}${ano}.dbc`, "-o", dp], { stdio: "ignore" }); } catch (e) {} }
+    for (const base of FTP_BASES) {   // definitivo primeiro (dado revisado), preliminar depois
+      if (fs.existsSync(dp) && fs.statSync(dp).size >= 1e4) break;
+      try { execFileSync("curl", ["-sS", "--fail", "--max-time", "600", "--speed-limit", "1024", "--speed-time", "60",
+        `ftp://ftp.datasus.gov.br/dissemin/publicos/${base}/DO${UF}${ano}.dbc`, "-o", dp], { stdio: "ignore" }); } catch (e) { /* tenta o outro */ }
+    }
     if (!fs.existsSync(dp) || fs.statSync(dp).size < 1e4) { console.log(`  ⚠ ${ano}: sem arquivo`); continue; }
     let d; try { d = parseDbf(decompressDbc(fs.readFileSync(dp))); } catch (e) { console.log(`  ⚠ ${ano}: ${e.message.slice(0, 30)}`); continue; }
     let n = 0;
@@ -42,16 +49,19 @@ async function run() {
       const u = idade[0]; if ("123".includes(u) || (u === "4" && idade.slice(1) === "00")) a.inf++; // <1 ano: unid 1=hora/2=dia/3=mês, ou 4=anos com valor 00
       mm.set(ano, a); n++;
     }
+    carregados.push(ano);
     console.log(`  ✓ ${ano}: ${n} óbitos ${UF} (${d.nrec} registros)`);
   }
 
   await db.query(`CREATE TABLE IF NOT EXISTS sim_sc (cod_ibge TEXT, ano INTEGER, obitos INTEGER, causas_externas INTEGER, circulatorio INTEGER, neoplasias INTEGER, infantil INTEGER, atualizado TIMESTAMPTZ DEFAULT now(), PRIMARY KEY (cod_ibge, ano))`);
-  await db.query(`TRUNCATE sim_sc`);
-  let up = 0;
-  for (const [cod, anos] of M) for (const [ano, a] of anos) {
-    await db.query(`INSERT INTO sim_sc (cod_ibge,ano,obitos,causas_externas,circulatorio,neoplasias,infantil,atualizado) VALUES ($1,$2,$3,$4,$5,$6,$7,now())`,
-      [cod, ano, a.obitos, a.ext, a.circ, a.neo, a.inf]); up++;
-  }
+  // ⚠️ Era TRUNCATE + insert do que veio: um ano falho levava junto os anos já corretos.
+  const { substituiFatias, relata } = await import("./carga_fatiada.mjs");
+  const L = [];
+  for (const [cod, anos] of M) for (const [ano, a] of anos) L.push([cod, ano, a.obitos, a.ext, a.circ, a.neo, a.inf]);
+  const up = await substituiFatias(db, { tabela: "sim_sc", fatiaCols: ["ano"], fatias: carregados.map((a) => [a]),
+    colunas: ["cod_ibge", "ano", "obitos", "causas_externas", "circulatorio", "neoplasias", "infantil"],
+    tipos: ["text", "int", "int", "int", "int", "int", "int"], linhas: L });
+  relata("sim_sc", carregados, ANOS);
   const chk = (await db.query(`SELECT count(distinct cod_ibge) m, max(ano) ma, sum(obitos) FILTER (WHERE ano=(SELECT max(ano) FROM sim_sc)) o, sum(causas_externas) FILTER (WHERE ano=(SELECT max(ano) FROM sim_sc)) e FROM sim_sc`)).rows[0];
   console.log(`✔ sim_sc: ${chk.m} municípios · ${up} linhas · ${chk.ma}: ${Number(chk.o).toLocaleString("pt-BR")} óbitos (${chk.e} por causas externas) em ${UF}`);
   await db.end();
