@@ -19,8 +19,18 @@ async function run() {
     for (const ano of ANOS) {
       const yy = String(ano).slice(2);
       const dp = path.join(dir, `${ag.cod}BR${yy}.dbc`);
-      if (!fs.existsSync(dp) || fs.statSync(dp).size < 1e3) { try { execFileSync("curl", ["-s", "--max-time", "180", `ftp://ftp.datasus.gov.br/dissemin/publicos/SINAN/DADOS/FINAIS/${ag.cod}BR${yy}.dbc`, "-o", dp], { stdio: "ignore" }); } catch (e) {} }
-      if (!fs.existsSync(dp) || fs.statSync(dp).size < 1e3) { console.log(`  ⚠ ${ag.cod} ${ano}: sem arquivo`); continue; }
+      // ═══ O SINAN TEM DOIS DIRETÓRIOS, E ESTE SCRIPT SÓ OLHAVA UM ═══
+      // `FINAIS` guarda o ano fechado; `PRELIM`, o que ainda está sendo consolidado. Medido em 10/ago:
+      // tuberculose em FINAIS para em 2019 — TUBEBR20 a TUBEBR25 estão TODOS em PRELIM. Por isso a fonte
+      // dizia "TUBE 2021: sem arquivo" em todos os anos e a tabela nunca teve uma linha de tuberculose,
+      // com o script terminando em ✔. O mesmo vale para HANS 2026 e VIOL 2025.
+      // Procura no fechado primeiro (é o dado revisado) e cai no preliminar quando não houver.
+      for (const base of ["FINAIS", "PRELIM"]) {
+        if (fs.existsSync(dp) && fs.statSync(dp).size >= 1e3) break;
+        try { execFileSync("curl", ["-sS", "--fail", "--max-time", "1800", "--speed-limit", "1024", "--speed-time", "60",
+          `ftp://ftp.datasus.gov.br/dissemin/publicos/SINAN/DADOS/${base}/${ag.cod}BR${yy}.dbc`, "-o", dp], { stdio: "ignore" }); } catch (e) { /* tenta o outro diretório */ }
+      }
+      if (!fs.existsSync(dp) || fs.statSync(dp).size < 1e3) { console.log(`  ⚠ ${ag.cod} ${ano}: sem arquivo em FINAIS nem PRELIM`); continue; }
       let d; try { d = parseDbf(decompressDbc(fs.readFileSync(dp))); } catch (e) { console.log(`  ⚠ ${ag.cod} ${ano}: ${e.message.slice(0, 25)}`); continue; }
       const fMun = d.campos.ID_MN_RESI ? "ID_MN_RESI" : (d.campos.ID_MUNICIP ? "ID_MUNICIP" : null); if (!fMun) { console.log(`  ⚠ ${ag.cod}: sem campo município`); continue; }
       let n = 0;
