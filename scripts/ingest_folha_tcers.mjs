@@ -113,7 +113,14 @@ for await (const linha of rl) {
   if (!elemento.startsWith(PREFIXO)) continue;
   pegas++;
 
-  const mes = parseInt(c[I["mes_recebimento"]], 10) || 0;
+  // ⚠️ NÃO usar `mes_recebimento`/`ano_recebimento`: é quando o TRIBUNAL recebeu a remessa, não quando o fato
+  // aconteceu — no arquivo de 2025 ele vale "12" em TODAS as 2,4 milhões de linhas. Quem data o fato é
+  // `dt_operacao` (o evento: empenho, liquidação ou pagamento), que distribui certinho pelos 12 meses.
+  // Isso não é detalhe de rótulo: com tudo caindo num mês só, a soma por linha virava o ANO inteiro e o teste de
+  // "salário plausível" descartava como folha global quem ganha mais de ~R$ 6,7 mil/mês.
+  const dataOp = c[I["dt_operacao"]] || c[I["dt_empenho"]] || "";
+  const anoOp = dataOp.slice(0, 4) || ANO;
+  const mes = parseInt(dataOp.slice(5, 7), 10) || 0;
   const ente = c[I["nome_orgao"]] || "";
   const secretaria = c[I["nome_orgao_orcamentario"]] || "";
   const unidade = c[I["nome_unidade_orcamentaria"]] || "";
@@ -123,12 +130,13 @@ for await (const linha of rl) {
   const tp = (c[I["tp_pessoa"]] || "").trim();
   const pf = tp === "PF" && !!cpf && !COLETIVO.test(credor);
 
-  const k = [mes, ente, secretaria, unidade, elemento, rubrica, credor, cpf].join("\u0001");
+  // o arquivo de um exercicio carrega operacoes de nov/dez do ano anterior - o ano vem do FATO
+  const k = [anoOp, mes, ente, secretaria, unidade, elemento, rubrica, credor, cpf].join("\u0001");
   const a = agg.get(k);
   if (a) {
     a.e += num(c[I["vl_empenho"]]); a.l += num(c[I["vl_liquidacao"]]); a.p += num(c[I["vl_pagamento"]]); a.n++;
   } else {
-    agg.set(k, { mes, ente, secretaria, unidade, elemento, rubrica, credor, cpf, tp, pf,
+    agg.set(k, { ano: anoOp, mes, ente, secretaria, unidade, elemento, rubrica, credor, cpf, tp, pf,
       e: num(c[I["vl_empenho"]]), l: num(c[I["vl_liquidacao"]]), p: num(c[I["vl_pagamento"]]), n: 1 });
   }
 }
@@ -142,7 +150,7 @@ for (const a of agg.values()) {
   const valor = a.p || a.e;
   const nominal = a.pf && valor >= SALARIO_MIN && valor <= SALARIO_MAX;
   if (nominal) nominais++; else if (a.pf && valor > SALARIO_MAX) globaisEmNome++;
-  linhas.push([ANO, a.mes, a.ente, a.secretaria, a.unidade, a.elemento, a.rubrica, a.credor, a.cpf, a.tp,
+  linhas.push([a.ano, a.mes, a.ente, a.secretaria, a.unidade, a.elemento, a.rubrica, a.credor, a.cpf, a.tp,
     nominal ? "t" : "f", a.e, a.l, a.p, a.n].map(escapa).join("\t") + "\n");
 }
 console.log(`   nominais (salário plausível): ${nominais.toLocaleString("pt-BR")} · PF com valor de folha global (descartados do nominal): ${globaisEmNome.toLocaleString("pt-BR")}`);

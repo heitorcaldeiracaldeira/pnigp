@@ -33,9 +33,14 @@ await q(`create or replace view vw_cbo_grande_grupo as
     ('9','Trabalhadores de manutenção e reparação')
   ) as g(cod, nome)`);
 
-await q(`create or replace view vw_folha_municipal_brasil as
+// `create or replace view` recusa mudança na LISTA de colunas ("cannot change name of view column") — quando a
+// view ganha coluna nova, tem de cair antes. CASCADE derruba as derivadas (qualidade/cobertura por UF), que o
+// mapa_cobertura_folha_uf.mjs recria em seguida.
+await q(`drop view if exists vw_folha_municipal_brasil cascade`);
+await q(`create view vw_folha_municipal_brasil as
   -- SANTA CATARINA — a única fonte com os cinco campos juntos
   select 'farol-tcesc'::text          as fonte,
+         'folha oficial'::text        as natureza,
          'SC'::text                   as uf,
          f.anomes::text               as competencia,
          f.cod_ibge,
@@ -51,7 +56,7 @@ await q(`create or replace view vw_folha_municipal_brasil as
     from vw_folha_municipal_sc f
   union all
   -- PERNAMBUCO — nominal e com órgão, sem remuneração publicada
-  select 'tcepe', 'PE', coalesce(p.ano_remessa,'') || lpad(coalesce(p.mes_remessa,''),2,'0'),
+  select 'tcepe', 'folha oficial', 'PE', coalesce(p.ano_remessa,'') || lpad(coalesce(p.mes_remessa,''),2,'0'),
          p.municipio_cod, p.municipio, p.uj_nome, p.uj_nome, p.uj_nome,
          p.cargo, p.tipo_vinculo,
          case when p.data_afastamento is null or p.data_afastamento='' then 'Ativo' else 'Afastado' end,
@@ -59,7 +64,7 @@ await q(`create or replace view vw_folha_municipal_brasil as
     from folha_servidores_pe p
   union all
   -- MARANHÃO — com valor e unidade, sem nome (CPF mascarado na origem)
-  select 'tcema', 'MA', m.ano::text || lpad(m.mes::text,2,'0'),
+  select 'tcema', 'folha oficial', 'MA', m.ano::text || lpad(m.mes::text,2,'0'),
          null, m.ente, m.unidade, m.unidade, m.unidade,
          m.cargo, coalesce(m.natureza_cargo, m.regime),
          case when m.data_exclusao is null or m.data_exclusao='null' then 'Ativo' else 'Desligado' end,
@@ -69,7 +74,7 @@ await q(`create or replace view vw_folha_municipal_brasil as
   -- BETHA — o portal do próprio município: os três campos juntos e a SECRETARIA DECLARADA (não derivada),
   -- na competência corrente. É a fonte mais completa das cinco.
   -- nem todo portal preenche o campo "orgao"; quando falta, o "organograma" é o nível de lotação que sobrou
-  select 'betha', b.uf, replace(coalesce(b.competencia,''),'-',''),
+  select 'betha', 'folha oficial', b.uf, replace(coalesce(b.competencia,''),'-',''),
          b.cod_ibge, b.municipio, b.entidade,
          coalesce(nullif(b.secretaria,''), nullif(b.organograma,'')), b.organograma,
          b.cargo, b.vinculo, 'Ativo', b.nome, b.bruto
@@ -78,29 +83,48 @@ await q(`create or replace view vw_folha_municipal_brasil as
   -- RIO GRANDE DO SUL — pelo empenho: secretaria declarada e valor, SEM cargo. 495 das 497 prefeituras
   -- detalham o órgão orçamentário (só Caxias do Sul lança em bloco único), então a leitura por secretaria vale.
   -- Uma linha por mês × secretaria × credor; a coluna "nominal" marca a fatia em que o credor é o servidor.
-  select 'tcers', 'RS', r.ano || lpad(r.mes::text,2,'0'),
+  select 'tcers', 'empenho orcamentario', 'RS', r.ano || lpad(r.mes::text,2,'0'),
          null, r.ente, r.secretaria, r.secretaria, r.unidade,
          null, r.rubrica,
          'Ativo', case when r.nominal then r.credor end, r.vl_pagamento
     from folha_empenho_rs r
   union all
   -- BRASIL — censitário e anônimo: sem órgão e sem nome, mas cobre os 5.570 municípios
-  select 'rais', null, r.ano::text,
+  select 'rais', 'censitario (declaracao do empregador)', null, r.ano::text,
          r.cod_ibge6, null, r.natureza_desc, null, null,
          r.cbo, coalesce(r.tipo_vinculo_desc, r.tipo_vinculo),
          case when r.ativo_3112 then 'Ativo' else 'Desligado no ano' end,
          null, r.rem_media
     from folha_rais_municipal r`);
 
+// ⚠️ A RAIS NÃO É CONTAGEM DE QUADRO. Ela traz estatutário sim — 60% dos vínculos municipais são estatutários
+// (efetivo 30%, RGPS 15,9%, não efetivo 14,1%), então não é "só quem não tem estabilidade". O problema é a
+// COBERTURA: medida contra o gabarito de SC (Farol/TCE-SC, nov/2025), a RAIS capta 247.071 de 278.651 servidores
+// = 88,6% no estado, mas com dispersão enorme por município — Joinville 97%, Blumenau 91%, e Chapecó só 60%.
+// Isso é subdeclaração de ente, não diferença de data. Por isso `natureza` fica na linha e existe a
+// vw_folha_oficial: somar RAIS com folha oficial no mesmo total é erro.
+await q(`comment on view vw_folha_municipal_brasil is
+  'Pessoal municipal de 6 fontes. A coluna natureza separa: folha oficial (TC/portal do município) x empenho '
+  'orcamentario (RS: valor por secretaria, sem cargo) x censitario (RAIS: cobre os 5570 municipios mas e '
+  'declaracao do empregador, mede 88,6% do quadro em SC e varia de 60% a 112% entre municipios). NUNCA somar '
+  'RAIS com folha oficial no mesmo total - use vw_folha_oficial.'`);
+
+// a view segura para quem quer somar: só folha oficial, sem RAIS e sem empenho
+await q(`create or replace view vw_folha_oficial as
+  select * from vw_folha_municipal_brasil where natureza = 'folha oficial'`);
+await q(`comment on view vw_folha_oficial is
+  'Somente folha publicada pelo orgao (TCE-SC, TCE-MA, TCE-PE, portais Betha). E o recorte somavel: uma linha '
+  'por vinculo-mes, sem RAIS (censitaria e incompleta) e sem empenho do RS (valor por secretaria, nao por pessoa).'`);
+
 // cobertura declarada por fonte — é isto que impede somar peras com maçãs
 await q(`create or replace view vw_folha_cobertura as
-  select fonte, uf, count(*) linhas,
+  select fonte, natureza, uf, count(*) linhas,
          count(distinct coalesce(cod_ibge, municipio)) municipios,
          count(*) filter (where secretaria is not null) com_secretaria,
          count(*) filter (where nome is not null)       com_nome,
          count(*) filter (where salario_bruto is not null) com_salario,
          min(competencia) competencia_min, max(competencia) competencia_max
-    from vw_folha_municipal_brasil group by 1,2`);
+    from vw_folha_municipal_brasil group by 1,2,3`);
 
 console.log("views criadas. cobertura atual:");
 const r = await q(`select * from vw_folha_cobertura order by linhas desc`);
