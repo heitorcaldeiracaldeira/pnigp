@@ -69,30 +69,26 @@ async function grava(regs) {
 
 // navega, descobre a query de gastopessoal e pagina wspessoalabateteto
 async function coleta(page, entidade) {
+  // ⚠️ o listener precisa existir ANTES das navegações: a query do SPA dispara já no carregamento da tela,
+  // não só no clique de "Pesquisar" — registrando depois, ela passa despercebida.
+  let queryId = null;
+  const capta = (resp) => {
+    const m = resp.url().match(/\/odata\/v2\/app\/(query\d+)/);
+    if (m && !queryId) queryId = m[1];
+  };
+  page.on("response", capta);
   // entra pelo share (estabelece o tenant), depois vai a gastopessoal
   await page.goto(`https://ilai.memory.com.br/#/${entidade}/1/share?resource=public/pessoal/gastopessoal`, { waitUntil: "networkidle", timeout: 60000 });
   await dorme(2500);
   await page.goto(`https://ilai.memory.com.br/#/public/pessoal/gastopessoal`, { waitUntil: "networkidle", timeout: 60000 });
   await dorme(2000);
-  // clica pesquisar para o SPA fixar a query e capturar seu id via resposta wspessoalabateteto
-  const queryId = await page.evaluate(async () => {
-    const wait = (ms) => new Promise((f) => setTimeout(f, ms));
-    // dispara a busca
-    document.querySelector("#btn-search button, #btn-search")?.click();
-    await wait(3500);
-    // varre as queries recém-carregadas: procura qual retorna wspessoalabateteto
-    // (o app expõe pouco; tentamos IDs vistos no window.performance)
-    const urls = performance.getEntriesByType("resource").map((e) => e.name).filter((u) => /\/odata\/v2\/app\/query\d+/.test(u));
-    for (const u of [...new Set(urls)].reverse()) {
-      try {
-        const r = await fetch(u.replace(/\$skip=\d+/, "$skip=0").replace(/\$top=\d+/, "$top=1"), { headers: { accept: "application/json", "origin-path": "/public/pessoal/gastopessoal", "x-from-datasource": "true" } });
-        const j = await r.json();
-        const tipo = j?.d?.results?.[0]?.__metadata?.type || "";
-        if (/wspessoalabateteto/i.test(tipo)) return u.match(/query\d+/)[0];
-      } catch {}
-    }
-    return null;
-  });
+  // 🚨 O ID DA QUERY MUDA POR MUNICÍPIO (Bambuí ≠ Araújos) e procurá-lo em `performance.getEntriesByType` só
+  // funcionava no município de referência: o buffer não lista a chamada do SPA de forma confiável. Em 54 de 54
+  // municípios isso produzia "query de gastopessoal nao encontrada" — que parecia portal sem a tela, e não era:
+  // a tela existe e dispara `/odata/v2/app/queryNNNNN`. Interceptar pelo Playwright é o que enxerga de fato.
+  await page.evaluate(() => { document.querySelector("#btn-search button, #btn-search")?.click(); }).catch(() => {});
+  for (let w = 0; w < 30 && !queryId; w++) await dorme(500);
+  page.off("response", capta);
   if (!queryId) throw new Error("query de gastopessoal nao encontrada");
   // pagina a query inteira
   return await page.evaluate(async (qid) => {

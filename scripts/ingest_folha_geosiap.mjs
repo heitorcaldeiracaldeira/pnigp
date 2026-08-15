@@ -22,7 +22,8 @@ const db = pool();
 const q = withRetry(db);
 const UF = process.env.UF || null;
 const SO = process.env.SO || null;
-const COMPETENCIAS = Number(process.env.COMPETENCIAS || 1);
+const COMPETENCIAS = Number(process.env.COMPETENCIAS || 1);   // quantas competências COM DADO coletar por entidade
+const TENTATIVAS = Number(process.env.TENTATIVAS || 12);      // até onde descer no combo antes de desistir
 
 await q(`create table if not exists folha_servidores_geosiap (
   cod_ibge text, municipio text, uf text, entidade text, competencia text,
@@ -78,11 +79,32 @@ async function competencias(base, idEntidade) {
     .map((m) => ({ valor: m[1], texto: m[2].trim() })).filter((o) => /^\d{2}\/\d{4}$/.test(o.valor));
 }
 
-async function grid(base, entidade, ano, mes) {
+// 🚨 `numero_conta` e `tabela_organograma` NÃO são constantes do produto: variam por portal (Biritiba-Mirim usa
+// 1003/AAC_Organograma, Bananal 1001/AAC_, o portal de onde a chamada foi copiada usava 11860/GRH_). Com os valores
+// fixos, o grid respondia 200 com lista vazia e 24 municípios foram marcados "grid sem linhas" — parecia portal sem
+// dado e era parâmetro do vizinho. O POST da própria tela devolve os valores certos daquele portal.
+async function paramsDoGrid(base, entidade, comp) {
+  try {
+    const r = await fetch(`${base}/lei_acesso/lai_remuneracoes.php`, {
+      method: "POST", headers: { ...UA, "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ ds_schema: entidade, competencia: comp }), signal: AbortSignal.timeout(90000),
+    });
+    if (!r.ok) return null;
+    const h = await r.text();
+    const conta = (h.match(/numero_conta[^0-9]{0,60}(\d{2,10})/i) || [])[1];
+    // ⚠️ pegar o VALOR (AAC_Organograma, GRH_Organograma…), não o nome do campo `tabela_organograma`:
+    // capturar o nome mandava "tabela_organograma" como tabela e o grid respondia HTTP 500.
+    const org = [...h.matchAll(/\b([A-Za-z0-9]{2,8}_Organograma)\b/gi)]
+      .map((m) => m[1]).find((v) => !/^tabela_/i.test(v));
+    return (conta || org) ? { conta, org } : null;
+  } catch { return null; }
+}
+
+async function grid(base, entidade, ano, mes, params) {
   const corpo = new URLSearchParams({
     exibeSalarioZerado: " inner ", cp_ano: ano, cp_mes: mes, agrupa_cargo: "0",
-    detalhes_holerith: "1", numero_conta: "11860", exibe_chapa: "1",
-    tabela_organograma: "GRH_Organograma", ds_schema: entidade, exibeSalarioBase: "1",
+    detalhes_holerith: "1", numero_conta: params?.conta || "11860", exibe_chapa: "1",
+    tabela_organograma: params?.org || "GRH_Organograma", ds_schema: entidade, exibeSalarioBase: "1",
   });
   const r = await fetch(`${base}/lei_acesso/lai_remuneracoes_ajax_grid.php`, {
     method: "POST", headers: { ...UA, "content-type": "application/x-www-form-urlencoded" },
@@ -140,31 +162,50 @@ for (let i = 0; i < fila.length; i++) {
     const ents = entidades(html);
     if (!ents.length) { await marca("sem_filtro", "sem entidade no ds_schema"); falhas++; continue; }
 
+    // 🚨 ENTIDADE QUE NÃO FILTRA NADA: em Nova Iguaçu (RJ) 13 das 14 entidades do combo devolveram EXATAMENTE as
+    // mesmas 13.403 linhas — o `ds_schema` não restringe a consulta nesses portais, só a Câmara veio diferente.
+    // Sem tratar, o município ia para o banco com 174.490 linhas para 13.244 pessoas (13× inflado). Dedup por
+    // conteúdo dentro do município, e o hash NÃO leva a entidade (a mesma pessoa devolvida por dois combos é uma só).
     const regs = [];
+    const vistos = new Set();
+    let espelhos = 0;
     for (const ent of ents) {
-      const comps = (await competencias(base, ent.idEntidade)).slice(0, COMPETENCIAS);
-      for (const comp of comps) {
+      // 🚨 antes: `.slice(0, COMPETENCIAS)` — só a competência MAIS RECENTE do combo. Quando ela vinha sem grid
+      // (folha do mês ainda não publicada), o município inteiro era marcado "grid sem linhas" e perdido — 24 assim.
+      // Agora desce a lista até COMPETENCIAS competências COM DADO, tentando até TENTATIVAS.
+      const todas = await competencias(base, ent.idEntidade);
+      // parâmetros do grid deste portal (descobertos, não fixos) — a 1ª competência serve de sonda
+      const params = todas.length ? await paramsDoGrid(base, ent.valor, todas[0].valor) : null;
+      let comDado = 0;
+      for (const comp of todas.slice(0, TENTATIVAS)) {
+        if (comDado >= COMPETENCIAS) break;
         const [mes, ano] = comp.valor.split("/");
         if (!ano || !mes) continue;
         let linhas = [];
-        try { linhas = await grid(base, ent.valor, ano, mes); } catch { continue; }
-        for (const l of linhas) {
+        try { linhas = await grid(base, ent.valor, ano, mes, params); } catch { continue; }
+        if (!linhas.length) continue;
+        comDado++;
+        const daEntidade = linhas.map((l) => {
           const salario = Number(l[9]);
-          regs.push({
+          return {
             cod_ibge: a.cod_ibge, municipio: a.municipio, uf: a.uf, entidade: ent.texto,
             competencia: `${ano}${mes}`, cpf_masc: l[0], chapa: l[1], nome: l[2], cargo: l[3], funcao: l[4],
             secretaria: l[5], lotacao: l[6], referencia: l[7], nivel: l[8],
             jornada: l[10], salario: Number.isFinite(salario) ? salario : null,
-            _hash: crypto.createHash("md5").update([a.cod_ibge, ano, mes, ent.valor, l[1], l[2], l[3]].join("¦")).digest("hex"),
-          });
-        }
+            _hash: crypto.createHash("md5").update([a.cod_ibge, ano, mes, l[1], l[2], l[3]].join("¦")).digest("hex"),
+          };
+        });
+        const novos = daEntidade.filter((r) => !vistos.has(r._hash));
+        if (!novos.length) { espelhos++; continue; }   // entidade que só repete o que outra já trouxe
+        for (const r of novos) vistos.add(r._hash);
+        regs.push(...novos);
       }
     }
     if (!regs.length) { await marca("vazio", "grid sem linhas"); falhas++; continue; }
     await grava(regs);
     total += regs.length; ok++;
-    await marca("ok", null, regs[0]?.competencia || null, regs.length);
-    console.log(`  [${i + 1}/${fila.length}] ${a.uf} ${a.municipio}: ${regs.length} servidores`);
+    await marca("ok", espelhos ? `${espelhos} entidades espelhadas` : null, regs[0]?.competencia || null, regs.length);
+    console.log(`  [${i + 1}/${fila.length}] ${a.uf} ${a.municipio}: ${regs.length} servidores${espelhos ? ` (${espelhos} entidades espelho)` : ""}`);
   } catch (e) {
     falhas++;
     await marca("erro", String(e.message).slice(0, 200));

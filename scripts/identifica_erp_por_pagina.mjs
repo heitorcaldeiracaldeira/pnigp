@@ -12,6 +12,7 @@
 // Grava o ERP e a URL REAL do portal em radar_portal (colunas erp e url_erp), sem tocar no cadastro original.
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
 import { pool, withRetry } from "./_cadprev.mjs";
+import { NOME_ESTADO } from "./_uf.mjs";
 
 const db = pool();
 const q = withRetry(db);
@@ -104,14 +105,20 @@ async function baixa(url) {
 }
 
 // alvos: prefeituras com portal, ainda não checadas. TODOS varre o país inteiro; senão filtra pelos selos.
+// UF fecha o recorte num estado: env pela SIGLA (convenção de _uf.mjs), traduzida para o nome POR EXTENSO, que é
+// como o Radar grava a coluna. Só filtra se a sigla veio no ambiente — sem env, segue nacional (o default SC de
+// _uf.mjs não pode virar filtro escondido).
+const UF = process.env.UF ? NOME_ESTADO : null;
+const params = TODOS ? [] : [SO_SELO];
 const filtroSelo = TODOS ? "" : "and nivel_transparencia = any($1::text[])";
+const filtroUf = UF ? `and uf = $${params.push(UF)}` : "";
 const ordem = TODOS ? "uf, municipio" : "array_position($1::text[], nivel_transparencia), uf, municipio";
 const alvos = (await q(`select cod_ibge, unidade_gestora, municipio, uf, url_portal, nivel_transparencia
   from radar_portal
  where unidade_gestora ilike 'Prefeitura%' and url_portal is not null and url_portal <> '-'
-   and checado_em is null and (erp is null or erp_via = 'host') ${filtroSelo}
- order by ${ordem}`, TODOS ? [] : [SO_SELO])).rows;
-console.log(`[erp/assinatura] ${alvos.length} portais a checar (${TODOS ? "TODOS os selos" : SO_SELO.join(", ")}) · concorrência ${CONC}`);
+   and checado_em is null and (erp is null or erp_via = 'host') ${filtroSelo} ${filtroUf}
+ order by ${ordem}`, params)).rows;
+console.log(`[erp/assinatura] ${alvos.length} portais a checar (${TODOS ? "TODOS os selos" : SO_SELO.join(", ")}${UF ? " · UF " + UF : ""}) · concorrência ${CONC}`);
 
 let checados = 0, achados = 0;
 for (let i = 0; i < alvos.length; i += CONC) {

@@ -80,7 +80,34 @@ async function chama(caminho, hash, { metodo = "GET", corpo = null, tentativas =
 // ⚠️ O campo do rótulo é `titulo` — não `nome` (esse é o do menu, e vem undefined na consulta). Procurar por
 // `nome` devolveu "sem consulta de folha" em 100% dos portais do Acre, o que parecia limite da fonte e era bug meu.
 // O título varia no singular/plural entre portais ("Servidores e Remuneração" × "Servidores e Remunerações").
-function achaConsulta(menu) {
+// 🚨 O rótulo NÃO é padronizado como se supunha. Censo dos 140 portais que caíam em "menu sem consulta de
+// remuneração" (14/ago): 54 tinham o menu VAZIO (portais secundários de fundos/câmaras), 44 realmente não publicam
+// nada de pessoal, e o restante usa outro nome — "Folha de Pagamento", "Quadro de Pessoal", "Relação de Servidores",
+// "Cargos e Vencimentos", "Salarios Liquidos", "Servidores &  remunerações" (com "&", que a regex do "e" não pegava).
+// ⚠️ "Despesas com Pessoal" NÃO ENTRA: é despesa agregada, não folha nominal — aceitá-la gravaria empenho no lugar
+// de servidor. Por isso a lista negativa, e por isso quem chama valida `nomeServidor` antes de gravar.
+const NEGATIVO = /despesas?\s+com\s+pessoal|encargos|total\s+da\s+folha|gastos?\s+com\s+pessoal/i;
+const PADROES = [
+  /servidores?\s*(e|&)\s*remunera/i,
+  /remunera/i,
+  /servidores?\s+p[úu]blicos?\s+ativos/i,
+  /rela[çc][ãa]o\s+de\s+servidores/i,
+  /consulta\s+folha\s+de\s+pagamento/i,
+  /folha\s+de\s+pagamento/i,
+  /quadro\s+de\s+pessoal/i,
+  /cargos?\s+e\s+vencimentos/i,
+  /sal[áa]rios?\s+l[íi]quidos?/i,
+  /servidores?\s+p[úu]blicos?/i,
+  /^\s*servidores?\s*$/i,
+  /^\s*pessoal\s*$/i,
+  /recursos\s+humanos/i,
+  // ⚠️ Paty do Alferes (RJ) guarda a folha COMPLETA em "Relação Geral da Folha" (44 = 10 efetivos + 21
+  // comissionados + 12 agentes políticos). Sem este padrão o coletor ficava com a maior das consultas PARCIAIS.
+  /rela[çc][ãa]o\s+geral\s+da\s+folha/i,
+  /\bfolha\b/i,
+];
+// devolve TODOS os candidatos em ordem de preferência — o chamador desce a lista até um responder folha de verdade
+function achaConsultas(menu) {
   const alvo = [];
   const anda = (nos) => {
     for (const n of nos || []) {
@@ -90,9 +117,14 @@ function achaConsulta(menu) {
   };
   anda(menu);
   const rotulo = (c) => String(c.titulo || c.nome || "");
-  const por = (re) => alvo.find((c) => re.test(rotulo(c)));
-  return por(/servidores?\s+e\s+remunera/i) || por(/remunera/i) ||
-         por(/servidores?\s+p[úu]blicos?\s+ativos/i) || por(/servidores?\s+p[úu]blicos?/i);
+  const out = [];
+  for (const re of PADROES) {
+    for (const c of alvo) {
+      if (NEGATIVO.test(rotulo(c))) continue;
+      if (re.test(rotulo(c)) && !out.some((x) => x.id === c.id)) out.push(c);
+    }
+  }
+  return out;
 }
 
 const cond = ["cod_ibge is not null"];
@@ -103,7 +135,8 @@ if (EXCLUI_UF.length && !UF) { par.push(EXCLUI_UF); cond.push(`uf <> all($${par.
 const alvos = (await q(`select id, hash, cod_ibge, municipio, uf from betha_portal
   where ${cond.join(" and ")} order by uf, municipio`, par)).rows;
 
-const feitos = new Set((await q(`select portal_id from folha_betha_coleta where situacao='ok'`)).rows.map((r) => r.portal_id));
+const feitos = process.env.REFAZ === "1" ? new Set()
+  : new Set((await q(`select portal_id from folha_betha_coleta where situacao='ok'`)).rows.map((r) => r.portal_id));
 const fila = alvos.filter((a) => !feitos.has(a.id));
 console.log(`[betha] ${alvos.length} portais alvo · ${feitos.size} já feitos · ${fila.length} na fila`);
 
@@ -142,52 +175,85 @@ for (let i = 0; i < fila.length; i++) {
 
   try {
     const menu = await chama("/api/menu", p.hash);
-    const consulta = achaConsulta(menu);
-    if (!consulta) { semConsulta++; await marca("sem_consulta", "menu sem consulta de remuneração"); continue; }
-
+    const candidatas = achaConsultas(menu);
+    if (!candidatas.length) { semConsulta++; await marca("sem_consulta", "menu sem consulta de folha nominal"); continue; }
     // Competências disponíveis, da mais recente para trás.
     // ⚠️ O filtro volta como {buckets:[{id:"07/2026"}]} — não é array nem `content`. E a competência é
     // OBRIGATÓRIA: POST com corpo vazio devolve HTTP 500 "Ocorreu um erro interno", que parece indisponibilidade
     // da fonte e é só filtro faltando. Sem competência não se pede nada.
-    const f = await chama(`/api/busca-textual/${consulta.id}/filtro/competencia/MAX`, p.hash);
-    const comps = (f?.buckets || []).map((b) => b.id || b.description).filter(Boolean)
-      .sort((a, b) => {
-        const [ma, aa] = String(a).split("/"), [mb, ab] = String(b).split("/");
-        return (ab - aa) || (mb - ma);
-      }).slice(0, COMPETENCIAS);
-    if (!comps.length) { semConsulta++; await marca("sem_competencia", "filtro de competência vazio", consulta.id); continue; }
+    const competenciasDe = async (consultaId) =>
+      ((await chama(`/api/busca-textual/${consultaId}/filtro/competencia/MAX`, p.hash))?.buckets || [])
+        .map((b) => b.id || b.description).filter(Boolean)
+        .sort((a, b) => {
+          const [ma, aa] = String(a).split("/"), [mb, ab] = String(b).split("/");
+          return (ab - aa) || (mb - ma);
+        }).slice(0, COMPETENCIAS);
 
-    const corpo = { competencia: comps };
-    let offset = 0, total = null, linhas = 0;
-    const regs = [];
-    do {
-      // ⚠️ `sortBy=null&sortDirection=null` são OBRIGATÓRIOS na query string — literalmente a palavra "null".
-      // Sem eles o backend devolve HTTP 500 "Ocorreu um erro interno", que parece portal fora do ar e é só a
-      // requisição incompleta. Jaraguá funcionou na primeira tentativa porque copiei a chamada inteira do app;
-      // ao "limpar" a query string, 100% dos outros portais passaram a falhar.
-      const j = await chama(`/api/busca-textual/${consulta.id}?sortBy=null&sortDirection=null&offset=${offset}&limit=${LIMITE}&hiperlink=false`,
-        p.hash, { metodo: "POST", corpo });
-      total = j.totalHits ?? 0;
-      for (const h of j.hits || []) {
-        const s = h.sourceAsMap || {};
-        regs.push({
-          cod_ibge: p.cod_ibge, municipio: p.municipio, uf: p.uf, entidade: s.nomeEntidade ?? p.nome,
-          // ⚠️ O conjunto de campos MUDA de portal para portal: uns devolvem `competencia`, `matriculaServidor`
-          // e `nomeEntidade`, outros não. A competência a gente SEMPRE sabe — é a que foi pedida no filtro —
-          // então nunca deixar nula por causa do payload (só 7% dos portais devolvem o campo).
-          competencia: s.competencia ?? comps[0].split("/").reverse().join("-"),
-          nome: s.nomeServidor, cargo: s.cargoAtual,
-          classificacao_cargo: s.classificacaoCargoAtual, nivel_salarial: s.nivelSalarialAtual,
-          vinculo: s.vinculoEmpregaticio, secretaria: s.orgao, organograma: s.organograma,
-          matricula: s.matriculaServidor, efetivo_em_comissao: s.efetivoEmCargoComissionado,
-          bruto: s.valorRemuneracaoBruta ?? null, liquido: s.valorRemuneracaoLiquida ?? null,
-          _hash: crypto.createHash("md5").update(String(h.id ?? [p.cod_ibge, s.competencia, s.nomeServidor, s.matriculaServidor, s.cargoAtual].join("¦"))).digest("hex"),
-        });
-      }
-      linhas += (j.hits || []).length;
-      offset += LIMITE;
-      if (!j.hits?.length) break;
-    } while (offset < total);
+    // 🚨 NEM TODA CONSULTA DE FOLHA TEM FILTRO DE COMPETÊNCIA. A consulta "Servidores Públicos" (a que traz a
+    // PREFEITURA inteira, com secretaria) é um CADASTRO, não uma folha mensal: filtra por `situacao`, não por
+    // competência. Pedir sem filtro nenhum devolve o histórico acumulado — em Raposos (MG) foram 6.590 linhas para
+    // 2.590 pessoas, incluindo "Demitido" e "Inativo", num município de 15 mil habitantes. Por isso, sem
+    // competência, filtra-se pelas situações ATIVAS que o próprio portal declara.
+    const INATIVO = /demitid|inativ|aposentad|exoner|rescis|pension|falecid|afastad/i;
+    const situacoesAtivas = async (consultaId) => {
+      const b = ((await chama(`/api/busca-textual/${consultaId}/filtro/situacao/MAX`, p.hash))?.buckets || [])
+        .map((x) => x.id || x.description).filter(Boolean);
+      return b.filter((s) => !INATIVO.test(s));
+    };
+    const colhe = async (consultaId, comps, situacoes) => {
+      const corpo = comps.length ? { competencia: comps } : (situacoes?.length ? { situacao: situacoes } : {});
+      let offset = 0, total = null;
+      const out = [];
+      do {
+        // ⚠️ `sortBy=null&sortDirection=null` são OBRIGATÓRIOS na query string — literalmente a palavra "null".
+        // Sem eles o backend devolve HTTP 500 "Ocorreu um erro interno", que parece portal fora do ar e é só a
+        // requisição incompleta. Jaraguá funcionou na primeira tentativa porque copiei a chamada inteira do app;
+        // ao "limpar" a query string, 100% dos outros portais passaram a falhar.
+        const j = await chama(`/api/busca-textual/${consultaId}?sortBy=null&sortDirection=null&offset=${offset}&limit=${LIMITE}&hiperlink=false`,
+          p.hash, { metodo: "POST", corpo });
+        total = j.totalHits ?? 0;
+        for (const h of j.hits || []) {
+          const s = h.sourceAsMap || {};
+          out.push({
+            cod_ibge: p.cod_ibge, municipio: p.municipio, uf: p.uf, entidade: s.nomeEntidade ?? p.nome,
+            // ⚠️ O conjunto de campos MUDA de portal para portal: uns devolvem `competencia`, `matriculaServidor`
+            // e `nomeEntidade`, outros não. A competência a gente SEMPRE sabe — é a que foi pedida no filtro —
+            // então nunca deixar nula por causa do payload (só 7% dos portais devolvem o campo).
+            competencia: s.competencia ?? (comps.length ? comps[0].split("/").reverse().join("-") : null),
+            nome: s.nomeServidor, cargo: s.cargoAtual,
+            classificacao_cargo: s.classificacaoCargoAtual, nivel_salarial: s.nivelSalarialAtual,
+            vinculo: s.vinculoEmpregaticio, secretaria: s.orgao, organograma: s.organograma,
+            matricula: s.matriculaServidor, efetivo_em_comissao: s.efetivoEmCargoComissionado,
+            bruto: s.valorRemuneracaoBruta ?? null, liquido: s.valorRemuneracaoLiquida ?? null,
+            _hash: crypto.createHash("md5").update(String(h.id ?? [p.cod_ibge, s.competencia, s.nomeServidor, s.matriculaServidor, s.cargoAtual].join("¦"))).digest("hex"),
+          });
+        }
+        offset += LIMITE;
+        if (!j.hits?.length) break;
+      } while (offset < total);
+      return out;
+    };
+
+    // 🚨 NÃO basta parar na primeira candidata que responde: em Paty do Alferes (RJ) o menu tem "Relação de
+    // servidores", "Relação de servidores comissionados" e "Relação de agentes políticos" — a primeira que casou
+    // trouxe 38 pessoas (só os comissionados), o que passaria por folha do município inteiro. Quando o rótulo não é
+    // o canônico ("Servidores e Remunerações"), colhe TODAS as candidatas e fica com a MAIOR.
+    const CANONICA = /servidores?\s*(e|&)\s*remunera|remunera/i;
+    let consulta = null, comps = null, regs = null, motivo = "";
+    for (const cand of candidatas.slice(0, 6)) {
+      const cs = await competenciasDe(cand.id);   // vazio é normal: a consulta pode ser cadastro, não folha mensal
+      const sits = cs.length ? null : await situacoesAtivas(cand.id);
+      const r = await colhe(cand.id, cs, sits);
+      if (!r.length) { motivo = `consulta "${cand.titulo}" sem linhas`; continue; }
+      // 🚨 GUARDA: "Quadro de Pessoal"/"Folha de Pagamento" de alguns portais respondem SEM `nomeServidor` —
+      // é agregado, não nominal. A cadeia de 13/ago gravou 4.997 linhas de "servidor" sem nome em 36 municípios
+      // por não checar isso. Exigir MAIORIA com nome (um único nome solto não redime uma consulta agregada).
+      const comNome = r.filter((x) => x.nome).length;
+      if (comNome < r.length / 2) { motivo = `consulta "${cand.titulo}": ${comNome}/${r.length} com nome`; continue; }
+      if (!regs || r.length > regs.length) { consulta = cand; comps = cs; regs = r; }
+      if (CANONICA.test(String(cand.titulo || ""))) break; // rótulo canônico do produto: é a folha inteira
+    }
+    if (!regs) { semConsulta++; await marca("sem_consulta", motivo.slice(0, 190) || "nenhuma candidata trouxe folha nominal"); continue; }
 
     await grava(regs);
     totalGeral += regs.length; ok++;

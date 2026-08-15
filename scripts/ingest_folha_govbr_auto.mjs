@@ -154,13 +154,25 @@ if (process.env.HOST) {
   // SOERRO=<periodo_ref>: só os que deram TIMEOUT de download naquele período (o mês único conserta esses;
   // login-gated/portalacesso e hosts mortos NÃO se resolvem por período, então ficam de fora — host webapp% clássico).
   const soErro = process.env.SOERRO || null;
+  const UF_LOTE = process.env.UF || null;   // sigla, para rodar um estado por vez (convenção de _uf.mjs)
+  // params posicionais montados em ordem — os índices fixos anteriores quebravam ao combinar filtros
+  const par = [], cond = [];
+  if (soErro) {
+    par.push(soErro);
+    cond.push(`p.host like 'webapp%' and p.cod_ibge in (select cod_ibge from govbr_coleta
+      where periodo=$${par.length} and situacao='erro' and detalhe like '%waitForEvent%')`);
+  }
+  if (SO) { par.push(SO); cond.push(`m.nome ilike '%'||$${par.length}||'%'`); }
+  if (UF_LOTE) { par.push(UF_LOTE); cond.push(`m.uf = $${par.length}`); }
+  // SONOVOS=1: só quem NUNCA foi coletado, em período NENHUM. Necessário para trocar a janela de 6 meses (que
+  // estoura o timeout do export) por 1 mês sem re-coletar de graça os que já vieram na janela larga — o `feitos`
+  // é por período, então mudar o período sozinho recolocaria 100 municípios prontos na fila.
+  if (process.env.SONOVOS === "1") {
+    cond.push(`not exists (select 1 from govbr_coleta c where c.cod_ibge = p.cod_ibge and c.situacao='ok')`);
+  }
   alvos = (await q(`select p.cod_ibge, m.nome, m.uf, p.host, p.banco from govbr_portal p
     join municipios_br m on m.cod_ibge=p.cod_ibge where p.host is not null
-    ${soErro ? `and p.host like 'webapp%' and p.cod_ibge in (
-      select cod_ibge from govbr_coleta where periodo=$${SO ? 2 : 1} and situacao='erro'
-      and detalhe like '%waitForEvent%')` : ""}
-    ${SO ? `and m.nome ilike '%'||$${soErro ? 2 : 1}||'%'` : ""}`,
-    [SO, soErro].filter(Boolean))).rows;
+    ${cond.length ? "and " + cond.join(" and ") : ""}`, par)).rows;
 }
 const periodo = `${DTINI}-${DTFIM}`;
 const feitos = new Set((await q(`select cod_ibge from govbr_coleta where periodo=$1 and situacao='ok'`, [periodo])).rows.map((r) => r.cod_ibge));

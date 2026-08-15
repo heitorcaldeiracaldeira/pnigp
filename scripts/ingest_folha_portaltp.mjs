@@ -22,8 +22,18 @@ const db = pool();
 const q = withRetry(db);
 const UF = process.env.UF || null;
 const SO = process.env.SO || null;
-const ANO = process.env.ANO || String(new Date().getFullYear());
+const ANO = process.env.ANO || null;   // quando vazio, o recuo escolhe o ano junto com o mês
 const MES = process.env.MES || null;   // quando vazio, tenta do mês corrente para trás até achar dado
+const JANELA = +(process.env.JANELA || 15); // meses de recuo — precisa CRUZAR o ano (ver nota do defeito abaixo)
+
+// 🚨 DEFEITO CORRIGIDO EM 14/ago: o recuo andava 4 meses mas com o ANO FIXO no corrente — município que publica
+// com atraso, ou que parou de publicar no ano passado, batia em "sem dado em 2026" e era declarado vazio (57 deles).
+// Em janeiro era pior: o mês recuava para 12/11/10 e continuava consultando o ano NOVO. Agora a competência é um
+// PAR (ano, mês) que atravessa a virada.
+const COMPETENCIAS = (ANO && MES) ? [[ANO, MES]] : Array.from({ length: JANELA }, (_, k) => {
+  const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - k);
+  return [String(d.getFullYear()), String(d.getMonth() + 1).padStart(2, "0")];
+}).filter(([ano]) => !ANO || ano === ANO);
 
 await q(`create table if not exists folha_servidores_portaltp (
   cod_ibge text, municipio text, uf text, unidade_gestora text, competencia text,
@@ -176,16 +186,17 @@ for (let i = 0; i < fila.length; i++) {
          situacao=excluded.situacao, detalhe=excluded.detalhe, em=now()`,
       [a.cod_ibge, a.municipio, a.uf, competencia, linhas, situacao, detalhe]);
   try {
-    // sem MES fixo, recua a partir do mês corrente até achar competência com dado (a folha do mês pode não ter fechado)
-    const meses = MES ? [MES] : Array.from({ length: 4 }, (_, k) => {
-      const d = new Date(); d.setMonth(d.getMonth() - k); return String(d.getMonth() + 1).padStart(2, "0");
-    });
+    // recua competência a competência (ano+mês) até achar dado — a folha do mês pode não ter fechado, e o portal
+    // pode ter parado de publicar meses atrás.
     let linhas = [], comp = null;
-    for (const mes of meses) {
-      linhas = await servidores(a.slug, a.uf, ANO, mes);
-      if (linhas.length) { comp = `${ANO}${mes}`; break; }
+    for (const [ano, mes] of COMPETENCIAS) {
+      linhas = await servidores(a.slug, a.uf, ano, mes);
+      if (linhas.length) { comp = `${ano}${mes}`; break; }
     }
-    if (!linhas.length) { await marca("vazio", `sem dado em ${ANO}`); falhas++; continue; }
+    if (!linhas.length) {
+      const [ini, fim] = [COMPETENCIAS[0], COMPETENCIAS[COMPETENCIAS.length - 1]];
+      await marca("vazio", `sem dado de ${fim[0]}-${fim[1]} a ${ini[0]}-${ini[1]}`); falhas++; continue;
+    }
 
     const regs = linhas.map((r) => {
       const v = valores(r);

@@ -17,6 +17,7 @@ import { pool, withRetry } from "./_cadprev.mjs";
 const db = pool();
 const q = withRetry(db);
 const SO = process.env.SO || null;
+const TENTATIVAS = Number(process.env.TENTATIVAS || 6); // competências a descer antes de declarar vazio
 const UA = { "user-agent": "Mozilla/5.0 (compatible; PNIGP/1.0; pesquisa de dados publicos)", accept: "application/json" };
 const dorme = (ms) => new Promise((s) => setTimeout(s, ms));
 const norm = (s) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -95,25 +96,37 @@ for (let i = 0; i < fila.length; i++) {
     const mun = await resolveMun(inst);
     const comps = await api(`/competencias?cnpj=${a.cnpj}`);
     const lista = Array.isArray(comps) ? comps : (comps?.content || comps?.competencias || []);
-    const comp = (lista[0] && (lista[0].competencia || lista[0])) || null;
-    if (!comp) { await marca("sem_competencia", mun, null, "sem competência"); vazios++; continue; }
-    // pagina servidores
-    const regs = []; let page = 0, totalPag = 1;
-    while (page < totalPag) {
-      const j = await api(`/servidores?cnpj=${a.cnpj}&competencia=${encodeURIComponent(comp)}&page=${page}&size=200&tipoFolha=${encodeURIComponent("Folha normal")}`);
-      const arr = j?.content || [];
-      if (page === 0) totalPag = j?.totalPages || 1;
-      for (const s of arr) regs.push({
-        cod_ibge: mun?.cod_ibge, municipio: mun?.nome, uf: mun?.uf, cnpj: a.cnpj, competencia: String(comp).replace("/", "").replace(/(\d{2})(\d{4})/, "$2$1"),
-        matricula: String(s.matricula ?? ""), nome: s.nome, cpf_masc: s.cpfMascarado, cargo: s.cargo, funcao: s.funcao,
-        vinculo: s.vinculo, lotacao: s.lotacao, secretaria: s.unidadeOrcamentaria, admissao: s.admissao, hora_semanal: String(s.horaSemanal ?? ""),
-        vantagens: num(s.totalVantagens), descontos: num(s.totalDescontos), liquido: num(s.valorLiquido),
-        _hash: crypto.createHash("md5").update([a.cnpj, comp, s.matricula, s.nome, s.cargo].join("¦")).digest("hex"),
-      });
-      page++;
-      if (!arr.length) break;
+    const candidatas = lista.map((x) => x?.competencia || x).filter(Boolean);
+    if (!candidatas.length) { await marca("sem_competencia", mun, null, "sem competência"); vazios++; continue; }
+
+    // colhe uma competência inteira (a API pagina de 200 em 200)
+    const colhe = async (comp) => {
+      const out = []; let page = 0, totalPag = 1;
+      while (page < totalPag) {
+        const j = await api(`/servidores?cnpj=${a.cnpj}&competencia=${encodeURIComponent(comp)}&page=${page}&size=200&tipoFolha=${encodeURIComponent("Folha normal")}`);
+        const arr = j?.content || [];
+        if (page === 0) totalPag = j?.totalPages || 1;
+        for (const s of arr) out.push({
+          cod_ibge: mun?.cod_ibge, municipio: mun?.nome, uf: mun?.uf, cnpj: a.cnpj, competencia: String(comp).replace("/", "").replace(/(\d{2})(\d{4})/, "$2$1"),
+          matricula: String(s.matricula ?? ""), nome: s.nome, cpf_masc: s.cpfMascarado, cargo: s.cargo, funcao: s.funcao,
+          vinculo: s.vinculo, lotacao: s.lotacao, secretaria: s.unidadeOrcamentaria, admissao: s.admissao, hora_semanal: String(s.horaSemanal ?? ""),
+          vantagens: num(s.totalVantagens), descontos: num(s.totalDescontos), liquido: num(s.valorLiquido),
+          _hash: crypto.createHash("md5").update([a.cnpj, comp, s.matricula, s.nome, s.cargo].join("¦")).digest("hex"),
+        });
+        page++;
+        if (!arr.length) break;
+      }
+      return out;
+    };
+
+    // 🚨 antes só a competência lista[0] era tentada: se a folha mais recente ainda estava vazia, o município caía
+    // em "sem servidores" e era perdido. Agora desce a lista até achar competência com gente.
+    let regs = [], comp = null;
+    for (const cand of candidatas.slice(0, TENTATIVAS)) {
+      regs = await colhe(cand);
+      if (regs.length) { comp = cand; break; }
     }
-    if (!regs.length) { await marca("vazio", mun, comp, "sem servidores"); vazios++; continue; }
+    if (!regs.length) { await marca("vazio", mun, candidatas[0], `sem servidores em ${Math.min(TENTATIVAS, candidatas.length)} competências`); vazios++; continue; }
     await grava(regs);
     totalGeral += regs.length; ok++;
     await marca("ok", mun, comp, null, regs.length);

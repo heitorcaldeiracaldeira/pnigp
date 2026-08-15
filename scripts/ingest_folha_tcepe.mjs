@@ -13,12 +13,25 @@ import { pool, withRetry } from "./_cadprev.mjs";
 
 const BASE = "https://sistemas.tcepe.tc.br/DadosAbertos";
 const EXERCICIO = process.env.EXERCICIO || "2025";
+// remessas a tentar, da mais recente para trás (a nova pode ainda não ter sido entregue por aquela unidade)
+const ANOS = (process.env.ANOS || `${new Date().getFullYear()},${new Date().getFullYear() - 1}`).split(",");
 const db = pool();
 const q = withRetry(db);
 
+// 🚨 A QUERY STRING TAMBÉM É ISO-8859-1, não só a resposta. `new URLSearchParams` codifica em UTF-8 e o servidor
+// devolve ZERO linhas — sem erro, sem aviso. "Prefeitura Municipal de Aliança" em UTF-8 = 0 linhas; a mesma em
+// latin-1 = 10.364. Foi isso que travou a coleta em 53 de 1.496 UJs: só passavam os nomes SEM acento, e em
+// Pernambuco a maioria tem (Aliança, Afrânio, Ipojuca, Paudalho…). Cada falha ficava indistinguível de
+// "município sem servidores".
+const qsLatin1 = (obj) => Object.entries(obj).map(([k, v]) =>
+  `${k}=` + [...String(v)].map((ch) => {
+    const c = ch.codePointAt(0);
+    return c < 256 ? "%" + c.toString(16).toUpperCase().padStart(2, "0") : encodeURIComponent(ch);
+  }).join("")).join("&");
+
 // o payload vem em ISO-8859-1 e o servidor não declara — decodificar na mão, senão vira mojibake
 async function pega(entidade, params = {}) {
-  const url = `${BASE}/${entidade}!json` + (Object.keys(params).length ? "?" + new URLSearchParams(params) : "");
+  const url = `${BASE}/${entidade}!json` + (Object.keys(params).length ? "?" + qsLatin1(params) : "");
   for (let t = 0; t < 4; t++) {
     try {
       const r = await fetch(url, { signal: AbortSignal.timeout(180000) });
@@ -81,10 +94,16 @@ for (let i = 0; i < ujs.length; i++) {
   if (!codigo) { semCodigo++; continue; }
   if (jaFeitas.has(String(codigo))) continue;
 
-  let servidores;
-  try { servidores = await pega("ListaServidores", { NomeUJ: uj.ORGAO }); }
-  catch (e) { console.log(`  ✖ ${uj.ORGAO}: ${e.message}`); continue; }
-  servidores = servidores.filter((s) => String(s.NomeUJ).trim() === String(uj.ORGAO).trim());
+  // ⚠️ Sem filtro de ano, cada UJ devolve TODAS as remessas de 2020 a 2026 (~10 mil linhas por unidade, ~12 milhões
+  // no total). Para o retrato atual basta a remessa mais recente — recua um ano se a nova ainda não foi entregue.
+  let servidores = [];
+  try {
+    for (const ano of ANOS) {
+      servidores = await pega("ListaServidores", { NomeUJ: uj.ORGAO, AnoRemessa: ano });
+      servidores = servidores.filter((s) => String(s.NomeUJ).trim() === String(uj.ORGAO).trim());
+      if (servidores.length) break;
+    }
+  } catch (e) { console.log(`  ✖ ${uj.ORGAO}: ${e.message}`); continue; }
 
   const regs = servidores.map((s) => ({
     exercicio: EXERCICIO, uj_codigo: String(codigo), uj_nome: s.NomeUJ || uj.ORGAO,

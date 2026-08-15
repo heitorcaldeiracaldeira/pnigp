@@ -11,7 +11,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
 import crypto from "crypto";
 import { pool, withRetry } from "./_cadprev.mjs";
-import { slugDe, achaPortal, achaEmbed, filtrosDaTela, paginaServidores } from "./_ipm.mjs";
+import { slugDe, achaPortal, achaEmbed, filtrosDaTela, periodosDaEntidade, paginaServidores } from "./_ipm.mjs";
 
 const db = pool();
 const q = withRetry(db);
@@ -115,7 +115,18 @@ for (let i = 0; i < fila.length; i++) {
     const embed = await achaEmbed(p.slug);
     if (!embed) { await marca("sem_item", "portal sem 'relacao-funcionario-x-salario'"); falhas++; continue; }
     const filtros = await filtrosDaTela(embed);
-    if (!filtros.entidade || !filtros.competencia) { await marca("sem_filtro", "tela sem entidade/competencia"); falhas++; continue; }
+    // parte dos municípios não traz competência pré-selecionada: a lista vem por AJAX depois da entidade
+    if (filtros.entidade && !filtros.competencia) {
+      const per = await periodosDaEntidade(embed, filtros.entidade);
+      if (per[0]) filtros.competencia = per[0].codigo;
+    }
+    if (!filtros.entidade || !filtros.competencia) {
+      // ⚠️ os dois casos são DIFERENTES e não podem cair no mesmo rótulo: um é tela que não entrega a entidade,
+      // outro é entidade real cuja lista de períodos volta vazia (`[]`) — este segundo pede a lista de ENTIDADES
+      // por AJAX, ainda não mapeada.
+      await marca("sem_filtro", filtros.entidade ? "entidade sem periodo publicado (lista AJAX vazia)" : "tela sem entidade");
+      falhas++; continue;
+    }
 
     const regs = [];
     let pagina = 0, totalReg = null;

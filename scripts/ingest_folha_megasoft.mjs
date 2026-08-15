@@ -23,7 +23,9 @@ import { pool, withRetry } from "./_cadprev.mjs";
 const db = pool();
 const q = withRetry(db);
 const SO = process.env.SO || null;
-const MESES_RECUO = Number(process.env.RECUO || 4); // quantos meses recuar se a competência mais recente vier vazia
+// 4 meses não alcançavam quem publica com atraso — 18 municípios morreram em "sem competencia com salario pago".
+// A função competencias() já atravessa a virada de ano corretamente, então basta abrir a janela.
+const MESES_RECUO = Number(process.env.RECUO || 15); // quantos meses recuar se a competência mais recente vier vazia
 const UA = "Mozilla/5.0 (compatible; PNIGP/1.0; pesquisa de dados publicos)";
 const dorme = (ms) => new Promise((s) => setTimeout(s, ms));
 
@@ -75,6 +77,17 @@ const alvos = (await q(`select cod_ibge, municipio, uf, url_erp, url_portal from
     return { ...a, slug: m ? m[1].toLowerCase() : null };
   }).filter((a) => a.slug);
 
+// + os que a assinatura da página revelou serem MegaSoft rodando em DOMÍNIO PRÓPRIO do município (32 deles).
+// Aí o host NÃO é `{slug}.megasofttransparencia.com.br`: é o host da própria URL do portal.
+for (const p of (await q(`select cod_ibge, municipio, uf, url from portal_produto
+  where produto='megasoft' ${SO ? "and municipio ilike '%'||$1||'%'" : ""}`, SO ? [SO] : [])).rows) {
+  if (alvos.some((a) => a.cod_ibge === p.cod_ibge)) continue;
+  try {
+    const h = new URL(p.url).host;
+    alvos.push({ ...p, slug: h.split(".")[0], host: h });
+  } catch { /* url inválida */ }
+}
+
 const feitos = new Set((await q(`select slug from folha_megasoft_coleta where situacao='ok'`)).rows.map((r) => r.slug));
 const fila = alvos.filter((a) => !feitos.has(a.slug));
 console.log(`[megasoft] ${alvos.length} prefeituras · ${feitos.size} feitas · ${fila.length} na fila`);
@@ -118,7 +131,7 @@ function competencias(dataUltima) {
 let total = 0, ok = 0, vazios = 0, falhas = 0;
 for (let i = 0; i < fila.length; i++) {
   const a = fila[i];
-  const host = `${a.slug}.megasofttransparencia.com.br`;
+  const host = a.host || `${a.slug}.megasofttransparencia.com.br`;
   const marca = (situacao, detalhe, competencia = null, linhas = 0) =>
     q(`insert into folha_megasoft_coleta (slug,cod_ibge,municipio,uf,competencia,linhas,situacao,detalhe,em)
        values ($1,$2,$3,$4,$5,$6,$7,$8,now()) on conflict (slug) do update set

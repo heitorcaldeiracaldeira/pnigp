@@ -107,7 +107,32 @@ async function exportaCSV(page) {
 const MES_ALVO = process.env.MES ? Number(process.env.MES) : (new Date().getMonth() || 12); // getMonth é 0-based → corrente-1
 // fluxo v1: wppessoalconsulta → "Relação de Servidores" → vMES=mês fechado → (Folha já vem TODAS) → export CSV
 async function coletaV1(page, base) {
-  await page.goto(`${base}/servlet/wppessoalconsulta`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  // 🚨 IR DIRETO NO SERVLET NÃO FUNCIONA em parte dos portais: sem sessão, o GeneXus desvia para a tela de
+  // consentimento (`wpcontrolelgpd`) ou responde 404 no servlet. Pela HOME o link "Gestão de Pessoas" existe e
+  // leva ao mesmo `wppessoalconsulta` com a sessão montada. 6 municípios morriam em "locator.click: Timeout"
+  // clicando num link que nunca chegou a existir na página.
+  await page.goto(base, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await dorme(2000);
+  if (/login/i.test(page.url())) throw new Error("portal exige login (gated)");
+  const consentir = page.locator('input[value="Confirmar"]').or(page.getByText("Confirmar", { exact: true })).first();
+  if (await consentir.count()) { await consentir.click({ timeout: 8000 }).catch(() => {}); await dorme(2500); }
+  const linkPessoal = page.locator('a[href*="wppessoalconsulta"]').first();
+  if (await linkPessoal.count()) {
+    await linkPessoal.click({ timeout: 20000 }).catch(() => {});
+    await page.waitForLoadState("domcontentloaded").catch(() => {});
+    await dorme(1500);
+  } else {
+    await page.goto(`${base}/servlet/wppessoalconsulta`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  }
+  if (/login/i.test(page.url())) throw new Error("portal exige login (gated)");
+  // 🚨 GATE DE IDENTIFICAÇÃO: alguns portais desviam a consulta de pessoal para `wpcontrolelgpd`, que exige NOME,
+  // CPF e E-MAIL do solicitante antes de liberar os dados. Não é falha de coleta e não se contorna por código —
+  // preencher identidade de terceiro para passar seria falsidade. Fica registrado como limite da FONTE: o acesso
+  // depende de identificação real (ou de pedido por LAI). Antes isso aparecia como "locator.click: Timeout".
+  if (/wpcontrolelgpd/i.test(page.url())) {
+    const pedeCpf = await page.locator('input[name="vCPF"], input[id="vCPF"]').count().catch(() => 0);
+    throw new Error(pedeCpf ? "gated: portal exige nome/CPF/e-mail do solicitante (LGPD)" : "gated: tela de consentimento LGPD");
+  }
   await page.locator("text=Relação de Servidores").first().click({ timeout: 30000 });
   await page.waitForLoadState("domcontentloaded");
   await dorme(1500);

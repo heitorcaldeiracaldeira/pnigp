@@ -9,6 +9,11 @@
 // situacao · dataAdmissao · remuneracao. Os 3 campos do pedido + salário, por exercício.
 //
 // A URL de cada município sai do Radar (`url_erp` = {slug}.eloweb.net) ou da home institucional (link do portal).
+//
+// 🚨 DEFEITO CORRIGIDO EM 14/ago: a resposta é um envelope Spring Data e SEM `size` vem a primeira página de 20.
+// A versão anterior gravava só essa página — 117 das 189 coletas 'ok' fecharam com exatamente 20 linhas, quando
+// Ministro Andreazza (RO) tem `totalElements` = 508. Perda de ~96%. Agora: size=1000 + varredura de `totalPages`,
+// e recuo de exercício (2026→2025→2024) antes de declarar 'vazio'. Reprocessar com REFAZ=1.
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
 import crypto from "crypto";
 import { pool, withRetry } from "./_cadprev.mjs";
@@ -17,6 +22,10 @@ const db = pool();
 const q = withRetry(db);
 const EXERCICIO = process.env.EXERCICIO || String(new Date().getFullYear());
 const SO = process.env.SO || null;
+const REFAZ = process.env.REFAZ === "1"; // reprocessa até o que já está 'ok' (necessário depois do fix de paginação)
+// recuo de exercício: portal que ainda não abriu o ano corrente responde vazio — cair para o ano anterior antes de desistir
+const EXERCICIOS = [EXERCICIO, String(+EXERCICIO - 1), String(+EXERCICIO - 2)];
+const PAGINA = 1000;
 const UA = { "user-agent": "Mozilla/5.0 (compatible; PNIGP/1.0; pesquisa de dados publicos)", accept: "application/json" };
 
 await q(`create table if not exists folha_servidores_elotech (
@@ -47,6 +56,25 @@ async function api(slug, caminho, entidade) {
 }
 const num = (v) => (v == null ? null : (Number.isFinite(+v) ? +v : null));
 
+// ⚠️ A API é Spring Data paginada: SEM `size` ela devolve a PRIMEIRA PÁGINA DE 20 e o coletor antigo gravava só isso
+// (117 execuções fecharam com exatamente 20 linhas; Ministro Andreazza tem totalElements=508). Pedimos size=1000 e,
+// se ainda assim vier mais de uma página (portal que limita o size), varremos página a página até `last`.
+async function servidores(slug, entId, ex) {
+  const url = (p) => `/servidores?entidade=${entId}&exercicio=${ex}&admissaoExcepcional=false&size=${PAGINA}&page=${p}`;
+  const j0 = await api(slug, url(0), entId);
+  if (!j0) return null;
+  if (Array.isArray(j0)) return j0; // portal antigo, sem envelope de página
+  const out = [...(j0.content || [])];
+  const paginas = j0.totalPages ?? 1;
+  for (let p = 1; p < paginas; p++) {
+    const j = await api(slug, url(p), entId);
+    const c = Array.isArray(j) ? j : (j?.content || []);
+    if (!c.length) break;
+    out.push(...c);
+  }
+  return out;
+}
+
 // alvos: municípios Elotech mapeados pelo Radar. o slug sai do url_erp (eloweb.net) ou do url_portal.
 const alvos = (await q(`select cod_ibge, municipio, uf, url_erp, url_portal from radar_portal
   where erp='elotech' and unidade_gestora ilike 'Prefeitura%'
@@ -57,7 +85,8 @@ const alvos = (await q(`select cod_ibge, municipio, uf, url_erp, url_portal from
     return { ...a, slug: m ? m[1] : null };
   }).filter((a) => a.slug);
 
-const feitos = new Set((await q(`select slug||'|'||entidade_id k from folha_elotech_coleta where situacao='ok'`)).rows.map((r) => r.k));
+const feitos = REFAZ ? new Set()
+  : new Set((await q(`select slug||'|'||entidade_id k from folha_elotech_coleta where situacao='ok'`)).rows.map((r) => r.k));
 console.log(`[elotech] ${alvos.length} municípios com slug`);
 
 const LOTE = 1000;
@@ -81,38 +110,55 @@ async function grava(regs) {
   }
 }
 
-let total = 0, ok = 0, falhas = 0;
+let total = 0, ok = 0, falhas = 0, espelhos = 0;
 for (let i = 0; i < alvos.length; i++) {
   const a = alvos[i];
   // as entidades do portal (prefeitura, câmara, fundos) saem de /entidades/lista
   const ents = await api(a.slug, "/entidades/lista?fields=id,nome,tipo", 1);
   const lista = Array.isArray(ents) ? ents : (ents?.content || [{ id: 1, nome: a.municipio }]);
+  // 🚨 ENTIDADE QUE ESPELHA A PREFEITURA: em Alta Floresta D'Oeste (RO) a entidade 2 (Fundo Municipal de Saúde)
+  // devolve EXATAMENTE os mesmos 1.683 servidores da entidade 1 (interseção 1683/1683), enquanto Câmara e SAAE são
+  // conjuntos disjuntos. O fundo não tem folha própria — o portal repete a da prefeitura. Sem tratar isso, cada
+  // servidor entraria DUAS vezes e a folha do município sairia inflada. Dedup por conteúdo dentro do slug.
+  const vistosNoSlug = new Set();
   for (const ent of lista) {
     const chave = `${a.slug}|${ent.id}`;
     if (feitos.has(chave)) continue;
-    const marca = (situacao, detalhe, linhas = 0) =>
+    const marca = (situacao, detalhe, linhas = 0, ex = EXERCICIO) =>
       q(`insert into folha_elotech_coleta (slug,entidade_id,cod_ibge,municipio,uf,exercicio,linhas,situacao,detalhe,em)
          values ($1,$2,$3,$4,$5,$6,$7,$8,$9,now()) on conflict (slug,entidade_id) do update set
-         linhas=excluded.linhas, situacao=excluded.situacao, detalhe=excluded.detalhe, em=now()`,
-        [a.slug, String(ent.id), a.cod_ibge, a.municipio, a.uf, EXERCICIO, linhas, situacao, detalhe]);
+         exercicio=excluded.exercicio, linhas=excluded.linhas, situacao=excluded.situacao, detalhe=excluded.detalhe, em=now()`,
+        [a.slug, String(ent.id), a.cod_ibge, a.municipio, a.uf, ex, linhas, situacao, detalhe]);
     try {
-      const j = await api(a.slug, `/servidores?entidade=${ent.id}&exercicio=${EXERCICIO}&admissaoExcepcional=false`, ent.id);
-      const arr = Array.isArray(j) ? j : (j?.content || []);
-      if (!arr.length) { await marca("vazio", "sem servidores"); continue; }
+      let arr = null, exUsado = null;
+      for (const ex of EXERCICIOS) { // recuo: o ano corrente pode ainda não ter folha publicada
+        const r = await servidores(a.slug, ent.id, ex);
+        if (r && r.length) { arr = r; exUsado = ex; break; }
+      }
+      if (!arr) { await marca("vazio", `sem servidores em ${EXERCICIOS.join("/")}`); continue; }
       const regs = arr.map((s) => ({
         cod_ibge: a.cod_ibge, municipio: a.municipio, uf: a.uf, slug: a.slug, entidade_id: String(ent.id),
-        entidade: ent.nome, exercicio: EXERCICIO, matricula: String(s.matricula ?? ""), nome: s.nome,
+        entidade: ent.nome, exercicio: exUsado, matricula: String(s.matricula ?? ""), nome: s.nome,
         cargo: s.descricaoCargo, lotacao: s.descricaoLotacao, classe: s.descricaoClasse, vinculo: s.descricaoNatureza,
         situacao: s.situacao, data_admissao: s.dataAdmissao, horas_semanais: String(s.horasSemanais ?? ""),
         local_trabalho: s.localTrabalho, remuneracao: num(s.remuneracao),
-        _hash: crypto.createHash("md5").update([a.slug, ent.id, EXERCICIO, s.matricula, s.nome, s.descricaoCargo].join("¦")).digest("hex"),
+        // o hash NÃO leva a entidade: o mesmo servidor devolvido por prefeitura e por fundo é UMA pessoa só
+        _hash: crypto.createHash("md5").update([a.slug, exUsado, s.matricula, s.nome, s.descricaoCargo].join("¦")).digest("hex"),
       }));
-      await grava(regs);
-      total += regs.length; ok++;
-      await marca("ok", null, regs.length);
-      console.log(`  ${a.uf} ${a.municipio} / ${ent.nome?.slice(0, 30)}: ${regs.length}`);
+      const ineditos = regs.filter((r) => !vistosNoSlug.has(r._hash));
+      if (!ineditos.length) { // entidade que apenas espelha outra já coletada neste município
+        espelhos++;
+        await marca("espelho", `${regs.length} servidores idênticos a outra entidade do portal`, 0, exUsado);
+        console.log(`  ${a.uf} ${a.municipio} / ${ent.nome?.slice(0, 30)}: espelho (${regs.length})`);
+        continue;
+      }
+      for (const r of ineditos) vistosNoSlug.add(r._hash);
+      await grava(ineditos);
+      total += ineditos.length; ok++;
+      await marca("ok", null, ineditos.length, exUsado);
+      console.log(`  ${a.uf} ${a.municipio} / ${ent.nome?.slice(0, 30)}: ${ineditos.length}${ineditos.length !== regs.length ? ` (de ${regs.length}, resto espelhado)` : ""}${exUsado !== EXERCICIO ? ` [${exUsado}]` : ""}`);
     } catch (e) { falhas++; await marca("erro", String(e.message).slice(0, 150)); }
   }
 }
-console.log(`\n[elotech] ${total.toLocaleString("pt-BR")} servidores · ${ok} entidades ok · ${falhas} falhas`);
+console.log(`\n[elotech] ${total.toLocaleString("pt-BR")} servidores · ${ok} entidades ok · ${espelhos} espelhos · ${falhas} falhas`);
 await db.end();

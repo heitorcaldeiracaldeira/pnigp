@@ -20,7 +20,8 @@ import { pool, withRetry } from "./_cadprev.mjs";
 const db = pool();
 const q = withRetry(db);
 const SO = process.env.SO || null;
-const EXERCICIO = Number(process.env.EXERCICIO || 2026);
+const EXERCICIO = Number(process.env.EXERCICIO || new Date().getFullYear());
+const RECUO = Number(process.env.RECUO || 15); // meses a recuar, cruzando a virada de ano
 const MESES_PT = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
 const dorme = (ms) => new Promise((s) => setTimeout(s, ms));
 const norm = (s) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -41,8 +42,8 @@ await q(`create table if not exists smarapd_probe (
 
 const money = (s) => { if (s == null) return null; const t = String(s).replace(/\s/g, "").replace(/\./g, "").replace(",", "."); const n = +t; return Number.isFinite(n) ? n : null; };
 
-async function filtro(host, nomeVisao, chaveModulo, periodo, pagina, qtd) {
-  const body = JSON.stringify({ ChaveModulo: chaveModulo, NomeVisao: nomeVisao, Filtros: [], Periodicidade: "MENSAL", Periodo: periodo, Exercicio: EXERCICIO, Pagina: pagina, QuantidadeRegistros: qtd, Ordenacao: [{ ColunaOrdem: "NomeServidor", TipoOrdem: "ascend", Ordem: 1 }], FiltroRedirecionaVisao: { Campo: null, Valor: null, TipoValor: null } });
+async function filtro(host, nomeVisao, chaveModulo, periodo, pagina, qtd, exercicio = EXERCICIO) {
+  const body = JSON.stringify({ ChaveModulo: chaveModulo, NomeVisao: nomeVisao, Filtros: [], Periodicidade: "MENSAL", Periodo: periodo, Exercicio: exercicio, Pagina: pagina, QuantidadeRegistros: qtd, Ordenacao: [{ ColunaOrdem: "NomeServidor", TipoOrdem: "ascend", Ordem: 1 }], FiltroRedirecionaVisao: { Campo: null, Valor: null, TipoValor: null } });
   for (let t = 0; t < 3; t++) {
     try {
       const r = await fetch(`https://${host}/paiportalserver/modulovisao/filter`, {
@@ -107,23 +108,27 @@ for (let i = 0; i < fila.length; i++) {
         (function walk(o) { if (Array.isArray(o)) o.forEach(walk); else if (o && typeof o === "object") { if (/pagamento.*servidor/i.test(o.Titulo || "") && o.URI) { const m = String(o.URI).match(/dinamico\/([^/]+)\/([^/?]+)/); if (m) { chaveModulo = m[1]; nomeVisao = m[2]; } } for (const v of Object.values(o)) walk(v); } })(menu);
       }
     } catch {}
-    // acha a competência mais recente COM dado (recua do mês corrente)
+    // acha a competência mais recente COM dado (recua do mês fechado)
+    // 🚨 o recuo precisa levar o EXERCÍCIO junto: o mês voltava de janeiro para dezembro mas o body continuava
+    // pedindo o exercício corrente — combinação que não existe. Município que publica com atraso caía em
+    // "sem competencia com dado". Agora cada tentativa é um par (exercício, mês), atravessando a virada de ano.
     let comp = null, primeira = null, melhor = null, melhorN = 0;
-    const mesCorrente = new Date().getMonth() - 1; // 🚨 começa no mês FECHADO (o corrente costuma ser parcial)
-    for (let k = 0; k < 5; k++) {
-      const mi = ((mesCorrente - k) + 12) % 12; // índice do mês
+    const d0 = new Date(); d0.setDate(1); d0.setMonth(d0.getMonth() - 1); // 🚨 começa no mês FECHADO (o corrente é parcial)
+    for (let k = 0; k < RECUO; k++) {
+      const d = new Date(d0); d.setMonth(d0.getMonth() - k);
+      const mi = d.getMonth(), ex = d.getFullYear();
       const periodo = MESES_PT[mi];
-      const j = await filtro(a.host, nomeVisao, chaveModulo, periodo, 1, 500);
+      const j = await filtro(a.host, nomeVisao, chaveModulo, periodo, 1, 500, ex);
       const n = (j && Array.isArray(j.Valores)) ? (j.QuantidadeRegistros || j.Valores.length) : 0;
-      if (n > melhorN) { melhorN = n; melhor = { periodo, mes: mi + 1, j }; }
-      if (n >= 50) { comp = { periodo, mes: mi + 1 }; primeira = j; break; } // competência "cheia"
+      if (n > melhorN) { melhorN = n; melhor = { periodo, mes: mi + 1, exercicio: ex, j }; }
+      if (n >= 50) { comp = { periodo, mes: mi + 1, exercicio: ex }; primeira = j; break; } // competência "cheia"
     }
-    if (!comp && melhor) { comp = { periodo: melhor.periodo, mes: melhor.mes }; primeira = melhor.j; } // senão a mais cheia
-    if (!comp) { await marca("vazio", "sem competencia com dado"); vazios++; continue; }
+    if (!comp && melhor) { comp = { periodo: melhor.periodo, mes: melhor.mes, exercicio: melhor.exercicio }; primeira = melhor.j; } // senão a mais cheia
+    if (!comp) { await marca("vazio", `sem competencia com dado em ${RECUO} meses`); vazios++; continue; }
 
     const totalReg = primeira.QuantidadeRegistros || primeira.Valores.length;
     const paginas = primeira.QuantidadePaginas || Math.ceil(totalReg / 500);
-    const competencia = `${EXERCICIO}${String(comp.mes).padStart(2, "0")}`;
+    const competencia = `${comp.exercicio}${String(comp.mes).padStart(2, "0")}`;
     const mapReg = (s) => ({
       cod_ibge: a.cod_ibge, municipio: a.nome, uf: a.uf, host: a.host, competencia,
       matricula: String(s.Matricula ?? ""), nome: s.Nome, cargo: s.Cargo, tipo_folha: s.TipoFolha,
@@ -133,7 +138,7 @@ for (let i = 0; i < fila.length; i++) {
     await grava(primeira.Valores.map(mapReg));
     let colhidas = primeira.Valores.length;
     for (let p = 2; p <= paginas; p++) {
-      const j = await filtro(a.host, nomeVisao, chaveModulo, comp.periodo, p, 500);
+      const j = await filtro(a.host, nomeVisao, chaveModulo, comp.periodo, p, 500, comp.exercicio);
       if (!j || !Array.isArray(j.Valores) || !j.Valores.length) break;
       await grava(j.Valores.map(mapReg));
       colhidas += j.Valores.length;
