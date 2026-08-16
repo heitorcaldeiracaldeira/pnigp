@@ -50,9 +50,15 @@ const identidade = (f) => {
 // 🚨 Usar a mais recente mentia feio: basta um registro solto numa competência nova (um servidor com data de
 // referência à frente do resto) para o município inteiro aparecer com "1 servidor". Curitiba saía com 21 e
 // São Paulo dos Campos com 25. O pico da série é o retrato honesto do que a fonte entrega.
+// 🚨 SEGUNDO defeito da régua (visto no SCPI de SP e de novo em MG): há portal que publica uma linha por servidor
+// com cargo, unidade e provento e OMITE o nome e a matrícula. Como a identidade é `nome¦matrícula`, todas as linhas
+// viravam a MESMA chave vazia e o município saía com "1 servidor" — Monte Sião-MG: 1.300 linhas contadas como 1.
+// Quando a identidade da linha está inteiramente vazia, A LINHA É A PESSOA. Ver [[pnigp-sp-mapa-folha-645]].
 const porFonte = Object.entries(FONTES).map(([f, comp]) => `
   select fonte, cod_ibge, max(n) n from (
-    select '${f}' fonte, s.cod_ibge, coalesce(s.${comp},'—') comp, count(distinct ${identidade(f)}) n
+    select '${f}' fonte, s.cod_ibge, coalesce(s.${comp},'—') comp,
+           count(distinct ${identidade(f)}) filter (where replace(${identidade(f)}, '¦', '') <> '')
+         + count(*)                          filter (where replace(${identidade(f)}, '¦', '') =  '') n
       from folha_servidores_${f} s group by 1,2,3
   ) x group by 1,2`).join("\n union all ");
 

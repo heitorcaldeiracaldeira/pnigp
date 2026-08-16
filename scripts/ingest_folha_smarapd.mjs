@@ -33,6 +33,9 @@ await q(`create table if not exists folha_servidores_smarapd (
   _hash text primary key, _coletado_em timestamptz default now()
 )`);
 await q(`create index if not exists ix_folha_smar_mun on folha_servidores_smarapd (cod_ibge, competencia)`);
+// as telas "Folha de Pagamento"/"Remuneração de servidores" trazem a LOTAÇÃO, que a visão antiga não tinha — é o
+// terceiro campo do critério do Bento (cargo+salário+secretaria) e sem ele o SMARAPD nunca conta como completo.
+await q(`alter table folha_servidores_smarapd add column if not exists secretaria text`);
 await q(`create table if not exists folha_smarapd_coleta (
   cod_ibge text primary key, municipio text, uf text, host text, linhas int, situacao text, detalhe text, em timestamptz default now()
 )`);
@@ -80,12 +83,12 @@ async function grava(regs) {
   for (let i = 0; i < arr.length; i += LOTE) {
     const p = arr.slice(i, i + LOTE); const c = (f) => p.map((x) => x[f]);
     await q(`insert into folha_servidores_smarapd
-      (cod_ibge,municipio,uf,host,competencia,matricula,nome,cargo,tipo_folha,salario_base,total_vencimentos,salario_liquido,_hash)
+      (cod_ibge,municipio,uf,host,competencia,matricula,nome,cargo,tipo_folha,secretaria,salario_base,total_vencimentos,salario_liquido,_hash)
       select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
-        $9::text[],$10::numeric[],$11::numeric[],$12::numeric[],$13::text[])
-      on conflict (_hash) do update set salario_liquido=excluded.salario_liquido, _coletado_em=now()`,
+        $9::text[],$10::text[],$11::numeric[],$12::numeric[],$13::numeric[],$14::text[])
+      on conflict (_hash) do update set salario_liquido=excluded.salario_liquido, secretaria=coalesce(excluded.secretaria, folha_servidores_smarapd.secretaria), _coletado_em=now()`,
       [c("cod_ibge"), c("municipio"), c("uf"), c("host"), c("competencia"), c("matricula"), c("nome"), c("cargo"),
-       c("tipo_folha"), c("salario_base"), c("total_vencimentos"), c("salario_liquido"), c("_hash")]);
+       c("tipo_folha"), c("secretaria"), c("salario_base"), c("total_vencimentos"), c("salario_liquido"), c("_hash")]);
   }
 }
 
@@ -100,12 +103,35 @@ for (let i = 0; i < fila.length; i++) {
   try {
     // 🚨 ChaveModulo/NomeVisao da folha VARIAM por município — ler do MenuPortal (Bertioga=cargos_e_salarios/
     // pagamentoservidores; Alumínio=servidor/PagamentoServidores). Acha o item "Pagamento a Servidores".
+    //
+    // 🚨 CORRIGIDO em 16/ago (SP): casar o título por /pagamento.*servidor/ é ROTA FIXA disfarçada — o defeito nº 5
+    // de [[pnigp-coletor-ok-sem-dado-sete-causas]]. Em Osasco esse regex bate em "Pagamentos a Servidores
+    // decorrentes da COVID-19" (item /fixo/, sem par chave/visão), o coletor caía no default e o município saía
+    // `vazio` com 17.941 servidores publicados em "Remuneração de servidores" (servidor/remuneracao). Cubatão,
+    // Olímpia e Matão chamam a tela de "Folha de Pagamento". Agora: junta TODOS os itens /dinamico/{chave}/{visão},
+    // pontua por título e descarta o que não é folha mensal (COVID, cedidos, perícia, estágio, tabela de padrões).
     let chaveModulo = "cargos_e_salarios", nomeVisao = "pagamentoservidores";
     try {
       const mr = await fetch(`https://${a.host}/paiportalserver/MenuPortal`, { headers: { accept: "application/json", origin: `https://${a.host}`, referer: `https://${a.host}/` }, signal: AbortSignal.timeout(30000) });
       if (mr.ok) {
         const menu = await mr.json();
-        (function walk(o) { if (Array.isArray(o)) o.forEach(walk); else if (o && typeof o === "object") { if (/pagamento.*servidor/i.test(o.Titulo || "") && o.URI) { const m = String(o.URI).match(/dinamico\/([^/]+)\/([^/?]+)/); if (m) { chaveModulo = m[1]; nomeVisao = m[2]; } } for (const v of Object.values(o)) walk(v); } })(menu);
+        const cand = [];
+        (function walk(o) {
+          if (Array.isArray(o)) o.forEach(walk);
+          else if (o && typeof o === "object") {
+            const m = o.URI ? String(o.URI).match(/dinamico\/([^/]+)\/([^/?]+)/) : null;
+            if (m && o.Titulo) cand.push({ t: String(o.Titulo), chave: m[1], visao: m[2] });
+            for (const v of Object.values(o)) walk(v);
+          }
+        })(menu);
+        const VETO = /covid|cedid|peric|perícia|estagi|padr[ãa]o|padr[õo]es|vencimento|legisla|escola|por cargo|por secretaria|por vinculo|por v[íi]nculo|departamento|local de trabalho/i;
+        const pontua = (t) => (/pagamento\s*a?\s*servidor/i.test(t) ? 100 : 0)
+          + (/folha\s*de\s*pagamento/i.test(t) ? 90 : 0)
+          + (/remunera[çc][ãa]o\s*(de|dos)?\s*servidor/i.test(t) ? 80 : 0)
+          + (/detalhad/i.test(t) ? 5 : 0);
+        const melhorItem = cand.filter((c) => !VETO.test(c.t)).map((c) => ({ ...c, p: pontua(c.t) }))
+          .filter((c) => c.p > 0).sort((x, y) => y.p - x.p)[0];
+        if (melhorItem) { chaveModulo = melhorItem.chave; nomeVisao = melhorItem.visao; }
       }
     } catch {}
     // acha a competência mais recente COM dado (recua do mês fechado)
@@ -129,12 +155,24 @@ for (let i = 0; i < fila.length; i++) {
     const totalReg = primeira.QuantidadeRegistros || primeira.Valores.length;
     const paginas = primeira.QuantidadePaginas || Math.ceil(totalReg / 500);
     const competencia = `${comp.exercicio}${String(comp.mes).padStart(2, "0")}`;
-    const mapReg = (s) => ({
-      cod_ibge: a.cod_ibge, municipio: a.nome, uf: a.uf, host: a.host, competencia,
-      matricula: String(s.Matricula ?? ""), nome: s.Nome, cargo: s.Cargo, tipo_folha: s.TipoFolha,
-      salario_base: money(s.SalarioBase), total_vencimentos: money(s.TotalVencimentos), salario_liquido: money(s.SalarioLiquido),
-      _hash: crypto.createHash("md5").update([a.cod_ibge, competencia, s.Matricula, s.Nome, s.Cargo, s.TipoFolha].join("¦")).digest("hex"),
-    });
+    // 🚨 O NOME DO CAMPO MUDA COM A VISÃO (mesma lição do Betha): Osasco manda `NomeServidor` e não tem
+    // `SalarioBase`; Matão chama o bruto de `SalarioBrutoMensal`, o líquido de `TotalLiquido` e traz `Secretaria`;
+    // Cubatão traz `LotacaoAtual`; Olímpia, `descrlotacao`. Ler por lista de candidatos, nunca por um nome só —
+    // senão a coleta "dá ok" e grava nome/salário nulos.
+    const pega = (s, ...nomes) => { for (const n of nomes) if (s[n] != null && s[n] !== "") return s[n]; return null; };
+    const mapReg = (s) => {
+      const nome = pega(s, "Nome", "NomeServidor");
+      const tipo = pega(s, "TipoFolha", "DescTipoFolha");
+      return {
+        cod_ibge: a.cod_ibge, municipio: a.nome, uf: a.uf, host: a.host, competencia,
+        matricula: String(s.Matricula ?? ""), nome, cargo: pega(s, "Cargo"), tipo_folha: tipo,
+        secretaria: pega(s, "Secretaria", "LotacaoAtual", "descrlotacao", "LotacaoOrigem", "DescrSecretaria", "Departamento"),
+        salario_base: money(pega(s, "SalarioBase", "SalarioBrutoMensal")),
+        total_vencimentos: money(pega(s, "TotalVencimentos", "SalarioBrutoMensal")),
+        salario_liquido: money(pega(s, "SalarioLiquido", "TotalLiquido")),
+        _hash: crypto.createHash("md5").update([a.cod_ibge, competencia, s.Matricula, nome, s.Cargo, tipo].join("¦")).digest("hex"),
+      };
+    };
     await grava(primeira.Valores.map(mapReg));
     let colhidas = primeira.Valores.length;
     for (let p = 2; p <= paginas; p++) {

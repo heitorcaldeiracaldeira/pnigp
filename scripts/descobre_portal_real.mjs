@@ -10,7 +10,7 @@
 // Uso: ERP=instar node scripts/descobre_portal_real.mjs
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
 import { pool, withRetry } from "./_cadprev.mjs";
-import { NOME_ESTADO } from "./_uf.mjs";
+import { NOME_ESTADO, SG_UF } from "./_uf.mjs";
 
 const db = pool();
 const q = withRetry(db);
@@ -29,14 +29,26 @@ await q(`create table if not exists portal_real_descoberto (
 // domínios que NÃO são portal de transparência municipal
 // cdnjs/jsdelivr entraram como "portal" em 51 municípios do fiorilli só porque a URL do CDN contém "cloud"
 const RUIDO = /facebook|instagram|twitter|youtube|whatsapp|google|gov\.br\/?$|w3\.org|jquery|bootstrap|fontawesome|radardatransparencia|atricon|tce\.|tcm\.|planalto|receita\.fazenda|cdnjs|jsdelivr|unpkg|cloudflare\.com/i;
-const params = SEM_ERP ? [] : [ERP];
-const filtroErp = SEM_ERP ? "erp is null" : "erp=$1";
-const filtroUf = UF ? `and uf = $${params.push(UF)}` : "";
 // prefere a linha da PREFEITURA quando o município tem várias UGs com portal — sem excluir os que só têm câmara,
 // que continuam sendo um caminho até o portal do ente.
-const alvos = (await q(`select distinct on (cod_ibge) cod_ibge, municipio, uf, url_portal from radar_portal
-  where ${filtroErp} and url_portal is not null and url_portal <> '-' ${filtroUf}
-  order by cod_ibge, (unidade_gestora ilike 'Prefeitura%') desc`, params)).rows;
+// ⚠️ Inclui também os sites DERIVADOS (`site_municipal_derivado`): 107 prefeituras do RS não têm URL nenhuma no
+// Radar e, sem essa união, ficariam fora da descoberta — invisíveis por falta de CADASTRO, não por não publicarem.
+const params = [];
+const condErp = SEM_ERP ? "erp is null" : `erp = $${params.push(ERP)}`;
+const condUfRadar = UF ? `and uf = $${params.push(UF)}` : "";
+const idxUfSigla = UF ? params.push(SG_UF) : null;   // site_municipal_derivado guarda a SIGLA
+const alvos = (await q(`
+  select distinct on (cod_ibge) cod_ibge, municipio, uf, url_portal from (
+    select cod_ibge, municipio, uf, url_portal, (unidade_gestora ilike 'Prefeitura%') pref
+      from radar_portal
+     where ${condErp} and url_portal is not null and url_portal <> '-' ${condUfRadar}
+    union all
+    select s.cod_ibge, s.municipio, s.uf, s.url_site, true
+      from site_municipal_derivado s
+     where s.url_site is not null ${UF ? `and s.uf = $${idxUfSigla}` : ""}
+       and not exists (select 1 from radar_portal r
+                        where r.cod_ibge = s.cod_ibge and r.url_portal is not null and r.url_portal <> '-')
+  ) z order by cod_ibge, pref desc`, params)).rows;
 console.log(`[${ERP}${UF ? "/" + UF : ""}] ${alvos.length} municípios a investigar`);
 
 const porFornecedor = new Map();

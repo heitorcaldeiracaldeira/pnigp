@@ -12,6 +12,7 @@
 import crypto from "crypto";
 import { chromium } from "playwright";
 import { pool, withRetry } from "./_cadprev.mjs";
+import { COD_UF as COD_UF_SCPI } from "./_uf.mjs";
 
 const db = pool();
 const q = withRetry(db);
@@ -44,18 +45,28 @@ const MESES = (() => {
   return out;
 })();
 
-// varre os meses do exercício selecionado; devolve as linhas do primeiro mês com folha
+// varre os meses do exercício e devolve as linhas do mês MAIS CHEIO — não do primeiro que responder.
+// 🚨 O mês corrente vem PARCIAL: Marau saía com 90 linhas (RAIS: 1.320), Ilópolis com 4, Caraá com 12, todos
+// carimbados "mês 08". Parar no primeiro mês com folha é o mesmo defeito que subcoletou 22 municípios no Betha
+// ([[pnigp-competencia-mais-cheia-nao-a-recente]]). Testa até MESES_TESTE meses com dados e fica com o maior.
+const MESES_TESTE = Number(process.env.MESES_TESTE || 3);
 async function varreMeses(page, frame, avisaMes) {
+  let melhor = null, testados = 0;
   for (const mes of MESES) {
     await frame.evaluate((m) => { try { if (window.cmbMes && window.cmbMes.SetValue) window.cmbMes.SetValue(m); } catch {} }, mes).catch(() => {});
     await dorme(1200);
     await frame.evaluate(() => { const b = document.querySelector("#btnPesquisar"); if (b) b.click(); }).catch(() => {});
     await dorme(6000);
     frame = await achaFrame(page);
-    if (!frame) return [];
+    if (!frame) break;
     const rows = await leGrid(page);
-    if (rows.length) { avisaMes(mes); return rows; }
+    if (rows.length) {
+      testados++;
+      if (!melhor || rows.length > melhor.rows.length) melhor = { mes, rows };
+      if (testados >= MESES_TESTE) break;
+    }
   }
+  if (melhor) { avisaMes(melhor.mes); return melhor.rows; }
   return [];
 }
 
@@ -138,6 +149,9 @@ if (process.env.HOST) {
   // SITE, não do portal), 50 deles são SCPI hospedado ON-PREMISE: 32 em :8079, 11 em :5656 e 7 em :879, muitos
   // em IP puro (177.129.251.233:8079) ou DNS dinâmico (itapui.ddns.net:8079). Fixar `{host}:879` deixava todos
   // esses de fora. Agora a base vem pronta da descoberta, com host e porta reais.
+  const parAlvos = [];
+  const filtroSO = SO ? `and nome ilike '%'||$${parAlvos.push(SO)}||'%'` : "";
+  const filtroUF = process.env.UF ? `and left(cod_ibge,2) = $${parAlvos.push(COD_UF_SCPI)}` : "";
   alvos = (await q(`
     select cod_ibge, nome, uf, base from (
       select f.cod_ibge, f.municipio nome, f.uf,
@@ -156,9 +170,33 @@ if (process.env.HOST) {
       -- 40 municípios que pareciam "portal próprio" e são o mesmo produto. Ver identifica_produto_portal.mjs
       select pp.cod_ibge, pp.municipio, pp.uf, regexp_replace(pp.url, '/*$', '') || '/' base
         from portal_produto pp where pp.produto = 'scpi'
+      union
+      -- ⭐ o DIAGNÓSTICO PROFUNDO (diagnostica_faltantes.mjs) abre o portal com navegador e só marca 'tem_dados'
+      -- quando a tela de pessoal mostra linhas — é a evidência mais forte que existe, e traz alvos que os filtros
+      -- acima não alcançam: porta fora da lista (:8076 em Cassilândia) e domínio próprio sem porta (Ivinhema).
+      -- 🚨 exclui o que é da CÂMARA (/transparenciacm/, camara, .leg.br): coletar de lá dá dezenas de
+      -- pessoas num município de milhares ([[pnigp-entidade-espelho-infla-folha]]).
+      select d.cod_ibge, d.municipio, d.uf,
+             regexp_replace(split_part(coalesce(d.url_pessoal, d.url_visitada), '#', 1), '/*$', '') || '/' base
+        from folha_diagnostico_faltante d
+       where d.produto = 'scpi' and d.tem_dados
+         and coalesce(d.url_pessoal, d.url_visitada) !~* '(transparenciacm|camara|\\.leg\\.br)'
+      union
+      -- ⭐ O RÓTULO DO PRODUTO NÃO É A ÚLTIMA PALAVRA: msgestaopublica e rcmsuporte são HOSPEDAGENS do SCPI
+      -- (Xangri-lá abre com título "SCPI 9.0 - Transparência" e rodapé "Fiorilli"), mas o diagnóstico
+      -- classificou o produto como ? e esses municípios ficaram parados com coletor pronto. É o mesmo caso de
+      -- [[pnigp-plataforma-rotulo-vs-sistema]]: o host revela o sistema quando o rótulo falha.
+      select d.cod_ibge, d.municipio, d.uf,
+             regexp_replace(split_part(coalesce(d.url_pessoal, d.url_visitada), '#', 1), '/*$', '') || '/' base
+        from folha_diagnostico_faltante d
+       where coalesce(d.url_pessoal, d.url_visitada) ~* '(msgestaopublica|rcmsuporte)'
+         and coalesce(d.url_pessoal, d.url_visitada) !~* '(transparenciacm|camara|\\.leg\\.br)'
     ) x
-    where base is not null ${SO ? "and nome ilike '%'||$1||'%'" : ""}
-    order by uf, nome`, SO ? [SO] : [])).rows
+    -- o modo lote não tinha filtro de UF: UF=RS era ignorado e a fila saía com os 310 municípios do país.
+    -- Filtra pelo PREFIXO do cod_ibge porque as tabelas de origem guardam uf em formatos diferentes
+    -- (sigla numas, nome por extenso noutras).
+    where base is not null ${filtroSO} ${filtroUF}
+    order by uf, nome`, parAlvos)).rows
     .map((a) => ({ ...a, host: (() => { try { return new URL(a.base).host; } catch { return null; } })() }))
     .filter((a) => a.host);
 }

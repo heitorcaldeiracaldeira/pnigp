@@ -37,7 +37,10 @@ const FORNECEDORES = [
   { erp: "ipm",      link: /https?:\/\/([a-z0-9-]+)\.atende\.net/i,                   texto: /atende\.net|ipm sistemas/i },
   { erp: "geosiap",  link: /https?:\/\/([a-z0-9-]+)\.geosiap\.net\.br/i,              texto: /geosiap|grupo embras/i },
   { erp: "portaltp", link: /https?:\/\/([a-z0-9-]+)\.portaltp\.com\.br/i,            texto: /portaltp/i },
-  { erp: "epublica", link: /e-publica\.net\/epublica-portal\/#\/([a-z0-9-]+)/i,      texto: /e-publica\.net/i },
+  // 🚨 O slug do e-Pública usa UNDERSCORE (`bela_vista_caroba`, `bom_jesus_sul`) e a classe [a-z0-9-] parava no
+  // primeiro `_` — o Radar guardava "bela"/"bom" e o coletor batia num portal que não existe (rows:[] com HTTP 200,
+  // o soft-404 de [[pnigp-sonda-soft404-falso-positivo]]). Corrigido em 15/ago/2026.
+  { erp: "epublica", link: /e-publica\.net\/epublica-portal\/#\/([a-z0-9_-]+)/i,     texto: /e-publica\.net/i },
   { erp: "smarapd",  link: /transparencia-([a-z0-9-]+)\.smarapd\.com\.br/i,          texto: /smarapd/i },
   { erp: "aspec",    link: /governotransparente\.com\.br/i,                          texto: /aspec inform|governotransparente/i },
   { erp: "elotech",  link: /([a-z0-9-]+)\.elotech\.com\.br/i,                        texto: /elotech/i },

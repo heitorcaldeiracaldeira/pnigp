@@ -90,7 +90,11 @@ async function tentaHost(host, ano, mes) {
       if (!r.ok) return { ok: false, erro: "HTTP " + r.status };
       const xml = await r.text();
       const m = xml.match(/<string[^>]*>([\s\S]*)<\/string>/);
-      if (!m) return { ok: true, dados: [] };
+      // 🚨 DEFEITO CORRIGIDO EM 16/ago: um 200 que NÃO é o XML da API (página de manutenção, tela de WAF, HTML do
+      // portal) caía aqui como "sem dado" — e o município era declarado VAZIO, isto é, "não publica folha". Foi o
+      // que rotulou 23 municípios de MG de uma vez, enquanto o portaltp.com.br estava inacessível deste IP.
+      // Ausência de resposta da API é ERRO; só `<string>` com lista vazia é ausência de dado.
+      if (!m) return { ok: false, erro: "resposta nao e a API (" + xml.trim().slice(0, 40).replace(/\s+/g, " ") + ")" };
       const s = m[1].replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
       return { ok: true, dados: JSON.parse(s) };
     } catch (e) {
@@ -125,6 +129,17 @@ async function _servidoresOld(slug, ano, mes) {
   }
 }
 
+// 🚨 DEFEITO CORRIGIDO EM 15/ago: os nomes dos totais eram os de UM portal só (Extrema-MG: "Rendimento Bruto" /
+// "Total Desconto" / "Rendimento Liquido"). O Portal TP é WHITE-LABEL e cada prefeitura batiza a rubrica como
+// quer — em ES/BA/RJ o total se chama "Salario Bruto", "Total de Descontos", "Salario Liquido". Resultado: 190
+// mil linhas gravadas com nome, cargo e lotação e o `bruto` NULL, sem um único erro no log (o defeito nº 1 de
+// [[pnigp-coletor-ok-sem-dado-sete-causas]]). Os nomes abaixo saíram do CENSO das rubricas já coletadas.
+// "Vencimentos" fica de fora de propósito: em uns portais é o total, em outros é uma parcela.
+const chave = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+const RE_BRUTO = /^(salario|sal|remuneracao|remuneracoes|rendimento|rendimentos|total) (bruto|bruta|brutos|brutas)$|^total (de |das |dos )?(remuneracao|remuneracoes|vencimento|vencimentos)$/;
+const RE_LIQ = /^((salario|remuneracao|rendimento|rendimentos|vencimento|valor|saldo|total) )?(liquido|liquida|liquidos|liquidas)$/;
+const RE_DESC = /^(total|totais) (de |das |dos )?(desconto|descontos)$|^descontos$/;
+
 // lê as rubricas PELO NOME — e devolve também o mapa completo, para não perder as parcelas
 function valores(r) {
   const rub = {};
@@ -135,11 +150,16 @@ function valores(r) {
     const valor = num(r["valor_rem" + k]);
     if (!nome) continue;
     if (valor != null && valor !== 0) rub[nome] = (rub[nome] || 0) + valor;
-    const n = nome.toLowerCase();
-    if (/rendimento\s*bruto/.test(n) && valor) bruto = valor;
-    else if (/total\s*desconto/.test(n) && valor) desc = valor;
-    else if (/rendimento\s*l[íi]quido/.test(n) && valor) liq = valor;
+    if (!valor) continue;
+    const n = chave(nome);
+    if (RE_BRUTO.test(n)) bruto = Math.max(bruto ?? 0, valor);
+    else if (RE_DESC.test(n)) desc = Math.max(desc ?? 0, valor);
+    else if (RE_LIQ.test(n)) liq = Math.max(liq ?? 0, valor);
   }
+  // fecho aritmético: com dois dos três totais, o terceiro está determinado (bruto − descontos = líquido)
+  if (bruto == null && liq != null && desc != null) bruto = liq + desc;
+  if (desc == null && bruto != null && liq != null) desc = bruto - liq;
+  if (liq == null && bruto != null && desc != null) liq = bruto - desc;
   return { bruto, desc, liq, rub };
 }
 

@@ -23,7 +23,10 @@ const UF = process.env.UF || null;          // limita a uma UF
 const SO = process.env.SO || null;          // limita a um município
 // SC já vem do Farol do TCE-SC com série mensal — aqui o ganho são as outras UFs. Excluída por padrão.
 const EXCLUI_UF = (process.env.EXCLUI_UF ?? "SC").split(",").map((s) => s.trim()).filter(Boolean);
-const COMPETENCIAS = Number(process.env.COMPETENCIAS || 1); // quantas competências recentes trazer
+// quantas competências recentes CONSIDERAR. Não é quantas coletar: entre elas, `competenciaMaisCheia` escolhe a
+// que tem mais servidores. Com o default antigo (1) a escolha era sempre a mais recente — e o mês corrente vem
+// parcial, o que subcoletou 22 municípios do RS.
+const COMPETENCIAS = Number(process.env.COMPETENCIAS || 3);
 const LIMITE = 500;                          // linhas por página na busca
 
 await q(`create table if not exists folha_servidores_betha (
@@ -189,6 +192,22 @@ for (let i = 0; i < fila.length; i++) {
           return (ab - aa) || (mb - ma);
         }).slice(0, COMPETENCIAS);
 
+    // 🚨 A COMPETÊNCIA MAIS RECENTE ESTÁ PARCIAL — o mês corrente ainda está sendo fechado. Campo Bom trouxe
+    // 1.126 servidores em 07/2026 e 17 em 08/2026; Torres, Bom Jesus e outros 20 municípios do RS ficaram com
+    // dezenas de linhas por causa disso, e o conferidor contra a RAIS marcava tudo como "subcoletado".
+    // Uma sondagem de `totalHits` por competência (limit=1) custa 1 requisição e diz qual é a CHEIA.
+    const competenciaMaisCheia = async (consultaId, comps) => {
+      if (comps.length <= 1) return comps;
+      let melhor = null;
+      for (const c of comps) {
+        const j = await chama(`/api/busca-textual/${consultaId}?sortBy=null&sortDirection=null&offset=0&limit=1&hiperlink=false`,
+          p.hash, { metodo: "POST", corpo: { competencia: [c] } }).catch(() => null);
+        const n = j?.totalHits ?? 0;
+        if (!melhor || n > melhor.n) melhor = { c, n };
+      }
+      return melhor && melhor.n ? [melhor.c] : comps;
+    };
+
     // 🚨 NEM TODA CONSULTA DE FOLHA TEM FILTRO DE COMPETÊNCIA. A consulta "Servidores Públicos" (a que traz a
     // PREFEITURA inteira, com secretaria) é um CADASTRO, não uma folha mensal: filtra por `situacao`, não por
     // competência. Pedir sem filtro nenhum devolve o histórico acumulado — em Raposos (MG) foram 6.590 linhas para
@@ -241,7 +260,8 @@ for (let i = 0; i < fila.length; i++) {
     const CANONICA = /servidores?\s*(e|&)\s*remunera|remunera/i;
     let consulta = null, comps = null, regs = null, motivo = "";
     for (const cand of candidatas.slice(0, 6)) {
-      const cs = await competenciasDe(cand.id);   // vazio é normal: a consulta pode ser cadastro, não folha mensal
+      // vazio é normal: a consulta pode ser cadastro, não folha mensal
+      const cs = await competenciaMaisCheia(cand.id, await competenciasDe(cand.id));
       const sits = cs.length ? null : await situacoesAtivas(cand.id);
       const r = await colhe(cand.id, cs, sits);
       if (!r.length) { motivo = `consulta "${cand.titulo}" sem linhas`; continue; }

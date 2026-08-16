@@ -123,6 +123,12 @@ const alvos = (await q(`
        where p2.cod_ibge = m.cod_ibge and p2.url_portal_real is not null limit 1) p on true
    where m.uf = $1
      ${RESONDA ? "" : "and not exists (select 1 from folha_sonda_municipal f where f.cod_ibge = m.cod_ibge)"}
+     ${/* ⚠️ SO_FALTANTES: re-sonda APENAS quem ainda não tem coleta. Re-sondar o estado inteiro sobrescreve
+           `url_pessoal` de município já coletado — foi assim que a URL de Sapucaia do Sul perdeu o
+           `?entidade=3` e o coletor caiu de 3.932 para 106 registros sem falhar. */ ""}
+     ${process.env.SO_FALTANTES === "1"
+        ? `and not exists (select 1 from folha_sonda_municipal f
+                            where f.cod_ibge = m.cod_ibge and f.nivel_evidencia = 'A_coletado')` : ""}
    order by m.nome`, [SG_UF])).rows;
 console.log(`[sonda/${SG_UF}] ${alvos.length} municípios a visitar · ${CONC} em paralelo`);
 

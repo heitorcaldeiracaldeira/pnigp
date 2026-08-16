@@ -11,7 +11,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
 import crypto from "crypto";
 import { pool, withRetry } from "./_cadprev.mjs";
-import { slugDe, achaPortal, achaEmbed, filtrosDaTela, periodosDaEntidade, paginaServidores } from "./_ipm.mjs";
+import { slugDe, achaPortal, achaEmbed, filtrosDaTela, entidadesDaTela, periodosDaEntidade, paginaServidores } from "./_ipm.mjs";
 
 const db = pool();
 const q = withRetry(db);
@@ -76,7 +76,9 @@ const alvos = (await q(`select p.cod_ibge, p.slug, m.nome municipio, m.uf
   from erp_portal_municipal p join municipios_br m on m.cod_ibge = p.cod_ibge
  where p.erp='ipm' ${UF ? "and m.uf = $1" : ""} ${SO ? `and m.nome ilike '%' || $${UF ? 2 : 1} || '%'` : ""}
  order by m.uf, m.nome`, [UF, SO].filter(Boolean))).rows;
-const feitos = new Set((await q(`select cod_ibge from folha_ipm_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
+// REFAZ=1 reprocessa quem já está 'ok' — necessário depois do conserto da lista de entidades (15/ago/2026)
+const feitos = process.env.REFAZ === "1" ? new Set()
+  : new Set((await q(`select cod_ibge from folha_ipm_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[ipm] ${alvos.length} portais · ${feitos.size} já feitos · ${fila.length} na fila`);
 
@@ -115,43 +117,47 @@ for (let i = 0; i < fila.length; i++) {
     const embed = await achaEmbed(p.slug);
     if (!embed) { await marca("sem_item", "portal sem 'relacao-funcionario-x-salario'"); falhas++; continue; }
     const filtros = await filtrosDaTela(embed);
-    // parte dos municípios não traz competência pré-selecionada: a lista vem por AJAX depois da entidade
-    if (filtros.entidade && !filtros.competencia) {
-      const per = await periodosDaEntidade(embed, filtros.entidade);
-      if (per[0]) filtros.competencia = per[0].codigo;
-    }
-    if (!filtros.entidade || !filtros.competencia) {
-      // ⚠️ os dois casos são DIFERENTES e não podem cair no mesmo rótulo: um é tela que não entrega a entidade,
-      // outro é entidade real cuja lista de períodos volta vazia (`[]`) — este segundo pede a lista de ENTIDADES
-      // por AJAX, ainda não mapeada.
-      await marca("sem_filtro", filtros.entidade ? "entidade sem periodo publicado (lista AJAX vazia)" : "tela sem entidade");
-      falhas++; continue;
-    }
+    // ⭐ TODAS as entidades do município (prefeitura + autarquias + fundos), não só a pré-selecionada
+    const entidades = entidadesDaTela(filtros.bruto);
+    const lista = entidades.length ? entidades
+      : (filtros.entidade ? [{ codigo: filtros.entidade, descricao: null }] : []);
+    if (!lista.length) { await marca("sem_filtro", "tela sem entidade"); falhas++; continue; }
 
     const regs = [];
-    let pagina = 0, totalReg = null;
-    do {
-      const r = await paginaServidores(embed, filtros, pagina);
-      if (r.erro) throw new Error(r.erro);
-      totalReg = r.total;
-      for (const s of r.linhas) {
-        regs.push({
-          cod_ibge: p.cod_ibge, municipio: p.municipio, uf: p.uf, entidade: s.clicodigo,
-          competencia: s.odomesano, nome: s.uninomerazao, cargo: s.cardescricao, lotacao: s.cncdescricao,
-          matricula: s.fcncodigo, contrato: s.funcontrato, afastamento: s.afastamento,
-          rescisao: s.rescisao, ferias: s.ferias,
-          provento: num(s.provento), desconto: num(s.desconto), liquido: num(s.liquido),
-          _hash: crypto.createHash("md5").update([p.cod_ibge, s.odomesano, s.fcncodigo, s.funcontrato, s.uninomerazao, s.cardescricao, s.provento].join("¦")).digest("hex"),
-        });
-      }
-      if (!r.linhas.length) break;
-      pagina++;
-    } while (regs.length < totalReg && pagina < 200);
+    const detalhes = [];
+    for (const ent of lista) {
+      // a competência é POR ENTIDADE — a autarquia pode publicar um mês diferente do da prefeitura
+      const per = await periodosDaEntidade(embed, ent.codigo);
+      const competencia = per[0]?.codigo
+        || (ent.codigo === filtros.entidade ? filtros.competencia : null);
+      if (!competencia) { detalhes.push(`${(ent.descricao || ent.codigo).slice(0, 24)}:sem_periodo`); continue; }
+      const f2 = { entidade: ent.codigo, competencia };
+      let pagina = 0, totalReg = null, antes = regs.length;
+      do {
+        const r = await paginaServidores(embed, f2, pagina);
+        if (r.erro) throw new Error(r.erro);
+        totalReg = r.total;
+        for (const s of r.linhas) {
+          regs.push({
+            cod_ibge: p.cod_ibge, municipio: p.municipio, uf: p.uf, entidade: s.clicodigo,
+            competencia: s.odomesano, nome: s.uninomerazao, cargo: s.cardescricao, lotacao: s.cncdescricao,
+            matricula: s.fcncodigo, contrato: s.funcontrato, afastamento: s.afastamento,
+            rescisao: s.rescisao, ferias: s.ferias,
+            provento: num(s.provento), desconto: num(s.desconto), liquido: num(s.liquido),
+            _hash: crypto.createHash("md5").update([p.cod_ibge, s.odomesano, s.fcncodigo, s.funcontrato, s.uninomerazao, s.cardescricao, s.provento].join("¦")).digest("hex"),
+          });
+        }
+        if (!r.linhas.length) break;
+        pagina++;
+      } while (regs.length - antes < totalReg && pagina < 200);
+      detalhes.push(`${(ent.descricao || ent.codigo).slice(0, 24)}:${regs.length - antes}`);
+    }
+    if (!regs.length) { await marca("sem_filtro", `nenhuma das ${lista.length} entidades tem período publicado`); falhas++; continue; }
 
     await grava(regs);
     total += regs.length; ok++;
-    await marca("ok", null, regs[0]?.competencia || null, regs.length);
-    console.log(`  [${i + 1}/${fila.length}] ${p.uf} ${p.municipio}: ${regs.length} servidores`);
+    await marca("ok", `${lista.length} entidades · ${detalhes.join(" | ")}`.slice(0, 400), regs[0]?.competencia || null, regs.length);
+    console.log(`  [${i + 1}/${fila.length}] ${p.uf} ${p.municipio}: ${regs.length} servidores (${lista.length} entidades)`);
   } catch (e) {
     falhas++;
     await marca("erro", String(e.message).slice(0, 200));

@@ -17,6 +17,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
 import crypto from "crypto";
 import { pool, withRetry } from "./_cadprev.mjs";
+import { UFS } from "./_uf.mjs";
 
 const db = pool();
 const q = withRetry(db);
@@ -42,8 +43,12 @@ await q(`create table if not exists folha_elotech_coleta (
   primary key (slug, entidade_id)
 )`);
 
-async function api(slug, caminho, entidade) {
-  const url = `https://${slug}.eloweb.net/portaltransparencia-api/api${caminho}`;
+// ⭐ O host tem DUAS gerações e a API é a MESMA: o clássico `{slug}.eloweb.net` e o novo `{slug}.oxy.elotech.com.br`
+// (achado em Bento Gonçalves/RS). Mesmo caminho, mesmo header `entidade`, mesmo envelope Spring Data — só muda o
+// domínio. Por isso o alvo carrega `host` e o slug vira só o rótulo.
+const hostDe = (a) => (typeof a === "string" ? `${a}.eloweb.net` : (a.host || `${a.slug}.eloweb.net`));
+async function api(alvo, caminho, entidade) {
+  const url = `https://${hostDe(alvo)}/portaltransparencia-api/api${caminho}`;
   for (let t = 0; t < 3; t++) {
     try {
       const r = await fetch(url, { headers: { ...UA, entidade: String(entidade), exercicio: EXERCICIO }, signal: AbortSignal.timeout(120000) });
@@ -59,15 +64,15 @@ const num = (v) => (v == null ? null : (Number.isFinite(+v) ? +v : null));
 // ⚠️ A API é Spring Data paginada: SEM `size` ela devolve a PRIMEIRA PÁGINA DE 20 e o coletor antigo gravava só isso
 // (117 execuções fecharam com exatamente 20 linhas; Ministro Andreazza tem totalElements=508). Pedimos size=1000 e,
 // se ainda assim vier mais de uma página (portal que limita o size), varremos página a página até `last`.
-async function servidores(slug, entId, ex) {
+async function servidores(alvo, entId, ex) {
   const url = (p) => `/servidores?entidade=${entId}&exercicio=${ex}&admissaoExcepcional=false&size=${PAGINA}&page=${p}`;
-  const j0 = await api(slug, url(0), entId);
+  const j0 = await api(alvo, url(0), entId);
   if (!j0) return null;
   if (Array.isArray(j0)) return j0; // portal antigo, sem envelope de página
   const out = [...(j0.content || [])];
   const paginas = j0.totalPages ?? 1;
   for (let p = 1; p < paginas; p++) {
-    const j = await api(slug, url(p), entId);
+    const j = await api(alvo, url(p), entId);
     const c = Array.isArray(j) ? j : (j?.content || []);
     if (!c.length) break;
     out.push(...c);
@@ -76,14 +81,35 @@ async function servidores(slug, entId, ex) {
 }
 
 // alvos: municípios Elotech mapeados pelo Radar. o slug sai do url_erp (eloweb.net) ou do url_portal.
-const alvos = (await q(`select cod_ibge, municipio, uf, url_erp, url_portal from radar_portal
-  where erp='elotech' and unidade_gestora ilike 'Prefeitura%'
-  ${SO ? "and municipio ilike '%'||$1||'%'" : ""}`, SO ? [SO] : [])).rows
+await q(`create table if not exists elotech_portal (
+  cod_ibge text primary key, municipio text, uf text, slug text, host text, entidades int,
+  achado_em timestamptz default now()
+)`);
+const UF = process.env.UF || null; // fechar um estado por vez sem varrer o país inteiro
+const cond = [], par = [];
+if (SO) { par.push(SO); cond.push(`and municipio ilike '%'||$${par.length}||'%'`); }
+// 🚨 `radar_portal.uf` guarda o NOME POR EXTENSO ("Paraná"), enquanto `elotech_portal.uf` guarda a SIGLA.
+// Comparar só com a sigla zera a lista do Radar em silêncio.
+if (UF) { par.push(UF); par.push(UFS[UF]?.nome || UF); cond.push(`and (uf = $${par.length - 1} or uf = $${par.length})`); }
+const doRadar = (await q(`select cod_ibge, municipio, uf, url_erp, url_portal from radar_portal
+  where erp='elotech' and unidade_gestora ilike 'Prefeitura%' ${cond.join(" ")}`, par)).rows
   .map((a) => {
     const src = a.url_erp || a.url_portal || "";
     const m = src.match(/([a-z0-9-]+)\.eloweb\.net/i) || (a.url_portal || "").match(/https?:\/\/(?:www\.)?([a-z0-9-]+)\./i);
     return { ...a, slug: m ? m[1] : null };
   }).filter((a) => a.slug);
+// … mais os portais achados pela varredura de host (geração Oxy), que o Radar não conhece
+const doScan = (await q(`select cod_ibge, municipio, uf, slug, host from elotech_portal
+  where true ${cond.join(" ")}`, par)).rows;
+// 🚨 A varredura vem PRIMEIRO: o host dela foi PROVADO (`/entidades` respondeu). O do Radar é derivado — quando o
+// município é da geração Oxy, o slug tirado do url_portal aponta para um `{slug}.eloweb.net` que não existe e a
+// coleta volta 'vazio'. Deduplicar por cod_ibge (e por slug) mantendo o alvo provado.
+const porSlug = new Map(), porMunicipio = new Set();
+for (const a of [...doScan, ...doRadar]) {
+  if (porSlug.has(a.slug) || (a.cod_ibge && porMunicipio.has(a.cod_ibge))) continue;
+  porSlug.set(a.slug, a); if (a.cod_ibge) porMunicipio.add(a.cod_ibge);
+}
+const alvos = [...porSlug.values()];
 
 const feitos = REFAZ ? new Set()
   : new Set((await q(`select slug||'|'||entidade_id k from folha_elotech_coleta where situacao='ok'`)).rows.map((r) => r.k));
@@ -114,7 +140,7 @@ let total = 0, ok = 0, falhas = 0, espelhos = 0;
 for (let i = 0; i < alvos.length; i++) {
   const a = alvos[i];
   // as entidades do portal (prefeitura, câmara, fundos) saem de /entidades/lista
-  const ents = await api(a.slug, "/entidades/lista?fields=id,nome,tipo", 1);
+  const ents = await api(a, "/entidades/lista?fields=id,nome,tipo", 1);
   const lista = Array.isArray(ents) ? ents : (ents?.content || [{ id: 1, nome: a.municipio }]);
   // 🚨 ENTIDADE QUE ESPELHA A PREFEITURA: em Alta Floresta D'Oeste (RO) a entidade 2 (Fundo Municipal de Saúde)
   // devolve EXATAMENTE os mesmos 1.683 servidores da entidade 1 (interseção 1683/1683), enquanto Câmara e SAAE são
@@ -132,7 +158,7 @@ for (let i = 0; i < alvos.length; i++) {
     try {
       let arr = null, exUsado = null;
       for (const ex of EXERCICIOS) { // recuo: o ano corrente pode ainda não ter folha publicada
-        const r = await servidores(a.slug, ent.id, ex);
+        const r = await servidores(a, ent.id, ex);
         if (r && r.length) { arr = r; exUsado = ex; break; }
       }
       if (!arr) { await marca("vazio", `sem servidores em ${EXERCICIOS.join("/")}`); continue; }

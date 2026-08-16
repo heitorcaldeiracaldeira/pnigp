@@ -20,13 +20,27 @@
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
 import crypto from "crypto";
 import https from "https";
+import { Agent, setGlobalDispatcher } from "undici";
 import { pool, withRetry } from "./_cadprev.mjs";
+
+// 🚨 CORRIGIDO 15/ago: `agent: new https.Agent({rejectUnauthorized:false})` NÃO tem efeito no fetch global do Node —
+// quem manda é o undici, que ignora `agent` e só entende `dispatcher`. Por isso portais em porta alta com
+// certificado que não bate com o host voltavam `fetch failed` (Santo Inácio) e pareciam host morto.
+setGlobalDispatcher(new Agent({ connect: { rejectUnauthorized: false }, connectTimeout: 30000 }));
 
 const db = pool();
 const q = withRetry(db);
 const SO = process.env.SO || null;
 const DESCOBRIR = process.env.DESCOBRIR === "1";
-const R = "srhRelacaoDeServidoresSalariosDetalhado";
+// 🚨 CORRIGIDO 15/ago/2026: NÃO existe UM controlador de folha no Equiplano. O `…SalariosDetalhado` é o mais rico,
+// mas em parte das instalações ele está VAZIO (combo de entidades responde, `listEntidades` volta sem exercício) e
+// quem tem os dados é o `…Salarios` simples — Candói, Imbituva, Verê, Porto Barreiro e mais 8 do PR fechavam
+// 'vazio' por isso, com cara de "município não publica". Tentar em ordem, do mais rico para o mais simples.
+const CONTROLADORES = (process.env.CONTROLADOR ? [process.env.CONTROLADOR] : [
+  "srhRelacaoDeServidoresSalariosDetalhado",
+  "srhRelacaoDeServidoresSalarios",
+  "srhRelacaoDeSalarios",
+]);
 const UA = { "user-agent": "Mozilla/5.0 (compatible; PNIGP/1.0; pesquisa de dados publicos)" };
 const dorme = (ms) => new Promise((s) => setTimeout(s, ms));
 // portais em porta alta usam certificado que não bate com o host — sem isso o fetch morre com erro genérico
@@ -84,9 +98,28 @@ if (DESCOBRIR) {
 }
 
 // ── FASE 2: coleta ──────────────────────────────────────────────────────────────────────────────────────────────
-const alvos = (await q(`select cod_ibge, municipio, uf, base_url from equiplano_portal
-  where base_url is not null and base_url like '%transparencia%'
+// 🚨 CORRIGIDO 15/ago: o filtro `base_url like '%transparencia%'` DESCARTAVA EM SILÊNCIO 20 municípios do PR cujo
+// site institucional citava outro módulo do mesmo servidor (`/contribuinte`, `/esportal`, `/faq`). O portal da
+// transparência mora na MESMA origem — provado em 8 municípios: trocar o caminho por `/transparencia` devolve o
+// combo de entidades. Então normalizamos a origem em vez de exigir a palavra na URL.
+const soTransparencia = (u) => {
+  if (!u) return null;
+  const s = String(u).trim();
+  if (!/^https?:\/\//i.test(s)) return null;      // "imbituvapr.equiplano" é IDENTIFICADOR do Radar, não host
+  try { const x = new URL(s); return `${x.protocol}//${x.host}/transparencia`; } catch { return null; }
+};
+const brutos = (await q(`select cod_ibge, municipio, uf, base_url from equiplano_portal
+  where base_url is not null
   ${SO ? "and municipio ilike '%'||$1||'%'" : ""} order by uf, municipio`, SO ? [SO] : [])).rows;
+const alvos = [], semHost = [], spa = [];
+for (const a of brutos) {
+  const b = soTransparencia(a.base_url);
+  if (!b) { semHost.push(a); continue; }
+  if (/equiplano\.cloud/i.test(b)) { spa.push(a); continue; } // geração nova é SPA Angular — outra engenharia
+  alvos.push({ ...a, base_url: b });
+}
+if (semHost.length) console.log(`[equiplano] ⚠️ ${semHost.length} sem host resolvível (identificador do Radar, falta descobrir a porta): ${semHost.slice(0, 8).map((x) => x.municipio).join(", ")}${semHost.length > 8 ? "…" : ""}`);
+if (spa.length) console.log(`[equiplano] ⚠️ ${spa.length} na geração equiplano.cloud (SPA Angular, API a mapear): ${spa.map((x) => x.municipio).join(", ")}`);
 const feitos = process.env.REFAZ === "1" ? new Set()
   : new Set((await q(`select cod_ibge from folha_equiplano_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
@@ -105,14 +138,17 @@ for (let i = 0; i < fila.length; i++) {
        linhas=excluded.linhas, situacao=excluded.situacao, detalhe=excluded.detalhe, em=now()`,
       [a.cod_ibge, a.municipio, a.uf, competencia, linhas, situacao, detalhe]);
   try {
+    const regs = [];
+    let compUsada = null, usado = null, ents = [];
+    for (const R of CONTROLADORES) {
+    if (regs.length) break;
+    usado = R;
     // entidades do combo (Município, Câmara, Fundos…)
     const { txt: home } = await pega(`${B}/${R}`);
-    const ents = [...home.matchAll(/<option[^>]*value=["']?(\d+)["']?[^>]*>([^<]{2,60})/gi)]
+    ents = [...home.matchAll(/<option[^>]*value=["']?(\d+)["']?[^>]*>([^<]{2,60})/gi)]
       .map((m) => ({ cod: m[1], nome: m[2].trim() }));
-    if (!ents.length) { await marca("sem_entidade", "combo de entidades vazio"); falhas++; continue; }
+    if (!ents.length) continue;
 
-    const regs = [];
-    let compUsada = null;
     for (const ent of ents) {
       // exercícios disponíveis
       const { txt: tEnt } = await pega(`${B}/${R}/listEntidades`, {
@@ -140,7 +176,12 @@ for (let i = 0; i < fila.length; i++) {
         const col = { matricula: ix(/matr[íi]cula/i), nome: ix(/^nome/i), cargo: ix(/^cargo/i),
           funcao: ix(/fun[çc][ãa]o/i), lotacao: ix(/lota[çc]/i), situacao: ix(/situa[çc]/i),
           vantagens: ix(/total\s*vantagens/i), liquido: ix(/l[íi]quido/i) };
-        if (col.nome < 0) continue;
+        // ⭐ Nos controladores sem `listServidores` (o `…Salarios` simples) NÃO existe cabeçalho para indexar —
+        // e não precisa: o mesmo Ajax devolve `paginacao.registros` com os campos NOMEADOS (`nmServidor`,
+        // `nmCargoServidor`, `nmLotacaoServidor`, `vlSalarioBruto`…). Quando o cabeçalho falta, usa-se o nomeado,
+        // que é mais seguro que qualquer posição. Antes disso o coletor simplesmente pulava (`continue`) e o
+        // município fechava 'vazio'.
+        const porNome = col.nome < 0;
 
         // paginação DataTables via JSON (a lotação só vem inteira aqui; no HTML sai truncada)
         for (let start = 0; start < 100000; start += 200) {
@@ -151,6 +192,35 @@ for (let i = 0; i < fila.length; i++) {
             timeout: 180000,
           });
           let j = null; try { j = JSON.parse(txt); } catch {}
+          if (porNome) {
+            const nomeados = j?.paginacao?.registros || [];
+            if (!nomeados.length) break;
+            const antesPagina = regs.length;
+            const comp = `${ex}${MESES[mes] || "00"}`;
+            if (!compUsada) compUsada = comp;
+            for (const s of nomeados) {
+              const nome = String(s.nmServidor ?? s.nomeServidor ?? "").trim();
+              if (!nome) continue;
+              const mat = String(s.matriculaServidor ?? s.matricula ?? "");
+              const cargo = String(s.nmCargoServidor ?? s.cargo ?? "").trim();
+              regs.push({
+                cod_ibge: a.cod_ibge, municipio: a.municipio, uf: a.uf, base_url: B,
+                entidade: ent.cod, entidade_nome: ent.nome, competencia: comp,
+                matricula: mat, nome, cargo, funcao_confianca: String(s.funcaoConfianca ?? "").trim(),
+                lotacao: String(s.nmLotacaoServidor ?? "").trim(), secretaria: String(s.nmLotacaoServidor ?? "").trim(),
+                situacao: s.isServidorLicenciado === "1" ? "licenciado" : null,
+                vantagens: Number.isFinite(+s.vlSalarioBruto) ? +s.vlSalarioBruto : null,
+                descontos: Number.isFinite(+s.vlDescontos) ? +s.vlDescontos : null,
+                liquido: Number.isFinite(+s.vlLiquido) ? +s.vlLiquido : null,
+                _hash: crypto.createHash("md5").update([a.cod_ibge, comp, ent.cod, mat, nome, cargo].join("¦")).digest("hex"),
+              });
+            }
+            // guarda de laço: se a página não trouxe NENHUM registro inédito, o servidor está ignorando o `start`
+            // (visto em portais lentos) — parar em vez de rodar 500 páginas iguais
+            if (regs.length === antesPagina) break;
+            if (nomeados.length < 200) break;
+            continue;
+          }
           const arr = j?.paginacao?.registrosAsJSONArray || j?.data || [];
           if (!arr.length) break;
           const comp = `${ex}${MESES[mes] || "00"}`;
@@ -174,7 +244,8 @@ for (let i = 0; i < fila.length; i++) {
         }
       }
     }
-    if (!regs.length) { await marca("vazio", "nenhuma entidade devolveu servidores"); falhas++; continue; }
+    }   // ← fim do laço de CONTROLADORES
+    if (!regs.length) { await marca("vazio", `nenhum dos ${CONTROLADORES.length} controladores devolveu servidores`); falhas++; continue; }
     const m = new Map(); for (const r of regs) m.set(r._hash, r);
     const arr = [...m.values()];
     for (let k = 0; k < arr.length; k += 1000) {
@@ -191,8 +262,8 @@ for (let i = 0; i < fila.length; i++) {
          c("vantagens"), c("descontos"), c("liquido"), c("_hash")]);
     }
     totalGeral += arr.length; ok++;
-    await marca("ok", `${ents.length} entidades`, compUsada, arr.length);
-    console.log(`  [${i + 1}/${fila.length}] ${a.uf} ${a.municipio}: ${arr.length} servidores (${compUsada})`);
+    await marca("ok", `${ents.length} entidades · ${usado}`, compUsada, arr.length);
+    console.log(`  [${i + 1}/${fila.length}] ${a.uf} ${a.municipio}: ${arr.length} servidores (${compUsada}${usado !== CONTROLADORES[0] ? " · " + usado : ""})`);
   } catch (e) {
     falhas++; await marca("erro", String(e.message).slice(0, 150));
     console.log(`  ✖ [${i + 1}/${fila.length}] ${a.uf} ${a.municipio}: ${String(e.message).slice(0, 70)}`);

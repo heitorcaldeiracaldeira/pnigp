@@ -189,6 +189,11 @@ for (let i = 0; i < fila.length; i++) {
       : await baixaFolha(browser, a.host, a.banco);
     const regs = parseXml(raw, { cod_ibge: a.cod_ibge, nome: a.nome, uf: a.uf });
     if (!regs.length) throw new Error("xml sem registros");
+    // 🚨 GUARDA (15/ago/2026): parte dos portais exporta a folha AGRUPADA POR FONTE DE RECURSO, sem NomServidor —
+    // Jacarezinho/PR gravou 1.361 linhas com ZERO nomes, que passam por folha nominal e não são. Mesma guarda da
+    // Betha: exigir MAIORIA das linhas com nome ([[pnigp-coletor-ok-sem-dado-sete-causas]]).
+    const comNome = regs.filter((r) => r.nome && String(r.nome).trim()).length;
+    if (comNome < regs.length / 2) throw new Error(`export agregado: ${comNome}/${regs.length} linhas com nome`);
     const n = await grava(regs);
     total += n; ok++;
     await q(`insert into govbr_coleta (cod_ibge,periodo,linhas,situacao,em) values ($1,$2,$3,'ok',now())
