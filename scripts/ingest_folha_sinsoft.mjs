@@ -51,12 +51,25 @@ await q(`create table if not exists folha_sinsoft_coleta (
   linhas int, confere int, situacao text, detalhe text, em timestamptz default now()
 )`);
 
+// ⭐ a sonda não é a única fonte: o DIAGNÓSTICO e os candidatos achados pelo site oficial trazem municípios que
+// ela nunca viu — Sananduva só existia no diagnóstico e o coletor rodava com a fila VAZIA, sem erro nenhum.
+// 🚨 os filtros de UF/SO precisam ficar FORA do union: presos ao último select, eles se referiam a um alias que
+// não existe ali e o SQL quebrava (ou pior, filtrava só um ramo).
 const alvos = (await q(`
-  select s.cod_ibge, s.municipio, s.uf, coalesce(s.url_pessoal, s.url_base) url
-    from folha_sonda_municipal s
-   where coalesce(s.url_pessoal, s.url_base) ~ 'sinsoft'
-     ${UF ? "and s.uf = $1" : ""} ${SO ? `and s.municipio ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
-   order by s.municipio`, [UF, SO].filter(Boolean))).rows;
+  select * from (
+    select s.cod_ibge, s.municipio, s.uf, coalesce(s.url_pessoal, s.url_base) url
+      from folha_sonda_municipal s
+     where coalesce(s.url_pessoal, s.url_base) ~ 'sinsoft'
+     union
+    select d.cod_ibge, m.nome, m.uf, coalesce(d.url_pessoal, d.url_visitada)
+      from folha_diagnostico_faltante d join municipios_br m on m.cod_ibge = d.cod_ibge
+     where d.produto = 'sinsoft' or coalesce(d.url_pessoal, d.url_visitada) ~ 'sinsoft'
+     union
+    select c.cod_ibge, c.municipio, c.uf, c.url
+      from folha_portal_candidato c where c.produto = 'sinsoft'
+  ) x
+   where true ${UF ? "and uf = $1" : ""} ${SO ? `and municipio ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
+   order by municipio`, [UF, SO].filter(Boolean))).rows;
 const feitos = new Set(REFAZ ? [] : (await q(`select cod_ibge from folha_sinsoft_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[sinsoft] ${alvos.length} portais · ${feitos.size} já feitos · ${fila.length} na fila`);
@@ -110,7 +123,12 @@ const competencias = Array.from({ length: 6 }, (_, k) => {
 let totalGeral = 0, ok = 0, falhas = 0;
 for (let i = 0; i < fila.length; i++) {
   const a = fila[i];
-  const slug = (a.url.match(/sinsoft\.com\.br\/(portal\.[a-z0-9-]+)/i) || [])[1];
+  // 🚨 o diretório do município tem DOIS prefixos: `portal.{slug}-rs` (o clássico) e `web.{slug}-rs` (Centenário,
+  // achado pelo link do IPTU no site oficial). Aceitar os dois e normalizar para `portal.`, que é onde mora o
+  // WebPessoal.aspx — extrair só `portal.` deixava o município com "slug não extraído", que parece portal
+  // inexistente e é apenas prefixo diferente.
+  const bruto = (a.url.match(/sinsoft\.com\.br\/((?:portal|web)\.[a-z0-9-]+)/i) || [])[1];
+  const slug = bruto ? bruto.replace(/^web\./i, "portal.") : null;
   const url = slug ? `http://sistema.sinsoft.com.br/${slug}/WebPessoal.aspx` : null;
   const marca = (situacao, detalhe, competencia = null, arquivo = null, linhas = 0, confere = 0) =>
     q(`insert into folha_sinsoft_coleta (cod_ibge,municipio,uf,slug,competencia,arquivo,linhas,confere,situacao,detalhe,em)

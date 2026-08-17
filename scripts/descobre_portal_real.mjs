@@ -28,7 +28,11 @@ await q(`create table if not exists portal_real_descoberto (
 
 // domínios que NÃO são portal de transparência municipal
 // cdnjs/jsdelivr entraram como "portal" em 51 municípios do fiorilli só porque a URL do CDN contém "cloud"
-const RUIDO = /facebook|instagram|twitter|youtube|whatsapp|google|gov\.br\/?$|w3\.org|jquery|bootstrap|fontawesome|radardatransparencia|atricon|tce\.|tcm\.|planalto|receita\.fazenda|cdnjs|jsdelivr|unpkg|cloudflare\.com/i;
+// 🚨 `nfe-cidades.com.br` e `soundcloud` entraram como "portal" em 14 municípios de MG (23.995 servidores em
+// Poços de Caldas, Araguari, Teófilo Otoni…) e pareciam um bloco novo enorme. Todos apontam para a MESMA URL
+// genérica, sem identificador de município: é o sistema de NOTA FISCAL que o site linka, não a transparência.
+// Ver [[pnigp-plataforma-rotulo-vs-sistema]].
+const RUIDO = /facebook|instagram|twitter|youtube|whatsapp|google|gov\.br\/?$|w3\.org|jquery|bootstrap|fontawesome|radardatransparencia|atricon|tce\.|tcm\.|planalto|receita\.fazenda|cdnjs|jsdelivr|unpkg|cloudflare\.com|nfe-cidades|soundcloud/i;
 // prefere a linha da PREFEITURA quando o município tem várias UGs com portal — sem excluir os que só têm câmara,
 // que continuam sendo um caminho até o portal do ente.
 // ⚠️ Inclui também os sites DERIVADOS (`site_municipal_derivado`): 107 prefeituras do RS não têm URL nenhuma no

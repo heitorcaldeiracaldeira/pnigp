@@ -94,6 +94,11 @@ const TIPO_SQL = `case
   when entidade ~* 'instituto|ag[eê]nc|universidade|fund[aá][cç]' then 'Institutos, fundações e agências'
   when entidade ~* 'cons[oó]rcio' then 'Consórcios'
   else 'Outras' end`;
+// distribuição da competência escolhida: a foto NÃO é do mesmo mês para todo mundo, e esconder isso seria
+// vender uma comparabilidade que o dado não tem.
+const comps = (await q(`select competencia, count(distinct cod_ibge)::int municipios, count(*)::int linhas
+  from folha_servidores_tcmba group by 1 order by 1 desc`)).rows;
+
 const escopo = (await q(`select ${TIPO_SQL} tipo, count(distinct cd_entidade)::int entidades,
     count(*)::int linhas, sum(liquido)::numeric folha
   from folha_servidores_tcmba group by 1 order by 3 desc`)).rows;
@@ -230,7 +235,24 @@ ${cargos.map((c) => `<tr><th scope="row">${esc(c.cargo)}</th><td class="num">${m
 
 <h2>Onde o município publica menos do que emprega</h2>
 <p>Comparação com a RAIS 2025, que é o denominador independente. Um número muito abaixo não indica erro de coleta —
-indica que o município <b>enviou ao tribunal uma folha parcial</b>. É a lista para cobrança.</p>
+indica que o município <b>enviou ao tribunal uma folha parcial</b>.</p>
+<div class="nota warn"><b>Leia com esta ressalva.</b> Parte da diferença não é subpublicação: é servidor lotado em
+<b>autarquia, fundação ou instituto de previdência</b> do município, que responde ao tribunal como entidade
+separada. A RAIS soma todos. Enquanto a coleta da administração indireta não fechar, esta lista superestima o
+problema — ela se corrige sozinha a cada regeração. A RAIS também inclui a câmara, que está fora do escopo.</div>
+<div class="scroll"><table>
+<thead><tr><th>Cobertura do quadro em relação à RAIS</th><th class="num">Municípios</th></tr></thead><tbody>
+${(await q(`select case when pct>=80 then '80% ou mais' when pct>=50 then 'entre 50% e 80%'
+      when pct>=35 then 'entre 35% e 50%' else 'abaixo de 35%' end faixa, count(*)::int n,
+      min(case when pct>=80 then 1 when pct>=50 then 2 when pct>=35 then 3 else 4 end) ord
+    from (select round(100.0*t.n/nullif(r.v,0),1) pct
+          from (select cod_ibge, count(*) n from folha_servidores_tcmba group by 1) t
+          join (select left(cod_ibge6::text,6) c, count(*) v from folha_rais_municipal
+                where cod_ibge6::text like '29%' group by 1) r on r.c = left(t.cod_ibge,6)) y
+    where pct is not null group by 1 order by 3`)).rows
+  .map((f) => `<tr><th scope="row">${esc(f.faixa)}</th><td class="num">${mil(f.n)}</td></tr>`).join("")}
+</tbody></table></div>
+<h3>Os 15 mais distantes do denominador</h3>
 <div class="scroll"><table>
 <thead><tr><th>Município</th><th class="num">Coletado</th><th class="num">RAIS</th><th class="num">Cobertura</th><th>Competência</th></tr></thead><tbody>
 ${destoa.map((d) => `<tr><th scope="row">${esc(d.municipio)}</th><td class="num">${mil(d.coletado)}</td>
@@ -251,9 +273,16 @@ coletor — enquanto o TCM-BA entrega os 417 de uma vez.</p>
 <div class="nota"><b>Fonte primária.</b> TCM-BA, Consulta de Pessoal
 (<code>webservice.tcm.ba.gov.br/exportar/pessoal</code>), planilha oficial do tribunal, uma por entidade e competência.
 Catálogo de municípios e entidades do próprio tribunal: <b>417 municípios, 1.025 entidades</b>.</div>
-<div class="nota"><b>Competência.</b> Para cada município são sondadas as 3 competências publicadas mais recentes e
-fica a <b>mais cheia</b> — o mês em fechamento vem parcial e subestimaria a folha. A competência usada está em cada
-linha das tabelas.</div>
+<div class="nota"><b>Competência: a foto não é do mesmo mês para todos.</b> Cada município publica ao tribunal no seu
+ritmo. Para cada um são sondadas as competências publicadas mais recentes e fica a <b>mais cheia</b> — o mês em
+fechamento vem parcial e subestimaria a folha. Por isso os totais somam meses vizinhos, e comparações entre
+municípios devem considerar isso. A competência usada aparece em cada linha das tabelas.</div>
+<div class="scroll"><table>
+<thead><tr><th>Competência</th><th class="num">Municípios</th><th class="num">Servidores</th><th></th></tr></thead><tbody>
+${comps.map((c) => `<tr><th scope="row">${esc(c.competencia).replace(/^(\d{4})(\d{2})$/, "$2/$1")}</th>
+  <td class="num">${mil(c.municipios)}</td><td class="num">${mil(c.linhas)}</td>
+  <td class="bar"><span style="width:${(100 * c.municipios / Math.max(...comps.map((x) => x.municipios), 1)).toFixed(1)}%;--c:var(--s4)"></span></td></tr>`).join("")}
+</tbody></table></div>
 <div class="nota"><b>Escopo desta página.</b> O <b>Poder Executivo municipal e sua administração indireta</b> —
 prefeituras, autarquias e serviços, empresas, institutos de previdência, fundações e agências.
 <b>Câmaras municipais e consórcios intermunicipais ficam de fora</b> por decisão de escopo: consórcio não é

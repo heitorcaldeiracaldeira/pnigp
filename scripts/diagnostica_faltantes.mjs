@@ -55,7 +55,18 @@ const alvos = (await q(`
                         where r2.cod_ibge = m.cod_ibge and r2.unidade_gestora ilike 'Prefeitura%'
                           and coalesce(r2.url_portal,'') not in ('','-') limit 1) r on true
    where left(m.cod_ibge,2) = $1 and left(m.cod_ibge,6) not in (${F})
-     and not exists (select 1 from folha_diagnostico_faltante d where d.cod_ibge = m.cod_ibge)
+     ${process.env.REFAZ === "1" ? "" : `and not exists (select 1 from folha_diagnostico_faltante d where d.cod_ibge = m.cod_ibge)`}
+     -- REFAZ_LIXO=1: só os que ficaram com URL que NÃO é do município (portaltransparencia.gov.br,
+     -- tesourotransparente, transparencia.rs.gov.br, webde.com.br…). Um diagnóstico feito sobre a URL errada
+     -- responde sobre o portal errado — e foi o que carimbou vários como "sem item de pessoal".
+     ${process.env.REFAZ_LIXO === "1" ? `and exists (select 1 from folha_diagnostico_faltante d2 where d2.cod_ibge = m.cod_ibge
+         -- 🚨 16/ago (SP): o fornecedor e-transparência serve VÁRIOS módulos em subdomínios distintos, e a
+         -- descoberta pega o primeiro que aparece: nfe. é a NOTA FISCAL, ouvidoria. e cartadeservicos. são
+         -- atendimento, /esic/wp_login é a tela de login do e-SIC. Nenhum deles tem folha — 20 municípios de SP
+         -- (Taboão da Serra, Poá, Caçapava, Bragança Paulista, Guarujá, Itapevi…) foram carimbados
+         -- "sem item de pessoal" por causa disso. O portal certo é {slug}.prefeitura.{uf}/TDAPortalClient.aspx,
+         -- que a redescoberta com navegador encontra. Ver [[pnigp-rotulo-erp-nao-e-o-portal-da-folha]].
+         and coalesce(d2.url_pessoal, d2.url_visitada) ~* '(portaltransparencia\\.gov\\.br|tesourotransparente|transparencia\\.rs\\.gov\\.br|webde\\.com\\.br|gov\\.br/acessoainformacao|leismunicipais|cespro|nfe\\.etransparencia|ouvidoria\\.etransparencia|cartadeservicos\\.etransparencia|etransparencia\\.com\\.br/esic/)')` : ""}
    order by m.nome limit ${LIMITE}`, [COD_UF])).rows;
 console.log(`[diag] ${alvos.length} municípios a diagnosticar · ${CONC} em paralelo`);
 

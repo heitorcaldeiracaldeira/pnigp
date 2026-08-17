@@ -54,6 +54,12 @@ await q(`insert into tche_portal (cod_ibge, municipio, uf, url)
     from folha_diagnostico_faltante d join municipios_br m on m.cod_ibge = d.cod_ibge
    where coalesce(d.url_pessoal, d.url_visitada) ilike '%TransparenciaJava%'
   on conflict (cod_ibge) do nothing`);
+// … e dos candidatos achados lendo o site oficial (descobre_portal_pelo_site.mjs)
+await q(`insert into tche_portal (cod_ibge, municipio, uf, url)
+  select c.cod_ibge, c.municipio, c.uf,
+         regexp_replace(c.url, '(TransparenciaJavaEnvironment).*', '\\1/com.tche.transparencia.wfolha')
+    from folha_portal_candidato c where c.produto = 'tche'
+  on conflict (cod_ibge) do nothing`);
 
 const money = (s) => {
   const t = String(s ?? "").replace(/[R$\s]/g, "").replace(/\./g, "").replace(",", ".").trim();

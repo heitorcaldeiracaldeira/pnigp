@@ -177,6 +177,9 @@ const tcemt = temTcemt ? (await q(`select count(distinct cod_ibge) municipios, s
     sum(remuneracao) remuneracao, max(ano_folha) ano from folha_tcemt_radar where esfera ilike '%MUNICIPAL%'`)).rows[0] : null;
 const tcemtMun = temTcemt ? new Map((await q(`select cod_ibge, sum(agentes) agentes, sum(remuneracao) remuneracao
     from folha_tcemt_radar where esfera ilike '%MUNICIPAL%' group by 1`)).rows.map(r => [r.cod_ibge, r])) : new Map();
+const temTcemtNom = (await q(`select count(*) n from information_schema.tables where table_name='folha_servidores_tcemt'`)).rows[0].n > 0;
+const tcemtNom = temTcemtNom ? (await q(`select count(*) linhas, count(distinct cod_ibge) municipios,
+    count(distinct nome||'|'||coalesce(cpf_masc,'')) pessoas, max(competencia) ano from folha_servidores_tcemt`)).rows[0] : null;
 const temSh = (await q(`select count(*) n from information_schema.tables where table_name='tc_ms_software_house'`)).rows[0].n > 0;
 const shMs = temSh ? (await q(`select razao_social, count(*) municipios from tc_ms_software_house group by 1 order by 2 desc`)).rows : [];
 const shMun = temSh ? new Map((await q(`select cod_ibge, razao_social from tc_ms_software_house`)).rows.map(r => [r.cod_ibge, r.razao_social])) : new Map();
@@ -276,6 +279,20 @@ ${tcemt ? `
   <div class="hero"><b>R$ ${(Number(tcemt.remuneracao) / 1e9).toFixed(2)} bi</b><span>remuneração no exercício</span></div>
   <div class="hero"><b>0</b><span>municípios de MS no TCE-MS</span></div>
 </div>` : ""}
+${temTcemtNom ? `
+<div class="nota"><b>Coletado.</b> A folha nominal do Radar já está no banco: <b>${mil(tcemtNom.linhas)} linhas</b>,
+<b>${mil(tcemtNom.pessoas)} pessoas</b> em <b>${tcemtNom.municipios} municípios</b>, com secretaria em 100% delas.
+Isso levou Mato Grosso de 36 para <b>141 de 141 municípios</b> com folha nominal — o estado inteiro, com os
+cinco campos.<br><br>
+⚠️ <b>O que o valor é:</b> o Radar carrega um exercício por vez e soma as rubricas do tipo VANTAGEM — portanto
+<b>o valor é a remuneração ACUMULADA no exercício ${esc(tcemtNom.ano || "")}, não um salário mensal</b>. Quem entrou
+no meio do ano acumula menos. Dividir por 12 seria inventar.<br>
+⚠️ <b>Cuiabá é a exceção:</b> a capital aparece no Radar com 22 pessoas na esfera municipal contra 54.290 vínculos
+na RAIS — a prefeitura não remete pessoal por essa via. Os 23.645 servidores de Cuiabá aqui vêm do portal próprio
+da prefeitura, não do tribunal.<br>
+⚠️ <b>Razões acima de 1 são esperadas:</b> o tribunal conta quem passou pela folha ao longo do ano; a RAIS conta
+vínculos ativos em 31/12. Em Rosário Oeste a razão é 205 — ali é a <b>RAIS</b> que está subdeclarada (4 vínculos),
+não o tribunal.</div>` : ""}
 <div class="nota"><b>TCE-MT — publica, e com o grão mais fino que existe.</b> O <b>Radar Pessoal</b>
 (<code>radarpessoal.tce.mt.gov.br</code>, Qlik Sense) traz os agentes públicos dos jurisdicionados com
 <b>nome, CPF, cargo, lotação, município, vínculo, situação e valor de cada rubrica</b> — os cinco campos que
@@ -338,6 +355,18 @@ existe, falta engenharia; e onde o portal não publica pessoal, nenhum código r
 Cinco municípios estavam apontados para um portal de <b>saúde</b>, dois para o <b>Portal da Transparência federal</b>
 (que não tem folha municipal) e outros para NFS-e, gestão de frotas ou para o CMS do site institucional. Tratar
 esses rótulos como ERP levaria a escrever coletor para algo que não existe.</div>
+
+${(await q(`select count(*) n from information_schema.tables where table_name='folha_servidores_campogrande'`)).rows[0].n > 0 ? `
+<div class="nota"><b>Campo Grande entrou pela metade — e isso está declarado.</b> O SIG da capital
+(<code>sig-transparencia…/servidores/consulta</code>) exporta a relação inteira por um parâmetro oculto
+(<code>download=csv</code>): ${mil((await q(`select count(*) n from folha_servidores_campogrande`)).rows[0].n)}
+registros com <b>secretaria, cargo, vínculo e admissão</b> — mas <b>sem valor</b>. A remuneração existe só na
+tela "Detalhar" de cada servidor, e o CSV traz o CPF mascarado enquanto o link do detalhe exige o CPF inteiro:
+pegá-lo obriga a varrer ~2.700 páginas da lista antes das ~32 mil fichas. É uma segunda passada, não um
+impedimento.<br>
+⚠️ O número inclui <b>${mil((await q(`select count(*) n from folha_servidores_campogrande where situacao<>'ATIVO'`)).rows[0].n)}
+inativos e pensionistas</b> (a RAIS conta só ativos) e a competência mais recente publicada é <b>12/2025</b> —
+o portal não tem nada de 2026.</div>` : ""}
 
 <h2>Os maiores buracos individuais</h2>
 <div class="scroll"><table>

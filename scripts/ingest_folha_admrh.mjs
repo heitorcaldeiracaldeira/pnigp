@@ -57,7 +57,10 @@ const marca = (situacao, detalhe, competencia = null, servidores = 0, comValor =
     [IBGE, MUN, UF, HOST, competencia, servidores, comValor, declarado, situacao, detalhe]);
 
 try {
-  await page.goto(`https://${HOST}/rhsysportaltransp/#!/relacaoservidoresmes`, { waitUntil: "networkidle", timeout: 120000 });
+  // ⚠️ nem todo portal ADMRH tem TLS: `rh.imbe.rs.gov.br` só responde em http e o https devolvia a página de erro
+  // do servidor — que o coletor lia como "não é JSON". ESQUEMA configurável, default https.
+  const ESQ = process.env.ESQUEMA || "https";
+  await page.goto(`${ESQ}://${HOST}/rhsysportaltransp/#!/relacaoservidoresmes`, { waitUntil: "networkidle", timeout: 120000 });
   await page.waitForTimeout(6000);
 
   // competência MAIS CHEIA entre as 3 mais recentes ([[pnigp-competencia-mais-cheia-nao-a-recente]])

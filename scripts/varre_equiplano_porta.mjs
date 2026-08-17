@@ -43,12 +43,24 @@ const alvos = (await q(`select m.cod_ibge, m.nome, m.uf, r.url_erp, r.url_portal
  order by m.nome`, [UF])).rows;
 console.log(`[equiplano/porta] ${alvos.length} municípios sem folha com identificador Equiplano`);
 
-const prova = async (base) => {
+// 🚨 HOST QUE RESPONDE NÃO É PROVA. `saojoaopr.equiplano.com.br:7072` e `campodotenentepr…:7072` respondem os
+// dois — e servem a folha de VERÊ (DNS curinga no mesmo servidor). Sem conferir o nome da ENTIDADE declarada,
+// a varredura gravou a mesma folha em 9 municípios diferentes (auditoria de 16/ago/2026).
+// A prova é a entidade: [[pnigp-entidade-declarada-e-a-prova]].
+const so = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const prova = async (base, municipio) => {
   try {
     const r = await fetch(`${base}/transparencia/${R}`, { headers: UA, signal: AbortSignal.timeout(20000) });
     if (!r.ok) return 0;
     const t = await r.text();
-    return [...t.matchAll(/<option[^>]*value=["']?(\d+)["']?[^>]*>([^<]{2,60})/gi)].length;
+    const ents = [...t.matchAll(/<option[^>]*value=["']?(\d+)["']?[^>]*>([^<]{2,60})/gi)].map((m) => m[2]);
+    if (!ents.length) return 0;
+    const m = so(municipio);
+    if (!ents.some((e) => so(e).includes(m))) {
+      console.log(`   ✖ ${municipio} → ${base} responde, mas as entidades são "${ents.slice(0, 2).join(" / ")}" — outro município`);
+      return 0;
+    }
+    return ents.length;
   } catch { return 0; }
 };
 
@@ -61,7 +73,7 @@ for (const a of alvos) {
   for (const p of portas) {
     for (const esq of ["https", "http"]) {
       const base = `${esq}://${host}:${p}`;
-      const n = await prova(base);
+      const n = await prova(base, a.nome);
       if (n) { achou = `${base}/transparencia`; break; }
     }
     if (achou) break;

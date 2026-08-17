@@ -141,6 +141,13 @@ async function comFichas(base, linhas) {
   return out;
 }
 
+// semeia com os candidatos achados lendo o site oficial (descobre_portal_pelo_site.mjs)
+await q(`insert into dbseller_portal (cod_ibge, municipio, uf, base)
+  select c.cod_ibge, c.municipio, c.uf,
+         (regexp_match(c.url, '^(https?://[^/]+)'))[1]
+    from folha_portal_candidato c where c.produto = 'dbseller'
+  on conflict (cod_ibge) do nothing`).catch(() => {});
+
 const alvos = (await q(`select cod_ibge, municipio, uf, base from dbseller_portal
   ${SO ? "where municipio ilike '%'||$1||'%'" : ""} order by municipio`, SO ? [SO] : [])).rows;
 const feitos = REFAZ ? new Set()

@@ -68,12 +68,43 @@ if (process.env.HOST) {
   alvos = [{ ...mun, host: process.env.HOST }];
 } else {
   // dos já sondados/achados + os do radar
-  const r = (await q(`select cod_ibge, municipio nome, uf, host from smarapd_probe where achou
-    ${SO ? "and municipio ilike '%'||$1||'%'" : ""}`, SO ? [SO] : [])).rows;
-  alvos = r;
+  // UF fecha o recorte num estado; sem ela, a fila é nacional (o probe é do país inteiro).
+  const par = []; const cond = [];
+  if (SO) cond.push(`municipio ilike '%'||$${par.push(SO)}||'%'`);
+  if (process.env.UF) cond.push(`uf = $${par.push(process.env.UF)}`);
+  alvos = (await q(`select cod_ibge, municipio nome, uf, host from smarapd_probe where achou
+    ${cond.length ? "and " + cond.join(" and ") : ""}`, par)).rows;
 }
-const feitos = new Set((await q(`select cod_ibge from folha_smarapd_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
-const fila = alvos.filter((a) => a.cod_ibge && !feitos.has(a.cod_ibge));
+// REFAZ=1 recolhe quem já está 'ok'. Necessário depois do conserto de rota/campos de 16/ago: os municípios
+// colhidos antes dele estão sem `secretaria` (a visão antiga não trazia lotação) e por isso nunca contam como
+// completos no critério cargo+salário+secretaria.
+const feitos = process.env.REFAZ === "1" ? new Set()
+  : new Set((await q(`select cod_ibge from folha_smarapd_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
+// 🚨 HOMÔNIMO: o host sai do NOME (`transparencia-{slug}.smarapd.com.br`), então Pitangueiras/SP e Pitangueiras/PR
+// — e Sertãozinho/SP e Sertãozinho/PB — caem no MESMO host e recebiam a MESMA folha, com contagens idênticas
+// (16/ago/2026). Host é indício; município não declarado não vira dado. Quando dois municípios disputam um host,
+// só coleta quem tiver confirmação no PRÓPRIO site (o link manda) — os outros ficam declarados, não inventados.
+// Ver [[pnigp-homonimo-uf-guarda-de-contaminacao]] e [[pnigp-varredura-porta-exige-entidade]].
+const porHost = new Map();
+for (const a of alvos) if (a.host) porHost.set(a.host, [...(porHost.get(a.host) || []), a]);
+const confirmados = new Set((await q(`select r.cod_ibge, r.url_portal, r.site, r.url_erp from radar_portal r
+  where r.url_portal ilike '%smarapd%' or r.site ilike '%smarapd%' or r.url_erp ilike '%smarapd%'`)).rows
+  .map((r) => r.cod_ibge));
+const bloqueados = new Set();
+for (const [host, lista] of porHost) {
+  if (lista.length < 2) continue;
+  const ok = lista.filter((a) => confirmados.has(a.cod_ibge));
+  const perdedores = ok.length === 1 ? lista.filter((a) => a.cod_ibge !== ok[0].cod_ibge) : lista;
+  for (const p of perdedores) {
+    bloqueados.add(p.cod_ibge);
+    await q(`insert into folha_smarapd_coleta (cod_ibge,municipio,uf,host,linhas,situacao,detalhe,em)
+      values ($1,$2,$3,$4,0,'homonimo',$5,now()) on conflict (cod_ibge) do update set situacao='homonimo',
+      detalhe=excluded.detalhe, linhas=0, em=now()`,
+      [p.cod_ibge, p.nome, p.uf, host, `host disputado por ${lista.map((x) => x.nome + "/" + x.uf).join(" e ")}${ok.length === 1 ? ` — confirmado no site de ${ok[0].nome}/${ok[0].uf}` : " — nenhum confirma no próprio site"}`]);
+  }
+  console.log(`  ⚠️ host homônimo ${host}: ${lista.map((x) => x.nome + "/" + x.uf).join(" e ")} → ${ok.length === 1 ? "fica " + ok[0].nome + "/" + ok[0].uf : "NENHUM coletado (sem confirmação)"}`);
+}
+const fila = alvos.filter((a) => a.cod_ibge && !feitos.has(a.cod_ibge) && !bloqueados.has(a.cod_ibge));
 console.log(`[smarapd] ${alvos.length} municípios · ${fila.length} na fila`);
 
 const LOTE = 1000;
@@ -124,11 +155,20 @@ for (let i = 0; i < fila.length; i++) {
             for (const v of Object.values(o)) walk(v);
           }
         })(menu);
-        const VETO = /covid|cedid|peric|perícia|estagi|padr[ãa]o|padr[õo]es|vencimento|legisla|escola|por cargo|por secretaria|por vinculo|por v[íi]nculo|departamento|local de trabalho/i;
-        const pontua = (t) => (/pagamento\s*a?\s*servidor/i.test(t) ? 100 : 0)
-          + (/folha\s*de\s*pagamento/i.test(t) ? 90 : 0)
-          + (/remunera[çc][ãa]o\s*(de|dos)?\s*servidor/i.test(t) ? 80 : 0)
-          + (/detalhad/i.test(t) ? 5 : 0);
+        // ⚠️ o veto vale MESMO para quem pontua alto — é ele que descarta "Pagamentos a Servidores decorrentes da
+        // COVID-19" em Osasco. Por isso cada termo tem de ser cirúrgico: `estagi` derrubou Marília, cuja tela da
+        // folha se chama "Pagamentos a Servidores E ESTAGIÁRIOS" — é a folha inteira, não uma tela de estagiários.
+        const VETO = /covid|cedid|peric|perícia|padr[ãa]o|padr[õo]es|vencimento|legisla|escola|por cargo|por secretaria|por vinculo|por v[íi]nculo|departamento|local de trabalho/i;
+        // 🚨 o padrão HISTÓRICO (/pagamento.*servidor/) tem de continuar valendo e vir PRIMEIRO — ao trocá-lo por
+        // um regex mais estreito, 15 municípios que funcionavam voltaram `vazio` e Bauru caiu na tela de rubricas
+        // ("Cargos e Salários Detalhados", 105 mil linhas). Os padrões novos são FALLBACK, e "detalhado" só
+        // desempata entre candidatos que já pontuaram.
+        const pontua = (t) => {
+          const base = /pagamento.*servidor/i.test(t) ? 100
+            : /folha\s*de\s*pagamento/i.test(t) ? 90
+            : /remunera[çc][ãa]o.*servidor/i.test(t) ? 80 : 0;
+          return base ? base + (/detalhad/i.test(t) ? 5 : 0) : 0;
+        };
         const melhorItem = cand.filter((c) => !VETO.test(c.t)).map((c) => ({ ...c, p: pontua(c.t) }))
           .filter((c) => c.p > 0).sort((x, y) => y.p - x.p)[0];
         if (melhorItem) { chaveModulo = melhorItem.chave; nomeVisao = melhorItem.visao; }
@@ -173,7 +213,16 @@ for (let i = 0; i < fila.length; i++) {
         _hash: crypto.createHash("md5").update([a.cod_ibge, competencia, s.Matricula, nome, s.Cargo, tipo].join("¦")).digest("hex"),
       };
     };
-    await grava(primeira.Valores.map(mapReg));
+    // 🚨 GUARDA DE NOMINALIDADE: se a PRIMEIRA página já vem sem nome, a visão não é nominal (ou o campo mudou de
+    // rótulo outra vez) — não gravar. Foi a falta desta trava que deixou 90.321 linhas sem nome na base.
+    // Ver [[pnigp-rotulo-de-coluna-varia-lei]] e [[pnigp-smarapd-homonimo-e-linhas-sem-nome]].
+    const amostra = primeira.Valores.map(mapReg);
+    const comNome = amostra.filter((r) => r.nome && String(r.nome).trim()).length;
+    if (amostra.length && comNome < amostra.length / 2) {
+      await marca("sem_nome", `visão ${nomeVisao} sem coluna de nome reconhecida (${comNome}/${amostra.length})`);
+      vazios++; continue;
+    }
+    await grava(amostra);
     let colhidas = primeira.Valores.length;
     for (let p = 2; p <= paginas; p++) {
       const j = await filtro(a.host, nomeVisao, chaveModulo, comp.periodo, p, 500, comp.exercicio);

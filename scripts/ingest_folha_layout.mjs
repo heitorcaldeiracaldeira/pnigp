@@ -117,6 +117,15 @@ for (let i = 0; i < fila.length; i++) {
       if (page > 500) break;
     }
     if (!regs.length) { await marca("vazio", mun, comp, "sem servidores"); vazios++; continue; }
+    // 🚨 GUARDA DE NOMINALIDADE (16/ago/2026): linha sem nome não é folha nominal — foi assim que 20.736 linhas
+    // entraram pelo SCPI e 90 mil pelo SMARAPD, sempre com o coletor fechando `ok`. Ver [[pnigp-rotulo-de-coluna-varia-lei]].
+    {
+      const comNome = regs.filter((r) => r.nome && String(r.nome).trim()).length;
+      if (regs.length && comNome < regs.length / 2) {
+        console.log(`  ⚠️ ${regs.length} linhas SEM NOME — não gravado (coluna de nome não reconhecida)`);
+        vazios++; continue;
+      }
+    }
     await grava(regs);
     totalGeral += regs.length; ok++;
     await marca("ok", mun, comp, null, regs.length);

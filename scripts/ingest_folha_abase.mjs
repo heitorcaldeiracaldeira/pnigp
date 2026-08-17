@@ -69,12 +69,17 @@ const desescapa = (s) => {
 // 🚨 `portal_real_descoberto.uf` vem em DOIS formatos: sigla ("RS") quando a linha nasceu de
 // `site_municipal_derivado`, e nome por extenso ("Rio Grande do Sul") quando veio do Radar. Filtrar por um só
 // formato pegou 12 de 43 municípios — o resto ficou invisível. O filtro seguro é pelo PREFIXO do cod_ibge.
+// ⭐ portais descobertos + candidatos achados lendo o site oficial (descobre_portal_pelo_site.mjs)
 const alvos = (await q(`
-  select distinct on (p.cod_ibge) p.cod_ibge, p.municipio, p.uf, p.url_portal_real url
-    from portal_real_descoberto p
-   where p.fornecedor ~ 'abase'
-     ${UF ? "and left(p.cod_ibge,2) = $1" : ""} ${SO ? `and p.municipio ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
-   order by p.cod_ibge, length(p.url_portal_real)`, [UF ? COD_UF : null, SO].filter(Boolean))).rows;
+  select distinct on (cod_ibge) cod_ibge, municipio, uf, url from (
+    select p.cod_ibge, p.municipio, p.uf, p.url_portal_real url
+      from portal_real_descoberto p where p.fornecedor ~ 'abase'
+     union
+    select c.cod_ibge, c.municipio, c.uf, c.url
+      from folha_portal_candidato c where c.produto = 'abase'
+  ) x
+   where true ${UF ? "and left(cod_ibge,2) = $1" : ""} ${SO ? `and municipio ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
+   order by cod_ibge, length(url)`, [UF ? COD_UF : null, SO].filter(Boolean))).rows;
 const feitos = new Set(REFAZ ? [] : (await q(`select cod_ibge from folha_abase_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[abase] ${alvos.length} portais · ${feitos.size} já feitos · ${fila.length} na fila`);

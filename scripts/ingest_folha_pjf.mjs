@@ -61,7 +61,9 @@ async function grava(regs) {
       select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
         $9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::text[],$15::numeric[],$16::numeric[],
         $17::text[],$18::text[])
-      on conflict (_hash) do nothing`,
+      on conflict (_hash) do update set
+        bruto = coalesce(excluded.bruto, folha_servidores_pjf.bruto),
+        liquido = coalesce(excluded.liquido, folha_servidores_pjf.liquido)`,
       [col("cod_ibge"), col("municipio"), col("uf"), col("orgao"), col("competencia"), col("matricula"),
        col("nome"), col("cargo"), col("funcao"), col("carga_horaria"), col("data_admissao"), col("data_exoneracao"),
        col("vinculo"), col("secretaria"), col("bruto"), col("liquido"), col("id_portal"), col("_hash")]);
@@ -81,12 +83,24 @@ for (const orgao of (SO_ORGAO ? [SO_ORGAO] : ORGAOS)) {
     if (!comps.length) { console.log(`  ✖ ${orgao}: sem competência no formulário`); continue; }
     const comp = COMPETENCIA && comps.includes(COMPETENCIA) ? COMPETENCIA : comps[0];
 
-    await page.selectOption("select[name=competencia_pesq]", comp);
-    await Promise.all([page.waitForNavigation({ timeout: 90000 }).catch(() => {}), page.click("button[name=sub_pesq]")]);
-    await page.waitForTimeout(1500);
+    // 🚨 A busca SEM filtro de secretaria não devolve o órgão inteiro: a Administração Direta parou em 651 de
+    // ~20 mil. É preciso iterar SECRETARIA a SECRETARIA (o select traz 26 na PJF) e somar.
+    const secretarias = await page.$$eval("select[name=secretaria_pesq] option", (os) => os.map((o) => o.value));
+    const listaSec = secretarias.filter((s) => s !== "");
+    const linhas = [];
+    // 🚨 uma secretaria que trava NÃO pode derrubar as outras 24: numa passada o portal demorou no clique de
+    // pesquisa e o órgão inteiro saiu com zero, perdendo o que já tinha sido listado. Erro isolado por secretaria.
+    for (const sec of (listaSec.length ? listaSec : [""])) {
+    try {
+    await page.goto(`${BASE}pesquisar.php?orgao_pesq=${encodeURIComponent(orgao)}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.waitForTimeout(600);
+    await page.selectOption("select[name=competencia_pesq]", comp).catch(() => {});
+    if (sec) await page.selectOption("select[name=secretaria_pesq]", sec).catch(() => {});
+    await Promise.all([page.waitForNavigation({ timeout: 90000 }).catch(() => {}),
+                       page.click("button[name=sub_pesq]", { timeout: 60000 })]);
+    await page.waitForTimeout(1200);
 
     // ── varre todas as páginas da listagem ─────────────────────────────────────────────────────────────────────
-    const linhas = [];
     for (let pag = 1; pag <= 2000; pag++) {
       const bloco = await page.evaluate(() => {
         const t = [...document.querySelectorAll("table")].find((x) => x.rows.length > 3 &&
@@ -104,22 +118,30 @@ for (const orgao of (SO_ORGAO ? [SO_ORGAO] : ORGAOS)) {
       });
       linhas.push(...bloco.regs);
       if (!bloco.temProxima) break;
-      const clicou = await page.evaluate(() => {
-        const a = [...document.querySelectorAll("a")].find((x) => /pr[óo]xima/i.test(x.textContent));
-        if (!a) return false; a.click(); return true;
-      });
-      if (!clicou) break;
-      await page.waitForLoadState("domcontentloaded", { timeout: 60000 }).catch(() => {});
-      await page.waitForTimeout(700);
-      if (pag % 25 === 0) console.log(`    ${orgao} ${comp}: ${linhas.length} linhas (pág. ${pag})`);
+      // 🚨 clicar por evaluate destrói o contexto no meio da navegação ("Execution context was destroyed").
+      // Clicar pelo locator e esperar a navegação junto é o que sobrevive à paginação longa.
+      const link = page.locator("a", { hasText: /pr[óo]xima/i }).first();
+      if (!(await link.count())) break;
+      await Promise.all([page.waitForNavigation({ timeout: 60000 }).catch(() => {}), link.click({ timeout: 30000 }).catch(() => {})]);
+      await page.waitForTimeout(500);
+      if (pag % 25 === 0) console.log(`    ${orgao}/${sec || "todas"}: ${linhas.length} linhas (pág. ${pag})`);
+    }
+    // 🚨 O `detalhado.php?id=` só responde com o RESULTADO DA BUSCA VIVO na sessão: buscar a remuneração depois
+    // de trocar de secretaria devolve página sem dado, e a folha sai com 2.828 valores em 12.328 pessoas.
+    // Por isso o detalhe é lido AQUI, ainda dentro da secretaria que acabou de ser listada.
+    if (!SEM_DETALHE) await remuneracao(linhas.filter((l) => l.id && l.bruto === undefined));
+    } catch (e) {
+      console.log(`    ⚠ ${orgao}/${sec}: ${String(e.message).slice(0, 60)} — segue para a próxima secretaria`);
+    }
     }
     console.log(`  ${orgao} ${comp}: ${linhas.length} servidores listados`);
     if (!linhas.length) { await q(`insert into folha_pjf_coleta values ($1,$2,0,'vazio','listagem sem linhas',now())
       on conflict (orgao,competencia) do update set linhas=0, situacao='vazio', em=now()`, [orgao, comp]); continue; }
 
     // ── remuneração: só existe no detalhe; fetch INTERNO em lotes, na sessão do navegador ──────────────────────
-    if (!SEM_DETALHE) {
-      const ids = linhas.filter((l) => l.id).map((l) => l.id);
+    async function remuneracao(pendentes) {
+      const ids = pendentes.filter((l) => l.id).map((l) => l.id);
+      if (!ids.length) return;
       const CONC = 6;
       for (let i = 0; i < ids.length; i += CONC * 20) {
         const fatia = ids.slice(i, i + CONC * 20);
@@ -147,7 +169,7 @@ for (const orgao of (SO_ORGAO ? [SO_ORGAO] : ORGAOS)) {
           await Promise.all(partes.map(trab));
           return out;
         }, { fatia, CONC, BASE });
-        for (const l of linhas) if (l.id && vals[l.id]) { l.bruto = vals[l.id].b; l.liquido = vals[l.id].l; }
+        for (const l of pendentes) if (l.id && vals[l.id]) { l.bruto = vals[l.id].b; l.liquido = vals[l.id].l; }
         console.log(`    ${orgao}: remuneração ${Math.min(i + fatia.length, ids.length)}/${ids.length}`);
       }
     }

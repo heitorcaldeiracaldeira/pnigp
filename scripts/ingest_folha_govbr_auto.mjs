@@ -79,18 +79,78 @@ async function grava(regs) {
   return arr.length;
 }
 
+// 🚨 `acao=10` NÃO é universal: em Eldorado do Sul essa tela devolve 93 bytes (vazia) e o combo de unidade só
+// aparece em `acao=4` — o coletor morria com "Element is not visible" no botão Gerar, que é o sintoma de tela
+// vazia, não de portal quebrado. Abre a tela testando as ações conhecidas e para na primeira que trouxer o combo.
+// 🚨 O ENDEREÇO DA TELA MUDA POR INSTALAÇÃO e o combo de unidade tem DOIS nomes. Em Piratini/RS a folha nominal
+// ("Salários por Colaborador") é `acao=4&item=5` e o combo é **`cmbUnidadeGP`** (com `cmbMesInicialGP`/
+// `cmbMesFinalGP`/`cmbAnoGP` no lugar de `txtDataInicial/Final`); o `acao=10&item=8` cai na HOME e o coletor
+// fechava "sem unidades no combo" — que parecia portal sem folha e era endereço errado (16/ago/2026).
+// Devolve qual esqueleto foi achado para o chamador usar os campos certos.
+// ⚠️ `acao=4&item=8` é "Tabela de Remuneração dos Cargos" — NÃO é folha nominal; fica por último para não roubar
+// a vez da tela certa. Em Eldorado do Sul a folha é `acao=4&item=3` ("Servidores/Empregados Ativos").
+const TELAS = [{ acao: 10, item: 8 }, { acao: 4, item: 5 }, { acao: 4, item: 3 }, { acao: 3, item: 5 }, { acao: 4, item: 8 }];
+// ⚠️ nem todo PRONIM tem TLS: `gestaodepessoal.santamaria.rs.gov.br` (a folha da 4ª maior cidade do estado) só
+// responde em http. ESQUEMA=http força; sem ele, tenta https e cai para http.
+const ESQUEMAS = process.env.ESQUEMA ? [process.env.ESQUEMA] : ["https", "http"];
+async function abreTelaFolha(page, host) {
+  for (const { acao, item } of TELAS) {
+    for (const esq of ESQUEMAS) {
+      await page.goto(`${esq}://${host}/pronimtb/index.asp?acao=${acao}&item=${item}`,
+        { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => {});
+      await dorme(1500);
+      const ok = await page.evaluate(() => {
+        for (const nome of ["cmbUnidadeAR", "cmbUnidadeGP"]) {
+          const e = document.querySelector(`[id="${nome}"],[name="${nome}"]`);
+          if (e && [...e.options].filter((o) => o.value && !/^\*/.test(o.text)).length) return nome;
+        }
+        return null;
+      }).catch(() => null);
+      if (ok) return { acao, item, unidade: ok, gp: ok === "cmbUnidadeGP", esquema: esq };
+    }
+  }
+  throw new Error(`tela de folha sem combo de unidade (tentei ${TELAS.map((t) => t.acao + "/" + t.item).join(", ")})`);
+}
+
+// preenche o período conforme o esqueleto da tela: o clássico usa duas datas por extenso; o "GP" usa combos de
+// mês/ano. DTINI/DTFIM continuam sendo a fonte da verdade (dd/mm/aaaa).
+async function setaPeriodo(page, tela) {
+  const [, mi, ai] = /(\d{2})\/(\d{4})/.exec(DTINI.slice(3)) || [];
+  const [, mf] = /(\d{2})\/(\d{4})/.exec(DTFIM.slice(3)) || [];
+  await page.evaluate(({ tela, di, df, mi, mf, ai }) => {
+    const setAll = (n, v) => document.querySelectorAll(`[id="${n}"],[name="${n}"]`).forEach((e) => {
+      e.value = v; ["input", "keyup", "change", "blur"].forEach((ev) => e.dispatchEvent(new Event(ev, { bubbles: true })));
+    });
+    if (tela.gp) {
+      // ⭐ na tela "Gestão de Pessoas" a competência é UM combo só, `cmbDataGP`, com valores `AAAAMM01`
+      // ("20260701=07/2026") — não os pares mês inicial/final que eu supus. Escolhe a competência pedida se
+      // existir; senão, a mais recente publicada (a lista vem do mais novo para o mais antigo).
+      const d = document.querySelector('[id="cmbDataGP"],[name="cmbDataGP"]');
+      if (d) {
+        const alvo = `${ai}${mi}01`;
+        const op = [...d.options].find((o) => o.value === alvo) || [...d.options].find((o) => /^\d{8}$/.test(o.value));
+        if (op) setAll("cmbDataGP", op.value);
+      }
+      setAll("cmbVinculoGP", "0");   // TODOS os vínculos
+    } else { setAll("txtDataInicial", di); setAll("txtDataFinal", df); }
+  }, { tela, di: DTINI, df: DTFIM, mi: mi || "01", mf: mf || "12", ai: ai || String(new Date().getFullYear()) });
+}
+
 // dirige o portal e captura o ZIP; devolve o XML (string latin1)
 async function baixaFolha(browser, host, banco) {
-  const ctx = await browser.newContext({ acceptDownloads: true });
+  // 🚨 `ignoreHTTPSErrors`: em Santa Maria o portal é servido em http mas REDIRECIONA para https no meio do fluxo
+  // (`acao.asp?acao=ConsultarDataAR`), e o certificado não valida — o navegador aborta e o clique em "Gerar"
+  // termina sem download nenhum, sem erro visível. Sem isso, o município parece não exportar.
+  const ctx = await browser.newContext({ acceptDownloads: true, ignoreHTTPSErrors: true });
   const page = await ctx.newPage();
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "govbr-"));
   try {
-    await page.goto(`https://${host}/pronimtb/index.asp?acao=10&item=8`, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await dorme(1500);
-    await page.evaluate(({ b, di, df }) => {
+    const tela = await abreTelaFolha(page, host);
+    await page.evaluate(({ b, campo }) => {
       const setAll = (n, v) => document.querySelectorAll(`[id="${n}"],[name="${n}"]`).forEach((e) => { e.value = v; ["input", "keyup", "change", "blur"].forEach((ev) => e.dispatchEvent(new Event(ev, { bubbles: true }))); });
-      setAll("cmbUnidadeAR", b); setAll("txtDataInicial", di); setAll("txtDataFinal", df);
-    }, { b: banco, di: DTINI, df: DTFIM });
+      setAll(campo, b);
+    }, { b: banco, campo: tela.unidade });
+    await setaPeriodo(page, tela);
     await dorme(500);
     const [download] = await Promise.all([
       page.waitForEvent("download", { timeout: 120000 }),
@@ -108,25 +168,28 @@ async function baixaFolha(browser, host, banco) {
 // ⭐ cidades gigantes estouram o timeout mesmo com 1 mês (folha inteira num ZIP só). Quebra por UNIDADE: itera cada
 // secretaria do combo cmbUnidadeAR, 1 mês cada, e concatena os XML. UNIDADE_SPLIT=1 liga esse modo.
 async function baixaFolhaPorUnidade(browser, host) {
-  const ctx = await browser.newContext({ acceptDownloads: true });
+  // 🚨 `ignoreHTTPSErrors`: em Santa Maria o portal é servido em http mas REDIRECIONA para https no meio do fluxo
+  // (`acao.asp?acao=ConsultarDataAR`), e o certificado não valida — o navegador aborta e o clique em "Gerar"
+  // termina sem download nenhum, sem erro visível. Sem isso, o município parece não exportar.
+  const ctx = await browser.newContext({ acceptDownloads: true, ignoreHTTPSErrors: true });
   const page = await ctx.newPage();
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "govbru-"));
   const raws = [];
   try {
-    await page.goto(`https://${host}/pronimtb/index.asp?acao=10&item=8`, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await dorme(1500);
-    const unidades = await page.evaluate(() => {
-      const u = document.querySelector('[id="cmbUnidadeAR"],[name="cmbUnidadeAR"]');
+    const tela = await abreTelaFolha(page, host);
+    const unidades = await page.evaluate((campo) => {
+      const u = document.querySelector(`[id="${campo}"],[name="${campo}"]`);
       return u ? [...u.options].filter((o) => o.value && !/^\*/.test(o.text)).map((o) => o.value) : [];
-    });
+    }, tela.unidade);
     if (!unidades.length) throw new Error("sem unidades no combo");
     let baixados = 0;
     for (const uv of unidades) {
       try {
-        await page.evaluate(({ u, di, df }) => {
+        await page.evaluate(({ u, campo }) => {
           const setAll = (n, v) => document.querySelectorAll(`[id="${n}"],[name="${n}"]`).forEach((e) => { e.value = v; ["input", "keyup", "change", "blur"].forEach((ev) => e.dispatchEvent(new Event(ev, { bubbles: true }))); });
-          setAll("cmbUnidadeAR", u); setAll("txtDataInicial", di); setAll("txtDataFinal", df);
-        }, { u: uv, di: DTINI, df: DTFIM });
+          setAll(campo, u);
+        }, { u: uv, campo: tela.unidade });
+        await setaPeriodo(page, tela);
         await dorme(400);
         const [download] = await Promise.all([
           page.waitForEvent("download", { timeout: 30000 }),

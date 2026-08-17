@@ -59,11 +59,16 @@ const leTabela = (page) => page.evaluate(() => {
     .filter((r) => r.nome && !/^servidor$/i.test(r.nome));
 });
 
+// 🚨 20 dos 94 portais CidadesMG descobertos são da CÂMARA (`cm{slug}.cidadesmg.com.br`) e o `distinct on` pegava
+// o primeiro que aparecesse: Januária entrou com 62 pessoas num município de 2.352, Serro com 27 de 748.
+// A folha da câmara é real, mas não é a do município — ordenar preferindo o host `pm` e descartar quem só tem `cm`.
 const alvos = (await q(`select distinct on (cod_ibge) cod_ibge, municipio, uf, url_portal_real base
   from portal_real_descoberto where url_portal_real ilike '%cidadesmg%'
-  ${SO ? "and municipio ilike '%'||$1||'%'" : ""} order by cod_ibge`, SO ? [SO] : [])).rows;
+    and url_portal_real !~* '//cm'
+  ${SO ? "and municipio ilike '%'||$1||'%'" : ""}
+  order by cod_ibge, (url_portal_real ~* '//pm') desc`, SO ? [SO] : [])).rows;
 const feitos = process.env.REFAZ === "1" ? new Set()
-  : new Set((await q(`select cod_ibge from folha_cidadesmg_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
+  : new Set((await q(`select cod_ibge from folha_cidadesmg_coleta where situacao like 'ok%'`)).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[cidadesmg] ${alvos.length} portais · ${fila.length} na fila`);
 
@@ -117,6 +122,14 @@ for (let i = 0; i < fila.length; i++) {
       if (teste.length) break;
     }
 
+    // 🚨 O TOTAL DECLARADO é a única forma de saber se a paginação foi até o fim. Sem ele o coletor terminava
+    // 'ok' com 38 de 2.708 (Salinas) e 62 de 2.352 (Januária): o `.ui-paginator-next` fica DESABILITADO enquanto
+    // o AJAX do PrimeFaces carrega, e o laço interpretava isso como "última página".
+    const totalDeclarado = await page.evaluate(() => {
+      const t = document.body.innerText.match(/de\s+([\d.]+)\s+(registros|resultados)/i);
+      return t ? Number(t[1].replace(/\./g, "")) : null;
+    }).catch(() => null);
+
     const linhas = [];
     const vistos = new Set();
     for (let pg = 0; pg < MAX_PAG; pg++) {
@@ -127,16 +140,24 @@ for (let i = 0; i < fila.length; i++) {
         if (vistos.has(k)) continue;
         vistos.add(k); linhas.push(r); novos++;
       }
-      // paginator do PrimeFaces: avança enquanto o botão "próxima" não estiver desabilitado
-      const avancou = await page.evaluate(() => {
-        const b = document.querySelector(".ui-paginator-next:not(.ui-state-disabled)");
-        if (!b) return false;
-        b.click(); return true;
-      }).catch(() => false);
+      if (totalDeclarado && linhas.length >= totalDeclarado) break;
+      // paginator do PrimeFaces: avança enquanto o botão "próxima" não estiver desabilitado.
+      // Botão desabilitado pode ser AJAX em curso — insistir antes de concluir que acabou.
+      let avancou = false;
+      for (let t = 0; t < 3 && !avancou; t++) {
+        avancou = await page.evaluate(() => {
+          const b = document.querySelector(".ui-paginator-next:not(.ui-state-disabled)");
+          if (!b) return false;
+          b.click(); return true;
+        }).catch(() => false);
+        if (!avancou) await dorme(2500);
+      }
       if (!avancou) break;
       await dorme(2500);
       if (!novos && pg > 2) break;   // parou de trazer novidade
     }
+    const incompleto = totalDeclarado && linhas.length < totalDeclarado
+      ? `PARCIAL: ${linhas.length} de ${totalDeclarado} declarados` : null;
     if (!linhas.length) { await marca("vazio", "tabela sem linhas"); falhas++; continue; }
 
     const comp = (() => {
@@ -167,7 +188,7 @@ for (let i = 0; i < fila.length; i++) {
          c("data_admissao"), c("bruto"), c("descontos"), c("liquido"), c("_hash")]);
     }
     totalGeral += arr.length; ok++;
-    await marca("ok", null, comp, arr.length);
+    await marca("ok", incompleto, comp, arr.length);
     console.log(`  [${i + 1}/${fila.length}] ${a.uf} ${a.municipio}: ${arr.length} servidores (${comp})`);
   } catch (e) {
     falhas++; await marca("erro", String(e.message).slice(0, 150));

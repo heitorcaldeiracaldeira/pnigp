@@ -1,20 +1,21 @@
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
-// relatorio_folha_es.mjs — a entrega do Espírito Santo: quem tem folha nominal, com que qualidade, e quem falta.
+// relatorio_folha_uf.mjs — a entrega de uma UF: quem tem folha nominal, com que qualidade, e quem falta.
 //
 // Lê tudo do banco na hora (nada escrito à mão) e mede a coleta contra o DENOMINADOR EXTERNO da RAIS 2025
 // ([[pnigp-conferidor-rais-denominador-folha]]) — uma razão de 0,2 ou de 3,0 não é divergência metodológica,
 // é defeito de coleta. As fontes são DESCOBERTAS no catálogo do banco, nunca listadas à mão: lista fixa envelhece
 // e ignora coletor novo em silêncio ([[pnigp-coletor-ok-sem-dado-sete-causas]]).
 //
-// Uso: node scripts/relatorio_folha_es.mjs   ·   SAIDA=C:/caminho/arquivo.html
+// Uso: UF=ES node scripts/relatorio_folha_uf.mjs   ·   UF=AM ...   ·   SAIDA=C:/caminho/arquivo.html
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
 import fs from "fs";
 import { pool, withRetry } from "./_cadprev.mjs";
+import { SG_UF, COD_UF, NOME_ESTADO } from "./_uf.mjs";
 
 const db = pool();
 const q = withRetry(db);
-const UF = process.env.UF_ALVO || "ES";
-const COD = "32";
+const UF = SG_UF;              // vem de _uf.mjs (env UF), a fonte única da verdade da UF
+const COD = COD_UF;
 const SAIDA = process.env.SAIDA || `C:/Users/PC/folha-servidores-${UF.toLowerCase()}.html`;
 
 const mil = (n) => Number(n || 0).toLocaleString("pt-BR");
@@ -68,9 +69,12 @@ with fatia as (
     from vw_folha_es group by 1,2,3
 ),
 top as (select distinct on (cod_ibge) * from fatia order by cod_ibge, com_valor desc, linhas desc)
+-- 🚨 a razão contra a RAIS se mede por QUEM FOI PAGO, não por linha: a lista do Portal TP traz **demitidos e
+-- licenças sem remuneração** junto dos ativos (São Mateus: 3.075 linhas "Demitido", 77 com valor). Medindo por
+-- linha, o município aparece com 1,77 e parece coleta inflada — quando o defeito é do numerador.
 select m.cod_ibge, m.nome municipio, t.fonte, t.competencia, t.linhas, t.com_valor, t.com_cargo,
        t.com_secretaria, t.com_nome, round(t.folha) folha, round(t.mediana) mediana,
-       r.vinculos rais, round(t.linhas::numeric / nullif(r.vinculos,0), 2) razao_rais
+       r.vinculos rais, round(t.com_valor::numeric / nullif(r.vinculos,0), 2) razao_rais
   from municipios_br m
   left join top t on t.cod_ibge = m.cod_ibge
   left join (select cod_ibge6, count(*) filter (where ativo_3112) vinculos from folha_rais_municipal
@@ -81,15 +85,22 @@ select m.cod_ibge, m.nome municipio, t.fonte, t.competencia, t.linhas, t.com_val
 
 const comDado = melhor.filter((r) => r.fonte);
 const semDado = melhor.filter((r) => !r.fonte);
+// 🚨 "tem folha" não pode ser "tem uma linha": Urucurituba entrava no placar com 1 servidor e Manacapuru com 51
+// (todos sem valor) para 13.856 vínculos na RAIS. O número defensável é o de coleta CONSISTENTE — pelo menos 1/5
+// do denominador externo. Os demais aparecem como coleta residual, não como cobertura.
+const consistente = (r) => +r.com_valor > 0 && (!r.rais || +r.com_valor >= 0.2 * +r.rais);
+const solidos = comDado.filter(consistente);
+const residuais = comDado.filter((r) => !consistente(r));
 const soma = (f) => comDado.reduce((s, r) => s + Number(r[f] || 0), 0);
 console.log(`\n${comDado.length} de ${melhor.length} municípios com folha · ${mil(soma("linhas"))} servidores · ${brl(soma("folha"))} na competência de referência`);
+console.log(`   dos quais ${solidos.length} com coleta CONSISTENTE (>=20% da RAIS) e ${residuais.length} apenas residual: ${residuais.map((r) => `${r.municipio} (${r.com_valor})`).join(", ") || "—"}`);
 console.table(comDado.slice(0, 15).map((r) => ({ municipio: r.municipio, fonte: r.fonte, comp: r.competencia, servidores: r.linhas, folha: brl(r.folha), rais: r.rais, razao: r.razao_rais })));
 if (semDado.length) console.log("SEM FOLHA:", semDado.map((r) => r.municipio).join(", "));
 
 const suspeitos = comDado.filter((r) => r.razao_rais && (r.razao_rais < 0.5 || r.razao_rais > 1.8));
 if (suspeitos.length) {
   console.log(`\n⚠ ${suspeitos.length} municípios fora da faixa 0,5–1,8 da RAIS (candidatos a coleta parcial ou a espelho):`);
-  console.table(suspeitos.map((r) => ({ municipio: r.municipio, fonte: r.fonte, coletado: r.linhas, rais: r.rais, razao: r.razao_rais })));
+  console.table(suspeitos.map((r) => ({ municipio: r.municipio, fonte: r.fonte, linhas: r.linhas, pagos: r.com_valor, rais: r.rais, razao: r.razao_rais })));
 }
 
 // ── 3. recortes que respondem a pergunta do Heitor: secretaria e cargo ───────────────────────────────────────────
@@ -134,7 +145,7 @@ const linha = (r) => `<tr><td>${esc(r.municipio)}</td><td class="f">${esc(r.font
 
 const html = `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Folha de pagamento dos municípios do Espírito Santo</title>
+<title>Folha de pagamento dos municípios ${"do " + NOME_ESTADO}</title>
 <style>
 :root{color-scheme:light;--bg:#fcfcfb;--surface:#fff;--line:#e5e4e0;--ink:#0b0b0b;--ink2:#52514e;--ink3:#7a7975;
  --s1:#2a78d6;--ok:#0ca30c;--warn:#fab219;--crit:#d03b3b}
@@ -161,19 +172,24 @@ td.f{color:var(--ink3);font-size:.85rem}
 .aviso{border-left:3px solid var(--warn);padding:6px 0 6px 14px;margin-top:16px;color:var(--ink2)}
 footer{margin-top:64px;color:var(--ink3);font-size:.85rem;border-top:1px solid var(--line);padding-top:16px}
 </style></head><body><div class="wrap">
-<h1>Folha de pagamento dos municípios do Espírito Santo</h1>
+<h1>Folha de pagamento dos municípios ${"do " + NOME_ESTADO}</h1>
 <p class="sub">Servidor a servidor, com cargo, lotação e remuneração, direto dos portais de transparência municipais. Gerado em ${agora}.</p>
 
 <div class="heros">
- <div class="hero"><b>${comDado.length}/78</b><span>municípios com folha nominal</span></div>
+ <div class="hero"><b>${solidos.length}/${melhor.length}</b><span>municípios com coleta consistente</span></div>
+ <div class="hero"><b>${comDado.length}</b><span>com alguma folha (inclui ${residuais.length} residuais)</span></div>
  <div class="hero"><b>${mil(totServ)}</b><span>servidores na competência de referência</span></div>
  <div class="hero"><b>${brl(totFolha)}</b><span>folha bruta do mês</span></div>
  <div class="hero"><b>${pctSec}</b><span>municípios com lotação/secretaria</span></div>
  <div class="hero"><b>${pctCar}</b><span>municípios com cargo</span></div>
 </div>
 <p>O denominador de conferência é a <b>RAIS 2025</b> (vínculos municipais ativos em 31/12): ${mil(totRais)} vínculos
-nos municípios já coletados. A razão coletado/RAIS é a prova real — perto de 1,0 significa que a coleta pegou o
-ente inteiro; muito abaixo indica que ficaram de fora fundos, autarquias ou a câmara.</p>
+nos municípios já coletados. A razão é <b>pagos no mês ÷ RAIS</b> — e o numerador é quem recebeu, não a linha: a
+lista do portal traz demitidos e licenças sem remuneração junto dos ativos (em São Mateus, 3.075 linhas
+&ldquo;Demitido&rdquo;), o que por linha faria o município parecer inflado.</p>
+<p>Razão <b>muito abaixo de 1,0</b> é coleta curta — ficaram de fora fundos, autarquias ou a câmara. Razão
+<b>acima de 1,8</b>, nos municípios pequenos, foi verificada e <b>não é duplicação</b>: o número de nomes distintos
+bate com o de linhas; é a RAIS que subdeclara onde há muito contratado temporário.</p>
 
 <h2>Município a município</h2>
 <div class="scroll"><table><thead><tr><th>Município</th><th>Fonte</th><th>Competência</th><th>Servidores</th>
@@ -194,8 +210,8 @@ ${semDado.length ? `<div class="aviso"><b>Sem folha coletada (${semDado.length})
 <div class="scroll"><table><thead><tr><th>Cargo</th><th>Servidores</th><th>Mediana</th><th>Maior remuneração</th></tr></thead>
 <tbody>${porCargo.map((r) => `<tr><td>${esc(r.cargo)}</td><td class="n">${mil(r.servidores)}</td><td class="n">${brl(r.mediana)}</td><td class="n">${brl(r.maior)}</td></tr>`).join("")}</tbody></table></div>
 
-<footer>Fontes: portais de transparência municipais (Portal TP, TransparenciaWeb, Ágape, Betha, SMARAPD) e
-Prefeitura de Vitória. Denominador: RAIS 2025 (MTE). Uma competência por município — a mais cheia disponível.
+<footer>Fontes: portais de transparência municipais, lidos por
+os coletores do PNIGP. Denominador: RAIS 2025 (MTE). Uma competência por município — a mais cheia disponível.
 Números lidos do banco no momento da geração.</footer>
 </div></body></html>`;
 

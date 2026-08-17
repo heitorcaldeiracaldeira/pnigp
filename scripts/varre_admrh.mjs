@@ -82,7 +82,10 @@ for (let k = 0; k < muns.length; k += CONC) {
   await Promise.all(bloco.map(async (m) => {
     const s = so(m.nome);
     const hosts = new Set([...(conhecidos.get(m.cod_ibge) || [])]);
-    for (const h of [`transparencia.${s}.rs.gov.br`, `grp.${s}.rs.gov.br`, `rh.${s}.rs.gov.br`,
+    // 🚨 `transparenciarh.` (sem ponto entre "transparencia" e "rh") NÃO estava nos moldes — e é justamente o host
+    // de Venâncio Aires. Um prefixo a menos na lista some com um município inteiro que já tinha coletor pronto.
+    for (const h of [`transparencia.${s}.rs.gov.br`, `transparenciarh.${s}.rs.gov.br`, `transparencia-rh.${s}.rs.gov.br`,
+                     `grp.${s}.rs.gov.br`, `rh.${s}.rs.gov.br`, `rhsys.${s}.rs.gov.br`,
                      `servidor.${s}.rs.gov.br`, `portal.${s}.rs.gov.br`, `www.${s}.rs.gov.br`]) hosts.add(h);
     for (const h of hosts) {
       for (const c of CAMINHOS) {

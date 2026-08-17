@@ -48,12 +48,19 @@ await q(`create table if not exists folha_citta_coleta (
   linhas int, com_lotacao int, com_cargo int, situacao text, detalhe text, em timestamptz default now()
 )`);
 
+// ⭐ além da sonda, os candidatos achados lendo o SITE OFICIAL (descobre_portal_pelo_site.mjs) — 9 municípios do
+// RS só apareceram por ali. 🚨 filtros de UF/SO ficam FORA do union.
 const alvos = (await q(`
-  select s.cod_ibge, s.municipio, s.uf, coalesce(s.url_pessoal, s.url_base) url
-    from folha_sonda_municipal s
-   where coalesce(s.url_pessoal, s.url_base) ~ 'citta'
-     ${UF ? "and s.uf = $1" : ""} ${SO ? `and s.municipio ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
-   order by s.municipio`, [UF, SO].filter(Boolean))).rows;
+  select * from (
+    select s.cod_ibge, s.municipio, s.uf, coalesce(s.url_pessoal, s.url_base) url
+      from folha_sonda_municipal s
+     where coalesce(s.url_pessoal, s.url_base) ~ 'citta'
+     union
+    select c.cod_ibge, c.municipio, c.uf, c.url
+      from folha_portal_candidato c where c.produto = 'citta'
+  ) x
+   where true ${UF ? "and uf = $1" : ""} ${SO ? `and municipio ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
+   order by municipio`, [UF, SO].filter(Boolean))).rows;
 const feitos = new Set(REFAZ ? [] : (await q(`select cod_ibge from folha_citta_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[citta] ${alvos.length} portais · ${feitos.size} já feitos · ${fila.length} na fila`);

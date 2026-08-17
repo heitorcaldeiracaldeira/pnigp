@@ -47,7 +47,7 @@ if (process.env.ENTIDADE) {
     join municipios_br m on m.cod_ibge=e.cod_ibge where e.entidade is not null
     ${SO ? "and m.nome ilike '%'||$1||'%'" : ""}`, SO ? [SO] : [])).rows;
 }
-const feitos = new Set((await q(`select cod_ibge from folha_memory_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
+const feitos = new Set((await q(`select cod_ibge from folha_memory_coleta where situacao like 'ok%'`)).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => a.cod_ibge && !feitos.has(a.cod_ibge));
 console.log(`[memory] ${alvos.length} municípios · ${fila.length} na fila`);
 
@@ -68,7 +68,13 @@ async function grava(regs) {
 }
 
 // navega, descobre a query de gastopessoal e pagina wspessoalabateteto
-async function coleta(page, entidade) {
+// 🚨 O número depois da entidade na URL (`#/{entidade}/N/…`) NÃO é constante: é o índice do exercício/entidade.
+// O coletor fixava 1 e os municípios cujo portal usa 2 abriam a tela VAZIA — "gastopessoal sem linhas" em
+// Vespasiano (7.239 servidores na RAIS), João Pinheiro e Guanhães. As URLs descobertas mostram o número certo.
+// Tenta os índices em ordem e para no primeiro que traz linhas ([[feedback-descobrir-versao-nao-fixar]]).
+const INDICES = (process.env.INDICES || "1,2,3").split(",").map((s) => s.trim()).filter(Boolean);
+
+async function coleta(page, entidade, indice = "1") {
   // ⚠️ o listener precisa existir ANTES das navegações: a query do SPA dispara já no carregamento da tela,
   // não só no clique de "Pesquisar" — registrando depois, ela passa despercebida.
   let queryId = null;
@@ -78,7 +84,7 @@ async function coleta(page, entidade) {
   };
   page.on("response", capta);
   // entra pelo share (estabelece o tenant), depois vai a gastopessoal
-  await page.goto(`https://ilai.memory.com.br/#/${entidade}/1/share?resource=public/pessoal/gastopessoal`, { waitUntil: "networkidle", timeout: 60000 });
+  await page.goto(`https://ilai.memory.com.br/#/${entidade}/${indice}/share?resource=public/pessoal/gastopessoal`, { waitUntil: "networkidle", timeout: 60000 });
   await dorme(2500);
   await page.goto(`https://ilai.memory.com.br/#/public/pessoal/gastopessoal`, { waitUntil: "networkidle", timeout: 60000 });
   await dorme(2000);
@@ -121,8 +127,15 @@ for (let i = 0; i < fila.length; i++) {
   await ctx.addInitScript(() => { Object.defineProperty(navigator, "webdriver", { get: () => undefined }); });
   const page = await ctx.newPage();
   try {
-    const rows = await coleta(page, a.entidade);
-    if (!rows.length) { await marca("vazio", "gastopessoal sem linhas"); vazios++; continue; }
+    // 🚨 Parar no PRIMEIRO índice que traz linhas põe a CÂMARA no lugar da prefeitura: o índice 2 costuma ser
+    // ela, e 14 municípios entraram com 12 a 29 pessoas. O índice certo é o que traz MAIS linhas — só em
+    // Porteirinha a prefeitura estava no 2 (1.712). Ver [[pnigp-entidade-espelho-infla-folha]].
+    let rows = [], indiceUsado = null;
+    for (const ix of INDICES) {
+      const r = await coleta(page, a.entidade, ix);
+      if (r.length > rows.length) { rows = r; indiceUsado = ix; }
+    }
+    if (!rows.length) { await marca("vazio", `gastopessoal sem linhas (índices ${INDICES.join("/")})`); vazios++; continue; }
     const regs = rows.map((s) => ({
       cod_ibge: a.cod_ibge, municipio: a.nome, uf: a.uf, entidade: a.entidade,
       competencia: String(s.mes_referencia ?? ""), matricula: String(s.numero_matricula ?? ""),

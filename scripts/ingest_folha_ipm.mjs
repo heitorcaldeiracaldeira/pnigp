@@ -11,7 +11,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
 import crypto from "crypto";
 import { pool, withRetry } from "./_cadprev.mjs";
-import { slugDe, achaPortal, achaEmbed, filtrosDaTela, entidadesDaTela, periodosDaEntidade, paginaServidores } from "./_ipm.mjs";
+import { slugDe, achaPortal, achaEmbed, filtrosDaTela, entidadesDaTela, periodosDaEntidade, periodosDaTela, paginaServidores } from "./_ipm.mjs";
 
 const db = pool();
 const q = withRetry(db);
@@ -114,8 +114,34 @@ for (let i = 0; i < fila.length; i++) {
          situacao=excluded.situacao, detalhe=excluded.detalhe, em=now()`,
       [p.cod_ibge, p.municipio, p.uf, competencia, linhas, situacao, detalhe]);
   try {
-    const embed = await achaEmbed(p.slug);
+    // ⭐ Se o descobridor já achou o item de folha DESTE município (código + rotina próprios), usar o dele: o
+    // molde fixo `codigo 9 / rot 3344` responde em quase todo portal, mas em alguns devolve zero período
+    // (Osório publica 127 competências no item 27/rot 3525).
+    // 🚨 `plano-de-cargos-e-salarios` casa com '%salario%' e NÃO é folha nominal — é a TABELA DE VENCIMENTOS do
+    // cargo (mesma armadilha do bloco `tche` no RS). Além de não ser o dado pedido, essa tela devolve `dados`
+    // num formato diferente e derrubava o município com "map is not a function". Excluir da preferência.
+    // 🚨 A PREFERÊNCIA DE ITEM DECIDE O TAMANHO DA FOLHA. O grupo Pessoal tem até 13 itens e a maioria é RECORTE:
+    // `funcionario-inativo` deu 25 pessoas em Rolante e 2 em Bom Progresso; `resumo-folha-de-pagamento` é
+    // agregado, não nominal; `funcionario-comissionado`/`cedidos`/`demitidos`/`em-gozo-ferias` são fatias.
+    // Escolher o item que cobre TODO o quadro, na ordem do mais completo para o mais estreito
+    // ([[pnigp-entidade-espelho-infla-folha]] é o erro simétrico: aqui o risco é SUBcoletar).
+    const rota = (await q(`select nome_item, codigo, rot, aca from ipm_item_rotina
+       where cod_ibge = $1 and tem_valor
+         and nome_item !~* '(plano-de-cargos|tabela-de-venc|estrutura|organograma|concurso|resumo|inativo|comissionad|cedidos|demitid|exonerad|ferias|lotacao|centro-de-custos|regime)'
+       order by case
+           when nome_item ilike '%funcionario-x-pagamentos%' then 1
+           when nome_item ilike '%funcionario-x-salario' then 2
+           when nome_item ilike '%matricula-x-cargo-x-salario%' then 3
+           when nome_item ilike '%funcionario-x-salario-liquido%' then 4
+           when nome_item ilike '%relacao-de-funcionarios%' then 5
+           when nome_item ilike '%salario-bruto%' then 6
+           when nome_item ilike '%funcionario-efetivo%' then 7
+           else 9 end limit 1`, [p.cod_ibge]).catch(() => ({ rows: [] }))).rows[0];
+    const embed = rota
+      ? await achaEmbed(p.slug, { codigo: rota.codigo, tipo: "1", grupo: "4" }, rota.nome_item, rota.rot, rota.aca)
+      : await achaEmbed(p.slug);
     if (!embed) { await marca("sem_item", "portal sem 'relacao-funcionario-x-salario'"); falhas++; continue; }
+    if (rota) console.log(`     (usando item ${rota.nome_item} · código ${rota.codigo} · rot ${rota.rot})`);
     const filtros = await filtrosDaTela(embed);
     // ⭐ TODAS as entidades do município (prefeitura + autarquias + fundos), não só a pré-selecionada
     const entidades = entidadesDaTela(filtros.bruto);
@@ -126,15 +152,28 @@ for (let i = 0; i < fila.length; i++) {
     const regs = [];
     const detalhes = [];
     for (const ent of lista) {
-      // a competência é POR ENTIDADE — a autarquia pode publicar um mês diferente do da prefeitura
-      const per = await periodosDaEntidade(embed, ent.codigo);
-      const competencia = per[0]?.codigo
+      // a competência é POR ENTIDADE — a autarquia pode publicar um mês diferente do da prefeitura.
+      // ⭐ A TELA VEM PRIMEIRO: em Osório o select já traz 127 competências enquanto o AJAX devolve [] (o coletor
+      // carimbava "não publica período nenhum" num município que publica desde 2015).
+      const daTela = periodosDaTela(filtros.bruto);
+      const per = daTela.length ? daTela : await periodosDaEntidade(embed, ent.codigo);
+      // ⭐ COMPETÊNCIA MAIS CHEIA, e de graça: a 1ª página já devolve `total`, então medir custa 1 requisição por
+      // mês candidato ([[pnigp-competencia-mais-cheia-nao-a-recente]]).
+      const CANDIDATAS = Number(process.env.COMPETENCIAS_IPM || 3);
+      let competencia = null, melhorTotal = -1;
+      for (const cand of per.slice(0, CANDIDATAS)) {
+        const sonda = await paginaServidores(embed, { entidade: ent.codigo, competencia: cand.codigo }, 0, 500, filtros)
+          .catch(() => ({ total: 0, linhas: [] }));
+        const t = Number(sonda?.total || 0);
+        if (t > melhorTotal) { melhorTotal = t; competencia = cand.codigo; }
+      }
+      if (!competencia) competencia = per[0]?.codigo
         || (ent.codigo === filtros.entidade ? filtros.competencia : null);
       if (!competencia) { detalhes.push(`${(ent.descricao || ent.codigo).slice(0, 24)}:sem_periodo`); continue; }
       const f2 = { entidade: ent.codigo, competencia };
       let pagina = 0, totalReg = null, antes = regs.length;
       do {
-        const r = await paginaServidores(embed, f2, pagina);
+        const r = await paginaServidores(embed, f2, pagina, 500, filtros);
         if (r.erro) throw new Error(r.erro);
         totalReg = r.total;
         for (const s of r.linhas) {
@@ -143,7 +182,11 @@ for (let i = 0; i < fila.length; i++) {
             competencia: s.odomesano, nome: s.uninomerazao, cargo: s.cardescricao, lotacao: s.cncdescricao,
             matricula: s.fcncodigo, contrato: s.funcontrato, afastamento: s.afastamento,
             rescisao: s.rescisao, ferias: s.ferias,
-            provento: num(s.provento), desconto: num(s.desconto), liquido: num(s.liquido),
+            // ⚠️ o nome da coluna de dinheiro muda com o item: o 9 traz provento/desconto/liquido; o 27 traz
+            // brutototal/liquidototal (e ainda brutomensal, brutoferias, brutorescisao, brutodecimo).
+            provento: num(s.provento ?? s.brutototal ?? s.brutomensal),
+            desconto: num(s.desconto),
+            liquido: num(s.liquido ?? s.liquidototal ?? s.liquidomensal),
             _hash: crypto.createHash("md5").update([p.cod_ibge, s.odomesano, s.fcncodigo, s.funcontrato, s.uninomerazao, s.cardescricao, s.provento].join("¦")).digest("hex"),
           });
         }

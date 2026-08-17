@@ -86,6 +86,9 @@ await q(`create table if not exists folha_agape_coleta (
 const SEMENTE = [
   ["3203320", "Marataízes", "ES", "https://marataizes.es.gov.br/transparencia"],
   ["3200706", "Atílio Vivácqua", "ES", "https://www.pmav.es.gov.br/transparencia"],
+  // Piúma tinha 15 servidores no banco (via Betha) para 1.352 vínculos na RAIS — o conferidor apontou, e o
+  // diagnóstico mostrou que o portal dela é Ágape, num CAMINHO (`/portal/transparencia`), não num subdomínio.
+  ["3204203", "Piúma", "ES", "https://www.piuma.es.gov.br/portal/transparencia"],
 ];
 for (const [cod, mun, uf, url] of SEMENTE) {
   await q(`insert into folha_agape_portal (cod_ibge,municipio,uf,base_url) values ($1,$2,$3,$4)
@@ -148,12 +151,14 @@ for (const a of alvos) {
     // inventar a query: usar a que a PRÓPRIA página publica ([[pnigp-coletor-ok-sem-dado-sete-causas]], defeito
     // nº 4 — parâmetro do primeiro portal virando constante).
     const doPortal = (pgLista.match(/href=["']([^"']*rh\/servidores_download\/csv[^"']*)["']/i) || [])[1];
-    const urlCsv = doPortal ? new URL(doPortal.replace(/&amp;/g, "&"), a.base_url).href
+    // 🚨 o `?` pendurado sem query (como Piúma publica) faz o portal devolver a página sem o link do arquivo
+    const urlCsv = doPortal ? new URL(doPortal.replace(/&amp;/g, "&").replace(/\?$/, ""), a.base_url).href
                             : `${a.base_url}/rh/servidores_download/csv?comp_ano=${ANO}`;
     console.log(`  download: ${urlCsv.replace(a.base_url, "")}`);
     // 1º salto: gera o arquivo. 2º salto: baixa o link que a página devolve.
     const g = await nav(urlCsv, lista);
     const link = (g.texto.match(/href=["']([^"']*uploads\/temp\/[^"']+)["']/i) || [])[1];
+    if (!link) console.log(`  (exportação devolveu ${g.st} · ${g.texto.length} bytes sem link)`);
 
     // ── caminho A: o CSV (quando a exportação do portal funciona) ────────────────────────────────────────────────
     let cadastro = [];
@@ -187,24 +192,41 @@ for (const a of alvos) {
     if (!cadastro.length) {
       console.log("  exportação indisponível — indo pela LISTAGEM paginada");
       const vistos = new Map();
+      const qs = doPortal && doPortal.includes("situacao") ? "?situacao=Ativo" : "";
       for (let off = 0; off < 20000; off += 20) {
-        const pg = (await nav(`${a.base_url}/rh/servidores/${off}${doPortal && doPortal.includes("situacao") ? "?situacao=Ativo" : ""}`, lista)).texto;
+        // a 1ª página é a própria tela (`/rh/servidores`); `/rh/servidores/0` não existe em toda instalação
+        const pg = (await nav(off === 0 ? `${a.base_url}/rh/servidores${qs}` : `${a.base_url}/rh/servidores/${off}${qs}`, lista)).texto;
         const trs = [...pg.matchAll(/<tr class=['"]treegrid-[^'"]*['"]>([\s\S]*?)<\/tr>/gi)];
         if (!trs.length) break;
+        const antes = vistos.size;
+        // 🚨 mapear PELO CABEÇALHO: a ordem das colunas muda por instalação (Piúma tem uma coluna de data entre
+        // matrícula e nome que Atílio não tem — índice fixo lê a data como nome).
+        const cabTr = (pg.match(/<thead[\s\S]*?<\/thead>/i) || [""])[0];
+        const cab = [...cabTr.matchAll(/<th[^>]*>([\s\S]*?)<\/th>/gi)].map((x) => texto(x[1]).toLowerCase());
+        const iCol = (re) => cab.findIndex((x) => re.test(x));
+        const cMat = iCol(/matr[íi]cula/), cNome = iCol(/nome|servidor/), cCargo = iCol(/cargo/),
+              cFun = iCol(/fun[çc][ãa]o|profiss/), cEnt = iCol(/entidade|unidade|[óo]rg[ãa]o/), cSit = iCol(/situa/);
         for (const t of trs) {
           const tds = [...t[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map((x) => texto(x[1]));
-          const rend = t[1].match(/\/rh\/rendimento\/(\d+)\/([\w.-]+)\?comp_ano=(\d{4})&(?:amp;)?contrato=([^'"&]*)/i);
+          // a URL do rendimento tem DUAS formas: com entidade (`/rendimento/{mat}/{ent}?comp_ano=&contrato=`) e
+          // seca (`/rendimento/{mat}`). Inventar a que falta devolve erro — aceitar as duas.
+          const rend = t[1].match(/\/rh\/rendimento\/(\d+)(?:\/([\w.-]+))?(?:\?comp_ano=(\d{4}))?(?:&(?:amp;)?contrato=([^'"&\s]*))?/i);
           if (!rend) continue;
-          const nome = (tds[1] || "").replace(/^.*?(Ficha Funcional|Licenças|Passagens)\s*"?>\s*/s, "").trim();
-          const chave = `${rend[1]}|${rend[4]}`;
+          const pega = (i) => (i >= 0 && i < tds.length ? tds[i] || null : null);
+          const bruto = pega(cNome) || "";
+          const nome = bruto.replace(/^.*?(Ficha Funcional|Licenças|Passagens|Alimentação)[^>]*>\s*/s, "").trim();
+          const chave = `${rend[1]}|${rend[4] || "0"}`;
           if (vistos.has(chave)) continue;
           vistos.set(chave, {
-            matricula: rend[1], nome: nome || tds[1] || null, cargo: tds[2] || null, secretaria: null,
-            profissao: tds[3] || null, regime: null, jornada: null, lotacao: tds[3] || null, local_trabalho: null,
-            situacao: tds[4] || null, data_admissao: null, data_demissao: null, salario_cargo: null,
-            contrato: rend[4] || "0", cnpj: rend[2], ano: rend[3],
+            matricula: rend[1], nome: nome || bruto || null, cargo: pega(cCargo), secretaria: null,
+            profissao: pega(cFun), regime: null, jornada: null, lotacao: pega(cEnt), local_trabalho: null,
+            situacao: pega(cSit), data_admissao: null, data_demissao: null, salario_cargo: null,
+            contrato: rend[4] || "0", cnpj: rend[2] || null, ano: rend[3] || String(ANO),
           });
         }
+        // 🚨 além do fim, o CodeIgniter costuma repetir a ÚLTIMA página em vez de devolver vazio — sem esta
+        // trava o laço vai até o teto do offset gastando milhares de requisições por nada.
+        if (vistos.size === antes) break;
         if (off % 400 === 0) process.stdout.write(`\r   … ${vistos.size} servidores listados`);
       }
       console.log("");
@@ -213,8 +235,9 @@ for (const a of alvos) {
     if (!cadastro.length) { await marca("vazio", "nem exportação nem listagem devolveram servidores"); console.log("  ✖ sem cadastro"); continue; }
     console.log(`  cadastro: ${cadastro.length} servidores · ${cadastro.filter((x) => x.secretaria).length} com secretaria · ${cadastro.filter((x) => x.cargo).length} com cargo`);
 
-    // o identificador da entidade sai da própria listagem (a URL é /rendimento/{matricula}/{id})
-    const cnpjs = [...new Set([...pgLista.matchAll(/\/rh\/rendimento\/\d+\/([\w.-]+)\?/g)].map((m) => m[1]))];
+    // o identificador da entidade sai da própria listagem — mas NEM TODA instalação tem: em Piúma a rota é
+    // `/rh/rendimento/{matricula}` seca, sem entidade. Montar a URL com um id inventado devolve erro.
+    const cnpjs = [...new Set([...pgLista.matchAll(/\/rh\/rendimento\/\d+\/([\w.-]+)/g)].map((m) => m[1]))];
     const cnpj = cnpjs[0];
     console.log(`  entidades vistas na listagem: ${cnpjs.join(", ") || "(nenhuma)"}`);
 
@@ -228,7 +251,12 @@ for (const a of alvos) {
       _hash: crypto.createHash("md5").update([a.cod_ibge, comp, c.matricula, c.nome, c.cargo].join("¦")).digest("hex"),
     });
 
-    if (SEM_RENDIMENTO || !cnpj) {
+    const rota = (c, tela) => {
+      const ano = c.ano || String(ANO), ent = c.cnpj || cnpj;
+      return ent ? `${a.base_url}/rh/${tela}/${c.matricula}/${ent}?comp_ano=${ano}&contrato=${c.contrato}`
+                 : `${a.base_url}/rh/${tela}/${c.matricula}?comp_ano=${ano}`;
+    };
+    if (SEM_RENDIMENTO) {
       for (const c of cadastro) push(c, `${ANO}00`, null);   // sem competência: é o cadastro do exercício
     } else {
       let feitos = 0, comValor = 0;
@@ -240,12 +268,12 @@ for (const a of alvos) {
           try {
             // quando o cadastro veio da listagem, falta a lotação — ela está na FICHA ("Unidade"/"Lotação")
             if (!c.secretaria) {
-              const f = await nav(`${a.base_url}/rh/ficha/${c.matricula}/${ent}?comp_ano=${ano}&contrato=${c.contrato}`, lista);
+              const f = await nav(rota(c, "ficha"), lista);
               const campo = (re) => { const m = f.texto.replace(/<\/t[dh]>/gi, "¦").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").match(re); return m ? m[1].replace(/¦/g, "").trim() || null : null; };
               c.secretaria = campo(/Unidade:\s*¦?\s*([^¦]{2,80})/i) || campo(/Lota[çc][ãa]o:\s*¦?\s*([^¦]{2,80})/i);
               c.lotacao = c.lotacao || campo(/Lota[çc][ãa]o:\s*¦?\s*([^¦]{2,80})/i);
             }
-            const r = await nav(`${a.base_url}/rh/rendimento/${c.matricula}/${ent}?comp_ano=${ano}&contrato=${c.contrato}`, lista);
+            const r = await nav(rota(c, "rendimento"), lista);
             const serie = serieRendimento(r.texto);
             if (serie.length) { comValor++; for (const m of serie) push(c, `${ano}${String(m.i + 1).padStart(2, "0")}`, m); }
             else push(c, `${ano}00`, null);

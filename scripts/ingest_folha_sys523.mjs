@@ -44,12 +44,18 @@ await q(`create table if not exists folha_sys523_coleta (
 )`);
 
 // ── alvos: qualquer município cujo portal conhecido contenha /sys523/ ──────────────────────────────────────────
+// ⭐ sonda + candidatos achados lendo o site oficial (filtros de UF/SO FORA do union)
 const alvos = (await q(`
-  select s.cod_ibge, s.municipio, s.uf, coalesce(s.url_pessoal, s.url_base) url
-    from folha_sonda_municipal s
-   where (s.url_pessoal ~ 'sys523' or s.url_base ~ 'sys523')
-     ${UF ? "and s.uf = $1" : ""} ${SO ? `and s.municipio ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
-   order by s.municipio`, [UF, SO].filter(Boolean))).rows;
+  select * from (
+    select s.cod_ibge, s.municipio, s.uf, coalesce(s.url_pessoal, s.url_base) url
+      from folha_sonda_municipal s
+     where (s.url_pessoal ~ 'sys523' or s.url_base ~ 'sys523')
+     union
+    select c.cod_ibge, c.municipio, c.uf, c.url
+      from folha_portal_candidato c where c.produto = 'sys523'
+  ) x
+   where true ${UF ? "and uf = $1" : ""} ${SO ? `and municipio ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
+   order by municipio`, [UF, SO].filter(Boolean))).rows;
 // REFAZ=1 reprocessa quem já está ok (usar quando a REGRA mudou — ex.: o hash ganhou um campo)
 const REFAZ = process.env.REFAZ === "1";
 const feitos = new Set(REFAZ ? [] : (await q(`select cod_ibge from folha_sys523_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
@@ -100,13 +106,26 @@ for (let i = 0; i < fila.length; i++) {
     // ⚠️ nem todo município aponta para a MESMA tela do produto: Carlos Gomes está cadastrado em
     // `/sys523/publico/rhumanos.xhtml` ("Recursos Humanos"), que não tem o dataTable da folha. A folha vive em
     // `remuneracao.xhtml` no mesmo diretório — tentar a irmã antes de declarar "sem tela".
-    const candidatas = [a.url, a.url.replace(/\/[a-z]+\.xhtml(\?.*)?$/i, "/remuneracao.xhtml")];
+    // 🚨 o nome da tela pode ter HÍFEN (`perguntas-frequentes.xhtml`, `diarias-servidor.xhtml`): sem o `-` na
+    // classe, a substituição não acontecia e o município fechava "nenhuma candidata trouxe o dataTable" — que
+    // parece portal sem folha e é só a URL de origem apontando para outra página do mesmo portal (Ponte Preta).
+    // Também vale tentar a raiz do diretório, para quando a URL cadastrada não é .xhtml nenhum.
+    // 🚨🚨 A TELA DE FOLHA VEM PRIMEIRO, e a candidata tem de ser VALIDADA pelo cabeçalho. A URL cadastrada
+    // costuma ser outra página do mesmo portal (`licitacoes.xhtml`, `perguntas-frequentes.xhtml`) — e essas
+    // TAMBÉM têm `ui-datatable-data`. O coletor parava na primeira que tinha dataTable e lia o total de
+    // LICITAÇÕES: Marcelino Ramos fechava "total declarado 22" (licitações) com 284 servidores publicados ao
+    // lado, Maximiliano "2" e Barão de Cotegipe "0". Aceitar só a tabela cujo cabeçalho fale de servidor.
+    const dir = a.url.replace(/\/[^/]*$/, "");
+    const candidatas = [`${dir}/remuneracao.xhtml`, a.url,
+                        a.url.replace(/\/[a-z-]+\.xhtml(\?.*)?$/i, "/remuneracao.xhtml")];
     let r1, html, cookie, vs, urlUsada;
     for (const cand of [...new Set(candidatas)]) {
       r1 = await fetch(cand, { redirect: "follow", signal: AbortSignal.timeout(60000), headers: UA });
       if (!r1.ok) continue;
       html = await r1.text();
       if (!/ui-datatable-data/.test(html)) continue;
+      // a tela certa declara o cabeçalho da folha; licitações/contratos não têm "Nome do Servidor"
+      if (!/nome do servidor|nome_servidor|servidor/i.test(html) || !/proventos|remunera|sal[áa]rio|l[íi]quido/i.test(html)) continue;
       cookie = (r1.headers.getSetCookie?.() || []).map((c) => c.split(";")[0]).join("; ");
       vs = (html.match(/name="javax\.faces\.ViewState"[^>]*value="([^"]+)"/) || [])[1];
       urlUsada = cand;
@@ -114,8 +133,17 @@ for (let i = 0; i < fila.length; i++) {
     }
     if (!urlUsada) { await marca("sem_tela", "nenhuma candidata trouxe o dataTable da folha"); falhas++; continue; }
     a.url = urlUsada;
-    // o id do dataTable sai do próprio HTML (o tbody `..._data` com a classe do PrimeFaces), nunca fixado
-    const tbl = (html.match(/id="([^"]+)_data"\s+class="[^"]*ui-datatable-data/) || [])[1];
+    // o id do dataTable sai do próprio HTML (o tbody `..._data` com a classe do PrimeFaces), nunca fixado.
+    // 🚨 E a página tem MAIS DE UMA tabela: pegar a primeira levava o coletor a paginar a tabela errada e voltar
+    // zero linha com um total declarado que era de outra grade (Marcelino Ramos "declarado 22", Maximiliano "2").
+    // Escolher a que tem cabeçalho de FOLHA — Nome + Cargo/Remuneração — olhando o HTML que antecede o tbody.
+    const tabelas = [...html.matchAll(/id="([^"]+)_data"\s+class="[^"]*ui-datatable-data/g)];
+    let tbl = null;
+    for (const m of tabelas) {
+      const antes = html.slice(Math.max(0, m.index - 4000), m.index);
+      if (/nome/i.test(antes) && /(remunera|cargo|sal[áa]rio|l[íi]quido)/i.test(antes)) { tbl = m[1]; break; }
+    }
+    if (!tbl && tabelas.length) tbl = tabelas[0][1];   // sem cabeçalho reconhecível, mantém o comportamento antigo
     if (!vs || !tbl) { await marca("sem_tela", "sem ViewState ou dataTable"); falhas++; continue; }
 
     // competência e entidade lidas pelo CONTEÚDO, nunca pelo id

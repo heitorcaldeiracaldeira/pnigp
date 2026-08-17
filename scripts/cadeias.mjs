@@ -35,6 +35,24 @@
 const ANO = new Date().getFullYear();
 
 export const CADEIAS = {
+  // ⭐ AUDITORIA DA FOLHA — as provas que pegam o que o livro-razão marca como `ok` e está errado. Custa segundos
+  // por tabela e, na noite de 16/ago/2026, encontrou ~36 mil linhas com a folha de OUTRO município (10 pares de
+  // homônimos no GovBR, 9 no Equiplano, 2 no SMARAPD, 1 no Elotech, 1 no SCPI) e 110 mil linhas sem nome.
+  // Roda DEPOIS dos coletores, e só RELATA — apagar continua sendo decisão caso a caso.
+  // Ver [[pnigp-varredura-porta-exige-entidade]] e [[pnigp-rotulo-de-coluna-varia-lei]].
+  folha_auditoria: {
+    titulo: "Auditoria da folha — contaminação por homônimo, linhas sem nome e folhas gêmeas",
+    log: "pnigp-folha-auditoria.log",
+    trava: { nome: "cadeia_folha_auditoria", toleranciaMin: 10 },
+    aoFalhar: "seguir",   // as três provas são independentes: esconder duas por causa de uma é pior
+    env: {},
+    passos: [
+      { rotulo: "entidade declarada x municipio", script: "scripts/audita_entidade_declarada.mjs", timeoutMin: 30 },
+      { rotulo: "host compartilhado, linhas sem nome e folhas gemeas", script: "scripts/audita_folha_geral.mjs", timeoutMin: 30 },
+      { rotulo: "homonimos do GovBR (so relata; APLICAR=1 apaga)", script: "scripts/resolve_govbr_homonimo.mjs", timeoutMin: 20 },
+    ],
+  },
+
   coleta: {
     titulo: "Coleta do PNCP e das fontes devidas",
     log: "pnigp-coleta.log",

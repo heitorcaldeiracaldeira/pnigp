@@ -1,0 +1,299 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Servidores</title>
+
+<link rel="icon" href="../images/favicon.png">
+
+<link rel="stylesheet" type="text/css" href="http://prefeituradeorizona.sigepnet.com.br/css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="http://prefeituradeorizona.sigepnet.com.br/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" href="http://prefeituradeorizona.sigepnet.com.br/css/jquery-ui.css">
+<link rel="stylesheet" type="text/css" href="http://prefeituradeorizona.sigepnet.com.br/css/pace.css">
+<link rel="stylesheet" type="text/css" href="http://prefeituradeorizona.sigepnet.com.br/css/style.css">
+<link rel="stylesheet" type="text/css" href="http://prefeituradeorizona.sigepnet.com.br/css/cor.css" title="default">
+<link rel="stylesheet" href="https://fonts.sandbox.google.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@48,400,0,0">
+
+<script type="text/javascript" src="http://prefeituradeorizona.sigepnet.com.br/js/jquery-3.1.1.min.js"></script>
+<script type="text/javascript" src="http://prefeituradeorizona.sigepnet.com.br/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="http://prefeituradeorizona.sigepnet.com.br/js/jquery.mask.js"></script>
+<script type="text/javascript" src="http://prefeituradeorizona.sigepnet.com.br/js/jquery-ui.js"></script>
+<script type="text/javascript" src="http://prefeituradeorizona.sigepnet.com.br/js/validate.min.js"></script>
+<script type="text/javascript" src="http://prefeituradeorizona.sigepnet.com.br/js/jquery.cookie.js"></script>
+<script type="text/javascript" src="http://prefeituradeorizona.sigepnet.com.br/js/script.js"></script>
+<script type="text/javascript" src="http://prefeituradeorizona.sigepnet.com.br/js/acessibilidade.js"></script>
+
+<style type="text/css">.bg-primary, .btn-primary, .btn-primary.focus, .btn-primary.disabled.focus,.btn-primary.disabled:focus, .btn-primary.disabled:hover, .btn-primary[disabled].focus, .btn-primary[disabled]:focus, .btn-primary[disabled]:hover, fieldset[disabled] .btn-primary.focus,fieldset[disabled] .btn-primary:focus, fieldset[disabled] .btn-primary:hover,.dropdown-menu>.active>a, .dropdown-menu>.active>a:focus, .dropdown-menu>.active>a:hover,.nav-pills>li.active>a, .nav-pills>li.active>a:focus, .nav-pills>li.active>a:hover,.pagination>.active>a, .pagination>.active>a:focus, .pagination>.active>a:hover,.pagination>.active>span, .pagination>.active>span:focus, .pagination>.active>span:hover,.label-primary, .progress-bar, .list-group-item.active, .list-group-item.active:focus,.list-group-item.active:hover, .panel-default>.panel-heading, .panel-primary>.panel-heading,.conteudo-table table thead tr, .panel-heading-2, .container-top .bg, .footer,.btn-primary.active.focus, .btn-primary.active:focus, .btn-primary.active:hover, .btn-primary:active.focus, .btn-primary:active:focus, .btn-primary:active:hover, .open>.dropdown-toggle.btn-primary.focus, .open>.dropdown-toggle.btn-primary:focus, .open>.dropdown-toggle.btn-primary:hover{ background-color: #1F317F; color:#FFF !important; }.detalhes table thead tr { background: #1F317F; color:#FFF !important; }.btn-primary:hover,.btn-primary.focus, .btn-primary:focus {  background-color: #1F317F;  border-color:#FFF; }.text-primary, .btn-primary .badge, .btn-link, .pagination>li>a, .pagination>li>span,.list-group-item.active>.badge, .nav-pills>.active>a>.badge, .panel-primary> .panel-heading .badge,.panel-collapse a { color: #1F317F !important; }.nav .open>a, .nav .open>a:focus, .nav .open>a:hover,.pagination>.active>a, .pagination>.active>a:focus, .pagination>.active>a:hover, .pagination>.active>span, .pagination>.active>span:focus, .pagination>.active>span:hover, .list-group-item.active, .list-group-item.active:focus, .list-group-item.active:hover, .panel-primary, .btn-primary,.panel-primary>.panel-heading { border-color: #1F317F !important; }.panel-primary>.panel-heading+.panel-collapse>.panel-body{ border-top-color: #1F317F !important; }.panel-primary>.panel-footer+.panel-collapse>.panel-body { border-bottom-color: #1F317F !important; }.modal .nav{ background: #1F317F; }.modal .nav-tabs li a { color: #000000 !important; }.menu-bar li a {color : #1F317F; }.modal .nav-tabs li .active a { color: #1F317F; }.modal .nav-tabs li a:hover { color: #1F317F; }.modal .ativo { color: #fff; background-color: #1F317F; }</style><style>
+   .menu-bar ul { 
+      list-style: none outside none;
+      margin:0;
+      padding: 0; 
+      text-align: center; 
+      padding: 1px 0; 
+      overflow: hidden;
+    }
+    .menu-bar li {
+      display: block; 
+      float: left; 
+      margin-left: 8px; 
+      color: #fff;
+    }
+    .menu-bar{
+      float: left;
+    }
+    .menu-bar span{
+      width: 12px;
+      height: 12px;
+      margin-left: 5px;
+      font-weight: 700;
+      line-height: 11px;
+      text-align: center;
+      display: inline-block;
+      vertical-align: middle;
+      background-color: #fff;
+    }
+</style>
+
+<link rel="alternate stylesheet" type="text/css" media="screen" href="http://prefeituradeorizona.sigepnet.com.br/css/contraste.css" title="high-contrast-w-b">
+</head>
+
+<body>
+
+<div id="acessibilidademin">
+    <span class="material-symbols-outlined">
+    accessible
+    </span>
+	
+</div>
+<div id='acessibilidademax'>
+  <div class="row titulo" id='fecharacessibilidade'>
+    <div class="col-sm-10">Acessibilidade</div>
+    <div class="col-sm-2">x</div>
+  </div>
+  <div id='row' style="float: left; width: 100%; margin-top: 80px;">
+    <div style="float: left; margin-bottom: 10px;">Contraste do site: </div>
+    <button id="inst-bar-opt-contrast" style="width: 172px; margin-bottom:10px; " class="btn btn-primary">Contraste</button>
+
+    <div style='float:left;width: 200px;margin-bottom:10px;'>Tamanho da fonte: </div>
+    <button id="aumentarfonte" style="width: 83px; margin-bottom:10px; " class="btn btn-primary">A +</button>
+    <button id="diminuirfonte" style="width: 83px; margin-bottom:10px; " class="btn btn-primary">A -</button>
+    <button id="fontepadrao" style="width: 172px; margin-bottom:10px; " class="btn btn-primary">A</button>
+  </div>
+</div>
+
+
+<div class="preloader">
+  <div>&nbsp;</div>
+</div>
+<div class="container-top">
+  <div class="bg"></div>
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-1"></div>
+      <div class="col-sm-6">
+                <ul class="menu-bar">
+            <li><a href="http://prefeituradeorizona.sigepnet.com.br/index.php?portal=1" accesskey="1" style="font-weight: 600;">Ir para Início<span>1</span></a></li>
+            <li><a href="http://prefeituradeorizona.sigepnet.com.br/informacoes/index.php?portal=7" accesskey="2" style="font-weight: 600;">Ir para Mapa do Site<span>2</span></a></li>
+            <li><a href="http://prefeituradeorizona.sigepnet.com.br/informacoes/teclas_atalho.php?portal=7" accesskey="3" style="font-weight: 600;">Ir para Teclas de Atalho<span>3</span></a></li>
+            <li><a href="#header-loader" accesskey="4" style="font-weight: 600;">Ir para Rodapé<span>4</span></a></li>
+        </ul>
+      </div>
+      <div class="col-sm-5"></div>
+    </div>
+    <div class="row">
+      <div class="col-sm-1"></div>
+      <div class="col-sm-3"><a href="http://prefeituradeorizona.sigepnet.com.br/?portal="><img src="http://prefeituradeorizona.sigepnet.com.br/images/logo_sol_pessoal.png" class="img-responsive"/></a></div>
+      <div class="col-sm-4">
+              </div>
+      <div class="col-sm-4"><img src="http://prefeituradeorizona.sigepnet.com.br/images/logos/prefeitura_orizona.png" class="img-responsive"/></div>
+    </div>
+  </div>
+  <div class="row panel-heading-2">&nbsp;</div>
+</div>
+<br/>
+<div class='container'><div class='alert alert-danger' role='alert'>O portal da transparência está temporariamente indisponível. Periodicamente nossa equipe técnica realiza a manutenção e atualização dos servidores. Infelizmente, você tentou acessar a página durante uma das manutenções. Entretanto, fique tranquilo, em breve a página voltará a ficar disponível para acesso.</div></div><br/>
+<script type="text/javascript">
+
+	$(document).ready(function(){
+    document.getElementById("form").submit();
+	})
+</script>
+
+
+<div class="container">
+  <div class="row">
+    <div class="col-sm-3">  <div class="panel-group" id="accordion">    <form id="searchForm">      <div class="form-group">        <input type="text" id="searchInput" class="form-control" placeholder="Digite para pesquisar..." onkeyup="filterMenu()">        <select id="searchSuggestions" class="form-control" style="margin-top: 10px; display: none;" size="5"></select>      </div>    </form>    <div class="panel panel-default">	  <div class="panel-heading">		<h4 class="panel-title">         <span class="fa fa-lg"></span>&nbsp;         <a data-toggle="collapse" data-parent="#accordion" href="#collapse1">			Portal da Transparência		  </a> 		</h4>	  </div>	  <div id="collapse1" class="panel-collapse collapse in">		<div class="panel-body">			<table class="table">	 			<tr class="menu-item">	<td>		<span class="fa fa-retweet fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/index.php?portal=1">Mapa do Site</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-home fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia?portal=1">Página Inicial</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-money fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/receitas.php?portal=1">Receitas</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-retweet fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/transferencias_receitas.php?portal=1">Transferências Recebidas</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-retweet fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/transferencias_despesa.php?portal=1">Transferências Concedidas</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-cog fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/extra_orcamentaria.php?portal=1">Extra-Orçamentárias</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-id-card-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/employee-positions.jsf">Tabela Padrão Remuneratório dos Cargos e Funções</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-id-card-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/employee-transparency.jsf">Folha de Pagamento(Servidores)</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-file-text-o fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/transferencia_de_recursos.php?portal=1">Transferências de Recursos</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-hand-lizard-o fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/tributos.php?portal=1">Tributos a Receber</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-cubes fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/despesa_empenhada.php?portal=1">Despesas Empenhadas</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-cubes fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/despesa_liquidada.php?portal=1">Despesas Liquidadas</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-check-circle fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/despesa_paga.php?portal=1">Despesas Pagas</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-check-square fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/contratos.php?portal=1">Convênios</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-clone fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/contract-transparency.jsf">Contratos</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-university fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/ordem_pagamentos.php?portal=1">Ordem Cronológica de Pagamentos</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-clone fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/tax-contract.jsf">Fiscais de Contratos</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-car fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/vehicles.jsf">Relação de Veículos</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-wpforms fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/publicacoes_lrf.php?portal=1">Relatórios Contábeis</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-file-text-o fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/relatorio_circunstanciado.php?portal=1">Relatório Circunstanciado</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-wpforms fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/publicacoes_lrf_ppa.php?portal=1">PPA - Plano Plurianual</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-wpforms fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/publicacoes_lrf_ldo.php?portal=1">LDO - Lei de Diretrizes Orçamentárias</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-wpforms fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/publicacoes_lrf_loa.php?portal=1">LOA - Leis Orçamentárias Anual</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-arrow-circle-up fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/publicacoes_leis.php?portal=1">Leis Orçamentárias</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-comments fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/questions-frequent.jsf">Perguntas Frequentes</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-bullhorn fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/faleconosco.php?portal=1">Fale com a SIGEP</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-check-square fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/privacy-policy.jsf">Política de Privacidade</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-check-square fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/data-protection-officer.jsf">Lei Geral de Proteção de Dados</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-file-text-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/debit-active-list.jsf">Lista Dívida Ativa</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-check-square fa-lg text-primary"></span>&nbsp;		<a href="https://acessoainformacao.orizona.go.gov.br/cidadao/outras_informacoes/lista_estagiarios">Lista Estagiários</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-file-text-o fa-lg text-primary"></span>&nbsp;		<a href="https://acessoainformacao.orizona.go.gov.br/cidadao/concursos_selecoes/concursos">Lista Concursos</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-child fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/service-provider-list.jsf">Lista Prestador/Tercerizados</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-child fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/annual-hiring-plan.jsf">Plano Contratação Anual</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-file-text-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/satisfaction-search.jsf">Pesquisa de Satisfação</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-university fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/parecer_contas.php?portal=1">Julgamento de Contas</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-university fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/emendas.php?portal=1">Emendas Parlamentares</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-file-text-o fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/audiencia_publica.php?portal=1">Audiências Pública</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-wpforms fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/receitas_renuncias.php?portal=1">Renuncia de Receita</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-wpforms fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/relatorio_circunstanciado.php?portal=1">Relatório Circunstanciado</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-file-text-o fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/aviso_compras.php?portal=1">Aviso de Compra</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-file-text-o fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/estoque_medicamentos.php?portal=1">Estoque de Medicamentos Lei 14.654/23</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-wpforms fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/acesso_automatizado_api.php?portal=1">Acesso automatizado (API)</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-clone fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/disk_denuncia.php?portal=1">Disk Denúncia</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-wpforms fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/lista_minutas_padrao_procuradoria.php?portal=1">Minutas Padrão - Procuradoria Jurídica</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-wpforms fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/transparencia/lista_minutas_padrao_controladoria.php?portal=1">Minutas Padrão - Controladoria</a>  	</td></tr>			</table>		</div>	</div></div><div class="panel panel-default">	  <div class="panel-heading">		<h4 class="panel-title">         <span class="fa fa-lg"></span>&nbsp;         <a data-toggle="collapse" data-parent="#accordion" href="#collapse2">			Lei de Acesso à Informação		  </a> 		</h4>	  </div>	  <div id="collapse2" class="panel-collapse collapse ">		<div class="panel-body">			<table class="table">	 			<tr class="menu-item">	<td>		<span class="fa fa-home fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/informacao?portal=2">Página Inicial</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-retweet fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/informacao/index.php?portal=2">Mapa do Site</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-users fa-lg text-primary"></span>&nbsp;		<a href="https://orizona.go.gov.br/estrutura_organizacional">Estrutura Organizacional</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-suitcase fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/informacao/diarias.php?portal=2">Diárias</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-suitcase fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/informacao/valores_diarias.php?portal=2">Tabela de Valores de Diárias</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-retweet fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/informacao/transferencia_de_recursos.php?portal=2">Transferências de Recursos</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-file-text-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/bidding-transparency.jsf">Licitações</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-file-text-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/bidding-transparency-failed-deserted.jsf">Licitações Fracassadas/Desertas</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-user-times fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/dispensation-bidding-transparency.jsf">Dispensa / Inexigibilidade / Credenciamento / Chamada Pública</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-money fa-lg text-primary"></span>&nbsp;		<a href="https://acessoainformacao.orizona.go.gov.br/informacao/atasregistropreco">Adesão Registro de Preço</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-user-times fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/dispensation-bidding-transparency.jsf">Credenciamentos</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-user-times fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/dispensation-bidding-transparency.jsf">Credenciamentos</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-paper-plane-o fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/informacao/programas_acoes.php?portal=2">Programas e Ações </a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-flag fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/informacao/patrimonio.php?portal=2">Patrimônio</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-cubes fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/public-building-portal.jsf">Obras</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-check-square fa-lg text-primary"></span>&nbsp;		<a href="https://acessoainformacao.orizona.go.gov.br/cidadao/legislacao/leis">Publicações de Documentos (Leis , Decretos, Portarias...)</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-child fa-lg text-primary"></span>&nbsp;		<a href="https://acessoainformacao.orizona.go.gov.br/cidadao/informacao/sic">E-SIC Serviço de Informação ao Cidadão</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-user-o fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/informacao/carta_servico.php?portal=2">Carta de Serviço ao Usuário</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-comments fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/questions-frequent.jsf">Perguntas Frequentes</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-bullhorn fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/informacao/faleconosco.php?portal=2">Fale com a SIGEP</a>  	</td></tr>			</table>		</div>	</div></div><div class="panel panel-default">	  <div class="panel-heading">		<h4 class="panel-title">         <span class="fa fa-lg"></span>&nbsp;         <a data-toggle="collapse" data-parent="#accordion" href="#collapse3">			Servidores		  </a> 		</h4>	  </div>	  <div id="collapse3" class="panel-collapse collapse ">		<div class="panel-body">			<table class="table">	 			<tr class="menu-item">	<td>		<span class="fa fa-home fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/employee-login.jsf">Página Inicial</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-search fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/employee-transparency.jsf">Consultar Matrícula</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-list-alt fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/employee-login.jsf">Contracheque</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-file-text fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/employee-login.jsf">Cedúla C (Comprovante de Rendimentos)</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-drivers-license-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/employee-register.jsf">Primeiro Acesso</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-user-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/recovery-password.jsf">Esqueci Minha Senha</a>  	</td></tr>			</table>		</div>	</div></div><div class="panel panel-default">	  <div class="panel-heading">		<h4 class="panel-title">         <span class="fa fa-lg"></span>&nbsp;         <a data-toggle="collapse" data-parent="#accordion" href="#collapse4">			Tributos		  </a> 		</h4>	  </div>	  <div id="collapse4" class="panel-collapse collapse ">		<div class="panel-body">			<table class="table">	 			<tr class="menu-item">	<td>		<span class="fa fa-home fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/city-portal.jsf">Página Inicial</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-home fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/immobile/search-debit.jsf">Página Inicial</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-clipboard fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/immobile/search-debit.jsf">Extrato I.P.T.U</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-address-book-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/immobile/search-debit.jsf">2ª via de I.P.T.U</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-search fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/immobile/search-debit.jsf">Consultar Imóvel</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-address-book-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/immobile/search-debit.jsf">2ª via de débito de imóvel</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-clipboard fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/immobile/search-certificate-debit.jsf">Certidão de Imóvel</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-check-square-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/immobile/validate-certificate-debit.jsf">Validar Certidão de Imóvel</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-search fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/company/search-debit.jsf">Consultar Empresa</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-address-book-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/company/search-debit.jsf">2ª via de Débito de Empresa</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-clipboard fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/company/search-certificate-debit.jsf">Certidão de Empresa</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-check-square-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/company/validate-certificate-debit.jsf">Validar Certidão de empresa</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-clipboard fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/person/search-certificate-debit.jsf">Certidão de contribuinte</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-check-square-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/person/validate-certificate-debit.jsf">Validar Certidão de contribuinte</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-home fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/tributos/cadastro_empresa/index.php?portal=4">Cadastro Empresa</a>  	</td></tr>			</table>		</div>	</div></div><div class="panel panel-default">	  <div class="panel-heading">		<h4 class="panel-title">         <span class="fa fa-lg"></span>&nbsp;         <a data-toggle="collapse" data-parent="#accordion" href="#collapse5">			Protocolo		  </a> 		</h4>	  </div>	  <div id="collapse5" class="panel-collapse collapse ">		<div class="panel-body">			<table class="table">	 			<tr class="menu-item">	<td>		<span class="fa fa-home fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/process-public-search.jsf">Página Inicial</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-file-o fa-lg text-primary"></span>&nbsp;		<a href="http://gestaopublica.orizona.bsit-br.com.br/portal/process-public-search.jsf">Acompanhamento de Processos</a>  	</td></tr>			</table>		</div>	</div></div><div class="panel panel-default">	  <div class="panel-heading">		<h4 class="panel-title">         <span class="fa fa-lg"></span>&nbsp;         <a data-toggle="collapse" data-parent="#accordion" href="#collapse7">			Mapa do Site		  </a> 		</h4>	  </div>	  <div id="collapse7" class="panel-collapse collapse ">		<div class="panel-body">			<table class="table">	 			<tr class="menu-item">	<td>		<span class="fa fa-map fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/informacoes/index.php?portal=7">Mapa do Site</a>  	</td></tr><tr class="menu-item">	<td>		<span class="fa fa-user-o fa-lg text-primary"></span>&nbsp;		<a href="http://prefeituradeorizona.sigepnet.com.br/informacoes/teclas_atalho.php?portal=7">Teclas de Atalho</a>  	</td></tr>			</table>		</div>	</div></div>  </div></div>
+    <div class="col-sm-9">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h4 class="panel-title">Folha</h4>
+        </div>
+        <div class="panel-collapse" style="padding:10px 0px 0px 0px;">
+            <span style="color:#000; padding: 10px 0px 0px 15px;">Você está aqui:</span>    
+            <a href="index.php">Portal da transparência &gt;</a>
+            <a href="#">Folha</a>
+        </div>
+        <div class="panel-collapse collapse in">
+          <div class="panel-body">
+            <form id="form" name="form" method="post" target="_self" action="/transparencia/folha.php">
+              <div class="row">
+                <div class="col-sm-8">
+                  <label style="font-size:10px">Orgão *</label>
+                  <select name="orgao" id="orgao" class="form-control" required title="Orgão" tabindex="1">
+                    <!-- <option value="">SELECIONE O ORGÃO</option> -->
+                                      </select>
+                </div>
+                <div class="col-sm-4">
+                  <label style="font-size:10px">Ano *</label>
+                  <select name="ano" id="ano" title="Ano" tabindex="2" class="form-control" required>
+                                        <option value="2026"  >2026</option>
+                                        <option value="2025"  >2025</option>
+                                        <option value="2024"  >2024</option>
+                                        <option value="2023"  >2023</option>
+                                        <option value="2022"  >2022</option>
+                                        <option value="2021"  >2021</option>
+                                        <option value="2020"  >2020</option>
+                                      </select>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-sm-4">
+                  <label style="font-size:10px">Mês *</label>
+                  <select name="mes" id="mes" title="Mês" tabindex="3" class="form-control" required>
+                                        <option value="01" >JANEIRO</option>
+                    <option value="02" >FEVEREIRO</option>
+                    <option value="03" >MAR&Ccedil;O</option>
+                    <option value="04" >ABRIL</option>
+                    <option value="05" >MAIO</option>
+                    <option value="06" >JUNHO</option>
+                    <option value="07" selected='selected'>JULHO</option>
+                    <option value="08" >AGOSTO</option>
+                    <option value="09" >SETEMBRO</option>
+                    <option value="10" >OUTUBRO</option>
+                    <option value="11" >NOVEMBRO</option>
+                    <option value="12" >DEZEMBRO</option>
+                  </select>
+                </div>
+                <div class="col-sm-8">
+                  <label style="font-size:10px">Nome</label>
+                  <input type="text" name="nome" id="nome" class="form-control"  maxlength="65" tabindex="4" value=""/>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-sm-4">
+                  <label style="font-size:10px">Matrícula</label>
+                  <input type="text" name="matricula"  id="matricula" class="form-control" maxlength="18" tabindex="5" value=""/>
+                </div>
+                <div class="col-sm-4">
+                  <label style="font-size:10px">Cargo</label>
+                  <select name="cargo" id="cargo" title="Cargo" class="form-control" tabindex="6">
+                    <option value="">TODOS</option>
+                                      </select>
+                </div>
+                <div class="col-sm-4">
+                  <label style="font-size:10px">Tipo da Admissão</label>
+                  <select name="tipo" id="tipo" title="Tipo Admissão" class="form-control" tabindex="7">
+                    <option value="">TODOS</option>
+                                      </select>
+                </div>
+              </div>
+                            <br />
+              <br />
+              <label style="font-size:10px">O valor líquido demonstrado pode não corresponder ao que realmente foi recebido pelos servidores ativos e inativos, uma vez que não estão demonstrados os valores correspondentes aos descontos de ordem pessoal (Exemplos: planos de saúde, empréstimos consignados, contribuições para associações de classe, pensões alimentícias entre outros).</label>
+                            <br />
+              <label style="font-size:10px">Campos marcados com ( * ) são obrigatórios.</label>
+              <br />
+              <input type="hidden" name="acao" value="true">
+              <button type="submit" class="btn btn-primary">Pesquisar</button>
+              <button type="button" class="btn btn-success" title="Tabela Padrão Remuneratório" onClick="window.open('remuneracao.php', '_blank').focus();"> <span aria-hidden="true">Tabela Padrão Remuneratório</span> </button>
+            </form>
+          </div>
+        </div>
+              </div>
+    </div>
+  </div>
+  <br />
+</div>
+<div style="position:fixed !important; z-index:9999; text-align:right; bottom:0; margin-bottom:0; right:0; margin-right:0; margin:0; padding:0px 0px 7px 0px; border-image:0">
+  <a href="http://www.sigep.com.br/" target="_blank">
+
+    
+    <!--<img title="Sistema Integrado de Gestão Pública - 162.240.165.18" alt="Sistema Integrado de Gestão Pública - 162.240.165.18" src="http://prefeituradeorizona.sigepnet.com.br/images/assinatura.gif" rel="" width="114" height="35" border="0">-->
+  </a>
+</div>
+
+<!--VLIBRAS-->
+<!-- <div vw class="enabled">-->
+<!--    <div vw-access-button class="active"></div>-->
+<!--    <div vw-plugin-wrapper>-->
+<!--      <div class="vw-plugin-top-wrapper"></div>-->
+<!--    </div>-->
+<!--  </div>-->
+<!--  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>-->
+<!--  <script>-->
+<!--    new window.VLibras.Widget('https://vlibras.gov.br/app');-->
+<!--  </script>-->
+
+<div class="container">
+
+</div>
+<div class="container-fluid">
+    <div class="row footer" id="header-loader">
+    <!--SIGEP - Sistema Integrado de Gestão Pública - www.sigep.com.br-->
+  </div>
+</div>
+
+<script>
+  function filterMenu() {
+    var input = document.getElementById("searchInput");
+    var filter = input.value.toLowerCase();
+    var suggestionsList = document.getElementById("searchSuggestions");
+    var menuItems = document.querySelectorAll(".menu-item");
+
+    // Limpa as sugestões antes de adicionar novas
+    suggestionsList.innerHTML = "";
+
+    // Se não houver nada digitado, esconde o dropdown
+    if (filter === "") {
+      suggestionsList.style.display = "none";
+      return;
+    }
+
+    var suggestionsFound = false;
+
+    // Percorre todos os itens do menu
+    menuItems.forEach(function(item) {
+      var text = item.textContent || item.innerText;  // Pega o texto do item
+      var link = item.querySelector("a") ? item.querySelector("a").getAttribute("href") : "#";  // Pega o link do item
+
+      if (text.toLowerCase().includes(filter)) {
+        // Cria uma opção de sugestão no select
+        var option = document.createElement("option");
+        option.value = link;  // Define o link como o valor da opção
+        option.textContent = text;  // Define o texto da opção
+        suggestionsList.appendChild(option);
+        suggestionsFound = true;
+      }
+    });
+
+    // Exibe ou esconde a lista de sugestões
+    if (suggestionsFound) {
+      suggestionsList.style.display = "block";
+    } else {
+      suggestionsList.style.display = "none";
+    }
+  }
+
+  // Função para redirecionar quando uma sugestão for selecionada
+  document.getElementById("searchSuggestions").addEventListener("change", function() {
+    var selectedOption = this.options[this.selectedIndex];
+    if (selectedOption) {
+      window.location.href = selectedOption.value;  // Redireciona para o link selecionado
+    }
+  });
+
+  // Adiciona o evento de "input" no campo de pesquisa para filtrar dinamicamente
+  document.getElementById("searchInput").addEventListener("input", filterMenu);
+</script>

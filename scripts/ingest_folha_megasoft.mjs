@@ -168,7 +168,15 @@ for (let i = 0; i < fila.length; i++) {
       _hash: crypto.createHash("md5").update([a.slug, competencia, s.matricula, s.nome, s.cargo].join("¦")).digest("hex"),
     });
 
-    await grava(primeira.registros.map(mapReg));
+    // 🚨 GUARDA DE NOMINALIDADE: primeira página sem nome = visão não-nominal ou campo renomeado; não gravar.
+    // Ver [[pnigp-rotulo-de-coluna-varia-lei]].
+    const amostra = primeira.registros.map(mapReg);
+    const comNome = amostra.filter((r) => r.nome && String(r.nome).trim()).length;
+    if (amostra.length && comNome < amostra.length / 2) {
+      await marca("sem_nome", `${comNome}/${amostra.length} linhas com nome`, competencia, 0);
+      continue;
+    }
+    await grava(amostra);
     let colhidas = primeira.registros.length;
     for (let p = 2; p <= paginas; p++) {
       const pg = await api(host, `/orgaos-e-servidores/servidor/paginado?ano=${comp.ano}&mes=${comp.mes}&pagina=${p}&tamanhoDaPagina=500`, token);

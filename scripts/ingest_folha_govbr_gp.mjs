@@ -123,7 +123,7 @@ const lePagina = (page) => page.evaluate(() => {
     .filter((r) => r.nome);
 });
 
-const alvos = (await q(`select p.cod_ibge, m.nome municipio, m.uf, p.host from govbr_portal p
+let alvos = (await q(`select p.cod_ibge, m.nome municipio, m.uf, p.host from govbr_portal p
   join municipios_br m on m.cod_ibge = p.cod_ibge
  where p.host is not null
    and (not exists (select 1 from folha_servidores_govbr f where f.cod_ibge = p.cod_ibge)
@@ -131,6 +131,16 @@ const alvos = (await q(`select p.cod_ibge, m.nome municipio, m.uf, p.host from g
         or exists (select 1 from govbr_gp_coleta g where g.cod_ibge = p.cod_ibge and g.situacao = 'ok'))
    ${SO ? "and m.nome ilike '%'||$1||'%'" : ""}
  order by m.uf, m.nome`, SO ? [SO] : [])).rows;
+// 🚨 HOMÔNIMO (16/ago/2026): o host sai do NOME (`webapp1-{slug}.cidade360.cloud`), então Palmital/SP e
+// Palmital/PR — e mais 7 pares — caíam no MESMO portal e recebiam a MESMA folha (775 de 775 nomes iguais).
+// Foram 21,5 mil linhas erradas, incluindo São Sebastião/AL com a folha de São Sebastião/SP.
+// Host disputado só é coletado depois que `resolve_govbr_homonimo.mjs` decide pela UF do site linkado na página;
+// quem perde fica com `situacao='homonimo'` e `host=null`. Aqui a guarda é simples: não coletar host duplicado.
+const dup = new Set((await q(`select host from govbr_portal where host is not null
+  group by host having count(*) > 1`)).rows.map((r) => r.host));
+const barrados = alvos.filter((a) => dup.has(a.host));
+if (barrados.length) console.log(`[govbr_gp] ⚠️ ${barrados.length} barrados por host disputado por homônimos (rode resolve_govbr_homonimo.mjs): ${barrados.map((b) => b.municipio + "/" + b.uf).join(", ")}`);
+alvos = alvos.filter((a) => !dup.has(a.host));
 console.log(`[govbr_gp] ${alvos.length} municípios sem folha`);
 
 const browser = await chromium.launch({ headless: true });

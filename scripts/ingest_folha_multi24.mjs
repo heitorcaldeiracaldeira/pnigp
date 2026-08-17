@@ -52,10 +52,23 @@ const alvos = (await q(`
     select d.cod_ibge, m.nome, m.uf, coalesce(d.url_pessoal, d.url_visitada)
       from folha_diagnostico_faltante d join municipios_br m on m.cod_ibge = d.cod_ibge
      where coalesce(d.url_pessoal, d.url_visitada) ~ 'multi24'
+    union
+    -- … e os candidatos achados lendo o SITE OFICIAL (descobre_portal_pelo_site.mjs), que é de onde vieram
+    -- Cidreira e Coronel Pilar — nenhum dos dois estava na sonda nem no diagnóstico com host multi24
+    select c.cod_ibge, c.municipio, c.uf, c.url
+      from folha_portal_candidato c where c.produto = 'multi24'
   )
+  -- 🚨 quando há mais de uma URL para o mesmo município, a ordem alfabética escolhia a PIOR: o IP morto
+  -- (http://168.0.63.18:8080/...) vem antes do host vivo (https://nuvem.multi24h.com.br/salvadordosul/...) e o
+  -- coletor fechava "fetch failed" com o portal no ar. Preferir, nesta ordem: caminho de TRANSPARENCIA, https,
+  -- host com nome (nao IP cru), mais curta.
   select distinct on (cod_ibge) cod_ibge, municipio, uf, url from fontes
    where true ${UF ? "and uf = $1" : ""} ${SO ? `and municipio ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
-   order by cod_ibge, url`, [UF, SO].filter(Boolean))).rows;
+   order by cod_ibge,
+     (url ~ '/sistemas/transparencia') desc,
+     (url like 'https:%') desc,
+     (url ~ '^https?://\\d{1,3}(\\.\\d{1,3}){3}') asc,
+     length(url)`, [UF, SO].filter(Boolean))).rows;
 const feitos = new Set(REFAZ ? [] : (await q(`select cod_ibge from folha_multi24_coleta
   where situacao in ('ok','ok_sem_valor')`)).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
@@ -150,7 +163,11 @@ async function entidadeDeclarada(raiz) {
 let totalGeral = 0, ok = 0, falhas = 0;
 for (let i = 0; i < fila.length; i++) {
   const a = fila[i];
-  const raiz = a.url.split("?")[0];
+  // 🚨 `/sistemas/portal/` NÃO é `/sistemas/transparencia/`. O link que o site oficial publica costuma ser o do
+  // PORTAL DO CIDADÃO; a folha (`secao=servidores_salarios`) só responde no módulo de TRANSPARÊNCIA. Com a URL do
+  // portal, o coletor fechava "nenhuma entidade/competência devolveu linhas" — 15 municípios de uma vez, todos
+  // parecendo "não publica" e todos publicando. Normalizar antes de tudo, e tirar o `#âncora`.
+  const raiz = a.url.split("?")[0].split("#")[0].replace(/\/sistemas\/portal\/?$/i, "/sistemas/transparencia/");
   // 🚨 CADA MUNICÍPIO TEM VÁRIAS ENTIDADES (`?entidade=N`) e elas trazem POPULAÇÕES DIFERENTES: em Sapucaia do
   // Sul a entidade 1 tem 107 pessoas COM valor e a 3 tem 3.958 SEM valor. Coletar só a da URL descoberta perdia
   // o resto — e pior, quando a re-sondagem reescreveu a URL sem o `?entidade=3`, o município caiu de 3.932 para

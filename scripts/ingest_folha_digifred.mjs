@@ -42,12 +42,18 @@ await q(`create table if not exists folha_digifred_coleta (
   linhas int, cargos int, situacao text, detalhe text, em timestamptz default now()
 )`);
 
+// ⭐ sonda + candidatos achados lendo o site oficial (filtros de UF/SO FORA do union)
 const alvos = (await q(`
-  select s.cod_ibge, s.municipio, s.uf, coalesce(s.url_pessoal, s.url_base) url
-    from folha_sonda_municipal s
-   where coalesce(s.url_pessoal, s.url_base) ~ 'digifred'
-     ${UF ? "and s.uf = $1" : ""} ${SO ? `and s.municipio ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
-   order by s.municipio`, [UF, SO].filter(Boolean))).rows;
+  select * from (
+    select s.cod_ibge, s.municipio, s.uf, coalesce(s.url_pessoal, s.url_base) url
+      from folha_sonda_municipal s
+     where coalesce(s.url_pessoal, s.url_base) ~ 'digifred'
+     union
+    select c.cod_ibge, c.municipio, c.uf, c.url
+      from folha_portal_candidato c where c.produto = 'digifred'
+  ) x
+   where true ${UF ? "and uf = $1" : ""} ${SO ? `and municipio ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
+   order by municipio`, [UF, SO].filter(Boolean))).rows;
 const feitos = new Set(REFAZ ? [] : (await q(`select cod_ibge from folha_digifred_coleta
   where situacao like 'ok%'`)).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));

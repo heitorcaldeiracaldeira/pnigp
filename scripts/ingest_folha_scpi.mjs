@@ -50,6 +50,13 @@ const MESES = (() => {
 // carimbados "mês 08". Parar no primeiro mês com folha é o mesmo defeito que subcoletou 22 municípios no Betha
 // ([[pnigp-competencia-mais-cheia-nao-a-recente]]). Testa até MESES_TESTE meses com dados e fica com o maior.
 const MESES_TESTE = Number(process.env.MESES_TESTE || 3);
+// 🚨 A coluna `Referência` do SCPI não é a competência: é o TIPO DE FOLHA ("Folha Mensal - Julho",
+//    "Rescisão - Julho", "Folha Complementar", "Adiantamento 13º"). Escolher o mês com mais LINHAS pegava a
+//    folha errada: **23 municípios ficaram sem UMA linha de Folha Mensal** — Avaré com 2.625 linhas, todas de
+//    rescisão/complementar; Itaí com 7 ("Complementar de Rescisão"); Itapira com 21 de rescisão e 4 da mensal.
+//    A régua passa a ser o nº de linhas de FOLHA MENSAL; o total só desempata quando nenhum mês tem mensal.
+const ehMensal = (r) => /folha\s*mensal/i.test(String(r?.ref || ""));
+const pesoMensal = (rows) => rows.filter(ehMensal).length;
 async function varreMeses(page, frame, avisaMes) {
   let melhor = null, testados = 0;
   for (const mes of MESES) {
@@ -62,11 +69,20 @@ async function varreMeses(page, frame, avisaMes) {
     const rows = await leGrid(page);
     if (rows.length) {
       testados++;
-      if (!melhor || rows.length > melhor.rows.length) melhor = { mes, rows };
+      const cand = { mes, rows, mensal: pesoMensal(rows) };
+      // compara primeiro por linhas de folha mensal; só cai no total quando ambos não têm nenhuma
+      const melhorQue = !melhor
+        || cand.mensal > melhor.mensal
+        || (cand.mensal === melhor.mensal && cand.mensal === 0 && cand.rows.length > melhor.rows.length);
+      if (melhorQue) melhor = cand;
       if (testados >= MESES_TESTE) break;
     }
   }
-  if (melhor) { avisaMes(melhor.mes); return melhor.rows; }
+  if (melhor) {
+    avisaMes(melhor.mes);
+    if (!melhor.mensal) console.log(`      ⚠️ nenhum mês trouxe "Folha Mensal" — o que veio é rescisão/complementar`);
+    return melhor.rows;
+  }
   return [];
 }
 
@@ -89,17 +105,25 @@ async function leGrid(page) {
     return grid && grid.GetPageCount ? grid.GetPageCount() : 1;
   }).catch(() => 1);
 
+  // 🚨 `GetPageCount()` devolve 1 quando o objeto JS do grid tem OUTRO NOME — o que acontece nos white-labels
+  // (sigmix, masterpublica, sgpcloud). O coletor então lia só a 1ª página e terminava 'ok': 8 dos 28 municípios
+  // de MG saíram com 13 a 50 linhas (Jacutinga 22 de 1.468 na RAIS). Quando o total não é confiável mas a
+  // página veio CHEIA, seguir avançando até parar de trazer novidade. Ver [[pnigp-coletor-ok-sem-dado-sete-causas]].
   const out = []; const vistos = new Set();
-  for (let pg = 0; pg < (totalPag || 1); pg++) {
+  const TETO = 400;
+  const confiavel = (totalPag || 1) > 1;
+  for (let pg = 0; pg < (confiavel ? totalPag : TETO); pg++) {
     frame = await achaFrame(page);
     if (!frame) break;
     const linhas = await lePaginaAtual(frame);
+    let novos = 0;
     for (const r of linhas) {
       const key = [r.mat, r.nome, r.cargo, r.ref, r.liq].join("|");
       if (vistos.has(key)) continue;
-      vistos.add(key); out.push(r);
+      vistos.add(key); out.push(r); novos++;
     }
-    if (pg + 1 >= (totalPag || 1)) break;
+    if (confiavel && pg + 1 >= totalPag) break;
+    if (!confiavel && (!novos || linhas.length === 0)) break;   // sem novidade = acabou de verdade
     await frame.evaluate(() => {
       const g = [...document.querySelectorAll('[id*="gridPessoal"]')].map((e) => (e.id.match(/gridPessoal/) || [])[0]).filter(Boolean)[0];
       const grid = g ? window[g] || window.gridPessoal : window.gridPessoal;
@@ -117,7 +141,11 @@ const lePaginaAtual = (frame) => frame.evaluate(async () => {
   const col = (re) => heads.findIndex((h) => re.test(h));
   const ix = { ref: col(/refer/), mat: col(/matr/), contr: col(/contrato/), adm: col(/admiss/), cargo: col(/cargo/),
     unid: col(/unidade|divis|lota/), vinc: col(/v[íi]nculo/), prov: col(/proventos/), desc: col(/descontos/),
-    liq: col(/l[íi]quido/), nome: col(/^nome/) };
+    // 🚨 O RÓTULO DA COLUNA DO NOME VARIA (16/ago/2026): `^nome` não casa com "Servidor", "Funcionário" nem
+    // "Colaborador" — 20.736 linhas entraram SEM NOME (Botucatu 3.330, Bastos 1.920, Leme 1.872, todas 100%),
+    // e linha sem nome não é folha nominal. Mesma família do detector de salário do PR
+    // ([[pnigp-pr-mapa-folha-399]]) e do `Nome`/`NomeServidor` do SMARAPD.
+    liq: col(/l[íi]quido/), nome: col(/^(nome|servidor|funcion|colaborador|empregado)/) };
   const g = [...document.querySelectorAll('[id*="gridPessoal"]')].map((e) => (e.id.match(/gridPessoal/) || [])[0]).filter(Boolean)[0];
   const grid = g ? window[g] || window.gridPessoal : window.gridPessoal;
   const totalPag = grid && grid.GetPageCount ? grid.GetPageCount() : 1;
@@ -141,9 +169,14 @@ const lePaginaAtual = (frame) => frame.evaluate(async () => {
 
 // alvos: fiorilli_portal dcfiorilli → host:879
 let alvos;
-if (process.env.HOST) {
+// ⭐ BASE= aceita a URL COMPLETA da instalação, para os municípios que publicam em VÁRIAS bases.
+//    `portal_produto` tem PK em cod_ibge e só guarda uma; Picos tem três (`/prefeitura/`, `/educacao/`,
+//    `/saude/`) e só a prefeitura registrada dava 23% da RAIS — faltavam as duas MAIORES folhas.
+//    Ex.: BASE=https://www2.picos.pi.gov.br/educacao/ MUN=Picos UF=PI
+if (process.env.BASE || process.env.HOST) {
   const mun = (await q(`select cod_ibge, nome, uf from municipios_br where lower(nome)=lower($1) ${process.env.UF ? "and uf=$2" : ""} limit 1`, process.env.UF ? [process.env.MUN, process.env.UF] : [process.env.MUN])).rows[0];
-  alvos = [{ ...mun, host: process.env.HOST }];
+  const base = process.env.BASE ? process.env.BASE.replace(/\/*$/, "/") : null;
+  alvos = [{ ...mun, base, host: process.env.HOST || (base ? new URL(base).host : null) }];
 } else {
   // 🚨 A PORTA NÃO É SÓ 879. Ao investigar os 216 municípios rotulados "instar" no Radar (que é o fornecedor do
   // SITE, não do portal), 50 deles são SCPI hospedado ON-PREMISE: 32 em :8079, 11 em :5656 e 7 em :879, muitos
@@ -161,10 +194,22 @@ if (process.env.HOST) {
       select p.cod_ibge, p.municipio, p.uf,
              regexp_replace(p.url_portal_real, '/*$', '') || '/' base
         from portal_real_descoberto p
-       where p.url_portal_real ~* 'transparencia'
+       where (p.url_portal_real ~* 'transparencia'
+              or p.url_portal_real ~* '\-scpi\.'                -- ⭐ o sufixo -scpi no host é o produto (MG)
+              or p.url_portal_real ~* 'sgpcloud\.net:[0-9]+')
          and (p.url_portal_real ~* ':(8079|5656|879)/'          -- portas típicas do SCPI on-premise
               or p.url_portal_real ~* 'dcfiorilli'              -- hospedado pela própria Fiorilli
-              or p.erp_radar = 'fiorilli')                      -- o Radar já identificou o ERP como Fiorilli
+              -- 🚨 EM MINAS o SCPI não mora no dcfiorilli: é WHITE-LABEL em {mun}-scpi.sigmix.net,
+              -- {mun}-scpi.masterpublica.net e portal.sgpcloud.net:{porta alta}. O que os une é o
+              -- sufixo -scpi e a porta, nunca a marca do fornecedor ([[pnigp-portal-proprio-e-white-label]]).
+              or p.url_portal_real ~* '\-scpi\.'
+              or p.url_portal_real ~* 'sgpcloud\.net:[0-9]+'
+              -- 🚨 IGUALDADE aqui era um vazamento SILENCIOSO: as correções posteriores gravam com rótulo
+              -- derivado ('fiorilli-pref', 'fiorilli-varredura') e nenhuma batia com = 'fiorilli'. Chapadão do
+              -- Sul tinha o portal certo mapeado e nunca entrou na fila. Prefixo, não igualdade.
+              or p.erp_radar ilike 'fiorilli%'                  -- o Radar/as correções identificaram Fiorilli
+              -- provedor regional que hospeda SCPI SEM porta alta (rcmsuporte/biosnet em MS)
+              or p.url_portal_real ~* '(rcmsuporte|biosnet)\.com\.br/transparencia')
       union
       -- portais em DOMÍNIO PRÓPRIO do município que a assinatura da página revelou ser SCPI (white-label):
       -- 40 municípios que pareciam "portal próprio" e são o mesmo produto. Ver identifica_produto_portal.mjs
@@ -176,11 +221,13 @@ if (process.env.HOST) {
       -- acima não alcançam: porta fora da lista (:8076 em Cassilândia) e domínio próprio sem porta (Ivinhema).
       -- 🚨 exclui o que é da CÂMARA (/transparenciacm/, camara, .leg.br): coletar de lá dá dezenas de
       -- pessoas num município de milhares ([[pnigp-entidade-espelho-infla-folha]]).
+      -- 16/ago: a câmara também se esconde no HOST do white-label — saojoaodamatacm.sgpcloud.net trouxe 15
+      -- pessoas. Daí os padrões {letra}cm. e -cm. na guarda.
       select d.cod_ibge, d.municipio, d.uf,
              regexp_replace(split_part(coalesce(d.url_pessoal, d.url_visitada), '#', 1), '/*$', '') || '/' base
         from folha_diagnostico_faltante d
        where d.produto = 'scpi' and d.tem_dados
-         and coalesce(d.url_pessoal, d.url_visitada) !~* '(transparenciacm|camara|\\.leg\\.br)'
+         and coalesce(d.url_pessoal, d.url_visitada) !~* '(transparenciacm|camara|\\.leg\\.br|[a-z]cm\\.|\\-cm\\.)'
       union
       -- ⭐ O RÓTULO DO PRODUTO NÃO É A ÚLTIMA PALAVRA: msgestaopublica e rcmsuporte são HOSPEDAGENS do SCPI
       -- (Xangri-lá abre com título "SCPI 9.0 - Transparência" e rodapé "Fiorilli"), mas o diagnóstico
@@ -190,20 +237,38 @@ if (process.env.HOST) {
              regexp_replace(split_part(coalesce(d.url_pessoal, d.url_visitada), '#', 1), '/*$', '') || '/' base
         from folha_diagnostico_faltante d
        where coalesce(d.url_pessoal, d.url_visitada) ~* '(msgestaopublica|rcmsuporte)'
-         and coalesce(d.url_pessoal, d.url_visitada) !~* '(transparenciacm|camara|\\.leg\\.br)'
+         and coalesce(d.url_pessoal, d.url_visitada) !~* '(transparenciacm|camara|\\.leg\\.br|[a-z]cm\\.|\\-cm\\.)'
     ) x
     -- o modo lote não tinha filtro de UF: UF=RS era ignorado e a fila saía com os 310 municípios do país.
     -- Filtra pelo PREFIXO do cod_ibge porque as tabelas de origem guardam uf em formatos diferentes
     -- (sigla numas, nome por extenso noutras).
     where base is not null ${filtroSO} ${filtroUF}
+    -- 🚨 SO_ERROS=1: reexecuta só os municípios registrados em 'erro'. São 122 no país (contra 278 ok) e boa
+    -- parte é falha TRANSITÓRIA — hosts que deram ERR_CONNECTION_TIMED_OUT respondem 200 com o portal completo
+    -- quando testados de novo. Erro de coleta não é ausência de dado ([[pnigp-scpi-122-erros-recuperaveis]]).
+    ${process.env.SO_ERROS === "1"
+      ? "and exists (select 1 from folha_scpi_coleta c where c.cod_ibge = x.cod_ibge and c.situacao = 'erro')"
+      : ""}
+    -- 🚨 SO_SEM_MENSAL=1: os municípios cuja coleta ficou SÓ com rescisão/complementar/13º, sem uma linha de
+    -- "Folha Mensal". Eram 23 (Avaré com 2.625 linhas, nenhuma mensal). A régua de escolha do mês foi corrigida
+    -- para pesar linhas mensais — Itapira saiu de 25 para 2.529 ([[pnigp-scpi-subcoleta-78-municipios]]).
+    ${process.env.SO_SEM_MENSAL === "1"
+      ? `and exists (select 1 from folha_servidores_scpi s where s.cod_ibge = x.cod_ibge)
+         and not exists (select 1 from folha_servidores_scpi s where s.cod_ibge = x.cod_ibge
+                          and s.referencia ~* 'folha mensal')`
+      : ""}
     order by uf, nome`, parAlvos)).rows
     .map((a) => ({ ...a, host: (() => { try { return new URL(a.base).host; } catch { return null; } })() }))
     .filter((a) => a.host);
 }
 const feitos = process.env.REFAZ === "1" ? new Set()
-  : new Set((await q(`select cod_ibge from folha_scpi_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
-const fila = alvos.filter((a) => a.cod_ibge && !feitos.has(a.cod_ibge));
-console.log(`[scpi] ${alvos.length} municípios · ${fila.length} na fila`);
+  : new Set((await q(`select cod_ibge from folha_scpi_coleta where situacao like 'ok%'`)).rows.map((r) => r.cod_ibge));
+// ⚠️ LIMITE= corta a fila. Os jobs longos vêm sendo interrompidos antes de terminar, e o SCPI leva ~1-2 min
+//    por município (navegador). Com SO_SEM_MENSAL=1 a fila é AUTO-INCREMENTAL: quem ganha folha mensal sai
+//    dela sozinho na rodada seguinte, então dá para avançar em lotes sem controle externo.
+const fila = alvos.filter((a) => a.cod_ibge && !feitos.has(a.cod_ibge))
+  .slice(0, Number(process.env.LIMITE || 100000));
+console.log(`[scpi] ${alvos.length} municípios · ${fila.length} na fila${process.env.LIMITE ? ` (lote de ${process.env.LIMITE})` : ""}`);
 
 const LOTE = 1000;
 async function grava(regs) {
@@ -233,7 +298,10 @@ for (let i = 0; i < fila.length; i++) {
   const ctx = await browser.newContext({ ignoreHTTPSErrors: true, userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36" });
   const page = await ctx.newPage();
   try {
-    await page.goto(a.base || `https://${a.host}:879/transparencia/`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    // portais em hospedagem compartilhada (msgestaopublica) demoram mais que 60 s no primeiro acesso — o timeout
+    // fixo transformava "portal lento" em "município sem folha"
+    await page.goto(a.base || `https://${a.host}:879/transparencia/`,
+      { waitUntil: "domcontentloaded", timeout: Number(process.env.GOTO_MS || 150000) });
     await dorme(2500);
     // dispara ProcessaDados('LnkServidores') → carrega Servidores.aspx no iframe
     await page.evaluate(() => { try { if (typeof ProcessaDados === "function") ProcessaDados("LnkServidores"); } catch {} });
@@ -283,6 +351,16 @@ for (let i = 0; i < fila.length; i++) {
       // nome entra no hash: há layouts SEM matrícula (Brodowski), onde o hash antigo colapsava servidores distintos
       _hash: crypto.createHash("md5").update([a.cod_ibge, s.ref, s.mat, s.nome, s.cargo, s.liq].join("¦")).digest("hex"),
     }));
+    // 🚨 GUARDA DE NOMINALIDADE (16/ago/2026): linha sem nome NÃO é folha nominal. Sem esta trava entraram 20.736
+    // linhas sem nome (Botucatu 3.330, Bastos 1.920, Leme 1.872 — 100% cada) porque o rótulo da coluna do nome
+    // varia por instalação ([[pnigp-rotulo-de-coluna-varia-lei]]). A mesma guarda já existe na Betha e no GovBR.
+    // Marca `sem_nome` em vez de `ok`: o município fica DECLARADO como não-nominal, não escondido como coletado.
+    const comNome = regs.filter((r) => r.nome && String(r.nome).trim()).length;
+    if (regs.length && comNome < regs.length / 2) {
+      await marca("sem_nome", `grade sem coluna de nome reconhecida (${comNome}/${regs.length}) — mês ${mesUsado}`, 0);
+      console.log(`  ⚠️ [${i + 1}/${fila.length}] ${a.uf} ${a.nome}: ${regs.length} linhas SEM NOME — não gravado`);
+      vazios++; continue;
+    }
     await grava(regs);
     totalGeral += regs.length; ok++;
     await marca("ok", `mês ${mesUsado}`, regs.length);
