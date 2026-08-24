@@ -84,3 +84,8 @@ UsersPCAppDataLocalTempclaudecnet/
 !scripts/_folha_pdf_parsers.mjs
 !scripts/_folha_uniao.mjs
 !scripts/_precos_norm.mjs
+!scripts/_derivadas_compras.mjs
+!scripts/_erp_receitas.mjs
+!scripts/_farol.mjs
+!scripts/_rais.mjs
+!scripts/_storage.mjs
