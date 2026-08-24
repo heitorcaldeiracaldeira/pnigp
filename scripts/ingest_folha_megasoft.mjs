@@ -23,6 +23,7 @@ import { pool, withRetry } from "./_cadprev.mjs";
 const db = pool();
 const q = withRetry(db);
 const SO = process.env.SO || null;
+const PODER = (process.env.PODER || "executivo").toLowerCase();
 // 4 meses não alcançavam quem publica com atraso — 18 municípios morreram em "sem competencia com salario pago".
 // A função competencias() já atravessa a virada de ano corretamente, então basta abrir a janela.
 const MESES_RECUO = Number(process.env.RECUO || 15); // quantos meses recuar se a competência mais recente vier vazia
@@ -37,6 +38,10 @@ await q(`create table if not exists folha_servidores_megasoft (
   _hash text primary key, _coletado_em timestamptz default now()
 )`);
 await q(`create index if not exists ix_folha_mega_mun on folha_servidores_megasoft (cod_ibge, competencia)`);
+// ⭐ 21/ago/2026: PODER=legislativo colhe a CÂMARA (mesmo produto, outro slug). A coluna existe para que a folha
+//    do legislativo NÃO entre na conta da prefeitura — o veto vive em `_folha_filtros.mjs`, e a camada das
+//    câmaras (`vw_folha_camara_brasil`) lê justamente esta coluna.
+await q(`alter table folha_servidores_megasoft add column if not exists poder text`);
 await q(`create table if not exists folha_megasoft_coleta (
   slug text primary key, cod_ibge text, municipio text, uf text, competencia text,
   linhas int, situacao text, detalhe text, em timestamptz default now()
@@ -88,7 +93,35 @@ for (const p of (await q(`select cod_ibge, municipio, uf, url from portal_produt
   } catch { /* url inválida */ }
 }
 
-const feitos = new Set((await q(`select slug from folha_megasoft_coleta where situacao='ok'`)).rows.map((r) => r.slug));
+// ⭐ PODER=legislativo: a fila passa a ser a dos PORTAIS DE CÂMARA que o identificador reconheceu como MegaSoft
+//    (`folha_camara_fila.erp_camara`). O slug sai do host, como no executivo — em geral `camara{slug}` ou
+//    `cm{slug}`. Um método por tipo de portal: o coletor é o mesmo, muda o alvo.
+if (PODER === "legislativo") {
+  alvos.length = 0;
+  for (const p of (await q(`select cod_ibge, municipio, uf,
+        coalesce(url_erp_camara, url_camara, url_camara_2) url
+      from folha_camara_fila
+      where coalesce(erp_camara,'') = 'megasoft' and coalesce(url_erp_camara, url_camara, url_camara_2) is not null
+        ${SO ? "and municipio ilike '%'||$1||'%'" : ""}
+      order by rais_legislativo desc nulls last`, SO ? [SO] : [])).rows) {
+    // 🚨 O LINK DA CÂMARA APONTA PARA O PRODUTO ERRADO. Em GO/TO ele leva a
+    //    `camara{slug}.megasoftSERVICOS.com.br/servidor/login` — o "Portal de Serviços", que devolve HTML e
+    //    fecha `sem_token`. A transparência mora em `camara{slug}.megasoftTRANSPARENCIA.com.br` e responde
+    //    `{"tituloDoTopo":"Câmara de","cidade":"Novo Gama"}`. O SLUG é o que vale; o domínio é remontado.
+    //    ⚠️ só se aceita host verbatim quando ele JÁ é o de transparência ([[pnigp-modulo-vs-host-fornecedor]]).
+    let urlHost = null;
+    try { urlHost = new URL(p.url).host; } catch { /* url inválida */ }
+    const m = String(p.url).match(/([a-z0-9-]+)\.megasoft[a-z]*\.com\.br/i);
+    const slug = m ? m[1].toLowerCase() : (urlHost ? urlHost.split(".")[0] : null);
+    const host = /megasofttransparencia/i.test(urlHost || "") ? urlHost : null;
+    if (slug) alvos.push({ ...p, slug, host });
+  }
+  console.log(`[megasoft] PODER=legislativo · ${alvos.length} câmaras MegaSoft na fila`);
+}
+
+// REFAZ=1 reprocessa quem ja esta ok — sem isso, conserto de campo nao alcanca quem ja foi coletado
+
+const feitos = process.env.REFAZ === "1" ? new Set() : new Set((await q(`select slug from folha_megasoft_coleta where situacao='ok'`)).rows.map((r) => r.slug));
 const fila = alvos.filter((a) => !feitos.has(a.slug));
 console.log(`[megasoft] ${alvos.length} prefeituras · ${feitos.size} feitas · ${fila.length} na fila`);
 
@@ -102,12 +135,12 @@ async function grava(regs) {
     const c = (f) => p.map((x) => x[f]);
     await q(`insert into folha_servidores_megasoft
       (cod_ibge,municipio,uf,slug,competencia,matricula,nome,cpf_masc,cargo,departamento,vinculo,
-       situacao,situacao_pagamento,carga_horaria,data_admissao,proventos,descontos,liquido,_hash)
-      select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
+       situacao,situacao_pagamento,carga_horaria,data_admissao,proventos,descontos,liquido,_hash,poder)
+      select *, ${PODER === "legislativo" ? "'legislativo'" : "null"}::text from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
         $9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::text[],$15::text[],
         $16::numeric[],$17::numeric[],$18::numeric[],$19::text[])
       on conflict (_hash) do update set proventos=excluded.proventos, descontos=excluded.descontos,
-        liquido=excluded.liquido, _coletado_em=now()`,
+        liquido=excluded.liquido, poder=excluded.poder, _coletado_em=now()`,
       [c("cod_ibge"), c("municipio"), c("uf"), c("slug"), c("competencia"), c("matricula"), c("nome"), c("cpf_masc"),
        c("cargo"), c("departamento"), c("vinculo"), c("situacao"), c("situacao_pagamento"), c("carga_horaria"),
        c("data_admissao"), c("proventos"), c("descontos"), c("liquido"), c("_hash")]);

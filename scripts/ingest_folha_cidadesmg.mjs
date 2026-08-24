@@ -21,6 +21,7 @@ const db = pool();
 const q = withRetry(db);
 const SO = process.env.SO || null;
 const MAX_PAG = Number(process.env.MAX_PAG || 300);
+const RECUO_ANOS = Number(process.env.RECUO_ANOS || 3);   // quantos anos recuar quando o município parou de publicar
 const dorme = (ms) => new Promise((s) => setTimeout(s, ms));
 
 await q(`create table if not exists folha_servidores_cidadesmg (
@@ -62,13 +63,25 @@ const leTabela = (page) => page.evaluate(() => {
 // 🚨 20 dos 94 portais CidadesMG descobertos são da CÂMARA (`cm{slug}.cidadesmg.com.br`) e o `distinct on` pegava
 // o primeiro que aparecesse: Januária entrou com 62 pessoas num município de 2.352, Serro com 27 de 748.
 // A folha da câmara é real, mas não é a do município — ordenar preferindo o host `pm` e descartar quem só tem `cm`.
-const alvos = (await q(`select distinct on (cod_ibge) cod_ibge, municipio, uf, url_portal_real base
-  from portal_real_descoberto where url_portal_real ilike '%cidadesmg%'
-    and url_portal_real !~* '//cm'
-  ${SO ? "and municipio ilike '%'||$1||'%'" : ""}
-  order by cod_ibge, (url_portal_real ~* '//pm') desc`, SO ? [SO] : [])).rows;
+// ⭐ além do `portal_real_descoberto`, lê os CANDIDATOS — o diagnóstico profundo marca `tem_dados` em municípios
+// que a descoberta de portal não tinha, e sem esta fonte eles ficam parados com coletor pronto
+// ([[pnigp-ordem-retorno-resondar-corrigir-criar]]).
+const alvos = (await q(`select distinct on (cod_ibge) cod_ibge, municipio, uf, base from (
+    select cod_ibge, municipio, uf, url_portal_real base, 1 ordem
+      from portal_real_descoberto where url_portal_real ilike '%cidadesmg%' and url_portal_real !~* '//cm'
+    union all
+    select c.cod_ibge, c.municipio, c.uf, c.url, 2
+      from folha_portal_candidato c where c.produto = 'cidadesmg' and c.url !~* '//cm'
+  ) x
+  where true ${SO ? "and municipio ilike '%'||$1||'%'" : ""}
+  order by cod_ibge, (base ~* '//pm') desc, ordem`, SO ? [SO] : [])).rows;
+// ⚠️ `sem_publicacao` custa caro para reconfirmar (4 anos sondados) e muda devagar: fica em quarentena de 30
+//    dias. Não vira veredito eterno — quando o município voltar a publicar, a próxima passada acha
+//    ([[pnigp-repassada-nao-pode-rebaixar-veredito]]).
 const feitos = process.env.REFAZ === "1" ? new Set()
-  : new Set((await q(`select cod_ibge from folha_cidadesmg_coleta where situacao like 'ok%'`)).rows.map((r) => r.cod_ibge));
+  : new Set((await q(`select cod_ibge from folha_cidadesmg_coleta
+      where situacao like 'ok%'
+         or (situacao = 'sem_publicacao' and em > now() - interval '30 days')`)).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[cidadesmg] ${alvos.length} portais · ${fila.length} na fila`);
 
@@ -86,12 +99,35 @@ for (let i = 0; i < fila.length; i++) {
   try {
     await page.goto(a.base, { waitUntil: "domcontentloaded", timeout: 60000 });
     await dorme(3000);
-    // a geração antiga usa /faces/user/folha.xhtml — outro fluxo, fica marcada
-    if (/faces\/user\//i.test(page.url())) { await marca("geracao_antiga", "portal no layout antigo (faces/user)"); falhas++; continue; }
-    const href = await page.evaluate(() => [...document.querySelectorAll("a")]
-      .find((x) => /servidor|recursosHumanos/i.test((x.innerText || "") + (x.getAttribute("href") || "")))?.getAttribute("href"));
-    if (!href) { await marca("sem_rota", "sem link de recursos humanos"); falhas++; continue; }
-    await page.goto(new URL(href, page.url()).href, { waitUntil: "domcontentloaded", timeout: 60000 });
+    // 🚨 A GERAÇÃO SE DECIDE PELA ROTA DE RH, NÃO PELA URL DA HOME. A home de vários white-labels redireciona
+    // para `/faces/user/portal.xhtml` — layout antigo — mas o menu leva a `/publica/recursosHumanos/`, que é a
+    // geração NOVA e este coletor sabe ler. Testar a URL da home marcava "geracao_antiga" em 14 municípios de MG
+    // cujo RH é novinho (Ubá, Manga, Medina, Itaobim…). Procurar o link primeiro; só cair para "antiga" quando
+    // não houver rota nova nenhuma ([[pnigp-tela-certa-nao-e-so-ter-tabela]]).
+    const href = await page.evaluate(() => {
+      const as = [...document.querySelectorAll("a")];
+      const nova = as.find((x) => /publica\/recursosHumanos/i.test(x.getAttribute("href") || ""));
+      if (nova) return nova.getAttribute("href");
+      return as.find((x) => /servidor|recursosHumanos/i.test((x.innerText || "") + (x.getAttribute("href") || "")))?.getAttribute("href");
+    });
+    if (!href && /faces\/user\//i.test(page.url())) {
+      await marca("geracao_antiga", "portal no layout antigo (faces/user) e sem rota /publica/recursosHumanos"); falhas++; continue;
+    }
+    // ⭐ 18/ago: "sem link" não é "sem tela". Quatro portais (Alvorada de Minas, Salinas, Vargem Grande do Rio
+    //    Pardo, Água Boa) não expõem o link de RH na home — o menu é montado por JS ou a home cai numa seção
+    //    interna — mas a ROTA CANÔNICA responde 200 com 220 KB. Tentar a rota antes de desistir
+    //    ([[pnigp-ordem-retorno-resondar-corrigir-criar]]).
+    let rota = href;
+    if (!rota) {
+      const canonica = new URL("/portaltransparencia/publica/recursosHumanos/recursosHumanos.xhtml", page.url()).href;
+      const vale = await page.goto(canonica, { waitUntil: "domcontentloaded", timeout: 60000 })
+        .then((r) => r && r.ok()).catch(() => false);
+      if (vale && (await page.evaluate(() => !!document.querySelector('[id$="mesFolhaPagamento_input"]')).catch(() => false))) {
+        rota = canonica;
+      }
+    }
+    if (!rota) { await marca("sem_rota", "sem link de recursos humanos e rota canônica não responde"); falhas++; continue; }
+    await page.goto(new URL(rota, page.url()).href, { waitUntil: "domcontentloaded", timeout: 60000 });
     await dorme(4000);
 
     // mais linhas por página reduz a paginação (o select do PrimeFaces é o "rows per page")
@@ -104,22 +140,67 @@ for (let i = 0; i < fila.length; i++) {
 
     // 🚨 a tela abre em JANEIRO (default do filtro), não no mês mais recente publicado. Sem isso a base fica com
     // o retrato do início do ano. Desce de dezembro para janeiro e para no primeiro mês COM linhas.
-    for (let mes = 12; mes >= 1; mes--) {
-      const setou = await page.evaluate((m) => {
-        const s = document.querySelector('[id$="mesFolhaPagamento_input"]');
-        if (!s || ![...s.options].some((o) => o.value === String(m))) return false;
-        s.value = String(m); s.dispatchEvent(new Event("change", { bubbles: true }));
-        return true;
-      }, mes).catch(() => false);
-      if (!setou) continue;
-      await dorme(1500);
+    // 🚨 18/ago — E O ANO TAMBÉM. A tela tem `anoFolhaPagamento_input` travado no ano corrente e este laço nunca
+    //    o tocava: quem PAROU DE PUBLICAR antes de 2026 voltava 'tabela sem linhas' e era anotado como se não
+    //    tivesse folha ([[pnigp-recuo-curto-perde-quem-parou]]). Agora recua RECUO_ANOS anos antes de desistir.
+    // ⭐ O mês tem a opção "Todos" (value 0): **um** postback responde pelo ANO INTEIRO. Sondar o ano com Todos
+    //    antes de descer mês a mês troca 12 requisições por 1 quando o ano é vazio — e ainda acha dado em mês
+    //    ímpar que a descida de dezembro para janeiro poderia passar batido.
+    // ⚠️ Medido: o campo de ano VOLTA para o corrente depois do postback, mas o POST leva o ano digitado
+    //    (`anoFolhaPagamento_input=2024` capturado na rede). O reset é re-render, não recusa — não confundir os dois.
+    const anoAtual = new Date().getUTCFullYear();
+    const pesquisar = async () => {
       await page.evaluate(() => {
         const b = [...document.querySelectorAll("button,a,input")].find((x) => /^pesquisar$/i.test((x.innerText || x.value || "").trim()));
         if (b) b.click();
       }).catch(() => {});
       await dorme(4000);
-      const teste = await leTabela(page);
-      if (teste.length) break;
+    };
+    const poeAno = (a) => page.evaluate((ano) => {
+      const i = document.querySelector('[id$="anoFolhaPagamento_input"]');
+      if (!i) return false;
+      i.value = String(ano);
+      i.dispatchEvent(new Event("input", { bubbles: true }));
+      i.dispatchEvent(new Event("change", { bubbles: true }));
+      i.dispatchEvent(new Event("blur", { bubbles: true }));
+      return true;
+    }, a).catch(() => false);
+    const poeMes = (m) => page.evaluate((mes) => {
+      const s = document.querySelector('[id$="mesFolhaPagamento_input"]');
+      if (!s || ![...s.options].some((o) => o.value === String(mes))) return false;
+      s.value = String(mes); s.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    }, m).catch(() => false);
+
+    let achouMes = false;
+    let anosSondados = 0;
+    for (let ano = anoAtual; ano >= anoAtual - RECUO_ANOS && !achouMes; ano--) {
+      const temAno = await poeAno(ano);
+      if (!temAno && ano !== anoAtual) break;   // tela sem filtro de ano: só o ano corrente existe
+      anosSondados++;
+      await dorme(800);
+      // sonda o ano inteiro de uma vez ("Todos"); se vier vazio, nem desce os 12 meses
+      if (await poeMes(0)) {
+        await dorme(1200);
+        await pesquisar();
+        if (!(await leTabela(page)).length) continue;
+        await poeAno(ano);
+        await dorme(600);
+      }
+      for (let mes = 12; mes >= 1; mes--) {
+        if (!(await poeMes(mes))) continue;
+        await dorme(1500);
+        await pesquisar();
+        if ((await leTabela(page)).length) { achouMes = true; break; }
+      }
+    }
+    // ⚠️ VERDITO HONESTO: o portal existe, a tela de RH existe e o servidor respondeu "de 0 registros" para
+    //    todos os meses de todos os anos sondados. Isso é o município NÃO PUBLICAR — não é coleta que falhou.
+    //    Conferido na rede em Ibiaí: o POST leva ano=2024 e mês=Todos e volta 0. Dizer "vazio" (que soa a erro
+    //    meu) escondia a falha de transparência de quem tem de publicar ([[pnigp-subcoleta-defeito-de-fonte]]).
+    if (!achouMes && anosSondados > 1) {
+      await marca("sem_publicacao", `tela de RH existe e devolve 0 registros em ${anosSondados} anos sondados`);
+      falhas++; continue;
     }
 
     // 🚨 O TOTAL DECLARADO é a única forma de saber se a paginação foi até o fim. Sem ele o coletor terminava

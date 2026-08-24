@@ -49,14 +49,18 @@ if (process.env.BASE) {
   const par = [];
   const filtroUF = process.env.UF ? `and left(d.cod_ibge,2) = $${par.push({ SP: "35", PR: "41", RS: "43", SC: "42", MG: "31" }[process.env.UF] || "35")}` : "";
   const filtroSO = SO ? `and d.municipio ilike '%'||$${par.push(SO)}||'%'` : "";
+  // 🚨 A UF ERA HARDCODED 'SP'. Doutor Maurício Cardoso e Porto Xavier são do RS (cod_ibge 43…) e entraram na
+  // tabela marcados como SP — um município gravado na UF errada não aparece em nenhum levantamento estadual e
+  // contamina o do vizinho. A UF sai do CADASTRO, junto com o código ([[pnigp-nunca-digitar-codigo-ibge]]).
   alvos = (await q(`
-    select d.cod_ibge, d.municipio nome, 'SP' uf,
+    select d.cod_ibge, m.nome, m.uf,
            regexp_replace(coalesce(d.url_pessoal, d.url_visitada), '/home.*$|/wptransparenciaportal.*$|/+$', '') base
       from folha_diagnostico_faltante d
+      join municipios_br m on m.cod_ibge = d.cod_ibge
      where d.tem_dados
        and coalesce(d.url_pessoal, d.url_visitada) ~* '^https?://[^/]+/(home|wptransparenciaportal)'
        ${filtroUF} ${filtroSO}
-     order by d.municipio`, par)).rows.filter((a) => a.base && /^https?:\/\//.test(a.base));
+     order by m.nome`, par)).rows.filter((a) => a.base && /^https?:\/\//.test(a.base));
 }
 const feitos = process.env.REFAZ === "1" ? new Set()
   : new Set((await q(`select cod_ibge from folha_gxrh_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
@@ -103,6 +107,14 @@ for (let i = 0; i < fila.length; i++) {
        competencia=excluded.competencia, linhas=excluded.linhas, situacao=excluded.situacao,
        detalhe=excluded.detalhe, em=now()`,
       [a.cod_ibge, a.nome, a.uf, a.base, comp, linhas, situacao, detalhe]);
+  // 🚨 CÂMARA NÃO É EXECUTIVO. `transparencia.camarairapuru.sp.gov.br` entrou como se fosse a prefeitura de
+  // Irapuru e trouxe 16 pessoas para um município de centenas — somar o legislativo ao executivo infla um e
+  // esconde o outro ([[pnigp-entidade-espelho-infla-folha]]). O host denuncia antes de gastar navegador.
+  if (/\/\/[^/]*(camara|cmara|clegis|legislativ)/i.test(a.base)) {
+    await marca("camara", `host ${a.base} é da CÂMARA, não da prefeitura — outro poder`);
+    console.log(`  ⊘ [${i + 1}/${fila.length}] ${a.uf} ${a.nome}: host de câmara, pulado`);
+    continue;
+  }
   const page = await browser.newPage({ ignoreHTTPSErrors: true });
   try {
     await page.goto(`${a.base}/home`, { waitUntil: "networkidle", timeout: 60000 });
@@ -115,14 +127,73 @@ for (let i = 0; i < fila.length; i++) {
     await dorme(4000);
     if (!(await page.locator("#vORGAO_MPAGE").count())) throw new Error("tela de filtro não abriu");
 
-    // ⭐ MÊS: o combo lista só os meses QUE EXISTEM. Pega o ÚLTIMO (mais recente publicado) e, se ele vier magro,
-    // cai para o anterior — a competência mais cheia, mesma lei de [[pnigp-competencia-mais-cheia-nao-a-recente]].
-    const meses = await page.locator('[id*="COMBO_MES"] li, [id*="COMBO_MES"] a')
-      .evaluateAll((es) => [...new Set(es.map((e) => (e.innerText || "").trim()).filter((t) => /^[A-ZÇÃÉ]{4,9}$/i.test(t)))]);
-    await page.selectOption("#vORGAO_MPAGE", "2").catch(() => {});
+    // 🚨🚨 O MÊS NUNCA ERA SELECIONADO. O seletor antigo (`[id*="COMBO_MES"] li, a`) não casava com nada, `meses`
+    // vinha VAZIO, e a competência era fabricada como `ANO + (meses.length || 1)` — o número de meses do combo
+    // virando número do mês. Todas as coletas saíram de JANEIRO (o default da tela) e só por acaso o rótulo
+    // "01" coincidiu com o dado ([[pnigp-filtro-que-nao-aplica-confira-pelo-dado]]).
+    //
+    // O combo é um ExtendedCombo do WorkWithPlus: um botão que abre `ul.dropdown-menu` com `a[dsc="JULHO"]`.
+    // Clicar no `a[dsc]` escreve o número do mês em `#W0012vMES` — e é ESSE input, lido de volta, que prova qual
+    // competência a consulta vai usar.
+    const abreComboMes = async () => {
+      await page.locator("#W0012COMBO_MESContainer_btnGroupDrop").click({ timeout: 15000 });
+      await dorme(1200);
+    };
+    await abreComboMes();
+    const meses = await page.locator("#W0012COMBO_MESContainer a[dsc]")
+      .evaluateAll((es) => [...new Set(es.map((e) => e.getAttribute("dsc")).filter(Boolean))]);
+    if (!meses.length) throw new Error("combo de mês não abriu (o filtro de competência não seria aplicado)");
+    await page.keyboard.press("Escape").catch(() => {});
+    await dorme(600);
+
+    await page.selectOption("#vORGAO_MPAGE", "2");
     await dorme(2000);
-    await page.selectOption("#vEXERCICIO_MPAGE", String(ANO)).catch(() => {});
+    await page.selectOption("#vEXERCICIO_MPAGE", String(ANO));
     await dorme(2000);
+
+    // ⭐ competência MAIS CHEIA entre as últimas ([[pnigp-competencia-mais-cheia-nao-a-recente]]): a tela abre em
+    // JANEIRO, que costuma ser das mais magras do ano.
+    const MESES_TESTE = Number(process.env.MESES_TESTE || 3);
+    const candidatos = meses.slice(-MESES_TESTE).reverse();
+    // 🚨 comparar competências pela 1ª PÁGINA não discrimina nada: o grid abre com 5 linhas por página, então
+    // todo mês devolve "5". O que separa é o TOTAL declarado no controle de paginação ("… de N").
+    const totalPaginasDe = async () => {
+      const t = await page.locator(".rowsperpage button").first().innerText().catch(() => "");
+      const m = t.match(/de\s+(\d+)/i);
+      return m ? Number(m[1]) : 0;
+    };
+    let escolha = null;
+    for (const nomeMes of candidatos) {
+      await abreComboMes();
+      await page.locator(`#W0012COMBO_MESContainer a[dsc="${nomeMes}"]`).first().click({ timeout: 15000 });
+      await dorme(2200);
+      const nMes = Number(await page.locator("#W0012vMES").inputValue().catch(() => 0));
+      if (!nMes) throw new Error(`clicar "${nomeMes}" não escreveu em #W0012vMES — filtro não aplicado`);
+      await page.locator("#W0012BTNENTER").click({ timeout: 20000 });
+      await dorme(5000);
+      const n = await totalPaginasDe();
+      console.log(`     ${nomeMes} (mês ${nMes}): ${n} páginas`);
+      if (!escolha || n > escolha.n) escolha = { nomeMes, nMes, n };
+      // volta à tela de filtro para testar o próximo
+      if (nomeMes !== candidatos[candidatos.length - 1]) {
+        await page.goto(`${a.base}/filtros-recursoshumanos`, { waitUntil: "networkidle", timeout: 60000 });
+        await dorme(3000);
+      }
+    }
+    if (!escolha?.n) throw new Error("nenhuma competência devolveu linhas");
+
+    // aplica a escolhida e CONFIRMA pelo input antes de coletar
+    await page.goto(`${a.base}/filtros-recursoshumanos`, { waitUntil: "networkidle", timeout: 60000 });
+    await dorme(3000);
+    await page.selectOption("#vORGAO_MPAGE", "2");
+    await dorme(1500);
+    await page.selectOption("#vEXERCICIO_MPAGE", String(ANO));
+    await dorme(1500);
+    await abreComboMes();
+    await page.locator(`#W0012COMBO_MESContainer a[dsc="${escolha.nomeMes}"]`).first().click({ timeout: 15000 });
+    await dorme(2200);
+    const mesAplicado = Number(await page.locator("#W0012vMES").inputValue().catch(() => 0));
+    if (mesAplicado !== escolha.nMes) throw new Error(`#W0012vMES ficou em ${mesAplicado}, esperado ${escolha.nMes}`);
     await page.locator("#W0012BTNENTER").click({ timeout: 20000 });
     await dorme(5000);
 
@@ -146,7 +217,8 @@ for (let i = 0; i < fila.length; i++) {
       const m = t.match(/de\s+(\d+)/i); return m ? Number(m[1]) : 1;
     };
     const totalPag = await totalDe();
-    const competencia = `${ANO}${String(meses.length || 1).padStart(2, "0")}`;
+    // a competência sai do MÊS QUE A TELA CONFIRMOU ter aplicado, nunca de contagem de opções
+    const competencia = `${ANO}${String(escolha.nMes).padStart(2, "0")}`;
 
     const regs = []; const vistos = new Set();
     let assinaturaAnterior = null;

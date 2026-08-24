@@ -65,10 +65,30 @@ const money = (s) => {
   return Number.isFinite(n) ? n : null;
 };
 
+// 🚨 DUAS MONTAGENS: em Sapiranga/Bagé a API vive sob `/api/folha_pagamentos/…`; em **Maquiné** ela está na RAIZ
+// (`/folha_pagamentos/…`) e o caminho com `/api/` devolve a home em HTML — que o coletor lia como "não é DBSeller".
+// Descobrir o prefixo UMA VEZ por município e reusar.
+const prefixoDe = new Map();
+async function achaPrefixo(base) {
+  if (prefixoDe.has(base)) return prefixoDe.get(base);
+  for (const pre of ["/api/folha_pagamentos", "/folha_pagamentos"]) {
+    try {
+      const r = await fetch(`${base}${pre}/getAnos/1`, { headers: H, signal: AbortSignal.timeout(30000) });
+      if (!r.ok) continue;
+      const t = await r.text();
+      if (!/^\s*[[{]/.test(t)) continue;
+      prefixoDe.set(base, pre);
+      return pre;
+    } catch { /* próximo */ }
+  }
+  prefixoDe.set(base, "/api/folha_pagamentos");
+  return "/api/folha_pagamentos";
+}
 async function getJson(base, caminho) {
+  const pre = await achaPrefixo(base);
   for (let t = 0; t < 3; t++) {
     try {
-      const r = await fetch(`${base}/api/folha_pagamentos${caminho}`, { headers: H, signal: AbortSignal.timeout(60000) });
+      const r = await fetch(`${base}${pre}${caminho}`, { headers: H, signal: AbortSignal.timeout(60000) });
       if (!r.ok) return null;
       const txt = await r.text();
       if (!/^\s*[[{]/.test(txt)) return null;   // o framework devolve HTML quando a rota não casa
@@ -83,7 +103,7 @@ async function pesquisa(base, inst, ano, mes) {
     sidx: "Servidor.nome", sord: "asc", page: "1", rows: "99999" });
   for (let t = 0; t < 3; t++) {
     try {
-      const r = await fetch(`${base}/api/folha_pagamentos/pesquisar`, { method: "POST", body,
+      const r = await fetch(`${base}${await achaPrefixo(base)}/pesquisar`, { method: "POST", body,
         headers: { ...H, "content-type": "application/x-www-form-urlencoded" }, signal: AbortSignal.timeout(300000) });
       if (!r.ok) { await new Promise((s) => setTimeout(s, 3000 * (t + 1))); continue; }
       const txt = await r.text();
@@ -115,7 +135,9 @@ function daFicha(html, rotulo) {
 async function ficha(base, id) {
   for (let t = 0; t < 3; t++) {
     try {
-      const r = await fetch(`${base}/api/folha_pagamentos/view/${id}`, { headers: H, signal: AbortSignal.timeout(60000) });
+      // a ficha segue o MESMO prefixo da API (com ou sem `/api/`): em Maquiné o caminho fixo devolvia a home e as
+      // 633 pessoas ficavam sem valor nenhum
+      const r = await fetch(`${base}${await achaPrefixo(base)}/view/${id}`, { headers: H, signal: AbortSignal.timeout(60000) });
       if (!r.ok) { await new Promise((s) => setTimeout(s, 1500 * (t + 1))); continue; }
       const html = await r.text();
       return {

@@ -129,7 +129,13 @@ async function grava(regs) {
       select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
         $9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::text[],$15::text[],$16::text[],$17::text[],
         $18::numeric[],$19::text[])
-      on conflict (_hash) do update set remuneracao=excluded.remuneracao, _coletado_em=now()`,
+      on conflict (_hash) do update set
+        cargo=coalesce(excluded.cargo, folha_servidores_elotech.cargo),
+        lotacao=coalesce(excluded.lotacao, folha_servidores_elotech.lotacao),
+        vinculo=coalesce(excluded.vinculo, folha_servidores_elotech.vinculo),
+        situacao=coalesce(excluded.situacao, folha_servidores_elotech.situacao),
+        entidade=coalesce(excluded.entidade, folha_servidores_elotech.entidade),
+        local_trabalho=coalesce(excluded.local_trabalho, folha_servidores_elotech.local_trabalho), remuneracao=excluded.remuneracao, _coletado_em=now()`,
       [c("cod_ibge"), c("municipio"), c("uf"), c("slug"), c("entidade_id"), c("entidade"), c("exercicio"),
        c("matricula"), c("nome"), c("cargo"), c("lotacao"), c("classe"), c("vinculo"), c("situacao"),
        c("data_admissao"), c("horas_semanais"), c("local_trabalho"), c("remuneracao"), c("_hash")]);

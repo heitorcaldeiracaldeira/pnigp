@@ -34,6 +34,9 @@ await q(`create table if not exists folha_servidores_aspec (
   _hash text primary key, _coletado_em timestamptz default now()
 )`);
 await q(`create index if not exists ix_faspecnom_mun on folha_servidores_aspec (cod_ibge)`);
+// ⭐ 21/ago/2026: PODER=legislativo colhe a CÂMARA no mesmo produto (outro `acessoinfo_id`). A coluna mantém a
+//    folha do legislativo fora da conta da prefeitura e dentro de `vw_folha_camara_brasil`.
+await q(`alter table folha_servidores_aspec add column if not exists poder text`);
 await q(`create table if not exists folha_aspec_nom_coleta (
   cod_ibge text primary key, municipio text, uf text, folha_id text, competencia text,
   servidores int, situacao text, detalhe text, em timestamptz default now()
@@ -84,6 +87,7 @@ async function descobreFolha(acessoinfoId) {
 // alvos: diretório NACIONAL (aspec_diretorio, ~629 cidades das 9 UFs) + os 76 do radar (folha_aspec_coleta).
 // Chave = cod_ibge; prioriza o diretório nacional. DIR_ONLY=1 usa só o diretório.
 const usaDir = await q(`select count(*) c from aspec_diretorio where acessoinfo_id is not null and cod_ibge is not null`).then((r) => +r.rows[0].c > 0).catch(() => false);
+const PODER = (process.env.PODER || "executivo").toLowerCase();
 const alvos = usaDir
   ? (await q(`select d.cod_ibge, coalesce(m.nome, d.municipio_gt) municipio, d.uf, d.acessoinfo_id
        from aspec_diretorio d left join municipios_br m on m.cod_ibge=d.cod_ibge
@@ -97,7 +101,32 @@ const alvos = usaDir
       order by 3, 2`, SO ? [SO] : [])).rows
   : (await q(`select c.cod_ibge, c.municipio, c.uf, c.acessoinfo_id from folha_aspec_coleta c
       where c.acessoinfo_id is not null ${SO ? "and c.municipio ilike '%'||$1||'%'" : ""} order by c.uf, c.municipio`, SO ? [SO] : [])).rows;
-const feitos = new Set((await q(`select cod_ibge from folha_aspec_nom_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
+// REFAZ=1 reprocessa quem ja esta ok — sem isso, conserto de campo nao alcanca quem ja foi coletado
+await q(`alter table folha_aspec_nom_coleta add column if not exists poder text not null default 'executivo'`);
+await q(`do $do$ begin
+  if exists (select 1 from pg_constraint where conname = 'folha_aspec_nom_coleta_pkey'
+               and (select count(*) from unnest(conkey)) = 1) then
+    alter table folha_aspec_nom_coleta drop constraint folha_aspec_nom_coleta_pkey;
+    alter table folha_aspec_nom_coleta add primary key (cod_ibge, poder);
+  end if;
+end $do$`);
+
+// ⭐ PODER=legislativo: o id do ASPEC vem DENTRO da URL do portal da câmara
+//    (`portaldoservidor.aspec.com.br/230625602`, `governotransparente.com.br/14029588`) — mesmo produto, outro
+//    `acessoinfo_id`. Sem id na URL o alvo NÃO entra: adivinhar id é inventar dado.
+if (PODER === "legislativo") {
+  alvos.length = 0;
+  for (const r of (await q(`select cod_ibge, municipio, uf, coalesce(url_erp_camara, url_camara, url_camara_2) url
+      from folha_camara_fila where coalesce(erp_camara,'') = 'aspec'
+        ${SO ? "and municipio ilike '%'||$1||'%'" : ""}
+      order by rais_legislativo desc nulls last`, SO ? [SO] : [])).rows) {
+    const m = String(r.url || "").match(/(?:aspec\.com\.br|governotransparente\.com\.br)\/([0-9]{5,})/);
+    if (m) alvos.push({ cod_ibge: r.cod_ibge, municipio: r.municipio, uf: r.uf, acessoinfo_id: m[1] });
+  }
+  console.log(`[aspec-nominal] PODER=legislativo · ${alvos.length} câmaras com id do ASPEC na URL`);
+}
+
+const feitos = process.env.REFAZ === "1" ? new Set() : new Set((await q(`select cod_ibge from folha_aspec_nom_coleta where situacao='ok' and poder=$1`, [PODER])).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[aspec-nominal] ${alvos.length} municípios ASPEC · ${fila.length} na fila`);
 
@@ -108,8 +137,8 @@ async function grava(regs) {
   for (let i = 0; i < arr.length; i += LOTE) {
     const p = arr.slice(i, i + LOTE); const c = (f) => p.map((x) => x[f]);
     await q(`insert into folha_servidores_aspec
-      (cod_ibge,municipio,uf,folha_id,competencia,matricula,nome,orgao,secretaria,setor,cargo,funcao,provento,desconto,liquido,_hash)
-      select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
+      (cod_ibge,municipio,uf,folha_id,competencia,matricula,nome,orgao,secretaria,setor,cargo,funcao,provento,desconto,liquido,_hash,poder)
+      select *, '${PODER}'::text from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
         $9::text[],$10::text[],$11::text[],$12::text[],$13::numeric[],$14::numeric[],$15::numeric[],$16::text[])
       on conflict (_hash) do update set provento=excluded.provento, liquido=excluded.liquido, _coletado_em=now()`,
       [c("cod_ibge"), c("municipio"), c("uf"), c("folha_id"), c("competencia"), c("matricula"), c("nome"),
@@ -121,11 +150,11 @@ let okN = 0, semN = 0, falhaN = 0, totServ = 0;
 for (let i = 0; i < fila.length; i++) {
   const a = fila[i];
   const marca = (situacao, detalhe, folhaId = null, comp = null, serv = 0) =>
-    q(`insert into folha_aspec_nom_coleta (cod_ibge,municipio,uf,folha_id,competencia,servidores,situacao,detalhe,em)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,now()) on conflict (cod_ibge) do update set
+    q(`insert into folha_aspec_nom_coleta (cod_ibge,municipio,uf,folha_id,competencia,servidores,situacao,detalhe,poder,em)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,now()) on conflict (cod_ibge,poder) do update set
        folha_id=excluded.folha_id, competencia=excluded.competencia, servidores=excluded.servidores,
        situacao=excluded.situacao, detalhe=excluded.detalhe, em=now()`,
-      [a.cod_ibge, a.municipio, a.uf, folhaId, comp, serv, situacao, detalhe]);
+      [a.cod_ibge, a.municipio, a.uf, folhaId, comp, serv, situacao, detalhe, PODER]);
   try {
     const d = await descobreFolha(a.acessoinfo_id);
     if (d.erro && !d.folhaId) { await marca(d.erro === "iframe_vazio" ? "sem_folha_nominal" : "erro", d.erro); semN++; console.log(`  · [${i + 1}/${fila.length}] ${a.uf.slice(0, 8)} ${a.municipio}: ${d.erro}`); continue; }

@@ -45,8 +45,18 @@ async function api(caminho) {
 }
 try { await q(`create extension if not exists unaccent`); } catch {}
 
+// 🚨 a razão baixa contra a RAIS quase sempre é ISSO: ficaram de fora FUNDOS e SECRETARIAS. Em Altamira/PA o
+// diretório tem "FUNDO MUNICIPAL DE SAUDE DE ALTAMIRA" e "SECRETARIA DE EDUCACAO DE ALTAMIRA" além da
+// prefeitura — são executivo municipal, e sem eles o município parece ter metade da folha que tem.
+// A CÂMARA fica de fora de propósito: é outro poder, e somá-la à prefeitura infla o executivo.
+const RE_EXECUTIVO = /^\s*(PREFEITURA|MUNICIPIO|MUNIC[ÍI]PIO|FUNDO|SECRETARIA|INSTITUTO|SERVI[ÇC]O|AUTARQUIA|AG[ÊE]NCIA|SUPERINTEND[ÊE]NCIA|DEPARTAMENTO)/i;
+const RE_CAMARA = /^\s*(C[ÂA]MARA|PODER LEGISLATIVO)/i;
+const tipoEnte = (d) => RE_CAMARA.test(d || "") ? "camara" : RE_EXECUTIVO.test(d || "") ? "executivo" : "outro";
+
 async function resolveMun(ent) {
-  const md = String(ent.descricao || "").match(/(?:PREFEITURA|MUNICIPIO|CAMARA)[^A-Za-zÀ-ú]*(?:MUNICIPAL\s+)?(?:DE\s+|DO\s+|DA\s+)?(.+)$/i);
+  // o nome do município é o que sobra depois do prefixo do ENTE — e o prefixo varia muito mais que "PREFEITURA":
+  // "FUNDO MUNICIPAL DE SAUDE DE ALTAMIRA", "SECRETARIA DE EDUCACAO DE ALTAMIRA".
+  const md = String(ent.descricao || "").match(/(?:PREFEITURA|MUNICIPIO|CAMARA|FUNDO(?:\s+MUNICIPAL)?(?:\s+DE\s+\S+(?:\s+E\s+\S+)?)?|SECRETARIA(?:\s+MUNICIPAL)?(?:\s+DE\s+\S+)?|INSTITUTO(?:\s+\S+)?|SERVI[ÇC]O(?:\s+\S+)?|AUTARQUIA|AG[ÊE]NCIA(?:\s+\S+)?)[^A-Za-zÀ-ú]*(?:MUNICIPAL\s+)?(?:DE\s+|DO\s+|DA\s+)?(.+)$/i);
   const cidade = md ? md[1].trim() : ent.descricao;
   const uf = (ent.uf || "").toUpperCase();
   if (!cidade) return null;
@@ -56,11 +66,15 @@ async function resolveMun(ent) {
 
 // diretório de entidades
 const dir = await api(`/entidades/?page_size=9999`);
-let entidades = (dir?.results || []).filter((e) => /PREFEITURA/i.test(e.descricao || ""));
+// TIPO=executivo (default) traz prefeitura + fundos + secretarias; TIPO=todos inclui a câmara.
+const TIPO = process.env.TIPO || "executivo";
+let entidades = (dir?.results || []).filter((e) =>
+  TIPO === "todos" ? true : tipoEnte(e.descricao) === "executivo");
 if (SO) entidades = entidades.filter((e) => new RegExp(SO, "i").test(e.descricao || ""));
-const feitos = new Set((await q(`select entidade_id from folha_layout_coleta where situacao='ok'`)).rows.map((r) => r.entidade_id));
+// REFAZ=1 reprocessa quem ja esta ok — sem isso, conserto de campo nao alcanca quem ja foi coletado
+const feitos = process.env.REFAZ === "1" ? new Set() : new Set((await q(`select entidade_id from folha_layout_coleta where situacao='ok'`)).rows.map((r) => r.entidade_id));
 const fila = entidades.filter((e) => !feitos.has(String(e.id)));
-console.log(`[layout] ${entidades.length} prefeituras no diretório · ${fila.length} na fila`);
+console.log(`[layout] ${entidades.length} entes (${TIPO}) no diretório · ${fila.length} na fila`);
 
 const LOTE = 1000;
 async function grava(regs) {

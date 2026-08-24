@@ -174,8 +174,13 @@ for (const orgao of (SO_ORGAO ? [SO_ORGAO] : ORGAOS)) {
       }
     }
 
+    // 🚨 O PORTAL USA `MMAAAA` ("072026") e o coletor gravava o valor CRU. Isso se disfarça de `AAAAMM`: um
+    // verificador ingênuo lê ano=0720 e mês=26 sem estranhar o tamanho. Converter na gravação e manter `comp`
+    // como veio para alimentar o formulário ([[pnigp-filtro-que-nao-aplica-confira-pelo-dado]]).
+    const mmaaaa = String(comp).match(/^(\d{2})(\d{4})$/);
+    const competencia = mmaaaa && +mmaaaa[1] >= 1 && +mmaaaa[1] <= 12 ? `${mmaaaa[2]}${mmaaaa[1]}` : String(comp);
     const regs = linhas.map((l) => ({
-      cod_ibge: IBGE, municipio: MUN, uf: UF, orgao, competencia: comp,
+      cod_ibge: IBGE, municipio: MUN, uf: UF, orgao, competencia,
       matricula: l.matricula || null, nome: l.nome || null, cargo: l.cargo || null, funcao: l.funcao || null,
       carga_horaria: l.carga || null, data_admissao: l.admissao || null, data_exoneracao: l.exoneracao || null,
       vinculo: l.vinculo || null, secretaria: l.lotacao || null,

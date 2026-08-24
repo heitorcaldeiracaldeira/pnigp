@@ -80,7 +80,29 @@ const alvos = (await q(`
   ) x
    where true ${UF ? "and left(cod_ibge,2) = $1" : ""} ${SO ? `and municipio ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
    order by cod_ibge, length(url)`, [UF ? COD_UF : null, SO].filter(Boolean))).rows;
-const feitos = new Set(REFAZ ? [] : (await q(`select cod_ibge from folha_abase_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
+// ⭐ 22/ago/2026 — PODER=legislativo: 27 CÂMARAS caíram como Abase no diagnóstico com navegador. Mesmo produto,
+//    outra URL; `poder` separa as duas folhas na mesma tabela e mantém a câmara fora da conta da prefeitura.
+const PODER = (process.env.PODER || "executivo").toLowerCase();
+await q(`alter table folha_servidores_abase add column if not exists poder text`);
+await q(`alter table folha_abase_coleta add column if not exists poder text not null default 'executivo'`);
+await q(`do $do$ begin
+  if exists (select 1 from pg_constraint where conname = 'folha_abase_coleta_pkey'
+               and (select count(*) from unnest(conkey)) = 1) then
+    alter table folha_abase_coleta drop constraint folha_abase_coleta_pkey;
+    alter table folha_abase_coleta add primary key (cod_ibge, poder);
+  end if;
+end $do$`);
+if (PODER === "legislativo") {
+  alvos.length = 0;
+  for (const r of (await q(`select cod_ibge, municipio, uf, coalesce(url_erp_camara, url_camara) url
+      from folha_camara_fila where coalesce(erp_camara,'') = 'abase'
+        and coalesce(url_erp_camara, url_camara) is not null
+        ${SO ? "and municipio ilike '%'||$1||'%'" : ""}
+      order by rais_legislativo desc nulls last`, SO ? [SO] : [])).rows) alvos.push(r);
+  console.log(`[abase] PODER=legislativo · ${alvos.length} câmaras na fila`);
+}
+
+const feitos = new Set(REFAZ ? [] : (await q(`select cod_ibge from folha_abase_coleta where situacao='ok' and poder=$1`, [PODER])).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[abase] ${alvos.length} portais · ${feitos.size} já feitos · ${fila.length} na fila`);
 
@@ -134,18 +156,18 @@ async function totalizador(token, ano, mes) {
   return r?.ok ? (await r.json())?.data : null;
 }
 
-let totalGeral = 0, ok = 0, falhas = 0;
+let totalGeral = 0, ok = 0, falhas = 0, vazios = 0;
 const hoje = new Date();
 for (let i = 0; i < fila.length; i++) {
   const a = fila[i];
   const token = desescapa((a.url.match(/abase\.com\.br\/[a-z-]+\/(.+)$/i) || [])[1]);
   const marca = (situacao, detalhe, competencia = null, linhas = 0, declarado = 0) =>
-    q(`insert into folha_abase_coleta (cod_ibge,municipio,uf,token,competencia,linhas,declarado,situacao,detalhe,em)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,now())
-       on conflict (cod_ibge) do update set token=excluded.token, competencia=excluded.competencia,
+    q(`insert into folha_abase_coleta (cod_ibge,municipio,uf,token,competencia,linhas,declarado,situacao,detalhe,poder,em)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,now())
+       on conflict (cod_ibge,poder) do update set token=excluded.token, competencia=excluded.competencia,
          linhas=excluded.linhas, declarado=excluded.declarado, situacao=excluded.situacao,
          detalhe=excluded.detalhe, em=now()`,
-      [a.cod_ibge, a.municipio, a.uf, token, competencia, linhas, declarado, situacao, detalhe]);
+      [a.cod_ibge, a.municipio, a.uf, token, competencia, linhas, declarado, situacao, detalhe, PODER]);
   try {
     if (!token) { await marca("erro", "token não extraído da URL"); falhas++; continue; }
     // competência MAIS CHEIA entre as recentes — não a mais recente ([[pnigp-sinsoft-citta-crackeados-rs]])
@@ -195,14 +217,28 @@ for (let i = 0; i < fila.length; i++) {
           .digest("hex"),
       };
     }).filter((x) => x.nome);
+    // 🚨🚨 O ABASE NÃO SEPARA PODER PELO TOKEN: o `jsonData` pede `entidade: "0"` — ou seja, TODAS. Pedir a
+    //    câmara pela URL dela trouxe o MUNICÍPIO INTEIRO e gravou 2.770 linhas como legislativo (Santo Cristo
+    //    com 478 "vereadores"). Apagadas em 22/ago. Quem separa é a ENTIDADE de cada registro, aqui, depois de
+    //    baixar — e o sinal de alarme é o tamanho: câmara é 10 a 25 pessoas
+    //    ([[pnigp-contaminacao-camara-e-sempre-pequena]], [[pnigp-entidade-espelho-infla-folha]]).
+    const legis = PODER === "legislativo";
+    const soCamara = legis
+      ? regs.filter((x) => /\mc[âa]mara\M|\mlegislativ|vereador/i.test(`${x.entidade || ""} ${x.secretaria || ""} ${x.cargo || ""}`))
+      : regs;
+    if (legis && !soCamara.length) {
+      await marca("vazio", `${regs.length} linhas no portal, nenhuma da CÂMARA (o token traz o município inteiro)`, competencia);
+      vazios++; continue;
+    }
+    regs.length = 0; regs.push(...soCamara);
     if (!regs.length) { await marca("vazio", `recordsTotal=${melhor.n} mas data veio vazio`, competencia); falhas++; continue; }
 
     const pp = [...new Map(regs.map((x) => [x._hash, x])).values()];
     if (REFAZ) await q(`delete from folha_servidores_abase where cod_ibge=$1 and competencia=$2`, [a.cod_ibge, competencia]);
     const c = (f) => pp.map((x) => x[f]);
     await q(`insert into folha_servidores_abase
-      (cod_ibge,municipio,uf,entidade,competencia,matricula,nome,cargo,funcao,secretaria,situacao,jornada,valor,cpf_masc,_hash)
-      select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
+      (cod_ibge,municipio,uf,entidade,competencia,matricula,nome,cargo,funcao,secretaria,situacao,jornada,valor,cpf_masc,_hash,poder)
+      select *, '${PODER}'::text from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
         $9::text[],$10::text[],$11::text[],$12::numeric[],$13::numeric[],$14::text[],$15::text[])
       on conflict (_hash) do update set valor=excluded.valor, secretaria=excluded.secretaria, _coletado_em=now()`,
       [c("cod_ibge"), c("municipio"), c("uf"), c("entidade"), c("competencia"), c("matricula"), c("nome"),

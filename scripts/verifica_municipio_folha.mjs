@@ -25,6 +25,21 @@ const SO = process.env.SO || null;
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36";
 const dorme = (ms) => new Promise((s) => setTimeout(s, ms));
 
+// ⭐ "quem já tem folha" tem de ser descoberto do CATÁLOGO, não de uma view fixa de uma UF: a `mv_folha_mg`
+// prendia este script a Minas, e lista fixa de fontes envelhece ([[feedback-descobrir-versao-nao-fixar]] — foi
+// assim que o Siplan, com 69 mil linhas, ficou invisível no total de MG por uma tarde inteira).
+{
+  const tabs = (await q(`select table_name t from information_schema.tables
+     where table_schema='public' and table_name like 'folha_servidores_%'`)).rows.map((r) => r.t);
+  const partes = [];
+  for (const t of tabs) {
+    const cols = (await q(`select column_name c from information_schema.columns where table_name=$1`, [t])).rows.map((x) => x.c);
+    if (cols.includes("cod_ibge")) partes.push(`select distinct left(cod_ibge::text,7) cod_ibge from ${t}`);
+  }
+  await q(`create or replace view vw_folha_ja_coletada as ${partes.join(" union ")}`);
+  console.log(`[verifica] "já coletado" montado de ${partes.length} tabelas de folha`);
+}
+
 await q(`create table if not exists folha_verificacao_municipal (
   cod_ibge text primary key, municipio text, uf text,
   host text, rota_com_dados text, linhas int, tem_valor boolean,
@@ -44,7 +59,7 @@ const alvos = (await q(`
   with sem as (
     select m.cod_ibge, m.nome municipio, m.uf
       from municipios_br m
-      left join (select distinct cod_ibge from mv_folha_mg) f on f.cod_ibge = m.cod_ibge
+      left join (select distinct cod_ibge from vw_folha_ja_coletada) f on f.cod_ibge = m.cod_ibge
      where m.uf = $1 and f.cod_ibge is null ${SO ? "and m.nome ilike '%'||$2||'%'" : ""})
   select s.*, coalesce(
       -- 🚨 CÂMARA fora: já entrou 4 vezes hoje disfarçada (host cm-, cm., cmXxx, .leg.br). Coletar de lá dá
@@ -132,6 +147,11 @@ async function verifica(a) {
     const candidatas = [...new Set([...doMenu, ...(origem ? ROTAS_PADRAO.map((r) => origem + r) : [])])].slice(0, 14);
 
     for (const url of candidatas) {
+      // 🚨 o portal FEDERAL da CGU aparece no menu de dezenas de prefeituras e tem tabela de servidores da UNIÃO:
+      // sete municípios "acenderam" nele. Não é a folha do município.
+      // `transparencia.gov.br` (sem o "portal") é o MESMO portal federal e escapou do filtro em Embaúba;
+      // `drive.google.com` é pasta de arquivos, não folha consultável.
+      if (/portaldatransparencia\.gov\.br|(^|\/\/|\.)transparencia\.gov\.br|gov\.br\/cgu|\.leg\.br|camara|drive\.google|docs\.google/i.test(url)) continue;
       rotasTestadas++;
       try {
         await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });

@@ -44,12 +44,30 @@ const ASSINATURAS = [
   [/primefaces|javax\.faces/i, "jsf(?)"],
 ];
 
-const alvos = (await q(`
+// ⭐ 23/ago/2026 — ALVO=diagnostico aponta o identificador para quem o diagnóstico já PROVOU ter folha nominal
+//    e ficou SEM produto: 189 municípios (90 prefeituras + 99 câmaras). É o maior bloco restante e o mais
+//    valioso, porque ali a dúvida não é "publica?" — já se sabe que sim — é "com qual sistema".
+// ⭐⭐ E usa a URL da TELA DE PESSOAL, não a home: a assinatura do produto aparece muito mais nítida na tela
+//    do módulo do que na página institucional ([[pnigp-tela-certa-nao-e-so-ter-tabela]]).
+const DIAG = process.env.ALVO === "diagnostico";
+const alvos = DIAG
+  ? (await q(`select cod_ibge, municipio, uf, url from (
+        select cod_ibge, municipio, uf, coalesce(url_pessoal, url_visitada) url
+          from folha_diagnostico_faltante
+         where veredito = 'tem_dados' and coalesce(produto,'') = ''
+           and coalesce(url_pessoal, url_visitada) is not null
+        union all
+        select cod_ibge, municipio, uf, coalesce(url_pessoal, url_visitada) url
+          from folha_diagnostico_camara
+         where veredito = 'tem_dados' and coalesce(produto,'') = ''
+           and coalesce(url_pessoal, url_visitada) is not null
+      ) x order by uf, municipio ${LIMITE ? `limit ${LIMITE}` : ""}`)).rows
+  : (await q(`
   select cod_ibge, municipio, uf, url_portal_real url from portal_real_descoberto
    where url_portal_real ~* '\\.gov\\.br'
      and not exists (select 1 from portal_produto p where p.cod_ibge = portal_real_descoberto.cod_ibge)
    order by uf, municipio ${LIMITE ? `limit ${LIMITE}` : ""}`)).rows;
-console.log(`[identifica] ${alvos.length} portais em domínio próprio`);
+console.log(`[identifica] ${alvos.length} portais · alvo ${DIAG ? "DIAGNÓSTICO (tem folha, falta produto)" : "domínio próprio"}`);
 
 const conta = new Map();
 for (let i = 0; i < alvos.length; i++) {

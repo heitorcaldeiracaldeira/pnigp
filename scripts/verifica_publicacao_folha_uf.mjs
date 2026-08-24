@@ -19,6 +19,7 @@
 import { pool, withRetry } from "./_cadprev.mjs";
 import { SG_UF, COD_UF } from "./_uf.mjs";
 import { identifica } from "./_erp_assinaturas.mjs";
+import { criaUniaoFolha } from "./_folha_uniao.mjs";
 
 const db = pool();
 const q = withRetry(db);
@@ -61,6 +62,7 @@ const RE_PESSOAL = /(folha de pagamento|folha|servidor|pessoal|remunera|sal[áa]
 // 🚨 "pessoal" casa com "dados pessoais/LGPD" e "folha" com "folha de rosto": esses NÃO são a folha.
 const RE_FALSO = /lgpd|dados pessoais|prote[çc][ãa]o de dados|folha de rosto|folha de estilo|contracheque do servidor logado|acesso restrito/i;
 const RE_VALOR = /r\$\s?\d|\d{1,3}(\.\d{3})*,\d{2}/;
+const RE_ARQ_FOLHA = /folpag|folha|remunera|nominal|sal[áa]rio|servidor|fopag|pessoal|quadro|mapa|holerite/i;
 const RE_SPA = /<div\s+id=["'](root|app|__next)["']|ng-app|<app-root/i;
 
 // 🚨 o Radar traz `url_portal` com UM ESPAÇO em branco em vez de nulo, e traz linha de município HOMÔNIMO de
@@ -76,13 +78,29 @@ console.log(`[${SG_UF}] verificando a publicação no site de ${alvos.length} mu
 await q(`create table if not exists folha_verificacao_site (
   cod_ibge text primary key, municipio text, uf text, site text, site_status int,
   url_transparencia text, url_pessoal text, rotulo_pessoal text, erp text, plataforma text,
+  -- o veredito do RASTREADOR fica guardado a parte: a reconciliacao sobrescreve a coluna veredito, e sem esta
+  -- aqui o estado anterior se perde. Quando a coleta some (parser corrigido, fatia apagada), da para VOLTAR --
+  -- sem ela Manaquiri e Tapaua continuariam publica_por_consulta com zero linha no banco, a nosso favor.
+  veredito_site text,
   publica boolean, tem_valor boolean, spa boolean, linhas int, arquivos int,
   veredito text, evidencia text, em timestamptz default now())`);
 
 // 🚨 URL de município HOMÔNIMO de outra UF (o Radar deu japura.pr.gov.br para Japurá/AM): descarta.
 // (Postgres não tem lookahead, então o descarte é aqui e não no SQL.)
+// 🚨 rede social NÃO é site da prefeitura: o Radar guarda o Instagram no campo `site` de Careiro, e o município
+// saía como "site sem transparência" com base num perfil do Instagram.
+const RE_SOCIAL = /instagram\.com|facebook\.com|fb\.com|twitter\.com|x\.com|youtube\.com|linktr\.ee|wa\.me/i;
+// 🚨 soft-404: borba.am.gov.br responde 200 e redireciona para /404.html — HTTP 200 não prova nada
+// ([[pnigp-sonda-soft404-falso-positivo]]). O destino final é que conta, não o status.
+const RE_SOFT404 = /\/404(\.html?|\.php)?$|\/(erro|error|not-?found)(\.html?)?$/i;
+const soft404 = (r) => {
+  if (!r || !r.url) return false;
+  try { if (RE_SOFT404.test(new URL(r.url).pathname)) return true; } catch {}
+  if (RE_SOCIAL.test(r.url)) return true;
+  return /p[áa]gina n[ãa]o (foi )?encontrada|404 not found|erro 404/i.test(semTag(r.t || "").slice(0, 1200));
+};
 const url = (u) => {
-  if (!u) return null;
+  if (!u || RE_SOCIAL.test(u)) return null;
   const x = /^https?:\/\//i.test(u) ? u : "https://" + u.replace(/^\/+/, "");
   const m = x.match(/\.([a-z]{2})\.gov\.br/i);
   if (m && m[1].toLowerCase() !== SG_UF.toLowerCase()) return null;
@@ -102,7 +120,7 @@ async function verifica(a) {
   let home = null, ultimoErro = null;
   for (const c of cands) {
     const r = await pega(c);
-    if (r.st === 200 && r.n > 1200) { home = r; break; }
+    if (r.st === 200 && r.n > 1200 && !soft404(r)) { home = r; break; }
     // 🚨 guardar TAMBÉM o fracasso com st=0 (DNS/timeout): sem isso a evidência saía "HTTP 0" em vez do motivo,
     // e "fora do ar" sem motivo não serve nem para re-sondar nem para o pedido por LAI.
     ultimoErro = r.erro || `HTTP ${r.st}`;
@@ -112,7 +130,7 @@ async function verifica(a) {
     site_status: home?.st || 0, url_transparencia: null, url_pessoal: null, rotulo_pessoal: null, erp: null,
     plataforma: null,
     publica: false, tem_valor: false, spa: false, linhas: 0, arquivos: 0 };
-  if (!home || home.st !== 200 || home.n < 1200) {
+  if (!home || home.st !== 200 || home.n < 1200 || soft404(home)) {
     const parqueado = /hostgator|hospedagem|dom[íi]nio (est[áa] )?(dispon[íi]vel|[àa] venda)|registro\.br|parking/i.test(home?.t || "");
     return { ...base, veredito: parqueado ? "dominio_parqueado" : "site_fora_do_ar",
       evidencia: parqueado ? "o domínio devolve página de venda de hospedagem, não o site da prefeitura"
@@ -204,10 +222,28 @@ async function verifica(a) {
   if (nota(usado) === 0 && !base.arquivos && base.linhas <= 5)
     return { ...base, veredito: "so_login_do_servidor",
       evidencia: `o único item de pessoal do menu é "${base.rotulo_pessoal}" — autoatendimento do funcionário, não publicação` };
+  // 🚨 arquivo publicado NÃO é folha publicada: Tabatinga lista "CARTA-DE-SERVICO.pdf", Manaus lista a política
+  // de privacidade e Urucará lista o PPA. Só conta como publicação da folha se o NOME do arquivo (ou o rótulo do
+  // menu) disser folha — senão vira "menu com anexo que não é folha", que é o que o município de fato tem.
+  const folhaMesmo = arqs.filter((x) => RE_ARQ_FOLHA.test(decodeURIComponent(x.href.split("/").pop() || "")));
+  // ⚠️ o rótulo NÃO salva o menu: Manaus rotula "Tabela Remuneratória" e anexa política de privacidade e
+  // estrutura organizacional — tabela de cargos não é folha nominal. Exige nome de arquivo com cara de folha.
+  if (base.arquivos && !folhaMesmo.length && !/folha de pagamento|rela[çc][ãa]o nominal/i.test(base.rotulo_pessoal || ""))
+    return { ...base, veredito: "anexos_que_nao_sao_folha",
+      evidencia: `"${base.rotulo_pessoal}" lista ${base.arquivos} arquivo(s), nenhum de folha: ${arqs.slice(0, 3).map((x) => decodeURIComponent(x.href.split("/").pop()).slice(0, 44)).join(" · ")}` };
   if (base.arquivos) return { ...base, publica: true, veredito: "publica_arquivos",
-    evidencia: `"${base.rotulo_pessoal}" lista ${base.arquivos} arquivo(s): ${arqs.slice(0, 3).map((x) => x.href.split("/").pop().slice(0, 48)).join(" · ")}` };
+    evidencia: `"${base.rotulo_pessoal}" lista ${base.arquivos} arquivo(s), ${folhaMesmo.length} com nome de folha: ${(folhaMesmo.length ? folhaMesmo : arqs).slice(0, 3).map((x) => decodeURIComponent(x.href.split("/").pop()).slice(0, 48)).join(" · ")}` };
   if (base.linhas > 5) return { ...base, publica: true, veredito: base.tem_valor ? "publica_tabela_com_valor" : "publica_tabela_sem_valor",
     evidencia: `"${base.rotulo_pessoal}" traz tabela de ${base.linhas} linhas${base.tem_valor ? " COM valor em R$" : " SEM valor (nominal apenas)"}` };
+  // 🚨 "menu sem dado" junta dois casos MUITO diferentes: página publicada e VAZIA (Autazes: o WordPress da
+  // Perseus tem a página "Servidores" com 7,5 KB de casca e conteúdo em branco — 24 páginas no site, nenhuma de
+  // folha) e site que só ESPELHA um agregador. O pedido por LAI muda conforme o caso, então o veredito separa.
+  if (base.plataforma && texto.length < 4000)
+    return { ...base, veredito: "publica_via_agregador",
+      evidencia: `o site não hospeda a folha: delega a ${base.plataforma} (item "${base.rotulo_pessoal}")` };
+  if (texto.length < 900)
+    return { ...base, veredito: "pagina_de_pessoal_vazia",
+      evidencia: `"${base.rotulo_pessoal}" existe no menu e abre uma página VAZIA (${texto.length} caracteres de texto, sem tabela e sem arquivo)` };
   return { ...base, veredito: "menu_sem_dado",
     evidencia: `"${base.rotulo_pessoal}" abre uma página de ${texto.length} caracteres, sem tabela e sem arquivo` };
 }
@@ -222,18 +258,54 @@ await Promise.all(Array.from({ length: CONC }, async () => {
     }
     saidas.push(r);
     await q(`insert into folha_verificacao_site (cod_ibge,municipio,uf,site,site_status,url_transparencia,url_pessoal,
-        rotulo_pessoal,erp,plataforma,publica,tem_valor,spa,linhas,arquivos,veredito,evidencia,em)
-      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,now())
+        rotulo_pessoal,erp,plataforma,publica,tem_valor,spa,linhas,arquivos,veredito,veredito_site,evidencia,em)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$16,$17,now())
       on conflict (cod_ibge) do update set site=excluded.site, site_status=excluded.site_status,
         url_transparencia=excluded.url_transparencia, url_pessoal=excluded.url_pessoal,
         rotulo_pessoal=excluded.rotulo_pessoal, erp=excluded.erp, plataforma=excluded.plataforma, publica=excluded.publica,
         tem_valor=excluded.tem_valor, spa=excluded.spa, linhas=excluded.linhas, arquivos=excluded.arquivos,
-        veredito=excluded.veredito, evidencia=excluded.evidencia, em=now()`,
+        veredito=excluded.veredito, veredito_site=excluded.veredito_site,
+        evidencia=excluded.evidencia, em=now()`,
       [r.cod_ibge, r.municipio, r.uf, r.site, r.site_status, r.url_transparencia, r.url_pessoal, r.rotulo_pessoal,
        r.erp, r.plataforma || null, r.publica, r.tem_valor, r.spa, r.linhas, r.arquivos, r.veredito, r.evidencia]);
     console.log(`  ${(r.publica ? "✔" : "·")} ${r.municipio.padEnd(26)} ${r.veredito.padEnd(30)} ${(r.rotulo_pessoal || "").slice(0, 40)}`);
   }
 }));
+
+// -- 5. reconciliacao: A PROVA E A COLETA -----------------------------------------------------------------------
+// 🚨 O rastreador só enxerga a folha que está a UM LINK de distância. Em portal de CONSULTA — PortalTP, o
+// TransparenciaWeb do ES, o SCPI de Maués — a folha só aparece depois de um formulário, e o município apareceria
+// como "anexos que não são folha" com 3.000 servidores já coletados dele. Onde a coleta trouxe linha COM VALOR,
+// o portal publica: isso é medição, não suposição ([[pnigp-sonda-folha-prova-e-a-coleta]]).
+// 🚨 a união é construída AQUI, não herdada de outro script: a view antiga (`vw_folha_es`) era criada pelo
+// relatório com a UF da última execução, e reconciliar o ES contra as linhas do AM devolvia zero em silêncio.
+const { nome: VW } = await criaUniaoFolha(q, COD_UF, SG_UF);
+await q(`update folha_verificacao_site set veredito = coalesce(veredito_site, veredito),
+   publica = veredito_site in ('publica_arquivos','publica_tabela_com_valor','publica_tabela_sem_valor')
+   where uf = $1 and veredito_site is not null`, [SG_UF]);
+const reconc = (await q(`update folha_verificacao_site v
+  set veredito = case
+        -- 🚨 site MORTO com folha coletada não é "publica por consulta": o dado vem do AGREGADOR, e essas são
+        -- duas afirmações diferentes. Anori, Japurá, Lábrea, Tapauá e São Gabriel da Cachoeira não têm site no
+        -- ar — a folha deles existe porque a AAM/ANC/Diretório Digital publica, não porque a prefeitura publica.
+        when coalesce(v.veredito_site, v.veredito) in ('site_fora_do_ar','dominio_parqueado','site_sem_transparencia')
+          then 'sem_site_proprio_dado_vem_do_agregador'
+        else 'publica_por_consulta_no_portal' end,
+      publica = true,
+      evidencia = case
+        when coalesce(v.veredito_site, v.veredito) in ('site_fora_do_ar','dominio_parqueado','site_sem_transparencia')
+          then 'O site do município não entrega a folha (' || v.veredito || '), mas o dado EXISTE e foi coletado: '
+            || to_char(c.n, 'FM999G999') || ' servidores com remuneração na fonte "' || c.fonte
+            || '". Quem publica é o agregador, não a prefeitura. (rastreio: ' || coalesce(v.veredito_site, v.veredito) || ')'
+        else 'O rastreador não alcança a folha por link — o portal só a entrega depois de uma consulta. A prova de que publica é a COLETA: '
+            || to_char(c.n, 'FM999G999') || ' servidores com remuneração já extraídos da fonte "' || c.fonte
+            || '". Situação anterior do rastreio: ' || coalesce(v.veredito_site, v.veredito) || '.' end
+  from (select f.cod_ibge, f.fonte, count(*) n from ${VW} f where f.valor > 0 group by 1,2) c
+  where c.cod_ibge = v.cod_ibge and v.uf = $1 and not v.publica
+    and c.n = (select max(z.n2) from (select count(*) n2 from ${VW} f2
+               where f2.cod_ibge = v.cod_ibge and f2.valor > 0 group by f2.fonte) z)
+  returning v.municipio`, [SG_UF])).rows;
+if (reconc.length) console.log(`[${SG_UF}] ${reconc.length} municipios reclassificados como "publica por consulta" pela prova da coleta`);
 
 console.log(`\n═══ ${SG_UF}: o que os sites publicam ═══`);
 console.table((await q(`select veredito, count(*) n, string_agg(municipio, ', ' order by municipio) municipios
@@ -242,6 +314,6 @@ console.table((await q(`select veredito, count(*) n, string_agg(municipio, ', ' 
 console.table((await q(`select v.municipio, v.veredito, v.erp, v.url_pessoal
   from folha_verificacao_site v
   where v.uf=$1 and v.publica
-    and not exists (select 1 from vw_folha_es f where f.cod_ibge = v.cod_ibge and f.valor > 0)
+    and not exists (select 1 from ${VW} f where f.cod_ibge = v.cod_ibge and f.valor > 0)
   order by 1`, [SG_UF])).rows);
 await db.end();

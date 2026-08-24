@@ -16,6 +16,11 @@ const db = pool();
 const q = withRetry(db);
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? Number(process.argv[i + 1]) : d; };
 const MIN = arg("--min", 0.5), MAX = arg("--max", 1.6);
+// ⭐ 18/ago: dois acréscimos pedidos pelo uso real —
+//   UF=PI  recorta o relatório (varrer o país inteiro para olhar um estado é desperdício de banco);
+//   a medição passa a ser GRAVADA em `folha_prova_real`. Sem gravar, o veredito morre no terminal e o
+//   reprocessamento não tem de onde ler quem está subcoletado ([[pnigp-prova-real-motor]]).
+const UF = process.env.UF || null;
 
 // 🚨 lista FIXA de fontes envelhece: quando tenosoft e equiplano entraram, o relatório passou a ignorá-los sem
 // avisar. Descobrir as tabelas e a coluna de competência direto do catálogo do banco.
@@ -86,6 +91,32 @@ select m.cod_ibge, mb.nome municipio, mb.uf, m.coletado, m.fonte_principal, m.fo
   left join rais r on r.ibge6 = left(m.cod_ibge, 6)
  order by razao nulls last`)).rows;
 
+// grava a medição: uma linha por município, com a régua usada. É daqui que sai a fila de reprocessamento.
+await q(`create table if not exists folha_prova_real (
+  cod_ibge text primary key, municipio text, uf text, coletado int, rais int, razao numeric,
+  fonte_principal text, fontes int, veredito text, min_usado numeric, max_usado numeric,
+  medido_em timestamptz default now()
+)`);
+{
+  const p = linhas.filter((l) => l.cod_ibge);
+  for (let k = 0; k < p.length; k += 500) {
+    const lote = p.slice(k, k + 500); const c = (f) => lote.map((x) => x[f] ?? null);
+    await q(`insert into folha_prova_real
+      (cod_ibge,municipio,uf,coletado,rais,razao,fonte_principal,fontes,veredito,min_usado,max_usado)
+      select * from unnest($1::text[],$2::text[],$3::text[],$4::int[],$5::int[],$6::numeric[],$7::text[],$8::int[],
+        $9::text[],$10::numeric[],$11::numeric[])
+      on conflict (cod_ibge) do update set municipio=excluded.municipio, uf=excluded.uf, coletado=excluded.coletado,
+        rais=excluded.rais, razao=excluded.razao, fonte_principal=excluded.fonte_principal, fontes=excluded.fontes,
+        veredito=excluded.veredito, min_usado=excluded.min_usado, max_usado=excluded.max_usado, medido_em=now()`,
+      [c("cod_ibge"), c("municipio"), c("uf"), c("coletado"), c("rais"), c("razao"), c("fonte_principal"), c("fontes"),
+       lote.map((x) => x.razao == null ? "sem_denominador" : (+x.razao < MIN ? "subcoletado" : (+x.razao > MAX ? "inflado" : "ok"))),
+       lote.map(() => MIN), lote.map(() => MAX)]);
+  }
+  console.log(`→ ${p.length} medições gravadas em folha_prova_real`);
+}
+
+if (UF) { const antes = linhas.length; for (let k = linhas.length - 1; k >= 0; k--) if (linhas[k].uf !== UF) linhas.splice(k, 1);
+  console.log(`recorte UF=${UF}: ${linhas.length} de ${antes} municípios`); }
 const comRais = linhas.filter((l) => l.razao != null);
 const baixo = comRais.filter((l) => +l.razao < MIN);
 const alto = comRais.filter((l) => +l.razao > MAX);

@@ -111,7 +111,8 @@ function extrai(html, foff) {
 const cat = await entidades();
 const fila = SO ? cat.filter((e) => e.foff === SO) : cat;
 console.log(`[cr2] ${cat.length} entidades no catálogo · ${fila.length} na fila`);
-const feitos = new Set((await q(`select foff_id from folha_cr2_coleta where situacao='ok'`)).rows.map((r) => r.foff_id));
+// REFAZ=1 reprocessa quem ja esta ok — sem isso, conserto de campo nao alcanca quem ja foi coletado
+const feitos = process.env.REFAZ === "1" ? new Set() : new Set((await q(`select foff_id from folha_cr2_coleta where situacao='ok'`)).rows.map((r) => r.foff_id));
 
 const LOTE = 1000;
 async function grava(regs) {

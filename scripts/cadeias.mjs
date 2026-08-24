@@ -53,6 +53,24 @@ export const CADEIAS = {
     ],
   },
 
+  // ⭐ 22/ago/2026 — A CAMADA DAS CÂMARAS precisa se reconstruir sozinha, senão envelhece calada. As três views
+  // são DERIVADAS (não coletam nada): leem as mesmas `folha_servidores_*` que os coletores alimentam, então
+  // basta rodá-las depois da coleta. Sem isto, uma câmara colhida hoje só apareceria no dia em que eu rodasse a
+  // mão de novo — que é como o produto ficou meses sem enxergar 29 coletores
+  // ([[pnigp-view-folha-nao-enxerga-coletores]], [[pnigp-produtor-na-cadeia-consumidor-fora]]).
+  folha_camaras: {
+    titulo: "Camada da folha das CÂMARAS — view, camada de pessoa e placar nacional",
+    log: "pnigp-folha-camaras.log",
+    trava: { nome: "cadeia_folha_camaras", toleranciaMin: 10 },
+    aoFalhar: "parar",   // a camada de pessoa depende da view; placar depende das duas
+    env: { APLICAR: "1" },
+    passos: [
+      { rotulo: "view das camaras (contrato igual ao das prefeituras)", script: "scripts/fix_view_folha_camara.mjs", timeoutMin: 30 },
+      { rotulo: "camada de PESSOA e homonimos (CPF mascarado como chave)", script: "scripts/fix_view_folha_camara_pessoa.mjs", timeoutMin: 20 },
+      { rotulo: "placar nacional e fila do que falta", script: "scripts/mapa_folha_camaras.mjs", timeoutMin: 30 },
+    ],
+  },
+
   coleta: {
     titulo: "Coleta do PNCP e das fontes devidas",
     log: "pnigp-coleta.log",

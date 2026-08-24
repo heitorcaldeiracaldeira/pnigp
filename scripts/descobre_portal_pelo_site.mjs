@@ -67,8 +67,10 @@ const browser = await chromium.launch({ headless: true, args: ["--ignore-certifi
 
 async function varreSite(m) {
   const s = so(m.nome);
-  const candidatosHost = [`https://www.${s}.rs.gov.br/`, `https://${s}.rs.gov.br/`,
-                          `https://www.pm${s}.rs.gov.br/`, `https://www.pm${s}.com.br/`];
+  // 🚨 o domínio estava FIXO em `.rs.gov.br` — o script servia a um estado só. Vem da UF do município.
+  const u = UF.toLowerCase();
+  const candidatosHost = [`https://www.${s}.${u}.gov.br/`, `https://${s}.${u}.gov.br/`,
+                          `https://www.pm${s}.${u}.gov.br/`, `https://www.pm${s}.com.br/`];
   const ctx = await browser.newContext({ ignoreHTTPSErrors: true });
   const page = await ctx.newPage();
   const achados = new Map();

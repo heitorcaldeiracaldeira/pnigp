@@ -56,7 +56,8 @@ const alvos = (await q(`select p.cod_ibge, p.slug, m.nome municipio, m.uf
   from erp_portal_municipal p join municipios_br m on m.cod_ibge = p.cod_ibge
  where p.erp='epublica' ${UF ? "and m.uf = $1" : ""} ${SO ? `and m.nome ilike '%' || $${UF ? 2 : 1} || '%'` : ""}
  order by m.uf, m.nome`, [UF, SO].filter(Boolean))).rows;
-const feitos = new Set((await q(`select cod_ibge from folha_epublica_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
+// REFAZ=1 reprocessa quem ja esta ok — sem isso, conserto de campo nao alcanca quem ja foi coletado
+const feitos = process.env.REFAZ === "1" ? new Set() : new Set((await q(`select cod_ibge from folha_epublica_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[e-publica] ${alvos.length} portais · ${feitos.size} feitos · ${fila.length} na fila`);
 
@@ -76,7 +77,11 @@ async function grava(todos) {
       select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
         $9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::text[],$15::text[],$16::text[],$17::text[],
         $18::text[],$19::text[],$20::numeric[],$21::numeric[],$22::numeric[],$23::text[])
-      on conflict (_hash) do update set vantagens=excluded.vantagens, descontos=excluded.descontos,
+      on conflict (_hash) do update set
+        cargo=coalesce(excluded.cargo, folha_servidores_epublica.cargo),
+        secretaria=coalesce(excluded.secretaria, folha_servidores_epublica.secretaria),
+        vinculo=coalesce(excluded.vinculo, folha_servidores_epublica.vinculo),
+        situacao=coalesce(excluded.situacao, folha_servidores_epublica.situacao), vantagens=excluded.vantagens, descontos=excluded.descontos,
         liquido=excluded.liquido, _coletado_em=now()`,
       [c("cod_ibge"), c("municipio"), c("uf"), c("unidade_gestora"), c("competencia"), c("nome"), c("cpf_masc"),
        c("matricula"), c("cargo"), c("secretaria"), c("local"), c("vinculo"), c("situacao"), c("tipo_contratacao"),

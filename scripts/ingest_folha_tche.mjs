@@ -82,11 +82,25 @@ function campos(linha, sep) {
 async function baixaMes(page, url, ano, mes, dir) {
   await page.goto(url, { waitUntil: "domcontentloaded", timeout: 90000 });
   await page.waitForTimeout(3500);
-  await page.fill('input[name="vEXERCICIOANO"]', String(ano)).catch(() => {});
-  await page.selectOption('select[name="vFOLHAMES"]', String(mes)).catch(() => {});
+  // 🚨 os `.catch(() => {})` daqui escondiam o pior defeito possível: se o ano/mês não fossem aplicados, a tela
+  // devolvia a competência DEFAULT e o coletor gravava o dado com o rótulo do mês pedido
+  // ([[pnigp-filtro-que-nao-aplica-confira-pelo-dado]]). Agora falha alto — e, depois do Enter, confere o que a
+  // tela realmente ficou marcando, porque aqui não há botão de consulta: o filtro vai só pelo submit.
+  await page.fill('input[name="vEXERCICIOANO"]', String(ano));
+  await page.selectOption('select[name="vFOLHAMES"]', String(mes));
   await page.waitForTimeout(800);
   await page.keyboard.press("Enter");
   await page.waitForTimeout(7000);
+  const aplicado = await page.evaluate(() => ({
+    ano: document.querySelector('input[name="vEXERCICIOANO"]')?.value,
+    mes: document.querySelector('select[name="vFOLHAMES"]')?.value,
+  })).catch(() => ({}));
+  if (aplicado.ano != null && String(aplicado.ano) !== String(ano)) {
+    throw new Error(`ano não aplicado: a tela ficou em ${aplicado.ano}, pedi ${ano}`);
+  }
+  if (aplicado.mes != null && String(aplicado.mes) !== String(mes)) {
+    throw new Error(`mês não aplicado: a tela ficou em ${aplicado.mes}, pedi ${mes}`);
+  }
   await page.click("#DDO_AGEXPORTContainer_btnGroupDrop").catch(() => {});
   await page.waitForTimeout(2000);
   // 🚨 O CSV NÃO É DOWNLOAD: o portal gera o arquivo em `/TransparenciaJavaEnvironment/tmp/{uuid}.txt` e abre numa
@@ -106,7 +120,40 @@ async function baixaMes(page, url, ano, mes, dir) {
     const destino = path.join(dir, `tche_${ano}_${mes}_${Date.now()}.csv`);
     fs.writeFileSync(destino, txt, "utf8");
     return destino;
-  } catch { return null; }
+  } catch {
+    // 🚨 FALLBACK: quando o export não abre o popup, a GRADE ainda está na tela. Pontão e Engenho Velho fechavam
+    // "sem linhas em 6 meses" com 17 servidores visíveis — era o CSV que não vinha, não o dado que faltava.
+    // Raspar a tabela paginando pelo botão "Seg"(uinte) e devolver no mesmo formato de CSV, para o parser único.
+    try {
+      const linhas = [];
+      for (let pag = 0; pag < 200; pag++) {
+        const bloco = await page.evaluate(() => {
+          const tab = [...document.querySelectorAll("table")]
+            .map((t) => ({ t, n: t.querySelectorAll("tr").length }))
+            .sort((a, b) => b.n - a.n)[0]?.t;
+          if (!tab) return [];
+          return [...tab.querySelectorAll("tr")].map((tr) =>
+            [...tr.querySelectorAll("th,td")].map((c) => (c.innerText || "").replace(/\s+/g, " ").trim()));
+        });
+        const uteis = bloco.filter((l) => l.length >= 4 && l.some(Boolean));
+        if (!uteis.length) break;
+        const antes = linhas.length;
+        for (const l of uteis) { const k = l.join("|"); if (!linhas.some((x) => x.join("|") === k)) linhas.push(l); }
+        if (linhas.length === antes) break;                    // página repetida: acabou
+        const avancou = await page.evaluate(() => {
+          const b = [...document.querySelectorAll("a,button,input,span,div")]
+            .find((e) => /^(Seg|Próximo|Proximo|>)$/i.test((e.innerText || e.value || "").trim()));
+          if (!b) return false; b.click(); return true;
+        });
+        if (!avancou) break;
+        await page.waitForTimeout(3500);
+      }
+      if (!linhas.length) return null;
+      const destino = path.join(dir, `tche_grade_${ano}_${mes}_${Date.now()}.csv`);
+      fs.writeFileSync(destino, linhas.map((l) => l.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n"), "utf8");
+      return destino;
+    } catch { return null; }
+  }
 }
 
 function parseCsv(arquivo) {

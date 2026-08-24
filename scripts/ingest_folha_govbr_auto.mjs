@@ -72,7 +72,10 @@ async function grava(regs) {
       salario_base,proventos,vantagens,vencimentos_totais,descontos,liquido,_hash)
       select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
         $9::numeric[],$10::numeric[],$11::numeric[],$12::numeric[],$13::numeric[],$14::numeric[],$15::text[])
-      on conflict (_hash) do update set liquido=excluded.liquido, _coletado_em=now()`,
+      on conflict (_hash) do update set
+        cargo=coalesce(excluded.cargo, folha_servidores_govbr.cargo),
+        secretaria=coalesce(excluded.secretaria, folha_servidores_govbr.secretaria),
+        lotacao=coalesce(excluded.lotacao, folha_servidores_govbr.lotacao), liquido=excluded.liquido, _coletado_em=now()`,
       [c("cod_ibge"), c("municipio"), c("uf"), c("competencia"), c("lotacao"), c("secretaria"), c("cargo"), c("nome"),
        c("salario_base"), c("proventos"), c("vantagens"), c("vencimentos_totais"), c("descontos"), c("liquido"), c("_hash")]);
   }
@@ -99,7 +102,14 @@ async function abreTelaFolha(page, host) {
       await page.goto(`${esq}://${host}/pronimtb/index.asp?acao=${acao}&item=${item}`,
         { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => {});
       await dorme(1500);
+      // 🚨 ter o combo NÃO basta: em Eldorado do Sul o `acao=10&item=8` traz `cmbUnidadeAR` preenchido mas com
+      // TODOS OS BOTÕES INVISÍVEIS (a tela não é a de folha), e o coletor parava ali e morria em "Element is not
+      // visible"/timeout de download. A folha de lá é `acao=4&item=5` ("Salários por Colaborador"). Exigir que a
+      // tela tenha combo COM OPÇÕES **e** um botão de ação VISÍVEL ([[pnigp-tela-certa-nao-e-so-ter-tabela]]).
       const ok = await page.evaluate(() => {
+        const temBotao = [...document.querySelectorAll("input[type=button],input[type=submit],button")]
+          .some((e) => e.offsetParent && /gerar|exportar|pesquisa/i.test(e.value || e.innerText || ""));
+        if (!temBotao) return null;
         for (const nome of ["cmbUnidadeAR", "cmbUnidadeGP"]) {
           const e = document.querySelector(`[id="${nome}"],[name="${nome}"]`);
           if (e && [...e.options].filter((o) => o.value && !/^\*/.test(o.text)).length) return nome;
@@ -238,7 +248,8 @@ if (process.env.HOST) {
     ${cond.length ? "and " + cond.join(" and ") : ""}`, par)).rows;
 }
 const periodo = `${DTINI}-${DTFIM}`;
-const feitos = new Set((await q(`select cod_ibge from govbr_coleta where periodo=$1 and situacao='ok'`, [periodo])).rows.map((r) => r.cod_ibge));
+// REFAZ=1 reprocessa quem ja esta ok — sem isso, conserto de campo nao alcanca quem ja foi coletado
+const feitos = process.env.REFAZ === "1" ? new Set() : new Set((await q(`select cod_ibge from govbr_coleta where periodo=$1 and situacao='ok'`, [periodo])).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => a.cod_ibge && !feitos.has(a.cod_ibge));
 console.log(`[govbr_auto] ${alvos.length} alvos · ${fila.length} na fila · período ${periodo}`);
 

@@ -60,7 +60,12 @@ const alvos = (await q(`
       from folha_portal_candidato c where c.produto = 'citta'
   ) x
    where true ${UF ? "and uf = $1" : ""} ${SO ? `and municipio ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
-   order by municipio`, [UF, SO].filter(Boolean))).rows;
+   order by municipio`, [UF, SO].filter(Boolean))).rows
+  // 🚨 município com duas URLs entrava DUAS vezes e era coletado duas vezes (São João da Urtiga rodou em [3/4] e
+  // [4/4]): trabalho dobrado e, quando as URLs diferem em qualidade, a última sobrescreve o registro da melhor.
+  // Uma linha por município, preferindo a URL do host do fornecedor — é dela que sai o slug.
+  .sort((a, b) => Number(/cittaweb\.com\.br/i.test(b.url)) - Number(/cittaweb\.com\.br/i.test(a.url)))
+  .filter((a, i, todos) => todos.findIndex((x) => x.cod_ibge === a.cod_ibge) === i);
 const feitos = new Set(REFAZ ? [] : (await q(`select cod_ibge from folha_citta_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[citta] ${alvos.length} portais · ${feitos.size} já feitos · ${fila.length} na fila`);

@@ -47,7 +47,11 @@ await q(`create table if not exists folha_rhsys_coleta (
   servidores int, com_valor int, situacao text, detalhe text, em timestamptz default now()
 )`);
 
-const RAIZ = `https://${HOST}/rhsysportaltransp/`;
+// ⚠️ O RHsys aparece em PORTA não-padrão e às vezes só em http: Passo Fundo vive em
+//    `http://grprh.pmpf.rs.gov.br:9103/rhsysportaltransp`. Sondar por host sem porta nunca o acha.
+//    HOST aceita `host`, `host:porta` ou a URL inteira.
+const RAIZ = /^https?:\/\//.test(HOST) ? HOST.replace(/\/*$/, "") + "/"
+  : `${process.env.ESQUEMA || "https"}://${HOST}/rhsysportaltransp/`;
 const B = `${RAIZ}api`;
 const H = { ...UA, referer: RAIZ };
 // 🚨 A API responde **HTTP 440 "Sessão Inválida"** sem o JSESSIONID — e ele NÃO vem da página: vem da chamada
@@ -151,7 +155,11 @@ const regs = todos.map((s) => {
     orgao: lim(s.nmorgao), vinculo: lim(s.nmvinculo),
     situacao: s.pensionista ? "Pensionista" : s.inativo ? "Inativo" : "Ativo",
     horas_mensais: s.hrmensais ?? null, bruto: v.bruto ?? null, descontos: v.descontos ?? null, liquido: v.liquido ?? null,
-    _hash: crypto.createHash("md5").update([m.cod_ibge, comp, s.matricula, s.nmcargo, v.bruto ?? ""].join("¦")).digest("hex") };
+    // 🚨 O VALOR NÃO ENTRA NO HASH aqui. Nos coletores de arquivo mensal ele entra, para não colapsar duplo
+    //    vínculo — mas neste a coleta é em DUAS PASSADAS (cadastro e depois valores) e o bruto muda de null
+    //    para número entre elas: incluir o valor gerou 8.068 linhas para 4.034 matrículas.
+    //    Aqui a matrícula é única por servidor, então ela + cargo bastam.
+    _hash: crypto.createHash("md5").update([m.cod_ibge, comp, s.matricula, s.nmcargo].join("¦")).digest("hex") };
 }).filter((r) => r.nome);
 
 if (regs.length) {

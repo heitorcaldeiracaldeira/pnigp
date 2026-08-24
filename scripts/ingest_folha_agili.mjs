@@ -172,17 +172,27 @@ for (const [i, a] of fila.entries()) {
     }
     if (!melhor) { await marca("vazio", "grid sem linhas em nenhum mês"); vazios++; console.log(`  ○ [${i + 1}/${fila.length}] ${a.nome}: vazio`); continue; }
 
+    // 🚨 O COMBO DÁ SÓ O NOME DO MÊS ("julho"), e era isso que ia para a coluna competência — 3.154 linhas sem
+    // ANO nenhum, em que "julho" de 2025 e de 2026 empilhariam no mesmo rótulo. O portal serve o exercício
+    // corrente, então o ano é o da coleta; o formato é `AAAAMM`, como nas demais tabelas.
+    const MES_N = { janeiro: 1, fevereiro: 2, "março": 3, marco: 3, abril: 4, maio: 5, junho: 6, julho: 7,
+                    agosto: 8, setembro: 9, outubro: 10, novembro: 11, dezembro: 12 };
+    const compNorm = (t) => {
+      const n = MES_N[String(t ?? "").trim().toLowerCase()];
+      return n ? `${new Date().getFullYear()}${String(n).padStart(2, "0")}` : null;
+    };
+    const comp = compNorm(melhor.comp);
     const regs = melhor.linhas.map((x) => ({
-      cod_ibge: a.cod_ibge, municipio: a.nome, uf: a.uf, host: a.host, competencia: melhor.comp,
+      cod_ibge: a.cod_ibge, municipio: a.nome, uf: a.uf, host: a.host, competencia: comp,
       nome: x.nome, cpf_masc: mascara(x.cpf), cargo: x.cargo, secretaria: x.sec, investidura: x.inv,
       situacao: x.sit, classe: x.classe, nivel: x.nivel,
       bruto: money(x.bruto), descontos: money(x.desc), liquido: money(x.liq),
-      _hash: crypto.createHash("md5").update([a.cod_ibge, melhor.comp, x.cpf, x.nome, x.cargo, x.sec].join("|")).digest("hex"),
+      _hash: crypto.createHash("md5").update([a.cod_ibge, comp, x.cpf, x.nome, x.cargo, x.sec].join("|")).digest("hex"),
     }));
     const n = await grava(regs);
     total += n; ok++;
-    await marca("ok", `competência ${melhor.comp}`, melhor.comp, n);
-    console.log(`  ✔ [${i + 1}/${fila.length}] ${a.nome}: ${n} servidores (${melhor.comp})`);
+    await marca("ok", `competência ${melhor.comp} (${comp})`, comp, n);
+    console.log(`  ✔ [${i + 1}/${fila.length}] ${a.nome}: ${n} servidores (${melhor.comp} → ${comp})`);
   } catch (e) {
     erros++; await marca("erro", String(e.message).slice(0, 150));
     console.log(`  ✖ [${i + 1}/${fila.length}] ${a.nome}: ${String(e.message).slice(0, 70)}`);

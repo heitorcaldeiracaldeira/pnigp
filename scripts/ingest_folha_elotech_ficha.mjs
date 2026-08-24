@@ -62,7 +62,10 @@ const alvos = (await q(`select f.cod_ibge, f.municipio, f.uf, f.slug, min(p.host
     min(f.entidade_id) entidade_id, count(*)::int n
   from folha_servidores_elotech f
   left join elotech_portal p on p.cod_ibge = f.cod_ibge
-  where f.slug is not null ${TUDO ? "" : "and f.remuneracao is null"}
+  -- 🚨 19/ago: o filtro era "remuneracao is null" e deixava de fora quem tem remuneração ZERO. Barbosa Ferraz
+  --    publica 591 servidores com remuneracao = 0 e por isso nunca entrava na fila da ficha — sem valor na
+  --    prática, mas "não nulo" para o SQL. Zero e nulo são a mesma ausência de dinheiro aqui.
+  where f.slug is not null ${TUDO ? "" : "and coalesce(f.remuneracao, 0) = 0"}
   -- ⚠️ o filtro olha folha_servidores_elotech.remuneracao, que a coleta de ficha NÃO altera (grava em outra
   --    tabela). Sem esta guarda o município já coletado volta para a fila e as fichas são refeitas do zero.
   ${process.env.REFAZER === "1" ? "" :
@@ -95,8 +98,13 @@ for (const a of alvos) {
   const trabalhador = async () => {
     while (fila.length) {
       const s = fila.pop();
-      const r = await fetch(`${B}/servidores/${encodeURIComponent(s.matricula)}?entidade=${s.entidade_id || a.entidade_id}`,
-        { headers: H, signal: AbortSignal.timeout(90000) }).catch(() => null);
+      // 🚨 19/ago: a entidade ia SÓ como parâmetro de URL, e o coletor de CADASTRO (ingest_folha_elotech.mjs)
+      //    sempre a mandou como CABEÇALHO. Em Antonina o eloweb respondeu 500 MissingRequestParameterException
+      //    nas 925 fichas — o coletor acusou "suspeitar da chamada, não do portal", e estava certo. Mandar dos
+      //    DOIS jeitos custa nada e atende as duas gerações de host ([[pnigp-rota-identifica-o-produto-nao-o-host]]).
+      const ent = String(s.entidade_id || a.entidade_id);
+      const r = await fetch(`${B}/servidores/${encodeURIComponent(s.matricula)}?entidade=${ent}`,
+        { headers: { ...H, entidade: ent, exercicio: EXERCICIO }, signal: AbortSignal.timeout(90000) }).catch(() => null);
       feitas++;
       if (!r?.ok) ruins++;
       if (r?.ok) {

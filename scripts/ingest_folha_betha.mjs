@@ -50,6 +50,10 @@ await q(`create table if not exists folha_servidores_betha (
   _coletado_em  timestamptz default now()
 )`);
 await q(`create index if not exists ix_betha_folha_mun on folha_servidores_betha (cod_ibge, competencia)`);
+// ⭐ 21/ago/2026: campos que a fonte SEMPRE devolveu e o coletor descartava (admissão, situação, tipo de matrícula)
+await q(`alter table folha_servidores_betha add column if not exists data_admissao text`);
+await q(`alter table folha_servidores_betha add column if not exists situacao text`);
+await q(`alter table folha_servidores_betha add column if not exists tipo_matricula text`);
 await q(`create index if not exists ix_betha_folha_sec on folha_servidores_betha (uf, secretaria)`);
 await q(`create table if not exists folha_betha_coleta (
   portal_id int primary key, cod_ibge text, municipio text, uf text,
@@ -57,6 +61,19 @@ await q(`create table if not exists folha_betha_coleta (
 )`);
 
 const ctxDe = (hash) => Buffer.from(JSON.stringify({ portal: hash })).toString("base64");
+
+// ⭐ NORMALIZADOR ÚNICO DE COMPETÊNCIA → sempre `AAAAMM`, o padrão de todas as tabelas de folha.
+// Aceita o que as fontes Betha devolvem: "07/2026", "07-2026", "2026-07", "202607".
+// Devolve null quando não reconhece — melhor competência nula, que o verificador acusa, do que um rótulo inventado.
+function compNorm(v) {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  let m;
+  if ((m = s.match(/^(\d{4})(\d{2})$/))) return +m[2] >= 1 && +m[2] <= 12 ? `${m[1]}${m[2]}` : null;
+  if ((m = s.match(/^(\d{4})[-/](\d{1,2})$/))) return +m[2] >= 1 && +m[2] <= 12 ? `${m[1]}${String(m[2]).padStart(2, "0")}` : null;
+  if ((m = s.match(/^(\d{1,2})[-/](\d{4})$/))) return +m[1] >= 1 && +m[1] <= 12 ? `${m[2]}${String(m[1]).padStart(2, "0")}` : null;
+  return null;
+}
 
 async function chama(caminho, hash, { metodo = "GET", corpo = null, tentativas = 4 } = {}) {
   let ultimo;
@@ -156,13 +173,26 @@ async function grava(todos) {
     const c = (f) => p.map((x) => x[f]);
     await q(`insert into folha_servidores_betha
       (cod_ibge,municipio,uf,entidade,competencia,nome,cargo,classificacao_cargo,nivel_salarial,vinculo,
-       secretaria,organograma,matricula,efetivo_em_comissao,bruto,liquido,_hash)
+       secretaria,organograma,matricula,efetivo_em_comissao,bruto,liquido,_hash,data_admissao,situacao,tipo_matricula)
       select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
-        $9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::text[],$15::numeric[],$16::numeric[],$17::text[])
-      on conflict (_hash) do update set bruto=excluded.bruto, liquido=excluded.liquido, _coletado_em=now()`,
+        $9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::text[],$15::numeric[],$16::numeric[],$17::text[],
+        $18::text[],$19::text[],$20::text[])
+      -- 🚨 O UPSERT PRECISA ATUALIZAR A SECRETARIA (17/ago/2026): o _hash nao inclui o orgao, entao a linha
+      -- antiga (sem secretaria) permanecia e o de-para de órgão não chegava ao banco — 105 portais preenchidos
+      -- em memória e ZERO no banco. Ver [[pnigp-betha-secretaria-esta-noutra-consulta]].
+      on conflict (_hash) do update set bruto=excluded.bruto, liquido=excluded.liquido,
+        secretaria=coalesce(excluded.secretaria, folha_servidores_betha.secretaria),
+        organograma=coalesce(excluded.organograma, folha_servidores_betha.organograma),
+        -- 🚨 sem propagar aqui, a re-passada com os campos novos NÃO chega ao banco: a linha já existe pelo
+        --    _hash e o UPSERT ignora o que não está no SET ([[pnigp-upsert-nao-propaga-a-coluna-consertada]]).
+        data_admissao=coalesce(excluded.data_admissao, folha_servidores_betha.data_admissao),
+        situacao=coalesce(excluded.situacao, folha_servidores_betha.situacao),
+        tipo_matricula=coalesce(excluded.tipo_matricula, folha_servidores_betha.tipo_matricula),
+        _coletado_em=now()`,
       [c("cod_ibge"), c("municipio"), c("uf"), c("entidade"), c("competencia"), c("nome"), c("cargo"),
        c("classificacao_cargo"), c("nivel_salarial"), c("vinculo"), c("secretaria"), c("organograma"),
-       c("matricula"), c("efetivo_em_comissao"), c("bruto"), c("liquido"), c("_hash")]);
+       c("matricula"), c("efetivo_em_comissao"), c("bruto"), c("liquido"), c("_hash"),
+       c("data_admissao"), c("situacao"), c("tipo_matricula")]);
   }
 }
 
@@ -231,6 +261,14 @@ for (let i = 0; i < fila.length; i++) {
         const j = await chama(`/api/busca-textual/${consultaId}?sortBy=null&sortDirection=null&offset=${offset}&limit=${LIMITE}&hiperlink=false`,
           p.hash, { metodo: "POST", corpo });
         total = j.totalHits ?? 0;
+        // ⭐ DUMP_CAMPOS=1: imprime TODOS os campos que o portal devolve neste hit. Serve para descobrir o que a
+        //    fonte publica e o coletor descarta — foi assim que se viu quem publica CPF mascarado (a chave de
+        //    homônimo) e quem não publica.
+        if (process.env.DUMP_CAMPOS === "1" && (j.hits || []).length) {
+          console.log(`\n[betha/campos] ${p.municipio}/${p.uf} — ${p.nome}`);
+          console.log(JSON.stringify(j.hits[0].sourceAsMap || {}, null, 1).slice(0, 1800));
+          process.exit(0);
+        }
         for (const h of j.hits || []) {
           const s = h.sourceAsMap || {};
           out.push({
@@ -238,11 +276,22 @@ for (let i = 0; i < fila.length; i++) {
             // ⚠️ O conjunto de campos MUDA de portal para portal: uns devolvem `competencia`, `matriculaServidor`
             // e `nomeEntidade`, outros não. A competência a gente SEMPRE sabe — é a que foi pedida no filtro —
             // então nunca deixar nula por causa do payload (só 7% dos portais devolvem o campo).
-            competencia: s.competencia ?? (comps.length ? comps[0].split("/").reverse().join("-") : null),
+            // 🚨 DOIS FORMATOS PARA A MESMA COMPETÊNCIA. O payload do portal traz `s.competencia` como "07-2026"
+            // (MM-AAAA) e o fallback produzia "2026-07" (AAAA-MM) — os ~7% de portais que devolvem o campo
+            // gravavam de um jeito e os outros 93% de outro. Resultado: 07/2026 virava DUAS competências, e
+            // municípios coletados pelos dois caminhos apareciam com a folha somada — Senador Guiomard tinha
+            // 1.028 linhas em "07-2026" e 863 em "2026-07", o mesmo mês contado duas vezes
+            // ([[pnigp-filtro-que-nao-aplica-confira-pelo-dado]]). Agora tudo passa por `compNorm`.
+            competencia: compNorm(s.competencia) ?? (comps.length ? compNorm(comps[0]) : null),
             nome: s.nomeServidor, cargo: s.cargoAtual,
             classificacao_cargo: s.classificacaoCargoAtual, nivel_salarial: s.nivelSalarialAtual,
             vinculo: s.vinculoEmpregaticio, secretaria: s.orgao, organograma: s.organograma,
             matricula: s.matriculaServidor, efetivo_em_comissao: s.efetivoEmCargoComissionado,
+            // ⭐ 21/ago/2026: a API SEMPRE devolveu `dataAdmissao`, `situacao` e `tipoMatricula` e o coletor
+            //    descartava os três. "Trazer tudo o que a fonte informa" é o pedido do Heitor — e admissão +
+            //    situação são o que permite distinguir dois vínculos da mesma pessoa.
+            data_admissao: s.dataAdmissao ?? null, situacao: s.situacao ?? null,
+            tipo_matricula: s.tipoMatricula ?? null,
             bruto: s.valorRemuneracaoBruta ?? null, liquido: s.valorRemuneracaoLiquida ?? null,
             _hash: crypto.createHash("md5").update(String(h.id ?? [p.cod_ibge, s.competencia, s.nomeServidor, s.matriculaServidor, s.cargoAtual].join("¦"))).digest("hex"),
           });
@@ -270,11 +319,62 @@ for (let i = 0; i < fila.length; i++) {
       // por não checar isso. Exigir MAIORIA com nome (um único nome solto não redime uma consulta agregada).
       const comNome = r.filter((x) => x.nome).length;
       if (comNome < r.length / 2) { motivo = `consulta "${cand.titulo}": ${comNome}/${r.length} com nome`; continue; }
-      if (!regs || r.length > regs.length) { consulta = cand; comps = cs; regs = r; }
+      // 🚨 NOME SEM REMUNERAÇÃO NÃO É FOLHA — é o CADASTRO de pessoal. A consulta "Servidores Públicos" traz a
+      // lista nominal com cargo e lotação e ZERO valor, e passava nesta escolha só por ter nome: Barreirinha
+      // entrou com 619 linhas, Pauini com 401, Manacapuru com 51 e Urucurituba com 1, todas sem um centavo, e
+      // o município aparecia "coletado" no placar. Consulta com valor SEMPRE vence consulta sem valor.
+      const comValor = r.filter((x) => +x.bruto > 0 || +x.liquido > 0).length;
+      const cand_ = { ...cand, _n: r.length, _pagos: comValor };
+      if (!comValor) {
+        motivo = `consulta "${cand.titulo}": ${r.length} nomes e NENHUM valor — é cadastro de pessoal, não folha`;
+        if (!regs) { consulta = cand_; comps = cs; regs = r; }   // guarda como último recurso, marcado abaixo
+        continue;
+      }
+      const melhorTemValor = regs && (consulta?._pagos || 0) > 0;
+      if (!regs || !melhorTemValor || comValor > (consulta?._pagos || 0)) { consulta = cand_; comps = cs; regs = r; }
       if (CANONICA.test(String(cand.titulo || ""))) break; // rótulo canônico do produto: é a folha inteira
     }
-    if (!regs) { semConsulta++; await marca("sem_consulta", motivo.slice(0, 190) || "nenhuma candidata trouxe folha nominal"); continue; }
+    // 🚨 rótulo distinto do "menu sem consulta": AQUI o menu TINHA consulta de pessoal e ela foi testada — o que
+    // falta é o dado. Usar o mesmo `sem_consulta` para os dois casos faz parecer que o portal não tem a tela,
+    // quando na verdade tem e responde vazia; são pedidos de LAI diferentes ([[pnigp-lai-pendencia-tabela]]).
+    if (!regs) { semConsulta++; await marca("consulta_sem_dado", motivo.slice(0, 190) || "nenhuma candidata trouxe folha nominal"); continue; }
 
+    // 🚨 lista sem remuneração NÃO entra como coleta boa: fica registrada com o veredito, para virar pedido por
+    // LAI em vez de inflar o placar ([[pnigp-sonda-folha-prova-e-a-coleta]]).
+    if (!consulta._pagos) {
+      semConsulta++;
+      await marca("lista_sem_valor", motivo.slice(0, 190), consulta.id, comps[0] || null, regs.length);
+      console.log(`  · [${i + 1}/${fila.length}] ${p.uf} ${p.municipio}: ${regs.length} nomes SEM valor — não gravado`);
+      continue;
+    }
+    // ⭐ DE-PARA DE ÓRGÃO (17/ago/2026): a consulta da FOLHA traz valor e NÃO traz `orgao` em boa parte dos
+    // portais — 43 municípios do PR e 231 mil linhas no país ficavam sem secretaria, o que os mantinha como
+    // "parcial" no critério cargo+salário+secretaria. A secretaria EXISTE, na consulta de CADASTRO
+    // ("Servidores Públicos"/"Quadro de Pessoal"), que tem `orgao` e `lotacao` e ZERO valor.
+    // 🚨 O cadastro é usado SÓ como DE-PARA por nome (+matrícula quando houver) — nunca como fonte de linhas:
+    // ele traz demitidos e inativos ([[pnigp-betha-secretaria-esta-noutra-consulta]]).
+    // ⚠️ E o `organograma` NÃO substitui o órgão: em 72% das linhas ele é ação orçamentária, não unidade.
+    const semSec = regs.filter((r) => !r.secretaria).length;
+    if (semSec > regs.length / 2) {
+      const cadastro = candidatas.find((c) => /servidores?\s+p[úu]blicos?|quadro\s+de\s+pessoal/i.test(String(c.titulo || "")) && c.id !== consulta.id);
+      if (cadastro) {
+        const linhasCad = await colhe(cadastro.id, [], await situacoesAtivas(cadastro.id)).catch(() => []);
+        const chave = (nome, mat) => `${String(nome || "").trim().toUpperCase()}¦${String(mat || "").trim()}`;
+        const mapa = new Map();
+        for (const c of linhasCad) {
+          if (!c.nome || !(c.secretaria || c.organograma)) continue;
+          mapa.set(chave(c.nome, c.matricula), { sec: c.secretaria, org: c.organograma });
+          mapa.set(chave(c.nome, ""), { sec: c.secretaria, org: c.organograma });   // portais sem matrícula na folha
+        }
+        let preenchidos = 0;
+        for (const r of regs) {
+          if (r.secretaria) continue;
+          const hit = mapa.get(chave(r.nome, r.matricula)) || mapa.get(chave(r.nome, ""));
+          if (hit?.sec) { r.secretaria = hit.sec; if (!r.organograma) r.organograma = hit.org; preenchidos++; }
+        }
+        if (preenchidos) console.log(`     ⭐ órgão preenchido em ${preenchidos}/${semSec} pelo cadastro "${cadastro.titulo}"`);
+      }
+    }
     await grava(regs);
     totalGeral += regs.length; ok++;
     await marca("ok", null, consulta.id, comps[0] || null, regs.length);

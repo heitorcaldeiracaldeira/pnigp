@@ -40,6 +40,18 @@ await q(`create table if not exists folha_servidores_quality (
   _hash text primary key, _coletado_em timestamptz default now()
 )`);
 await q(`create index if not exists ix_folha_quality_mun on folha_servidores_quality (cod_ibge)`);
+// ⭐ 22/ago/2026 — PODER=legislativo: o coletor já sabia que o slug `camara_municipal_de_x` existe (ele o
+//    TROCAVA por prefeitura para não colher o poder errado). Agora esse mesmo slug é o ALVO, e `poder` separa.
+await q(`alter table folha_servidores_quality add column if not exists poder text`);
+await q(`alter table folha_quality_coleta add column if not exists poder text not null default 'executivo'`);
+await q(`do $do$ begin
+  if exists (select 1 from pg_constraint where conname = 'folha_quality_coleta_pkey'
+               and (select count(*) from unnest(conkey)) = 1) then
+    alter table folha_quality_coleta drop constraint folha_quality_coleta_pkey;
+    alter table folha_quality_coleta add primary key (cod_ibge, poder);
+  end if;
+end $do$`);
+const PODER = (process.env.PODER || "executivo").toLowerCase();
 await q(`create table if not exists folha_quality_coleta (
   cod_ibge text primary key, municipio text, uf text, slug text, competencia text,
   linhas int, situacao text, detalhe text, em timestamptz default now()
@@ -84,12 +96,30 @@ const alvos = (await q(`
     // 🚨 a URL descoberta pode ser a da CÂMARA (`camara_municipal_de_…`) — trocar pela prefeitura
     const m = u.match(/transparencia_publica\/([a-z0-9_]+)/i) || u.match(/folha_de_pagamento\/([a-z0-9_]+)/i);
     let slug = m ? m[1] : slugDe(a.nome);
-    if (/^camara_/.test(slug)) slug = slug.replace(/^camara_municipal_de_/, "prefeitura_municipal_de_");
+    if (/^camara_/.test(slug) && (process.env.PODER || "executivo").toLowerCase() !== "legislativo")
+      slug = slug.replace(/^camara_municipal_de_/, "prefeitura_municipal_de_");
     return { ...a, slug };
   });
 
+// ⭐ fila do LEGISLATIVO: as câmaras que o diagnóstico provou serem Quality (o slug sai da própria URL)
+if (PODER === "legislativo") {
+  alvos.length = 0;
+  for (const r of (await q(`select cod_ibge, municipio nome, uf, coalesce(url_erp_camara, url_camara) url
+      from folha_camara_fila where coalesce(erp_camara,'') = 'quality'
+        and coalesce(url_erp_camara, url_camara) is not null
+        ${SO ? "and municipio ilike '%'||$1||'%'" : ""}`, SO ? [SO] : [])).rows) {
+    // 🚨 A URL QUE O DIAGNÓSTICO ACHOU É `/cargos_e_salarios/{slug}` — TABELA DE VENCIMENTOS DO CARGO, não
+    //    folha nominal. O diagnóstico marcou "tem dados" porque a tela tem linhas e dinheiro, e é a mesma
+    //    armadilha do `plano-de-cargos` no IPM ([[pnigp-lista-sem-valor-nao-e-folha]]).
+    //    Daqui se aproveita só o SLUG: a rota da FOLHA quem monta é o coletor.
+    const m = String(r.url).match(/qualitysistemas\.com\.br\/[a-z0-9_]+\/([a-z0-9_]+)/i);
+    if (m) alvos.push({ ...r, slug: m[1] });
+  }
+  console.log(`[quality] PODER=legislativo · ${alvos.length} câmaras com slug na URL`);
+}
+
 const feitos = REFAZ ? new Set()
-  : new Set((await q(`select cod_ibge from folha_quality_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
+  : new Set((await q(`select cod_ibge from folha_quality_coleta where situacao='ok' and poder=$1`, [PODER])).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[quality] ${alvos.length} municípios no cadastro · ${fila.length} na fila`);
 
@@ -100,8 +130,8 @@ async function grava(regs) {
     const p = uniq.slice(i, i + LOTE); const c = (f) => p.map((x) => x[f]);
     await q(`insert into folha_servidores_quality
       (cod_ibge,municipio,uf,entidade,competencia,nome,cpf_masc,matricula,cargo,secretaria,departamento,vinculo,
-       classe_nivel,situacao,data_admissao,salario_base,gratificacoes,outros,ferias,decimo,bruto,descontos,liquido,_hash)
-      select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
+       classe_nivel,situacao,data_admissao,salario_base,gratificacoes,outros,ferias,decimo,bruto,descontos,liquido,_hash,poder)
+      select *, '${PODER}'::text from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
         $9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::text[],$15::text[],
         $16::numeric[],$17::numeric[],$18::numeric[],$19::numeric[],$20::numeric[],$21::numeric[],$22::numeric[],$23::numeric[],$24::text[])
       on conflict (_hash) do update set bruto=excluded.bruto, liquido=excluded.liquido, _coletado_em=now()`,
@@ -160,10 +190,10 @@ const hoje = new Date();
 let ok = 0, vazios = 0, erros = 0, total = 0;
 for (const [i, a] of fila.entries()) {
   const marca = (situacao, detalhe, comp = null, linhas = 0) =>
-    q(`insert into folha_quality_coleta (cod_ibge,municipio,uf,slug,competencia,linhas,situacao,detalhe,em)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,now()) on conflict (cod_ibge) do update set
+    q(`insert into folha_quality_coleta (cod_ibge,municipio,uf,slug,competencia,linhas,situacao,detalhe,poder,em)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,now()) on conflict (cod_ibge,poder) do update set
        competencia=excluded.competencia, linhas=excluded.linhas, situacao=excluded.situacao,
-       detalhe=excluded.detalhe, em=now()`, [a.cod_ibge, a.nome, a.uf, a.slug, comp, linhas, situacao, detalhe]);
+       detalhe=excluded.detalhe, em=now()`, [a.cod_ibge, a.nome, a.uf, a.slug, comp, linhas, situacao, detalhe, PODER]);
   try {
     // ⭐ mês mais CHEIO entre os últimos meses com dados — não o corrente, que vem parcial
     let melhor = null, testados = 0;

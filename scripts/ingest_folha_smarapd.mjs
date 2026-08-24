@@ -43,7 +43,26 @@ await q(`create table if not exists smarapd_probe (
   cod_ibge text primary key, municipio text, uf text, host text, achou boolean, em timestamptz default now()
 )`);
 
-const money = (s) => { if (s == null) return null; const t = String(s).replace(/\s/g, "").replace(/\./g, "").replace(",", "."); const n = +t; return Number.isFinite(n) ? n : null; };
+// 🚨 19/ago: O MESMO JSON MISTURA OS DOIS FORMATOS, NA MESMA LINHA. Medido em Bauru:
+//      ValorBruto "15257.24" · ValorLiquido "10480.86"  ← ponto é DECIMAL (americano)
+//      Descontos  "4.776,38"                            ← ponto é MILHAR, vírgula decimal (pt-BR)
+//    A versão antiga assumia pt-BR sempre (tira ponto, vírgula→ponto) e transformava "15257.24" em 1.525.724 —
+//    erro de 100×, que apareceu como média de R$ 447 mil em Bauru. O cabeçalho deste arquivo alertava para o
+//    erro de 1000× no sentido contrário; é a mesma armadilha vista do outro lado.
+//    ⭐ A regra decide pelo FORMATO, não por suposição de origem:
+//      tem vírgula            → pt-BR: ponto é milhar
+//      só ponto, 1-2 decimais → ponto é decimal ("15257.24")
+//      só ponto, 3 dígitos    → milhar pt-BR sem centavos ("1.234")
+const money = (s) => {
+  if (s == null) return null;
+  const t = String(s).replace(/R\$|\s/g, "").trim();
+  if (!t || !/\d/.test(t)) return null;
+  let n;
+  if (t.includes(",")) n = +t.replace(/\./g, "").replace(",", ".");
+  else if (/^-?\d+\.\d{1,2}$/.test(t)) n = +t;
+  else n = +t.replace(/\./g, "");
+  return Number.isFinite(n) ? n : null;
+};
 
 async function filtro(host, nomeVisao, chaveModulo, periodo, pagina, qtd, exercicio = EXERCICIO) {
   const body = JSON.stringify({ ChaveModulo: chaveModulo, NomeVisao: nomeVisao, Filtros: [], Periodicidade: "MENSAL", Periodo: periodo, Exercicio: exercicio, Pagina: pagina, QuantidadeRegistros: qtd, Ordenacao: [{ ColunaOrdem: "NomeServidor", TipoOrdem: "ascend", Ordem: 1 }], FiltroRedirecionaVisao: { Campo: null, Valor: null, TipoValor: null } });
@@ -60,6 +79,19 @@ async function filtro(host, nomeVisao, chaveModulo, periodo, pagina, qtd, exerci
   }
   return null;
 }
+
+// ⭐ 22/ago/2026 — PODER=legislativo: as câmaras têm host próprio no MESMO padrão, com o prefixo "cm"
+//    (`transparencia-cmbauru.smarapd.com.br`). Mesmo produto, mesma tela: muda o host e a marca de poder.
+const PODER = (process.env.PODER || "executivo").toLowerCase();
+await q(`alter table folha_servidores_smarapd add column if not exists poder text`);
+await q(`alter table folha_smarapd_coleta add column if not exists poder text not null default 'executivo'`);
+await q(`do $do$ begin
+  if exists (select 1 from pg_constraint where conname = 'folha_smarapd_coleta_pkey'
+               and (select count(*) from unnest(conkey)) = 1) then
+    alter table folha_smarapd_coleta drop constraint folha_smarapd_coleta_pkey;
+    alter table folha_smarapd_coleta add primary key (cod_ibge, poder);
+  end if;
+end $do$`);
 
 // alvos: radar erp='smarapd' + sonda por slug (host previsível)
 let alvos;
@@ -78,8 +110,18 @@ if (process.env.HOST) {
 // REFAZ=1 recolhe quem já está 'ok'. Necessário depois do conserto de rota/campos de 16/ago: os municípios
 // colhidos antes dele estão sem `secretaria` (a visão antiga não trazia lotação) e por isso nunca contam como
 // completos no critério cargo+salário+secretaria.
+if (PODER === "legislativo") {
+  alvos = (await q(`select cod_ibge, municipio nome, uf, coalesce(url_erp_camara, url_camara) url
+      from folha_camara_fila where coalesce(erp_camara,'') = 'smarapd'
+        and coalesce(url_erp_camara, url_camara) ~* 'smarapd\\.com\\.br'
+      order by rais_legislativo desc nulls last`)).rows
+    .map((r) => { let h = null; try { h = new URL(r.url).host; } catch { /* url inválida */ } return { ...r, host: h }; })
+    .filter((r) => r.host);
+  console.log(`[smarapd] PODER=legislativo · ${alvos.length} câmaras com host próprio`);
+}
+
 const feitos = process.env.REFAZ === "1" ? new Set()
-  : new Set((await q(`select cod_ibge from folha_smarapd_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
+  : new Set((await q(`select cod_ibge from folha_smarapd_coleta where situacao='ok' and poder=$1`, [PODER])).rows.map((r) => r.cod_ibge));
 // 🚨 HOMÔNIMO: o host sai do NOME (`transparencia-{slug}.smarapd.com.br`), então Pitangueiras/SP e Pitangueiras/PR
 // — e Sertãozinho/SP e Sertãozinho/PB — caem no MESMO host e recebiam a MESMA folha, com contagens idênticas
 // (16/ago/2026). Host é indício; município não declarado não vira dado. Quando dois municípios disputam um host,
@@ -97,8 +139,8 @@ for (const [host, lista] of porHost) {
   const perdedores = ok.length === 1 ? lista.filter((a) => a.cod_ibge !== ok[0].cod_ibge) : lista;
   for (const p of perdedores) {
     bloqueados.add(p.cod_ibge);
-    await q(`insert into folha_smarapd_coleta (cod_ibge,municipio,uf,host,linhas,situacao,detalhe,em)
-      values ($1,$2,$3,$4,0,'homonimo',$5,now()) on conflict (cod_ibge) do update set situacao='homonimo',
+    await q(`insert into folha_smarapd_coleta (cod_ibge,municipio,uf,host,linhas,situacao,detalhe,poder,em)
+      values ($1,$2,$3,$4,0,'homonimo',$5,'${PODER}',now()) on conflict (cod_ibge,poder) do update set situacao='homonimo',
       detalhe=excluded.detalhe, linhas=0, em=now()`,
       [p.cod_ibge, p.nome, p.uf, host, `host disputado por ${lista.map((x) => x.nome + "/" + x.uf).join(" e ")}${ok.length === 1 ? ` — confirmado no site de ${ok[0].nome}/${ok[0].uf}` : " — nenhum confirma no próprio site"}`]);
   }
@@ -114,10 +156,21 @@ async function grava(regs) {
   for (let i = 0; i < arr.length; i += LOTE) {
     const p = arr.slice(i, i + LOTE); const c = (f) => p.map((x) => x[f]);
     await q(`insert into folha_servidores_smarapd
-      (cod_ibge,municipio,uf,host,competencia,matricula,nome,cargo,tipo_folha,secretaria,salario_base,total_vencimentos,salario_liquido,_hash)
-      select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
+      (cod_ibge,municipio,uf,host,competencia,matricula,nome,cargo,tipo_folha,secretaria,salario_base,total_vencimentos,salario_liquido,_hash,poder)
+      select *, '${PODER}'::text from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
         $9::text[],$10::text[],$11::numeric[],$12::numeric[],$13::numeric[],$14::text[])
-      on conflict (_hash) do update set salario_liquido=excluded.salario_liquido, secretaria=coalesce(excluded.secretaria, folha_servidores_smarapd.secretaria), _coletado_em=now()`,
+      -- 🚨 19/ago: o upsert atualizava só o LÍQUIDO e a secretaria. Quem já tinha linha NUNCA recebia o bruto
+      --    corrigido — depois de acrescentar "ValorBruto" aos candidatos, oito municípios recoletaram "com
+      --    sucesso" e continuaram com total_vencimentos zerado (Ourinhos, Birigui, Ribeirão Pires…). Bauru só
+      --    funcionou porque eu apaguei as linhas antes. Conserto de coletor não chega ao banco se o ON CONFLICT
+      --    não propagar a coluna consertada ([[pnigp-rotulo-da-coluna-de-dinheiro-varia]]).
+      --    ⚠️ "coalesce(excluded.X, atual)" de propósito: re-passada que volta VAZIA não apaga valor bom
+      --    ([[pnigp-repassada-nao-pode-rebaixar-veredito]]).
+      on conflict (_hash) do update set
+        salario_liquido   = coalesce(excluded.salario_liquido,   folha_servidores_smarapd.salario_liquido),
+        total_vencimentos = coalesce(excluded.total_vencimentos, folha_servidores_smarapd.total_vencimentos),
+        salario_base      = coalesce(excluded.salario_base,      folha_servidores_smarapd.salario_base),
+        secretaria = coalesce(excluded.secretaria, folha_servidores_smarapd.secretaria), _coletado_em=now()`,
       [c("cod_ibge"), c("municipio"), c("uf"), c("host"), c("competencia"), c("matricula"), c("nome"), c("cargo"),
        c("tipo_folha"), c("secretaria"), c("salario_base"), c("total_vencimentos"), c("salario_liquido"), c("_hash")]);
   }
@@ -127,8 +180,8 @@ let totalGeral = 0, ok = 0, vazios = 0, falhas = 0;
 for (let i = 0; i < fila.length; i++) {
   const a = fila[i];
   const marca = (situacao, detalhe, linhas = 0) =>
-    q(`insert into folha_smarapd_coleta (cod_ibge,municipio,uf,host,linhas,situacao,detalhe,em)
-       values ($1,$2,$3,$4,$5,$6,$7,now()) on conflict (cod_ibge) do update set
+    q(`insert into folha_smarapd_coleta (cod_ibge,municipio,uf,host,linhas,situacao,detalhe,poder,em)
+       values ($1,$2,$3,$4,$5,$6,$7,'${PODER}',now()) on conflict (cod_ibge,poder) do update set
        linhas=excluded.linhas, situacao=excluded.situacao, detalhe=excluded.detalhe, em=now()`,
       [a.cod_ibge, a.nome, a.uf, a.host, linhas, situacao, detalhe]);
   try {
@@ -167,7 +220,12 @@ for (let i = 0; i < fila.length; i++) {
           const base = /pagamento.*servidor/i.test(t) ? 100
             : /folha\s*de\s*pagamento/i.test(t) ? 90
             : /remunera[çc][ãa]o.*servidor/i.test(t) ? 80 : 0;
-          return base ? base + (/detalhad/i.test(t) ? 5 : 0) : 0;
+          // 🚨 19/ago: quando o portal tem DUAS telas de pagamento, o empate escolhia a errada. Ourinhos
+          //    oferece "Pagamento a Servidores" (sem valor) E "Pagamentos a Servidores - **Bruto**" (com valor);
+          //    as duas pontuam 100 e a primeira vencia por ordem — o município fechava `ok` com 3.643 nomes e
+          //    zero salário. "Bruto" no título é o desempate certo, e pesa MAIS que "detalhado"
+          //    ([[pnigp-rotulo-da-coluna-de-dinheiro-varia]]).
+          return base ? base + (/\bbrut[ao]\b/i.test(t) ? 8 : 0) + (/detalhad/i.test(t) ? 5 : 0) : 0;
         };
         const melhorItem = cand.filter((c) => !VETO.test(c.t)).map((c) => ({ ...c, p: pontua(c.t) }))
           .filter((c) => c.p > 0).sort((x, y) => y.p - x.p)[0];
@@ -207,9 +265,16 @@ for (let i = 0; i < fila.length; i++) {
         cod_ibge: a.cod_ibge, municipio: a.nome, uf: a.uf, host: a.host, competencia,
         matricula: String(s.Matricula ?? ""), nome, cargo: pega(s, "Cargo"), tipo_folha: tipo,
         secretaria: pega(s, "Secretaria", "LotacaoAtual", "descrlotacao", "LotacaoOrigem", "DescrSecretaria", "Departamento"),
+        // 🚨 19/ago: faltavam `ValorBruto`/`ValorLiquido` — e é o que **Bauru** manda (8.976 servidores, cidade de
+        //    380 mil). A view certa já era encontrada pelo menu; o dinheiro é que caía fora por nome de campo,
+        //    então a coleta fechava `ok` com 8.976 nomes e zero salário. Mesmo defeito medido hoje no GeneXus WWP
+        //    (SALBRUTO/REMUNERACAOBRUTA/VALORBRUTO) e no SCPI ("Salário Base")
+        //    ([[pnigp-rotulo-da-coluna-de-dinheiro-varia]]).
+        //    ⚠️ ORDEM: o BRUTO de verdade primeiro; `SalarioBase` fica por último em `total_vencimentos` porque
+        //    base exclui gratificações — só entra quando não há bruto nenhum.
         salario_base: money(pega(s, "SalarioBase", "SalarioBrutoMensal")),
-        total_vencimentos: money(pega(s, "TotalVencimentos", "SalarioBrutoMensal")),
-        salario_liquido: money(pega(s, "SalarioLiquido", "TotalLiquido")),
+        total_vencimentos: money(pega(s, "TotalVencimentos", "ValorBruto", "SalarioBrutoMensal", "ValorTotal", "SalarioBase")),
+        salario_liquido: money(pega(s, "SalarioLiquido", "ValorLiquido", "TotalLiquido")),
         _hash: crypto.createHash("md5").update([a.cod_ibge, competencia, s.Matricula, nome, s.Cargo, tipo].join("¦")).digest("hex"),
       };
     };

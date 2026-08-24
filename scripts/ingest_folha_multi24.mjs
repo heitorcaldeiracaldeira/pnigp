@@ -213,7 +213,16 @@ for (let i = 0; i < fila.length; i++) {
         const linhas = parseTabela(html);
         if (!linhas.length) continue;
         testados++;
-        if (!achou || linhas.length > achou.linhas.length) achou = { ano, mes, linhas };
+        // 🚨 "MAIS CHEIA" É MAIS LINHAS COM VALOR, não mais linhas. Em Arroio dos Ratos a competência corrente
+        // (07/2026) publicava 938 nomes com o salário AINDA EM BRANCO, e vencia por contagem a competência
+        // fechada — o município entrava com 938 servidores e ZERO dinheiro. Nome sem salário não é folha
+        // ([[pnigp-competencia-mais-cheia-nao-a-recente]]). Desempate por total só quando nenhuma tem valor
+        // (municípios que de fato publicam lista sem salário, como Sapucaia do Sul).
+        const comValor = linhas.filter((l) => l.bruto != null && l.bruto > 0).length;
+        const melhor = achou ? achou.linhas.filter((l) => l.bruto != null && l.bruto > 0).length : -1;
+        if (!achou || comValor > melhor || (comValor === melhor && linhas.length > achou.linhas.length)) {
+          achou = { ano, mes, linhas };
+        }
         if (testados >= MESES_TESTE) break;
       }
       if (!achou) continue;

@@ -50,7 +50,12 @@ const UF_SONDA = (process.env.UF_SONDA || "52,17").split(",");
 const candidatos = (await q(`
   with desc_ as (
     select distinct on (cod_ibge) cod_ibge, municipio, uf, url_portal_real
-      from portal_real_descoberto where url_portal_real ~* 'bsit-br|sigepnet'
+      -- 🚨 19/ago: "sigepnet" não cobre "sigep.com.br". Goianira está descoberto como
+      --    goianira.sigep.com.br e por isso NUNCA casava aqui; entrou uma única vez pelo ramo sem_folha,
+      --    e a partir do momento em que ganhou linhas na view esse ramo passou a excluí-lo. Resultado: município
+      --    COLHIDO SEM VALOR ficava inalcançável para sempre — nenhum conserto futuro chegaria nele.
+      --    A lição é da família de [[pnigp-rota-identifica-o-produto-nao-o-host]]: o host varia, o produto não.
+      from portal_real_descoberto where url_portal_real ~* 'bsit-br|sigep'
       order by cod_ibge, em desc),
   sem_folha as (
     select m.cod_ibge, m.nome municipio, m.uf, '' url_portal_real
@@ -63,7 +68,9 @@ const candidatos = (await q(`
   ${SO ? "" : ""} order by municipio`, [UF_SONDA])).rows
   .filter((c) => !SO || new RegExp(SO, "i").test(c.municipio));
 
-const feitos = new Set((await q(`select cod_ibge from folha_bsit_coleta where situacao in ('ok','sem_dado')`)).rows.map((r) => r.cod_ibge));
+// REFAZ=1 reprocessa quem ja esta ok — sem isso, conserto de campo nao alcanca quem ja foi coletado
+
+const feitos = process.env.REFAZ === "1" ? new Set() : new Set((await q(`select cod_ibge from folha_bsit_coleta where situacao in ('ok','sem_dado')`)).rows.map((r) => r.cod_ibge));
 const fila = candidatos.filter((c) => !feitos.has(c.cod_ibge));
 console.log(`[bsit] ${candidatos.length} candidatos · ${fila.length} na fila`);
 
@@ -84,7 +91,13 @@ async function hostsDe(c) {
         out.push(`gestaopublica.${g[1]}.bsit-br.com.br`);
     } catch { /* CMS fora do ar */ }
   }
-  out.push(`gestaopublica.${slugDe(c.municipio)}.bsit-br.com.br`);
+  // ⭐ O MESMO produto atende em DOIS domínios: `gestaopublica.{slug}.bsit-br.com.br` e **`{slug}.sigep.com.br`**.
+  // Inhumas/GO só apareceu pelo segundo — tela idêntica (`employee-transparency.jsf`, "Gerar CSV"). Sondar os
+  // dois custa uma requisição a mais e é a diferença entre achar e não achar o município.
+  const s = slugDe(c.municipio);
+  out.push(`gestaopublica.${s}.bsit-br.com.br`);
+  out.push(`${s}.sigep.com.br`);
+  out.push(`gestaopublica.${s}.sigep.com.br`);
   return [...new Set(out)];
 }
 
@@ -127,6 +140,13 @@ function parseCSV(txt) {
   // Preferir o bruto e NUNCA o `VALOR_LIQUIDO`, que já vem descontado ([[pnigp-view-folha-nao-enxerga-coletores]]).
   const COL_SALARIO = ["VALOR_PROVENTOS", "PROVENTOS", "SALARIO", "SALÁRIO", "REMUNERACAO", "VENCIMENTO"].find((c) => cab.includes(c));
   if (!COL_SALARIO) console.log(`    ⚠ CSV sem coluna de salário reconhecida: ${cab.join("|")}`);
+  // DUMP=1 mostra o cabeçalho e a 1ª linha CRUS. Existe porque "coluna reconhecida" e "valor chegando" são
+  // coisas diferentes — em Goianira o aviso acima NÃO disparou e mesmo assim 2.323 linhas ficaram sem salário.
+  if (process.env.DUMP === "1") {
+    console.log(`    CABEÇALHO (${cab.length}): ${cab.join("|")}`);
+    console.log(`    COL_SALARIO escolhida: ${COL_SALARIO || "(nenhuma)"} · índice ${cab.indexOf(COL_SALARIO)}`);
+    console.log(`    LINHA 1: ${String(linhas[1] || "").slice(0, 400)}`);
+  }
   const idx = (n) => cab.indexOf(n);
   const out = [];
   for (const l of linhas.slice(1)) {
@@ -175,25 +195,40 @@ for (let i = 0; i < fila.length; i++) {
        situacao=excluded.situacao, detalhe=excluded.detalhe, em=now()`,
       [c.cod_ibge, c.municipio, c.uf, host, comp, linhas, situacao, detalhe]);
 
-  const ctx = await browser.newContext({ acceptDownloads: true });
+  const ctx = await browser.newContext({ acceptDownloads: true, ignoreHTTPSErrors: true });
   const page = await ctx.newPage();
   try {
     let host = null;
     const hosts = await hostsDe(c);
     for (const h of hosts) {
-      try {
-        const r = await page.goto(`http://${h}/portal/employee-transparency.jsf`, { waitUntil: "domcontentloaded", timeout: 45000 });
-        if (r && r.ok()) { host = h; break; }
-      } catch { /* host não existe */ }
+      // ⚠️ ESQUEMA VARIA POR DOMÍNIO: `bsit-br.com.br` atende em http; `sigep.com.br` só em https.
+      // Testar só um fazia Inhumas sair como "nenhum host respondeu" com o host CERTO na lista.
+      for (const esq of ["https", "http"]) {
+        try {
+          const r = await page.goto(`${esq}://${h}/portal/employee-transparency.jsf`, { waitUntil: "domcontentloaded", timeout: 45000 });
+          if (r && r.ok()) { host = h; break; }
+        } catch { /* tenta o outro esquema */ }
+      }
+      if (host) break;
     }
     if (!host) { await marca("sem_host", `nenhum host bsit respondeu (${hosts.join(", ")})`); falhas++; continue; }
 
     // 🚨 CONFIRMAÇÃO DE IDENTIDADE: o host derivado do NOME pode ser de homônimo de outro estado
     // ([[pnigp-fila-erp-homonimo-contamina-uf]]). A página traz o nome da entidade no topo.
     const titulo = (await page.evaluate(() => document.body.innerText.slice(0, 200).replace(/\s+/g, " "))) || "";
-    if (!titulo.toUpperCase().includes(slugDe(c.municipio).toUpperCase().slice(0, 6))
-        && !slugDe(titulo).includes(slugDe(c.municipio))) {
-      await marca("host_de_outro_ente", `a página diz "${titulo.slice(0, 70)}"`, host); falhas++; continue;
+    // ⚠️ A 1ª versão comparava o slug INTEIRO e rejeitou Santa Bárbara de Goiás, cuja página diz
+    // "PREFEITURA MUN. STA. BARBARA DE GOIAS" — o portal ABREVIA ("Santa"→"STA."). Guarda estrita demais
+    // descarta município bom, que é tão ruim quanto deixar passar o errado.
+    // Critério: basta UMA palavra distintiva do nome (5+ letras, fora as de ligação) aparecer na página.
+    const palavras = slugDe(c.municipio).length
+      ? c.municipio.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+          .split(/[^a-z]+/).filter((p) => p.length >= 5 && !["santa", "santo", "goias", "nossa", "senhora"].includes(p))
+      : [];
+    const alvoTxt = slugDe(titulo);
+    const bate = palavras.length ? palavras.some((p) => alvoTxt.includes(p)) : alvoTxt.includes(slugDe(c.municipio));
+    if (!bate) {
+      await marca("host_de_outro_ente", `a página diz "${titulo.slice(0, 70)}" e não bate com ${palavras.join("/")}`, host);
+      falhas++; continue;
     }
 
     // instituições: pega todas MENOS a câmara (escopo executivo + indireta, decisão do Heitor de 16/ago)

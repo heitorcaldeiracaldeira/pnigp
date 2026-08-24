@@ -116,11 +116,28 @@ for (const alvo of fila) {
       const ano = MES_INI - k > 0 ? ANO : String(+ANO - 1);
       await page.goto(`${BASE}/con_servidoresativos.faces`, { waitUntil: "domcontentloaded", timeout: 90000 });
       await page.waitForTimeout(4000);
-      await page.selectOption('select[name="mainForm:ano"]', ano).catch(() => {});
-      await page.selectOption('select[name="mainForm:mes"]', String(mes)).catch(() => {});
-      await page.waitForTimeout(1200);
-      await page.click('input[value="Consultar"]').catch(() => {});
+      // 🚨 estes três `.catch(() => {})` faziam a falha do filtro passar em silêncio: sem a seleção ou sem o
+      // clique em Consultar, a tela devolve a competência default e o coletor grava com o rótulo do mês pedido
+      // ([[pnigp-filtro-que-nao-aplica-confira-pelo-dado]]). Falhar aqui pula a competência, que é o certo.
+      try {
+        await page.selectOption('select[name="mainForm:ano"]', ano);
+        await page.selectOption('select[name="mainForm:mes"]', String(mes));
+        await page.waitForTimeout(1200);
+        await page.click('input[value="Consultar"]');
+      } catch (e) {
+        console.log(`     ${ano}-${mes}: filtro não aplicado (${String(e.message).split("\n")[0].slice(0, 60)})`);
+        continue;
+      }
       await page.waitForTimeout(9000);
+      // o JSF re-renderiza a página: confere se os selects ficaram no que foi pedido antes de aceitar a grade
+      const ap = await page.evaluate(() => ({
+        ano: document.querySelector('select[name="mainForm:ano"]')?.value,
+        mes: document.querySelector('select[name="mainForm:mes"]')?.value,
+      })).catch(() => ({}));
+      if ((ap.ano != null && String(ap.ano) !== String(ano)) || (ap.mes != null && String(ap.mes) !== String(mes))) {
+        console.log(`     ${ano}-${mes}: a tela voltou em ${ap.ano}-${ap.mes} — competência descartada`);
+        continue;
+      }
       const linhas = tabelaDaTela(await page.content());
       if (linhas.length && (!melhor || linhas.length > melhor.linhas.length)) melhor = { ano, mes, linhas };
     }

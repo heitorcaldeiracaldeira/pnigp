@@ -140,32 +140,46 @@ for (let i = 0; i < fila.length; i++) {
   try {
     const regs = [];
     let compUsada = null, usado = null, ents = [];
+    // 🚨 NEM TODO PORTAL FALA HTTPS (17/ago/2026): Guamiranga e Cruzeiro do Iguaçu só respondem em **http**, e
+    // como o `base_url` guardado veio com https o coletor fechava `fetch failed` — que parece host morto e é
+    // esquema errado. Testa o outro esquema uma vez, antes de desistir.
+    let B2 = B;
+    {
+      const testa = async (base) => {
+        const { txt } = await pega(`${base}/${CONTROLADORES[0]}`).catch(() => ({ txt: "" }));
+        return /<option[^>]*value=["']?\d+/i.test(txt || "");
+      };
+      if (!(await testa(B))) {
+        const alt = B.startsWith("https://") ? B.replace("https://", "http://") : B.replace("http://", "https://");
+        if (await testa(alt)) { B2 = alt; console.log(`     (esquema trocado para ${alt.split("://")[0]})`); }
+      }
+    }
     for (const R of CONTROLADORES) {
     if (regs.length) break;
     usado = R;
     // entidades do combo (Município, Câmara, Fundos…)
-    const { txt: home } = await pega(`${B}/${R}`);
+    const { txt: home } = await pega(`${B2}/${R}`);
     ents = [...home.matchAll(/<option[^>]*value=["']?(\d+)["']?[^>]*>([^<]{2,60})/gi)]
       .map((m) => ({ cod: m[1], nome: m[2].trim() }));
     if (!ents.length) continue;
 
     for (const ent of ents) {
       // exercícios disponíveis
-      const { txt: tEnt } = await pega(`${B}/${R}/listEntidades`, {
+      const { txt: tEnt } = await pega(`${B2}/${R}/listEntidades`, {
         method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
         body: `formulario.codEntidade=${ent.cod}&formulario.nomeServidor=`,
       });
       const exercicios = [...new Set([...tEnt.matchAll(/formulario\.exercicio=(\d{4})/g)].map((m) => m[1]))]
         .sort((x, y) => y - x).slice(0, 2);
       for (const ex of exercicios) {
-        const { txt: tMes } = await pega(`${B}/${R}/listMes?formulario.codEntidade=${ent.cod}&formulario.exercicio=${ex}`);
+        const { txt: tMes } = await pega(`${B2}/${R}/listMes?formulario.codEntidade=${ent.cod}&formulario.exercicio=${ex}`);
         const meses = [...new Set([...tMes.matchAll(/formulario\.mes=([A-ZÇÃa-zçã]+)/g)].map((m) => m[1].toUpperCase()))];
         if (!meses.length) continue;
         // mês mais recente com folha: a lista vem em ordem do calendário, o último é o mais novo
         const mes = meses[meses.length - 1];
         const qs = `formulario.codEntidade=${ent.cod}&formulario.exercicio=${ex}&formulario.mes=${encodeURIComponent(mes)}`;
         // o HTML dá o CABEÇALHO — as colunas mudam de município para município
-        const { txt: tLista } = await pega(`${B}/${R}/listServidores?${qs}`);
+        const { txt: tLista } = await pega(`${B2}/${R}/listServidores?${qs}`);
         // 🚨 O CABEÇALHO DO HTML TEM UMA COLUNA A MAIS que o array do JSON: a primeira <th> é vazia (a coluna de
         // ação "Abrir"), e o JSON começa direto na matrícula. Indexar pelo cabeçalho cru desloca TUDO em 1 — a
         // primeira gravação saiu com o cargo no campo "nome" e um valor em reais dentro de "lotacao".
@@ -185,7 +199,7 @@ for (let i = 0; i < fila.length; i++) {
 
         // paginação DataTables via JSON (a lotação só vem inteira aqui; no HTML sai truncada)
         for (let start = 0; start < 100000; start += 200) {
-          const { txt } = await pega(`${B}/${R}/${R}Ajax`, {
+          const { txt } = await pega(`${B2}/${R}/${R}Ajax`, {
             method: "POST",
             headers: { "content-type": "application/x-www-form-urlencoded; charset=UTF-8", "x-requested-with": "XMLHttpRequest" },
             body: `draw=1&start=${start}&length=200&order%5B0%5D%5Bcolumn%5D=1&order%5B0%5D%5Bdir%5D=asc&${qs}`,

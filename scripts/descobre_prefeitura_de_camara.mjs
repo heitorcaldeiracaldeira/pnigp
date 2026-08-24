@@ -23,8 +23,17 @@ import { pool, withRetry } from "./_cadprev.mjs";
 const db = pool();
 const q = withRetry(db);
 const UA = { "user-agent": "Mozilla/5.0 (compatible; PNIGP/1.0; pesquisa de dados publicos)" };
-const NOME = { TO: "Tocantins", GO: "Goiás", BA: "Bahia", MS: "Mato Grosso do Sul", MG: "Minas Gerais" };
-const UFS = (process.env.UF ? [process.env.UF.toUpperCase()] : ["TO", "GO"]).map((s) => NOME[s] || s);
+// 🚨 A coluna `uf` das tabelas de descoberta guarda ora a SIGLA ora o NOME POR EXTENSO ("Rio de Janeiro"),
+//    e o mapa `NOME` só cobria 5 estados — rodar com UF=RJ devolvia "0 municípios" com 41 na fila real.
+//    Filtrar pelo PREFIXO DO IBGE elimina a ambiguidade de uma vez.
+const COD_UF = { RO: 11, AC: 12, AM: 13, RR: 14, PA: 15, AP: 16, TO: 17, MA: 21, PI: 22, CE: 23,
+  RN: 24, PB: 25, PE: 26, AL: 27, SE: 28, BA: 29, MG: 31, ES: 32, RJ: 33, SP: 35, PR: 41, SC: 42,
+  RS: 43, MS: 50, MT: 51, GO: 52, DF: 53 };
+// ⚠️ Para VÁRIAS UFs use `UFS=MG,SP,...` — a variável `UF` é validada por `_uf.mjs` (importado via
+//    `_cadprev.mjs`) e uma lista separada por vírgula derruba o processo antes da primeira linha
+//    ([[pnigp-uf-env-validada-globalmente]]).
+const UFS = (process.env.UFS || process.env.UF || "TO,GO").toUpperCase().split(",")
+  .map((s) => String(COD_UF[s.trim()] ?? "")).filter(Boolean);
 const CONC = Number(process.env.CONC || 6);
 
 await q(`create table if not exists prefeitura_de_camara (
@@ -32,19 +41,26 @@ await q(`create table if not exists prefeitura_de_camara (
   url_camara text, url_prefeitura text, regra text, evidencia text, em timestamptz default now())`);
 
 // alvos: portal mapeado é de câmara E o município ainda não tem folha em nenhuma fonte
+// 🚨 DUAS FONTES, não uma. O `portal_real_descoberto` só tinha o problema em SP/MG/GO/TO; o **`radar_portal`**
+//    guarda o portal de câmara para ~1.190 municípios sem folha em TODO o país (MG 325 · SP 242 · PI 192 ·
+//    RN 83 · AL 50 · RJ 41…). Ler só a primeira tabela escondia a maior causa estrutural da lacuna nacional
+//    ([[pnigp-cruzar-tabelas-de-descoberta]]).
+// ⚠️ "quem já tem folha" vem de `aux_mun_com_folha` — a lista fixa de 5 tabelas envelheceu e hoje há 65 fontes.
 const alvos = (await q(`
   with cam as (
-    select distinct on (cod_ibge) cod_ibge, municipio, uf, url_portal_real
-      from portal_real_descoberto
-     where uf = any($1) and url_portal_real ~* '\\.leg\\.br|camara|/cm[a-z]|//cm[a-z]'
-     order by cod_ibge, em desc),
-  col as (select distinct cod_ibge from folha_servidores_megasoft
-          union select distinct cod_ibge from folha_servidores_nucleogov
-          union select distinct cod_ibge from folha_servidores_capital
-          union select distinct cod_ibge from folha_servidores_govbr
-          union select distinct cod_ibge from folha_servidores_scpi)
-  select cam.* from cam left join col on col.cod_ibge = cam.cod_ibge
-   where col.cod_ibge is null
+    select distinct on (cod_ibge) cod_ibge, municipio, uf, url_portal_real from (
+      select cod_ibge, municipio, uf, url_portal_real, em
+        from portal_real_descoberto
+       where url_portal_real ~* '\\.leg\\.br|camara|/cm[a-z]|//cm[a-z]'
+      union all
+      select cod_ibge, municipio, uf, url_portal, _coletado_em
+        from radar_portal
+       where url_portal ~* '\\.leg\\.br|camara|/cm[a-z]|//cm[a-z]'
+    ) t
+    where left(cod_ibge, 2) = any($1)
+    order by cod_ibge, em desc)
+  select cam.* from cam
+   where not exists (select 1 from aux_mun_com_folha a where a.cod_ibge = cam.cod_ibge)
      and not exists (select 1 from prefeitura_de_camara p where p.cod_ibge = cam.cod_ibge)
    order by cam.uf, cam.municipio`, [UFS])).rows;
 

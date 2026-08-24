@@ -33,6 +33,10 @@ await q(`create table if not exists folha_servidores_geosiap (
   _hash text primary key, _coletado_em timestamptz default now()
 )`);
 await q(`create index if not exists ix_folha_gs_mun on folha_servidores_geosiap (cod_ibge, competencia)`);
+// ⭐ 22/ago/2026 — PODER=legislativo: no GeoSiap a câmara tem o MESMO produto com slug `cm{municipio}`
+//    (`cmguararema`, `cmguaruja`) contra o `pm{municipio}` do executivo. Muda o slug, muda o poder.
+const PODER = (process.env.PODER || "executivo").toLowerCase();
+await q(`alter table folha_servidores_geosiap add column if not exists poder text`);
 await q(`create table if not exists folha_geosiap_coleta (
   cod_ibge text primary key, municipio text, uf text, competencia text,
   linhas int, situacao text, detalhe text, em timestamptz default now()
@@ -119,7 +123,31 @@ const alvos = (await q(`select p.cod_ibge, p.slug, p.url, m.nome municipio, m.uf
   from erp_portal_municipal p join municipios_br m on m.cod_ibge = p.cod_ibge
  where p.erp='geosiap' ${UF ? "and m.uf = $1" : ""} ${SO ? `and m.nome ilike '%' || $${UF ? 2 : 1} || '%'` : ""}
  order by m.uf, m.nome`, [UF, SO].filter(Boolean))).rows;
-const feitos = new Set((await q(`select cod_ibge from folha_geosiap_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
+await q(`alter table folha_geosiap_coleta add column if not exists poder text not null default 'executivo'`);
+await q(`do $do$ begin
+  if exists (select 1 from pg_constraint where conname = 'folha_geosiap_coleta_pkey'
+               and (select count(*) from unnest(conkey)) = 1) then
+    alter table folha_geosiap_coleta drop constraint folha_geosiap_coleta_pkey;
+    alter table folha_geosiap_coleta add primary key (cod_ibge, poder);
+  end if;
+end $do$`);
+if (PODER === "legislativo") {
+  alvos.length = 0;
+  for (const r of (await q(`select cod_ibge, municipio, uf, coalesce(url_erp_camara, url_camara) url
+      from folha_camara_fila where coalesce(erp_camara,'') = 'geosiap'
+        and coalesce(url_erp_camara, url_camara) ~* 'geosiap'
+      order by rais_legislativo desc nulls last`)).rows) {
+    // o slug é o primeiro segmento do caminho (`/cmguararema/websis/...`) ou o subdomínio
+    const m1 = String(r.url).match(/geosiap\.net(?:\.br)?\/([a-z0-9_-]+)\//i);
+    const m2 = String(r.url).match(/https?:\/\/([a-z0-9_-]+)\.geosiap/i);
+    const slug = (m1 && m1[1]) || (m2 && m2[1]) || null;
+    if (slug) alvos.push({ cod_ibge: r.cod_ibge, municipio: r.municipio, uf: r.uf, slug, url: r.url });
+  }
+  console.log(`[geosiap] PODER=legislativo · ${alvos.length} câmaras com slug na URL`);
+}
+
+// REFAZ=1 reprocessa quem ja esta ok — sem isso, conserto de campo nao alcanca quem ja foi coletado
+const feitos = process.env.REFAZ === "1" ? new Set() : new Set((await q(`select cod_ibge from folha_geosiap_coleta where situacao='ok' and poder=$1`, [PODER])).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[geosiap] ${alvos.length} portais · ${feitos.size} feitos · ${fila.length} na fila`);
 
@@ -133,8 +161,8 @@ async function grava(todos) {
     const c = (f) => p.map((x) => x[f]);
     await q(`insert into folha_servidores_geosiap
       (cod_ibge,municipio,uf,entidade,competencia,cpf_masc,chapa,nome,cargo,funcao,secretaria,lotacao,
-       referencia,nivel,jornada,salario,_hash)
-      select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
+       referencia,nivel,jornada,salario,_hash,poder)
+      select *, '${PODER}'::text from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
         $9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::text[],$15::text[],$16::numeric[],$17::text[])
       on conflict (_hash) do update set salario=excluded.salario, _coletado_em=now()`,
       [c("cod_ibge"), c("municipio"), c("uf"), c("entidade"), c("competencia"), c("cpf_masc"), c("chapa"),
@@ -147,9 +175,9 @@ let total = 0, ok = 0, falhas = 0;
 for (let i = 0; i < fila.length; i++) {
   const a = fila[i];
   const marca = (situacao, detalhe, competencia = null, linhas = 0) =>
-    q(`insert into folha_geosiap_coleta (cod_ibge,municipio,uf,competencia,linhas,situacao,detalhe,em)
-       values ($1,$2,$3,$4,$5,$6,$7,now())
-       on conflict (cod_ibge) do update set competencia=excluded.competencia, linhas=excluded.linhas,
+    q(`insert into folha_geosiap_coleta (cod_ibge,municipio,uf,competencia,linhas,situacao,detalhe,poder,em)
+       values ($1,$2,$3,$4,$5,$6,$7,'${PODER}',now())
+       on conflict (cod_ibge,poder) do update set competencia=excluded.competencia, linhas=excluded.linhas,
          situacao=excluded.situacao, detalhe=excluded.detalhe, em=now()`,
       [a.cod_ibge, a.municipio, a.uf, competencia, linhas, situacao, detalhe]);
   try {

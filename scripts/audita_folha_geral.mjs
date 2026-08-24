@@ -40,9 +40,9 @@ for (const t of tabs) {
   const comp = ["competencia", "exercicio", "referencia"].find((c) => cols.includes(c));
   if (comp && cols.includes("municipio") && cols.includes("nome")) {
     const r = (await q(`with c as (
-        select municipio, ${comp} comp, count(*) n from ${t} group by 1,2 having count(*) > 50)
+        select municipio, ${comp} comp, count(*) n from ${t} group by 1,2 having count(*) > 5)
       select comp, n, count(*) municipios, string_agg(municipio, '¦') muns
-        from c group by 1,2 having count(*) > 1 order by 2 desc limit 8`)).rows;
+        from c group by 1,2 having count(*) > 1 order by 2 desc limit 60`)).rows;
     for (const x of r) {
       const [a, b] = String(x.muns).split("¦");
       if (!b) continue;

@@ -9,6 +9,8 @@
 // vw_folha_oficial dependem dela. As duas colunas novas entram no FIM, que é o que CREATE OR REPLACE aceita.
 // ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
 import { pool, withRetry } from "./_cadprev.mjs";
+import { FILTRO_FOLHA } from "./_folha_filtros.mjs";
+import { MAPA_FIXO as M, COMP, NATUREZA } from "./_folha_contrato.mjs";
 const db = pool();
 const q = withRetry(db);
 
@@ -61,92 +63,37 @@ console.log("→ folha_comp_norm, uf_por_ibge e nome_chave criadas");
 // ── 2. mapa: uma linha por coletor ──────────────────────────────────────────────────────────────────────────────
 // 🚨 A regra do `bruto` é a que mais erra: cada fornecedor batiza a mesma coisa de um jeito (provento, vantagens,
 //    vencimentos_totais, remuneracao, valor…). Nunca cair no LÍQUIDO — ele já vem descontado.
+// 🚨 UF POR EXTENSO. Cinco coletores gravam 'Goiás', 'São Paulo', 'Minas Gerais'… no lugar da sigla
+//    (~190 mil linhas): `coalesce(uf, …)` aceitava o texto e a view ganhava estados FANTASMA, que nenhum
+//    agrupamento por UF casa. Só a sigla de 2 letras passa; o resto é derivado do IBGE, que nunca mente.
 const N = (x) => x || "null::text";
-const M = [
-  //  tabela              orgao              secretaria     lotacao                        cargo    funcao                        situacao       bruto                       tipo_folha
-  ["abase",            "entidade",        "secretaria",  null,                          "cargo", "funcao",                     "situacao",    "valor",                    null],
-  // ── coletores que estavam FORA da view (achados em 16/ago na 2ª conferência) ──────────────────────────────
-  // 🚨 A dívida reapareceu depois de corrigida: 11 tabelas novas nasceram sem entrar aqui. Entre elas,
-  //    CAMPO GRANDE com 40 mil linhas — que eu tinha reportado como capital SEM folha.
-  ["agili",            null,              "secretaria",  null,                          "cargo", "investidura",                "situacao",    "bruto",                    null],
-  ["amaam",            "entidade",        "secretaria",  null,                          "cargo", "vinculo",                    null,          "bruto",                    null],
-  ["amanc",            "entidade",        "secretaria",  null,                          "cargo", null,                         null,          "bruto",                    null],
-  ["campogrande",      null,              "secretaria",  null,                          "cargo", "coalesce(funcao, tipo_admissao)", "situacao", "bruto",               null],
-  // ⚠️ Contass publica cadastro SEM valor — entra com salário nulo, não com zero
-  ["contass",          null,              "secretaria",  null,                          "cargo", null,                         "situacao",    null,                       null],
-  ["quality",          "entidade",        "secretaria",  "departamento",                "cargo", "vinculo",                    "situacao",    "bruto",                    null],
-  ["siplanweb",        null,              "secretaria",  "local_trabalho",              "cargo", "vinculo",                    null,          "bruto",                    "tipo_calc"],
-  ["spapublico",       null,              "secretaria",  "local_trabalho",              "cargo", "coalesce(funcao,vinculo)",   "situacao",    "bruto",                    null],
-  // ⚠️ TCE-MT: competência é só o ANO (2025) — folha_comp_norm devolve null e `competencia_origem` preserva
-  ["tcemt",            "entidade",        "secretaria",  null,                          "cargo", "coalesce(vinculo,regime)",   "situacao",    "bruto",                    null],
-  ["admrh",            null,              "secretaria",  null,                          "cargo", "vinculo",                    "case when pensionista then 'Pensionista' when inativo then 'Inativo' else 'Ativo' end", "bruto", null],
-  ["agape",            "entidade",        "secretaria",  "lotacao",                     "cargo", "regime",                     "situacao",    "bruto",                    null],
-  ["aspec",            "orgao",           "secretaria",  "setor",                       "cargo", "funcao",                     null,          "provento",                 null],
-  ["betha",            "entidade",        "secretaria",  "organograma",                 "cargo", "vinculo",                    null,          "bruto",                    "efetivo_em_comissao"],
-  // bsit: `departamento` guarda o LOCAL_TRABALHO do CSV, que é a secretaria. `salario` é o PROVENTO (bruto) —
-  // a tela mostra "Proventos" e "Vencimento Base" lado a lado e o CSV exporta o primeiro; não é líquido.
-  ["bsit",             "entidade",        "departamento", null,                         "cargo", "vinculo",                    null,          "salario",                  "tipo_folha"],
-  ["capital",          null,              "secretaria",  "lotacao",                     "cargo", "vinculo",                    null,          "bruto",                    null],
-  ["cidadesmg",        null,              "secretaria",  "coalesce(departamento,local_trabalho)", "cargo", "vinculo",          null,          "bruto",                    null],
-  ["citta",            "unidade_gestora", null,          "lotacao",                     "cargo", "regime",                     null,          "valor",                    null],
-  ["cr2",              "coalesce(orgao,entidade)", null, "setor",                       "cargo", "vinculo",                    "situacao",    "proventos",                null],
-  ["dbseller",         "instituicao",     null,          "lotacao",                     "cargo", "vinculo",                    null,          "bruto",                    null],
-  ["elotech",          "entidade",        null,          "coalesce(lotacao,local_trabalho)", "cargo", "vinculo",               "situacao",    "remuneracao",              null],
-  // ⚠️ `elotech` é o CADASTRO do exercício (competência só com ano); `elotech_mensal` é a série mensal da ficha.
-  //    São o mesmo universo de pessoas vistas de dois jeitos — o campo `fonte` separa; não somar as duas.
-  ["elotech_mensal",   null,              null,          "lotacao",                     "cargo", "vinculo",                    "situacao",    "bruto",                    "tipo_folha"],
-  ["epublica",         "unidade_gestora", "secretaria",  "local",                       "cargo", "coalesce(funcao,vinculo)",   "situacao",    "vantagens",                "tipo_contratacao"],
-  ["equiplano",        "entidade_nome",   "secretaria",  "lotacao",                     "cargo", "funcao_confianca",           "situacao",    "vantagens",                null],
-  ["genexus",          null,              "secretaria",  "lotacao",                     "cargo", null,                         null,          "salario_bruto",            "folha_tipo"],
-  ["geosiap",          "entidade",        "secretaria",  "lotacao",                     "cargo", "funcao",                     null,          "salario",                  null],
-  ["govbr",            null,              "secretaria",  "lotacao",                     "cargo", null,                         null,          "vencimentos_totais",       null],
-  ["hardsoft",         null,              null,          "lotacao",                     "cargo", null,                         null,          "proventos",                null],
-  ["ipm",              "entidade",        null,          "lotacao",                     "cargo", null,                         null,          "provento",                 null],
-  ["layout",           null,              "secretaria",  "departamento",                "cargo", "vinculo",                    "situacao",    "total_proventos",          null],
-  ["megasoft",         null,              "departamento", null,                         "cargo", "vinculo",                    "situacao",    "proventos",                "situacao_pagamento"],
-  ["municipioonline",  "entidade",        null,          null,                          "cargo", "tipo_cargo",                 null,          "bruto",                    "nivel"],
-  ["memory",           "entidade",        null,          null,                          "cargo", "vinculo",                    null,          "remuneracao",              null],
-  ["multi24",          "coalesce(entidade,grupo)", null, null,                          "cargo", "tipo",                       null,          "bruto",                    null],
-  ["nucleogov",        null,              "departamento", null,                         "cargo", "vinculo",                    "situacao",    "proventos",                "situacao_pagamento"],
-  ["pelotas",          null,              "secretaria",  "lotacao",                     "cargo", "regime",                     null,          "bruto",                    "plano"],
-  ["pjf",              "orgao",           "secretaria",  null,                          "cargo", "coalesce(funcao,vinculo)",   null,          "bruto",                    null],
-  ["portaltp",         "unidade_gestora", "secretaria",  "coalesce(divisao,secao,local)", "cargo", "regime",                   "situacao",    "bruto",                    null],
-  ["publicsoft",       null,              "secretaria",  "unidade",                     "cargo", "regime",                     null,          "vantagens",                null],
-  ["rpm",              null,              "secretaria",  "lotacao",                     "cargo", "coalesce(funcao,vinculo)",   null,          "vantagens",                null],
-  ["scpi",             null,              "secretaria",  "unidade",                     "cargo", "vinculo",                    null,          "proventos",                "referencia"],
-  ["sinsoft",          null,              null,          "setor",                       "cargo", null,                         null,          "bruto",                    null],
-  ["smarapd",          null,              "secretaria",  null,                          "cargo", null,                         null,          "total_vencimentos",        "tipo_folha"],
-  ["sys523",           "entidade",        null,          "lotacao",                     "cargo", "regime",                     null,          "provento",                 null],
-  ["tche",             "ente",            "departamento", null,                         "cargo", "vinculo",                    null,          "bruto",                    "tipo_folha"],
-  // 🚨 TCM-BA não publica o bruto: publica as parcelas. Conferido em 3 amostras, base+vantagens+gratificação
-  //    fica acima do líquido, como tem de ser. O 13º fica FORA — inflaria o mês.
-  ["tcmba",            "entidade",        null,          null,                          "cargo", "regime",                     "situacao",
-    "nullif(coalesce(salario_base,0)+coalesce(vantagens,0)+coalesce(gratificacao,0),0)", null],
-  ["tenosoft",         "entidade",        "secretaria",  "lotacao",                     "cargo", null,                         null,          "bruto",                    "tipo_folha"],
-  ["transparenciaweb", "unidade_gestora", "secretaria",  null,                          "cargo", "quadro",                     null,          "bruto",                    null],
-];
+// ⭐ 21/ago/2026: o mapa M, o COMP e o NATUREZA mudaram-se para `_folha_contrato.mjs` (M virou MAPA_FIXO).
+//    A camada das CÂMARAS (fix_view_folha_camara.mjs) mapeia as MESMAS tabelas: duas cópias do mapa divergem, e
+//    é assim que o bruto do IPM (`provento`) vira `liquido` num consumidor e não no outro.
+
+// ── FORA da view DE PROPÓSITO (conferido em 18/ago/2026) ────────────────────────────────────────────────────────
+// A rotina "tabela de coletor × view" ([[pnigp-view-folha-nao-enxerga-coletores]]) aponta estas três; nenhuma é
+// dívida — não re-incluir sem medir de novo:
+//   folha_servidores_tcidadao    11 municípios/4.319 linhas, TODOS já cobertos por `transpcidadao` (22 munis) —
+//                                é a mesma fonte numa extração anterior, sem salário. Somaria pessoa em dobro.
+//   folha_servidores_betha_egov  0 linhas (coletor iniciado e não rodado)
+//   (folha_servidores_campinas saiu desta lista em 18/ago: o coletor identificado rodou, 16.023 servidores)
 
 // competência: quase todas em `competencia`; três guardam em outra coluna
-const COMP = { elotech: "exercicio", scpi: "referencia" };
 
-// 🚨 FILTRO por fonte. O SCPI tem 36 municípios cuja coleta é só da CÂMARA (cargos de vereador, 1-10% da RAIS):
-//    contá-los como cobertura municipal é dar por publicada uma folha que não existe. Ficam no banco,
-//    marcados em folha_scpi_coleta.situacao, e fora da view ([[pnigp-entidade-espelho-infla-folha]]).
-const FILTRO = {
-  scpi: `where not exists (select 1 from folha_scpi_coleta c
-           where c.cod_ibge = folha_servidores_scpi.cod_ibge and c.situacao in ('ok_so_camara','so_camara'))`,
-};
+// 🚨 FILTRO por fonte (câmara coletada como se fosse prefeitura, 13º somado com o mês, poder errado…).
+//    Os vetos moram em `_folha_filtros.mjs`: a view e o CONTADOR NACIONAL leem o mesmo mapa — enquanto cada um
+//    tinha o seu, a manchete contava município que a view já havia vetado ([[pnigp-entidade-espelho-infla-folha]]).
+const FILTRO = Object.fromEntries(Object.entries(FILTRO_FOLHA).map(([k, v]) => [k, `where ${v}`]));
+
 // 🚨 O GovBR mistura NOMINAL e AGREGADO na mesma tabela: 10.385 linhas sem nome são somas por cargo × fonte de
 //    recurso ("Professor / FUNDEB 70%" = R$ 3,1 mi; "Prof.Lp espec. 200h / Aposentados" = R$ 3,6 mi). Elas
 //    inflam a média de R$ 5.171 para R$ 22.942 e produzem "salários" de milhões. Não é lixo — é outra natureza,
 //    e 6 municípios (Paranapanema, Pedra Bela, Engenheiro Coelho…) publicam SÓ assim.
-const NATUREZA = {
-  govbr: `case when nome is null or btrim(nome) = '' then 'folha agregada por cargo' else 'folha oficial' end`,
-};
 const blocos = M.map(([t, orgao, sec, lot, cargo, func, sit, bruto, tipo]) => {
   const c = COMP[t] || "competencia";
   return `select '${t}'::text as fonte, ${NATUREZA[t] || "'folha oficial'"}::text as natureza,
-    coalesce(uf, uf_por_ibge(cod_ibge)) as uf, folha_comp_norm(${c}, _coletado_em) as competencia,
+    case when uf ~ '^[A-Za-z]{2}$' then upper(uf) else uf_por_ibge(cod_ibge) end as uf, folha_comp_norm(${c}, _coletado_em) as competencia,
     cod_ibge, municipio, ${N(orgao)} as orgao, ${N(sec)} as secretaria, ${N(lot)} as lotacao_fonte,
     ${N(cargo)} as cargo, ${N(func)} as funcao, ${N(sit)} as situacao, ${t === "digifred" ? "nome" : "nome"},
     ${bruto ? bruto : "null"}::numeric as salario_bruto, ${N(tipo)} as tipo_folha, ${c}::text as competencia_origem
@@ -158,10 +105,16 @@ const blocos = M.map(([t, orgao, sec, lot, cargo, func, sit, bruto, tipo]) => {
 //    vezes e nunca casa com outra fonte (SC aparecia com 421 municípios num estado de 295 — 143%).
 // 🚨 Os 55 códigos de 5 dígitos NÃO são municípios: são consórcios intermunicipais e a FURB. Entram como folha
 //    pública com `cod_ibge` nulo, senão inflam a contagem de municípios ([[entidade-espelho]]).
-blocos.push(`select 'farol-tcesc'::text, 'folha oficial'::text, 'SC'::text, f.anomes, mb.cod_ibge, f.municipio,
+// 🚨 17/ago: `vw_folha_municipal_sc` passou a gravar IBGE de **7 dígitos** (era 6). O join casava só por
+//    `cod_ibge6 AND length=6` — e SC inteiro (295 municípios) saiu da view em silêncio, derrubando o total
+//    nacional de 3.623 para 3.520 sem nenhum erro. Aceitar os DOIS tamanhos torna o bloco imune à próxima
+//    mudança de formato. Só a conferência antes/depois pegou isso ([[pnigp-view-folha-nao-enxerga-coletores]]).
+blocos.push(`select 'farol-tcesc'::text, 'folha oficial'::text, 'SC'::text, f.anomes,
+    coalesce(mb7.cod_ibge, mb6.cod_ibge), f.municipio,
     f.orgao, f.area, f.lotacao_origem, f.cargo, f.funcao, f.situacao, f.nome, f.bruto, null::text, f.anomes
   from vw_folha_municipal_sc f
-  left join municipios_br mb on mb.cod_ibge6 = f.cod_ibge and length(f.cod_ibge) = 6`);
+  left join municipios_br mb6 on mb6.cod_ibge6 = f.cod_ibge and length(f.cod_ibge) = 6
+  left join municipios_br mb7 on mb7.cod_ibge  = f.cod_ibge and length(f.cod_ibge) = 7`);
 blocos.push(`select 'tcepe'::text, 'folha oficial'::text, 'PE'::text,
     folha_comp_norm(coalesce(p.ano_remessa,'') || lpad(coalesce(p.mes_remessa,''),2,'0')),
     p.municipio_cod, p.municipio, p.uj_nome, p.uj_nome, p.uj_nome, p.cargo, p.tipo_vinculo,
@@ -191,7 +144,7 @@ blocos.push(`select 'tcers'::text, 'empenho orcamentario'::text, 'RS'::text,
 //    é folha NOMINAL, uma linha por pessoa (Ibirubá: 705 linhas, 677 nomes, 113 cargos).
 //    ⚠️ O valor exige cuidado: quando `piso = teto` é a remuneração DAQUELA pessoa; quando diferem (56% dos
 //    casos) é faixa do cargo e não pode virar salário. Daí o `case`.
-blocos.push(`select 'digifred'::text, 'folha oficial'::text, coalesce(uf, uf_por_ibge(cod_ibge)),
+blocos.push(`select 'digifred'::text, 'folha oficial'::text, case when uf ~ '^[A-Za-z]{2}$' then upper(uf) else uf_por_ibge(cod_ibge) end,
     folha_comp_norm(competencia, _coletado_em), cod_ibge, municipio, null::text, null::text, null::text,
     cargo, null::text, null::text, nome,
     case when piso is not null and piso = teto then piso else null end,
@@ -207,5 +160,29 @@ blocos.push(`select 'rais'::text, 'censitario (declaracao do empregador)'::text,
 
 const sql = `create or replace view vw_folha_municipal_brasil as\n${blocos.join("\nunion all\n")}`;
 await q(sql);
-console.log(`→ view recriada com ${blocos.length} fontes`);
+console.log(`→ view recriada com ${blocos.length} fontes (lista fixa)`);
 await db.end();
+
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// 🚨 ESTE SCRIPT NÃO É O ÚLTIMO PASSO — e descobrir isso custou 29 coletores.
+//
+// `create or replace view` reescreve a definição INTEIRA a partir do `M` acima. O `reconstroi_view_folha_brasil.mjs`
+// trabalha por ANEXO: preserva o que já está ligado e acrescenta as tabelas que faltam, achando a coluna de valor
+// sozinho. São dois métodos escrevendo o MESMO objeto — e este, rodando depois, apaga o outro.
+// Em 18/ago/2026 rodei este cinco vezes e derrubei 29 tabelas cheias da view sem perceber: portalfacil_api (102
+// municípios), cerh (99), scpicsv (61)… A conferência "tabela × view" que eu fizera no INÍCIO da sessão dizia
+// "4 fora" — era retrato de ANTES das minhas próprias escritas ([[pnigp-view-folha-nao-enxerga-coletores]]).
+//
+// ⭐ A correção não é um comentário pedindo para lembrar: comentário não executa. O anexo passa a ser AUTOMÁTICO.
+//    SEM_ANEXO=1 desliga — serve só para depurar a lista fixa isoladamente.
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
+if (process.env.SEM_ANEXO !== "1") {
+  const { spawnSync } = await import("child_process");
+  console.log("→ anexando as tabelas fora da lista fixa (reconstroi_view_folha_brasil.mjs)…");
+  const r = spawnSync(process.execPath, ["scripts/reconstroi_view_folha_brasil.mjs"],
+    { stdio: "inherit", env: { ...process.env, APLICAR: "1" } });
+  if (r.status !== 0) {
+    console.log("🚨 o anexo FALHOU — a view ficou só com a lista fixa. Rode reconstroi_view_folha_brasil.mjs à mão.");
+    process.exitCode = 1;
+  }
+}

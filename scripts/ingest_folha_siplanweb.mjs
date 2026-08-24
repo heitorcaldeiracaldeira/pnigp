@@ -101,14 +101,28 @@ async function grava(regs) {
 }
 
 // ── alvos: portais siplanweb da PREFEITURA (pm-), fora os de contracheque (área logada do servidor) ───────────
-const alvos = (await q(`select distinct on (p.cod_ibge) p.cod_ibge, m.nome municipio, m.uf,
-    regexp_replace(regexp_replace(p.url_portal_real,'^https?://',''),'/.*$','') host
-  from portal_real_descoberto p
-  join municipios_br m on m.cod_ibge = p.cod_ibge
- where p.url_portal_real ilike '%publicacao.siplanweb.com.br%'
-   and p.url_portal_real !~* '//cm-'
+// ⭐ além do `portal_real_descoberto`, lê também os achados do `verifica_municipio_folha` — foi ele que encontrou
+// Porto Firme e Passa-Vinte, que a descoberta de portal não tinha (a rota só aparece visitando o município).
+const alvos = (await q(`select distinct on (x.cod_ibge) x.cod_ibge, m.nome municipio, m.uf,
+    regexp_replace(regexp_replace(x.url,'^https?://',''),'/.*$','') host
+  from (
+    select p.cod_ibge, p.url_portal_real url, p.em from portal_real_descoberto p
+     where p.url_portal_real ilike '%publicacao.siplanweb.com.br%'
+    union all
+    -- o produto se reconhece pela ROTA, nao pelo dominio: Laranjal roda Siplan em laranjal.mg.gov.br
+    -- (mesma licao do white-label do SCPI)
+    select v.cod_ibge, v.rota_com_dados, v.em from folha_verificacao_municipal v
+     where v.rota_com_dados ilike '%publicacao.siplanweb.com.br%'
+        or v.rota_com_dados ilike '%/pessoal/gestao-pessoal%'
+    union all
+    -- ⭐ e os CANDIDATOS: o diagnóstico marca tem_dados em municípios que as duas fontes acima não têm
+    select c.cod_ibge, c.url, c.achado_em from folha_portal_candidato c
+     where c.produto = 'siplanweb'
+  ) x
+  join municipios_br m on m.cod_ibge = x.cod_ibge
+ where x.url !~* '//cm-' and x.url !~* '//cm\\.'
    ${UF ? "and m.uf = $1" : ""} ${SO ? `and m.nome ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
- order by p.cod_ibge, p.em desc`, [UF, SO].filter(Boolean))).rows;
+ order by x.cod_ibge, x.em desc`, [UF, SO].filter(Boolean))).rows;
 
 const feitos = process.env.REFAZ === "1" ? new Set()
   : new Set((await q(`select cod_ibge from folha_siplanweb_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));

@@ -45,7 +45,14 @@ const H = (id) => ({ "user-agent": UA, "content-type": "application/json", accep
 async function post(rota, id, body) {
   const r = await fetch(`${BASE}${rota}?databaseId=${id}`, { method: "POST", headers: H(id),
     body: JSON.stringify(body ?? {}), signal: AbortSignal.timeout(90000) });
-  if (!r.ok) throw new Error("HTTP " + r.status);
+  // ⭐ O corpo do erro é o diagnóstico: o serviço devolve
+  //    `Cannot open database "TransparenciaFacil_01470_02" requested by the login` quando a base daquele
+  //    município NÃO EXISTE no SQL Server do fornecedor. Descartar o corpo transformaria uma causa
+  //    identificada ("o fornecedor não provisionou") num "HTTP 400" que parece defeito nosso.
+  if (!r.ok) {
+    const corpo = (await r.text().catch(() => "")).slice(0, 160).replace(/\s+/g, " ").trim();
+    throw new Error(`HTTP ${r.status}${corpo ? " — " + corpo : ""}`);
+  }
   let t = await r.text();
   let j = JSON.parse(t);
   if (typeof j === "string") j = JSON.parse(j);
@@ -84,9 +91,38 @@ const alvos = (await q(`select distinct on (m.cod_ibge) m.cod_ibge, m.nome munic
  where u.url ~ '\\d{7}' ${UF ? "and m.uf = $1" : ""} ${SO ? `and m.nome ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
  order by m.cod_ibge`, [UF, SO].filter(Boolean))).rows;
 
+// 🚨 GUARDA DE AMBIGUIDADE — um mesmo databaseId servindo DOIS municípios grava a MESMA folha nos dois.
+//    Medido em 18/ago/2026: `0165702` aparece para São Geraldo e Visconde do Rio Branco, e uma passada com
+//    REFAZ=1 gravou 385 linhas idênticas em cada um. É [[pnigp-entidade-espelho-infla-folha]] entrando pela
+//    porta da descoberta: a URL de um município cita o databaseId do vizinho. Sem prova de qual é o dono,
+//    não se coleta nenhum dos dois.
+const donos = new Map();
+for (const a of alvos) {
+  if (!donos.has(a.database_id)) donos.set(a.database_id, []);
+  donos.get(a.database_id).push(a);
+}
+const ambiguos = new Set();
+for (const [id, muns] of donos) {
+  if (muns.length < 2) continue;
+  for (const m of muns) {
+    ambiguos.add(m.cod_ibge);
+    await q(`insert into folha_transpfacil_coleta (cod_ibge,municipio,uf,database_id,competencia,linhas,situacao,detalhe,em)
+             values ($1,$2,$3,$4,null,0,'ambiguo',$5,now())
+             on conflict (cod_ibge) do update set situacao='ambiguo', detalhe=excluded.detalhe, em=now()`,
+      [m.cod_ibge, m.municipio, m.uf, id,
+       `databaseId ${id} aparece no cadastro de ${muns.length} municípios (${muns.map((x) => x.municipio).join(", ")})`]);
+  }
+  console.log(`  ⚠️ databaseId ${id} ambíguo: ${muns.map((x) => x.municipio).join(" / ")} — nenhum será coletado`);
+}
+// e apaga o que uma passada anterior já tenha atribuído errado
+if (ambiguos.size) {
+  const r = await q(`delete from folha_servidores_transpfacil where cod_ibge = any($1)`, [[...ambiguos]]);
+  if (r.rowCount) console.log(`  ⚠️ ${r.rowCount} linhas removidas dos municípios ambíguos`);
+}
+
 const feitos = process.env.REFAZ === "1" ? new Set()
   : new Set((await q(`select cod_ibge from folha_transpfacil_coleta where situacao like 'ok%'`)).rows.map((r) => r.cod_ibge));
-const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
+const fila = alvos.filter((a) => !feitos.has(a.cod_ibge) && !ambiguos.has(a.cod_ibge));
 console.log(`[transpfacil] ${alvos.length} municípios com databaseId · ${fila.length} na fila`);
 
 let total = 0, ok = 0, vazios = 0, falhas = 0;
@@ -104,7 +140,36 @@ for (let i = 0; i < fila.length; i++) {
     const comps = await post("ServidorGetCompetencia", id);
     const lista = Array.isArray(comps) ? comps : [];
     if (!lista.length) { await marca("vazio", "sem competência publicada"); vazios++; continue; }
-    const comp = lista[0].id || lista[0].nome;
+
+    // 🚨 O MÊS 13 É O DÉCIMO TERCEIRO, NÃO UM MÊS — e vem PRIMEIRO na lista, então pegar `lista[0]` o elege.
+    //    Juruaia foi coletada em "13/2021" (388 linhas) tendo 12/2021 disponível; a view rejeita competência
+    //    fora de 01–12, então o dado ficou coletado E invisível — e o município aparecia com 13 linhas por
+    //    outra fonte contra 693 na RAIS. Descartar 13/14 antes de escolher.
+    const mensais = lista
+      .map((c) => String(c.id || c.nome || ""))
+      .filter((c) => /^(0[1-9]|1[0-2])\/\d{4}$/.test(c));
+    if (!mensais.length) {
+      await marca("so_decimo_terceiro", `competências publicadas: ${lista.slice(0, 3).map((c) => c.id).join(", ")}`);
+      vazios++; continue;
+    }
+
+    // ⭐ competência MAIS CHEIA e não a mais recente ([[pnigp-competencia-mais-cheia-nao-a-recente]]):
+    //    o grid devolve `recordsFiltered`, então contar um candidato custa UMA requisição de length=1.
+    const conta = async (c) => {
+      try {
+        const j = await post("ServidorGetNomeGrid", id, {
+          parameters: { draw: 1, start: 0, length: 1,
+            columns: [{ data: "matricula", name: "", searchable: true, orderable: true, search: { value: "", regex: false } }],
+            order: [{ column: 0, dir: "asc" }], search: { value: "", regex: false } },
+          competencia: c });
+        return Number(j.recordsFiltered ?? j.RecordsFiltered ?? 0) || 0;
+      } catch { return 0; }
+    };
+    let comp = mensais[0], melhorN = -1;
+    for (const c of mensais.slice(0, 3)) {
+      const n = await conta(c);
+      if (n > melhorN) { melhorN = n; comp = c; }
+    }
 
     const corpo = (start) => ({
       parameters: { draw: 1, start, length: 500,
@@ -140,7 +205,10 @@ for (let i = 0; i < fila.length; i++) {
     console.log(`  [${i + 1}/${fila.length}] ${a.uf} ${a.municipio}: ${regs.length} servidores (${comp}, ${comVal} com valor)`);
   } catch (e) {
     falhas++;
-    await marca("erro", String(e.message).slice(0, 180));
+    const msg = String(e.message);
+    // "base não provisionada no fornecedor" é um veredito, não um erro nosso — não adianta reprocessar
+    await marca(/Cannot open database/i.test(msg) ? "base_inexistente_no_fornecedor" : "erro",
+      msg.slice(0, 180));
     console.log(`  ✖ [${i + 1}/${fila.length}] ${a.municipio}: ${String(e.message).slice(0, 60)}`);
   }
   await dorme(400);

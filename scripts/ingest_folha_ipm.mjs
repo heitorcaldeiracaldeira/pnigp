@@ -35,6 +35,8 @@ await q(`create table if not exists folha_servidores_ipm (
   _hash text primary key, _coletado_em timestamptz default now()
 )`);
 await q(`create index if not exists ix_folha_ipm_mun on folha_servidores_ipm (cod_ibge, competencia)`);
+// ⭐ o NOME da entidade (a coluna `entidade` guarda só o código do cliente, ex. "2858")
+await q(`alter table folha_servidores_ipm add column if not exists entidade_nome text`);
 await q(`create table if not exists folha_ipm_coleta (
   cod_ibge text primary key, municipio text, uf text, competencia text,
   linhas int, situacao text, detalhe text, em timestamptz default now()
@@ -77,8 +79,34 @@ const alvos = (await q(`select p.cod_ibge, p.slug, m.nome municipio, m.uf
  where p.erp='ipm' ${UF ? "and m.uf = $1" : ""} ${SO ? `and m.nome ilike '%' || $${UF ? 2 : 1} || '%'` : ""}
  order by m.uf, m.nome`, [UF, SO].filter(Boolean))).rows;
 // REFAZ=1 reprocessa quem já está 'ok' — necessário depois do conserto da lista de entidades (15/ago/2026)
+// ⭐ 21/ago/2026 — PODER=legislativo: a CÂMARA tem instância PRÓPRIA no Atende.net (`camara{slug}.atende.net`),
+//    separada da prefeitura. Dentro dela o coletor segue percorrendo TODAS as entidades, como sempre
+//    ([[pnigp-ipm-todas-as-entidades]]). O livro-razão ganha `poder` para não sobrescrever o veredito do
+//    executivo do mesmo município.
+const PODER = (process.env.PODER || "executivo").toLowerCase();
+await q(`alter table folha_ipm_coleta add column if not exists poder text not null default 'executivo'`);
+await q(`do $do$ begin
+  if exists (select 1 from pg_constraint where conname = 'folha_ipm_coleta_pkey'
+               and (select count(*) from unnest(conkey)) = 1) then
+    alter table folha_ipm_coleta drop constraint folha_ipm_coleta_pkey;
+    alter table folha_ipm_coleta add primary key (cod_ibge, poder);
+  end if;
+end $do$`);
+if (PODER === "legislativo") {
+  alvos.length = 0;
+  for (const r of (await q(`select cod_ibge, municipio, uf, coalesce(url_erp_camara, url_camara, url_camara_2) url
+      from folha_camara_fila where coalesce(erp_camara,'') = 'ipm'
+        and coalesce(url_erp_camara, url_camara, url_camara_2) ~* 'atende\\.net'
+        ${SO ? "and municipio ilike '%'||$1||'%'" : ""}
+      order by rais_legislativo desc nulls last`, SO ? [SO] : [])).rows) {
+    const m2 = String(r.url).match(/([a-z0-9-]+)\.atende\.net/i);
+    if (m2) alvos.push({ cod_ibge: r.cod_ibge, municipio: r.municipio, uf: r.uf, slug: m2[1].toLowerCase() });
+  }
+  console.log(`[ipm] PODER=legislativo · ${alvos.length} câmaras no Atende.net`);
+}
+
 const feitos = process.env.REFAZ === "1" ? new Set()
-  : new Set((await q(`select cod_ibge from folha_ipm_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
+  : new Set((await q(`select cod_ibge from folha_ipm_coleta where situacao='ok' and poder=$1`, [PODER])).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[ipm] ${alvos.length} portais · ${feitos.size} já feitos · ${fila.length} na fila`);
 
@@ -92,14 +120,19 @@ async function grava(todos) {
     const c = (f) => p.map((x) => x[f]);
     await q(`insert into folha_servidores_ipm
       (cod_ibge,municipio,uf,entidade,competencia,nome,cargo,lotacao,matricula,contrato,
-       afastamento,rescisao,ferias,provento,desconto,liquido,_hash)
+       afastamento,rescisao,ferias,provento,desconto,liquido,_hash,entidade_nome)
       select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
-        $9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::numeric[],$15::numeric[],$16::numeric[],$17::text[])
-      on conflict (_hash) do update set provento=excluded.provento, desconto=excluded.desconto,
+        $9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::numeric[],$15::numeric[],$16::numeric[],$17::text[],$18::text[])
+      on conflict (_hash) do update set
+        cargo=coalesce(excluded.cargo, folha_servidores_ipm.cargo),
+        lotacao=coalesce(excluded.lotacao, folha_servidores_ipm.lotacao),
+        entidade=coalesce(excluded.entidade, folha_servidores_ipm.entidade),
+        entidade_nome=coalesce(excluded.entidade_nome, folha_servidores_ipm.entidade_nome),
+        provento=excluded.provento, desconto=excluded.desconto,
         liquido=excluded.liquido, _coletado_em=now()`,
       [c("cod_ibge"), c("municipio"), c("uf"), c("entidade"), c("competencia"), c("nome"), c("cargo"),
        c("lotacao"), c("matricula"), c("contrato"), c("afastamento"), c("rescisao"), c("ferias"),
-       c("provento"), c("desconto"), c("liquido"), c("_hash")]);
+       c("provento"), c("desconto"), c("liquido"), c("_hash"), c("entidade_nome")]);
   }
 }
 const num = (v) => { const n = parseFloat(String(v ?? "").replace(",", ".")); return Number.isFinite(n) ? n : null; };
@@ -108,11 +141,11 @@ let total = 0, ok = 0, falhas = 0;
 for (let i = 0; i < fila.length; i++) {
   const p = fila[i];
   const marca = (situacao, detalhe, competencia = null, linhas = 0) =>
-    q(`insert into folha_ipm_coleta (cod_ibge,municipio,uf,competencia,linhas,situacao,detalhe,em)
-       values ($1,$2,$3,$4,$5,$6,$7,now())
-       on conflict (cod_ibge) do update set competencia=excluded.competencia, linhas=excluded.linhas,
+    q(`insert into folha_ipm_coleta (cod_ibge,municipio,uf,competencia,linhas,situacao,detalhe,poder,em)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,now())
+       on conflict (cod_ibge,poder) do update set competencia=excluded.competencia, linhas=excluded.linhas,
          situacao=excluded.situacao, detalhe=excluded.detalhe, em=now()`,
-      [p.cod_ibge, p.municipio, p.uf, competencia, linhas, situacao, detalhe]);
+      [p.cod_ibge, p.municipio, p.uf, competencia, linhas, situacao, detalhe, PODER]);
   try {
     // ⭐ Se o descobridor já achou o item de folha DESTE município (código + rotina próprios), usar o dele: o
     // molde fixo `codigo 9 / rot 3344` responde em quase todo portal, mas em alguns devolve zero período
@@ -125,10 +158,14 @@ for (let i = 0; i < fila.length; i++) {
     // agregado, não nominal; `funcionario-comissionado`/`cedidos`/`demitidos`/`em-gozo-ferias` são fatias.
     // Escolher o item que cobre TODO o quadro, na ordem do mais completo para o mais estreito
     // ([[pnigp-entidade-espelho-infla-folha]] é o erro simétrico: aqui o risco é SUBcoletar).
-    const rota = (await q(`select nome_item, codigo, rot, aca from ipm_item_rotina
-       where cod_ibge = $1 and tem_valor
-         and nome_item !~* '(plano-de-cargos|tabela-de-venc|estrutura|organograma|concurso|resumo|inativo|comissionad|cedidos|demitid|exonerad|ferias|lotacao|centro-de-custos|regime)'
-       order by case
+    // ⚠️ `tem_valor` deixou de ser exigência ABSOLUTA: Barão e Dois Irmãos das Missões só publicam quadro de
+    // pessoal SEM salário (`funcionario-efetivo`, `funcionario-x-lotacao`). Nominal sem valor é meio caminho —
+    // vale gravar (nome+cargo) e marcar a limitação, em vez de tratar o município como se não publicasse nada.
+    // Os itens COM valor continuam vindo primeiro na ordenação.
+    const rota = (await q(`select nome_item, codigo, rot, aca, tem_valor from ipm_item_rotina
+       where cod_ibge = $1
+         and nome_item !~* '(plano-de-cargos|tabela-de-venc|estrutura|organograma|concurso|resumo|inativo|comissionad|cedidos|demitid|exonerad|ferias|centro-de-custos|regime)'
+       order by tem_valor desc, case
            when nome_item ilike '%funcionario-x-pagamentos%' then 1
            when nome_item ilike '%funcionario-x-salario' then 2
            when nome_item ilike '%matricula-x-cargo-x-salario%' then 3
@@ -179,7 +216,15 @@ for (let i = 0; i < fila.length; i++) {
         for (const s of r.linhas) {
           regs.push({
             cod_ibge: p.cod_ibge, municipio: p.municipio, uf: p.uf, entidade: s.clicodigo,
-            competencia: s.odomesano, nome: s.uninomerazao, cargo: s.cardescricao, lotacao: s.cncdescricao,
+            // ⭐ 22/ago/2026 — GRAVAR O NOME DA ENTIDADE, não só o código. O coletor SEMPRE percorreu todas as
+            //    entidades (inclusive a CÂMARA), mas gravava apenas `clicodigo` (ex.: "2858") — e sem o nome
+            //    não há como saber qual poder é aquela folha. 229 municípios do IPM apareciam como "sem câmara"
+            //    tendo a câmara colhida. O nome vem do mesmo `setLista` que já lemos ([[pnigp-ipm-todas-as-entidades]]).
+            entidade_nome: ent.descricao || null,
+            // 🚨 nem todo item devolve `odomesano` — e quando não devolvia, a competência ficava NULA apesar de
+            // o coletor SABER qual pediu (Farroupilha: 2.353 linhas sem competência). A competência pedida é o
+            // fallback legítimo: foi ela que filtrou a consulta ([[pnigp-filtro-que-nao-aplica-confira-pelo-dado]]).
+            competencia: s.odomesano ?? competencia, nome: s.uninomerazao, cargo: s.cardescricao, lotacao: s.cncdescricao,
             matricula: s.fcncodigo, contrato: s.funcontrato, afastamento: s.afastamento,
             rescisao: s.rescisao, ferias: s.ferias,
             // ⚠️ o nome da coluna de dinheiro muda com o item: o 9 traz provento/desconto/liquido; o 27 traz

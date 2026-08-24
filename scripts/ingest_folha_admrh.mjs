@@ -26,9 +26,17 @@ import { pool, withRetry } from "./_cadprev.mjs";
 const db = pool();
 const q = withRetry(db);
 const HOST = process.env.HOST || "transparencia.riogrande.rs.gov.br";
-const IBGE = process.env.IBGE || "4315602";
 const MUN = process.env.MUN || "Rio Grande";
 const UF = process.env.UF_SIGLA || "RS";
+// 🚨 O CÓDIGO IBGE NUNCA VEM DIGITADO. Eu já errei três vezes nesta campanha teclando código de memória —
+// 4312955 é NOVA BOA VISTA, e a folha de Não-Me-Toque foi gravada no vizinho. O cadastro é a única fonte:
+// passa-se o NOME, o script resolve o código. Só cai no valor de IBGE= se o nome não existir no cadastro.
+const IBGE = await (async () => {
+  const r = (await q(`select cod_ibge from municipios_br where uf=$1 and lower(nome)=lower($2) limit 1`, [UF, MUN])).rows[0];
+  if (r) return r.cod_ibge;
+  if (process.env.IBGE) { console.log(`⚠️  "${MUN}" não está no cadastro de ${UF}; usando IBGE=${process.env.IBGE} informado à mão`); return process.env.IBGE; }
+  throw new Error(`município "${MUN}" não encontrado em municipios_br (${UF}) e nenhum IBGE informado`);
+})();
 const COM_VALOR = process.env.COM_VALOR === "1";
 const MAX_FICHAS = Number(process.env.MAX_FICHAS || 99999);
 

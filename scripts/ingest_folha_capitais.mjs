@@ -1231,7 +1231,8 @@ const COLETORES = {
       const hoje = new Date();
       let melhorAno = anos.find((a) => a.t === String(hoje.getFullYear())) || anos[0];
       // ⚠️ os ids JSF têm `:` — usar seletor por atributo, nunca `#id` (e `CSS.escape` não existe no Node)
-      await page.selectOption(`select[id="${alvos.ano.id}"]`, melhorAno.v).catch(() => {});
+      // 🚨 sem `.catch` mudo: se a seleção do ano falhar, o CSV sai do exercício errado e ninguém percebe
+      await page.selectOption(`select[id="${alvos.ano.id}"]`, melhorAno.v);
       await page.waitForTimeout(4000);
       // 🚨 mês MAIS CHEIO, não o primeiro que responde: o mês corrente vem parcial (agosto deu 126 linhas
       //    contra dezenas de milhares dos fechados) — mesma armadilha de Manaus, Goiânia e Cuiabá.
@@ -1249,8 +1250,14 @@ const COLETORES = {
           await page.selectOption(`select[id="${alvos.ano.id}"]`, melhorAno.v).catch(() => {});
           await page.waitForTimeout(4000);
         }
-        await page.selectOption(`select[id="${alvos.mes.id}"]`, mesOp.v).catch(() => {});
+        await page.selectOption(`select[id="${alvos.mes.id}"]`, mesOp.v);
         await page.waitForTimeout(5000);
+        // prova de que o filtro pegou: o <select> tem de estar no mês pedido
+        const mesAplicado = await page.$eval(`select[id="${alvos.mes.id}"]`, (s) => s.value).catch(() => null);
+        if (String(mesAplicado) !== String(mesOp.v)) {
+          await br2.close();
+          return { regs: [], comp: null, detalhe: `filtro de mês não aplicou (select ficou em ${mesAplicado}, pedi ${mesOp.v})` };
+        }
         arquivo = null;
         const dl = page.waitForEvent("download", { timeout: 240000 }).catch(() => null);
         await page.getByText("CSV", { exact: true }).first().click({ timeout: 25000 }).catch(() => {});
@@ -1263,6 +1270,15 @@ const COLETORES = {
       }
       await br2.close();
       if (!melhorBuf || !comp) return { regs: [], comp: null, detalhe: "o export CSV não veio" };
+      // 🚨 GUARDA CONTRA FILTRO INERTE: se todas as competências medidas devolverem EXATAMENTE o mesmo número de
+      // linhas, o filtro não está sendo aplicado e o CSV é sempre o mesmo — rotular o primeiro como "o mais cheio"
+      // gravaria um mês com o nome de outro. Folha muda todo mês; empate exato entre 3+ meses é defeito, não acaso
+      // ([[pnigp-filtro-que-nao-aplica-confira-pelo-dado]]).
+      const tamanhos = medidas.map((m) => m.split(":")[1]).filter((x) => x && x !== "—");
+      if (tamanhos.length >= 3 && new Set(tamanhos).size === 1) {
+        return { regs: [], comp: null,
+          detalhe: `filtro inerte: ${tamanhos.length} competências devolveram ${tamanhos[0]} linhas cada — o CSV não muda com o mês` };
+      }
       const buf = melhorBuf.b;
       let txt = new TextDecoder("utf-8").decode(buf);
       if (/�/.test(txt.slice(0, 4000))) txt = new TextDecoder("iso-8859-1").decode(buf);

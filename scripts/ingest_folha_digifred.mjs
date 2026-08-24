@@ -53,7 +53,14 @@ const alvos = (await q(`
       from folha_portal_candidato c where c.produto = 'digifred'
   ) x
    where true ${UF ? "and uf = $1" : ""} ${SO ? `and municipio ilike '%'||$${UF ? 2 : 1}||'%'` : ""}
-   order by municipio`, [UF, SO].filter(Boolean))).rows;
+   order by municipio`, [UF, SO].filter(Boolean))).rows
+  // 🚨 um município com DUAS URLs entrava DUAS vezes na fila, e a segunda passagem sobrescrevia o sucesso da
+  // primeira: Campos Borges coletou 244 servidores pela URL do host central e logo depois foi carimbado 'erro'
+  // ("slug não extraído") pela URL do site próprio. Fica um município coletado com registro de falha — que na
+  // próxima varredura vira recoleta ou, pior, classificação de pendência. Uma linha por município, e vence a URL
+  // que contém o host do fornecedor, porque é dela que sai o slug.
+  .sort((a, b) => Number(/digifred\.net\.br/i.test(b.url)) - Number(/digifred\.net\.br/i.test(a.url)))
+  .filter((a, _i, todos) => todos.findIndex((x) => x.cod_ibge === a.cod_ibge) === _i);
 const feitos = new Set(REFAZ ? [] : (await q(`select cod_ibge from folha_digifred_coleta
   where situacao like 'ok%'`)).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));

@@ -45,6 +45,9 @@ await q(`create table if not exists folha_servidores_portaltp (
 )`);
 await q(`create index if not exists ix_folha_tp_mun on folha_servidores_portaltp (cod_ibge, competencia)`);
 await q(`create index if not exists ix_folha_tp_sec on folha_servidores_portaltp (uf, secretaria)`);
+// ⭐ 21/ago/2026: PODER=legislativo colhe a CÂMARA no mesmo produto (o slug do portal da câmara é outro).
+//    `poder` mantém a folha do legislativo fora da conta da prefeitura e dentro de vw_folha_camara_brasil.
+await q(`alter table folha_servidores_portaltp add column if not exists poder text`);
 await q(`create table if not exists folha_portaltp_coleta (
   cod_ibge text primary key, municipio text, uf text, competencia text,
   linhas int, situacao text, detalhe text, em timestamptz default now()
@@ -86,7 +89,15 @@ async function tentaHost(host, ano, mes) {
         if (t === 3) return { ok: false, erro: "429" };
         await dorme(20000 * (t + 1)); continue; // 20s, 40s, 60s
       }
-      if (r.status >= 300 && r.status < 400) return { ok: false, erro: "redirect (" + r.status + ")" }; // host errado → tenta o próximo
+      if (r.status >= 300 && r.status < 400) {
+        // ⭐ 23/ago/2026: o destino do 302 DIZ o que aconteceu. `/common/PortalNaoEncontrado.aspx` é o próprio
+        //    PortalTP respondendo "este slug não é cliente" — veredito DEFINITIVO, não erro de rede. Tratar os
+        //    dois como "erro" fazia a re-tentativa voltar eternamente a quem já tinha respondido que não existe
+        //    ([[pnigp-ordem-retorno-resondar-corrigir-criar]]: só volta quem pode mudar de resposta).
+        const destino = r.headers.get("location") || "";
+        if (/PortalNaoEncontrado/i.test(destino)) return { ok: false, erro: "nao_e_cliente", definitivo: true };
+        return { ok: false, erro: "redirect (" + r.status + ")" }; // host errado → tenta o próximo
+      }
       if (!r.ok) return { ok: false, erro: "HTTP " + r.status };
       const xml = await r.text();
       const m = xml.match(/<string[^>]*>([\s\S]*)<\/string>/);
@@ -163,11 +174,32 @@ function valores(r) {
   return { bruto, desc, liq, rub };
 }
 
-const alvos = (await q(`select p.cod_ibge, p.slug, m.nome municipio, m.uf
+const PODER = (process.env.PODER || "executivo").toLowerCase();
+const alvos = PODER === "legislativo"
+  // ⭐ a fila do legislativo são os portais de CÂMARA que o identificador reconheceu como PortalTP; o slug sai
+  //    do host (`{slug}.portaltp.com.br` ou `{slug}-{uf}`), como no executivo.
+  ? (await q(`select cod_ibge, municipio, uf, coalesce(url_erp_camara, url_camara, url_camara_2) url
+      from folha_camara_fila
+      where coalesce(erp_camara,'') = 'portaltp' and coalesce(url_erp_camara, url_camara, url_camara_2) is not null
+        ${UF ? "and uf = $1" : ""} ${SO ? `and municipio ilike '%' || $${UF ? 2 : 1} || '%'` : ""}
+      order by rais_legislativo desc nulls last`, [UF, SO].filter(Boolean))).rows
+      .map((a) => { let h = null; try { h = new URL(a.url).host; } catch { /* url inválida */ }
+                    return { ...a, slug: h ? h.split(".")[0].replace(/-[a-z]{2}$/, "") : null }; })
+      .filter((a) => a.slug)
+  : (await q(`select p.cod_ibge, p.slug, m.nome municipio, m.uf
   from erp_portal_municipal p join municipios_br m on m.cod_ibge = p.cod_ibge
- where p.erp='portaltp' ${UF ? "and m.uf = $1" : ""} ${SO ? `and m.nome ilike '%' || $${UF ? 2 : 1} || '%'` : ""}
+ where p.erp='portaltp' ${UF ? "and m.uf = $1" : ""} ${SO ? `and m.nome ilike '%' || ${UF ? 2 : 1} || '%'` : ""}
  order by m.uf, m.nome`, [UF, SO].filter(Boolean))).rows;
-const feitos = new Set((await q(`select cod_ibge from folha_portaltp_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
+// REFAZ=1 reprocessa quem ja esta ok — sem isso, conserto de campo nao alcanca quem ja foi coletado
+await q(`alter table folha_portaltp_coleta add column if not exists poder text not null default 'executivo'`);
+await q(`do $$ begin
+  if exists (select 1 from pg_constraint where conname = 'folha_portaltp_coleta_pkey'
+               and (select count(*) from unnest(conkey)) = 1) then
+    alter table folha_portaltp_coleta drop constraint folha_portaltp_coleta_pkey;
+    alter table folha_portaltp_coleta add primary key (cod_ibge, poder);
+  end if;
+end $$`);
+const feitos = process.env.REFAZ === "1" ? new Set() : new Set((await q(`select cod_ibge from folha_portaltp_coleta where situacao='ok' and poder=$1`, [PODER])).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[portaltp] ${alvos.length} portais · ${feitos.size} feitos · ${fila.length} na fila`);
 
@@ -182,8 +214,8 @@ async function grava(todos) {
     await q(`insert into folha_servidores_portaltp
       (cod_ibge,municipio,uf,unidade_gestora,competencia,nome,cpf_masc,matricula,cargo,profissao,regime,situacao,
        secretaria,divisao,secao,local,centro_custo,horas_semanais,jornada,data_admissao,data_demissao,
-       valor_padrao,bruto,descontos,liquido,rubricas,_hash)
-      select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
+       valor_padrao,bruto,descontos,liquido,rubricas,_hash,poder)
+      select *, '${PODER}'::text from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
         $9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::text[],$15::text[],$16::text[],$17::text[],
         $18::text[],$19::text[],$20::text[],$21::text[],$22::numeric[],$23::numeric[],$24::numeric[],$25::numeric[],
         $26::jsonb[],$27::text[])
@@ -200,11 +232,11 @@ let total = 0, ok = 0, falhas = 0;
 for (let i = 0; i < fila.length; i++) {
   const a = fila[i];
   const marca = (situacao, detalhe, competencia = null, linhas = 0) =>
-    q(`insert into folha_portaltp_coleta (cod_ibge,municipio,uf,competencia,linhas,situacao,detalhe,em)
-       values ($1,$2,$3,$4,$5,$6,$7,now())
-       on conflict (cod_ibge) do update set competencia=excluded.competencia, linhas=excluded.linhas,
+    q(`insert into folha_portaltp_coleta (cod_ibge,municipio,uf,competencia,linhas,situacao,detalhe,poder,em)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,now())
+       on conflict (cod_ibge,poder) do update set competencia=excluded.competencia, linhas=excluded.linhas,
          situacao=excluded.situacao, detalhe=excluded.detalhe, em=now()`,
-      [a.cod_ibge, a.municipio, a.uf, competencia, linhas, situacao, detalhe]);
+      [a.cod_ibge, a.municipio, a.uf, competencia, linhas, situacao, detalhe, PODER]);
   try {
     // recua competência a competência (ano+mês) até achar dado — a folha do mês pode não ter fechado, e o portal
     // pode ter parado de publicar meses atrás.

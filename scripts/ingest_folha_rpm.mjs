@@ -60,7 +60,8 @@ async function resolveMun(inst) {
 }
 
 let alvos = (await q(`select cnpj, nome_bubble from rpm_catalogo ${SO ? "where nome_bubble ilike '%'||$1||'%'" : ""}`, SO ? [SO] : [])).rows;
-const feitos = new Set((await q(`select cnpj from folha_rpm_coleta where situacao='ok'`)).rows.map((r) => r.cnpj));
+// REFAZ=1 reprocessa quem ja esta ok — sem isso, conserto de campo nao alcanca quem ja foi coletado
+const feitos = process.env.REFAZ === "1" ? new Set() : new Set((await q(`select cnpj from folha_rpm_coleta where situacao='ok'`)).rows.map((r) => r.cnpj));
 const fila = alvos.filter((a) => !feitos.has(a.cnpj));
 console.log(`[rpm] ${alvos.length} CNPJs · ${fila.length} na fila`);
 

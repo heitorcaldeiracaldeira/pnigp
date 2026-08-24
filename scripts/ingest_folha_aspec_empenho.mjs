@@ -111,7 +111,8 @@ async function descobreId(municipio, uf) {
 const alvos = (await q(`select cod_ibge, municipio, uf from radar_portal
   where erp='aspec' and unidade_gestora ilike 'Prefeitura%'
   ${SO ? "and municipio ilike '%'||$1||'%'" : ""} order by uf, municipio`, SO ? [SO] : [])).rows;
-const feitos = new Set((await q(`select cod_ibge from folha_aspec_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
+// REFAZ=1 reprocessa quem ja esta ok — sem isso, conserto de campo nao alcanca quem ja foi coletado
+const feitos = process.env.REFAZ === "1" ? new Set() : new Set((await q(`select cod_ibge from folha_aspec_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[aspec] ${alvos.length} municípios ASPEC · ${fila.length} na fila · exercícios ${ANOS.join(",")}`);
 

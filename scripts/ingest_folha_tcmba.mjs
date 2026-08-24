@@ -75,6 +75,10 @@ const RE_EMP = "empresa|companhia|cia\\.|s/a|s\\.a\\.|urbanizadora|participa";
 const RE_INST = "instituto|ag[eê]nc|universidade|fund[aá][cç]";
 const filtroTipo =
   TIPO === "TODAS" ? "" :
+  // ⭐ 21/ago/2026: as 417 CÂMARAS da Bahia estavam na tabela de entidades e nunca tinham sido colhidas — o
+  //    coletor só sabia pedir "Prefeitura%". A folha do legislativo é um dado próprio, não contaminação
+  //    ([[pnigp-radar-mapeou-a-camara-causa-nacional]]).
+  TIPO === "CAMARA" ? "and e.ds_entidade ~* 'c[âa]mara'" :
   TIPO === "EXECUTIVO" ? `and (e.ds_entidade ilike 'Prefeitura%'
       or (e.ds_entidade !~* 'c[âa]mara' and e.ds_entidade !~* 'cons[oó]rcio'
           and e.ds_entidade ~* '${RE_PREV}|${RE_AUT}|${RE_EMP}|${RE_INST}'))` :
@@ -136,6 +140,13 @@ async function bloco(cdEnt, ano, mes, inicio) {
 }
 
 async function grava(p, comp, regs) {
+  // 🚨 UMA COMPETÊNCIA POR ENTIDADE. Quando o recuo profundo troca 2026 (parcial) por 202512 (cheia), a antiga
+  //    NÃO pode ficar: a mesma entidade com duas competências dobra a folha de quem soma salário (o `distinct
+  //    nome` da cobertura não vê o problema, a soma em reais vê). O coletor sempre guardou uma competência por
+  //    entidade — isto apenas mantém a regra quando a escolha muda ([[pnigp-competencia-mais-cheia-nao-a-recente]]).
+  const velhas = await q(`delete from folha_servidores_tcmba
+    where cd_entidade = $1 and competencia is distinct from $2`, [p.cd_entidade, comp]);
+  if (velhas.rowCount) console.log(`     ↻ ${p.municipio}: ${velhas.rowCount} linhas da competência anterior substituídas`);
   const LOTE = 500;
   for (let i = 0; i < regs.length; i += LOTE) {
     const parte = regs.slice(i, i + LOTE);
@@ -190,6 +201,8 @@ for (let i = 0; i < fila.length; i++) {
   };
 
   try {
+    // pessoas distintas da competência — matrícula+nome, porque o mesmo nome pode ter dois vínculos
+    const pessoasDe = (regs) => new Set(regs.map((r) => `${r.matricula ?? ""}|${r.nome ?? ""}`)).size;
     // ⭐⭐ LEI DA COMPETÊNCIA MAIS CHEIA ([[pnigp-competencia-mais-cheia-nao-a-recente]]):
     // NÃO ficar com a primeira competência que devolve linhas — o mês em fechamento vem parcial e o coletor
     // termina "ok" com uma fração da folha. Sondar as SONDAR mais recentes publicadas e ficar com a MAIOR.
@@ -201,9 +214,45 @@ for (let i = 0; i < fila.length; i++) {
       await dorme(PAUSA);
       if (regs === null) continue;                       // não publicada
       publicadas++;
-      if (regs.length && (!melhor || regs.length > melhor.regs.length))
-        melhor = { comp: `${ano}${String(mes).padStart(2, "0")}`, regs };
+      // 🚨 COMPARAR PESSOAS, NÃO LINHAS: dezembro traz o 13º na mesma consulta e vence sempre na contagem de
+      //    linhas — Antônio Cardoso saiu com 1.353 linhas para uma RAIS de 408. A folha do mês é quanta GENTE
+      //    foi paga ([[pnigp-competencia-mais-cheia-nao-a-recente]]).
+      if (regs.length && (!melhor || pessoasDe(regs) > melhor.pessoas))
+        melhor = { comp: `${ano}${String(mes).padStart(2, "0")}`, regs, pessoas: pessoasDe(regs) };
       if (publicadas >= SONDAR) break;
+    }
+
+    // ⭐⭐ RECUO PROFUNDO QUANDO A FOLHA SAI PEQUENA DEMAIS (19/ago/2026) — o buraco que a lei acima não tapava.
+    // As 3 competências recentes podem estar TODAS parciais: o município passou a remeter um resumo ao TCM e a
+    // folha inteira ficou meses atrás. Medido na rede: **Cachoeira** devolve 9 servidores em 2026 e **1.908 em
+    // 202512 / 2.399 em 202506**; Casa Nova, 14 contra **4.001**; Camamu, 863 contra 2.138. Como o coletor parava
+    // nas 3 primeiras publicadas, 71 municípios da BA ficaram abaixo de 30% da RAIS e a manchete dizia "BA 100%"
+    // ([[pnigp-ba-completa-por-municipio-nao-por-pessoa]], [[pnigp-recuo-curto-perde-quem-parou]]).
+    //
+    // O gatilho é o DENOMINADOR, não o palpite: se o melhor achado não chega a `PISO_RAIS` da RAIS daquele
+    // município, continua recuando até `FUNDO` competências. Quem já veio cheio não paga nada por isso.
+    const PISO_RAIS = Number(process.env.PISO_RAIS || 0.5);
+    const FUNDO = Number(process.env.FUNDO || 18);
+    const rais = Number((await q(`select count(*) n from folha_rais_municipal r
+      join municipios_br mb on mb.cod_ibge6 = r.cod_ibge6
+      where mb.cod_ibge = $1 and r.ativo_3112
+        and r.ano = (select max(ano) from folha_rais_municipal)`, [p.cod_ibge])).rows[0].n);
+    if (rais > 0 && (!melhor || melhor.pessoas < rais * PISO_RAIS)) {
+      const vistas = new Set(COMPETENCIAS.map(([a, m]) => `${a}${m}`));
+      for (let k = 1; k <= FUNDO; k++) {
+        const d = new Date(Date.UTC(2026, 7, 1));        // mesma âncora fixa do topo do arquivo
+        d.setUTCMonth(d.getUTCMonth() - k);
+        const ano = d.getUTCFullYear(), mes = d.getUTCMonth() + 1;
+        if (vistas.has(`${ano}${mes}`)) continue;
+        const regs = await competenciaInteira(ano, mes);
+        await dorme(PAUSA);
+        if (regs === null || !regs.length) continue;
+        if (!melhor || pessoasDe(regs) > melhor.pessoas)
+          melhor = { comp: `${ano}${String(mes).padStart(2, "0")}`, regs, pessoas: pessoasDe(regs), fundo: true };
+        if (melhor.pessoas >= rais * 0.9) break;         // já alcançou a RAIS: não precisa varrer o resto
+      }
+      if (melhor && melhor.fundo)
+        console.log(`     ↩ recuo profundo em ${p.municipio}: ${melhor.pessoas} pessoas / ${melhor.regs.length} linhas em ${melhor.comp} (RAIS ${rais})`);
     }
 
     const achou = !!melhor;

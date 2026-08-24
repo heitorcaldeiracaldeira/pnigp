@@ -29,6 +29,20 @@ await q(`create table if not exists folha_servidores_contass (
   matricula text, nome text, cargo text, secretaria text, situacao text,
   carga_horaria text, data_admissao text,
   _hash text primary key, _coletado_em timestamptz default now())`);
+// 🚨 EU CONCLUÍ ERRADO QUE "O CONTASS NÃO PUBLICA VALOR" (16/ago) — olhei o menu, vi só `folhadepagamentos` e
+// `portaldoservidor`, e NÃO segui a coluna **"Detalhes"** da própria tabela. Ela leva a
+// `/folhadepagamentos/moredetails/{id_coluna}`, cuja página traz um JSON Inertia (`data-page`) com
+// **salariobase, vinculo, localtrabalho, cpf mascarado**, a folha RUBRICA A RUBRICA (`detalhes`) e os
+// **totalizadores prontos** (`totalProventos`, `totalDesconto`, `totalLiquido`).
+// ⭐ Usar os totalizadores DECLARADOS e nunca somar as rubricas ([[pnigp-portaltp-epublica-folha]]).
+await q(`alter table folha_servidores_contass add column if not exists vinculo text`);
+await q(`alter table folha_servidores_contass add column if not exists local_trabalho text`);
+await q(`alter table folha_servidores_contass add column if not exists cpf_masc text`);
+await q(`alter table folha_servidores_contass add column if not exists salario_base numeric`);
+await q(`alter table folha_servidores_contass add column if not exists bruto numeric`);
+await q(`alter table folha_servidores_contass add column if not exists descontos numeric`);
+await q(`alter table folha_servidores_contass add column if not exists liquido numeric`);
+await q(`alter table folha_servidores_contass add column if not exists rubricas jsonb`);
 await q(`create index if not exists ix_folha_contass_mun on folha_servidores_contass (cod_ibge, competencia)`);
 await q(`create table if not exists folha_contass_coleta (
   cod_ibge text primary key, municipio text, uf text, host text, competencia text,
@@ -39,6 +53,19 @@ async function json(url) {
   if (!r.ok) throw new Error("HTTP " + r.status);
   return await r.json();
 }
+const money = (s) => { if (s == null) return null; const t = String(s).replace(/[^\d,.-]/g, "").replace(/\./g, "").replace(",", "."); const v = parseFloat(t); return Number.isFinite(v) ? v : null; };
+
+// o detalhe é uma página Inertia: o dado vem no atributo `data-page`, sem precisar de navegador
+async function detalhe(host, idColuna) {
+  const r = await fetch(`https://${host}/folhadepagamentos/moredetails/${idColuna}`,
+    { headers: { "user-agent": UA }, signal: AbortSignal.timeout(60000) });
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  const t = await r.text();
+  const m = t.match(/data-page="([^"]+)"/);
+  if (!m) return null;
+  const j = JSON.parse(m[1].replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&#039;/g, "'"));
+  return j.props || null;
+}
 
 const LOTE = 500;
 async function grava(regs) {
@@ -46,13 +73,27 @@ async function grava(regs) {
   const arr = [...m.values()];
   for (let i = 0; i < arr.length; i += LOTE) {
     const f = arr.slice(i, i + LOTE); const c = (k) => f.map((r) => r[k]);
+    // 🚨 o `_hash` não inclui os valores: sem estes `coalesce` no conflito, o detalhe seria buscado e NÃO
+    // chegaria ao banco (mesma armadilha do de-para de lotação do Memory).
     await q(`insert into folha_servidores_contass
-      (cod_ibge,municipio,uf,host,competencia,matricula,nome,cargo,secretaria,situacao,carga_horaria,data_admissao,_hash)
+      (cod_ibge,municipio,uf,host,competencia,matricula,nome,cargo,secretaria,situacao,carga_horaria,data_admissao,
+       vinculo,local_trabalho,cpf_masc,salario_base,bruto,descontos,liquido,rubricas,_hash)
       select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
-        $9::text[],$10::text[],$11::text[],$12::text[],$13::text[])
-      on conflict (_hash) do nothing`,
+        $9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::text[],$15::text[],
+        $16::numeric[],$17::numeric[],$18::numeric[],$19::numeric[],$20::jsonb[],$21::text[])
+      on conflict (_hash) do update set
+        vinculo = coalesce(excluded.vinculo, folha_servidores_contass.vinculo),
+        local_trabalho = coalesce(excluded.local_trabalho, folha_servidores_contass.local_trabalho),
+        cpf_masc = coalesce(excluded.cpf_masc, folha_servidores_contass.cpf_masc),
+        salario_base = coalesce(excluded.salario_base, folha_servidores_contass.salario_base),
+        bruto = coalesce(excluded.bruto, folha_servidores_contass.bruto),
+        descontos = coalesce(excluded.descontos, folha_servidores_contass.descontos),
+        liquido = coalesce(excluded.liquido, folha_servidores_contass.liquido),
+        rubricas = coalesce(excluded.rubricas, folha_servidores_contass.rubricas)`,
       [c("cod_ibge"), c("municipio"), c("uf"), c("host"), c("competencia"), c("matricula"), c("nome"),
-       c("cargo"), c("secretaria"), c("situacao"), c("carga_horaria"), c("data_admissao"), c("_hash")]);
+       c("cargo"), c("secretaria"), c("situacao"), c("carga_horaria"), c("data_admissao"),
+       c("vinculo"), c("local_trabalho"), c("cpf_masc"), c("salario_base"), c("bruto"), c("descontos"),
+       c("liquido"), c("rubricas"), c("_hash")]);
   }
 }
 
@@ -94,18 +135,37 @@ for (let i = 0; i < fila.length; i++) {
     }
     if (!linhas) { await marca("vazio", `sem dado em ${JANELA} competências`); vazios++; continue; }
 
-    const regs = linhas.map((r) => ({
-      cod_ibge: a.cod_ibge, municipio: a.municipio, uf: a.uf, host: a.host, competencia: comp,
-      matricula: r.matricula != null ? String(r.matricula) : null,
-      nome: r.nome || null, cargo: r.cargo || null, secretaria: r.lotacao || null,
-      situacao: r.recisao || null, carga_horaria: r.cargahoraria != null ? String(r.cargahoraria) : null,
-      data_admissao: r.admissao || null,
-      _hash: crypto.createHash("md5").update([a.cod_ibge, comp, r.id_coluna, r.matricula, r.nome].join("¦")).digest("hex"),
-    }));
+    // ⭐ o VALOR está no detalhe, um por servidor — buscado em paralelo moderado (o host é do fornecedor)
+    const CONC = 6;
+    const det = {};
+    for (let k = 0; k < linhas.length; k += CONC) {
+      await Promise.all(linhas.slice(k, k + CONC).map(async (r) => {
+        try { const p = await detalhe(a.host, r.id_coluna); if (p) det[r.id_coluna] = p; } catch { /* segue */ }
+      }));
+      if (k && k % 300 === 0) console.log(`     detalhe ${k}/${linhas.length}`);
+    }
+
+    const regs = linhas.map((r) => {
+      const p = det[r.id_coluna] || {};
+      const s = p.servidor || {}, tot = p.totalizadores || {};
+      return {
+        cod_ibge: a.cod_ibge, municipio: a.municipio, uf: a.uf, host: a.host, competencia: comp,
+        matricula: r.matricula != null ? String(r.matricula) : null,
+        nome: r.nome || null, cargo: r.cargo || null, secretaria: r.lotacao || null,
+        situacao: r.recisao || null, carga_horaria: r.cargahoraria != null ? String(r.cargahoraria) : null,
+        data_admissao: r.admissao || null,
+        vinculo: s.vinculo || null, local_trabalho: s.localtrabalho || null, cpf_masc: (s.cpf || "").trim() || null,
+        salario_base: money(s.salariobase),
+        bruto: tot.totalProventos ?? null, descontos: tot.totalDesconto ?? null, liquido: tot.totalLiquido ?? null,
+        rubricas: p.detalhes ? JSON.stringify(p.detalhes) : null,
+        _hash: crypto.createHash("md5").update([a.cod_ibge, comp, r.id_coluna, r.matricula, r.nome].join("¦")).digest("hex"),
+      };
+    });
     await grava(regs);
     total += regs.length; ok++;
-    await marca("ok", "SEM VALOR: a fonte nao publica remuneracao", comp, regs.length);
-    console.log(`  [${i + 1}/${fila.length}] ${a.uf} ${a.municipio}: ${regs.length} servidores (${comp}, sem valor)`);
+    const comVal = regs.filter((x) => x.bruto > 0).length;
+    await marca("ok", `${comVal} com valor (detalhe/moredetails)`, comp, regs.length);
+    console.log(`  [${i + 1}/${fila.length}] ${a.uf} ${a.municipio}: ${regs.length} servidores (${comp}, ${comVal} com valor)`);
   } catch (e) {
     falhas++;
     await marca("erro", String(e.message).slice(0, 180));

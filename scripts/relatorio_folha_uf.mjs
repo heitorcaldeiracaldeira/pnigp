@@ -11,6 +11,7 @@
 import fs from "fs";
 import { pool, withRetry } from "./_cadprev.mjs";
 import { SG_UF, COD_UF, NOME_ESTADO } from "./_uf.mjs";
+import { criaUniaoFolha } from "./_folha_uniao.mjs";
 
 const db = pool();
 const q = withRetry(db);
@@ -23,36 +24,8 @@ const brl = (n) => "R$ " + Number(n || 0).toLocaleString("pt-BR", { maximumFract
 const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 // ── 1. descobre as fontes e monta a união do estado ─────────────────────────────────────────────────────────────
-const tabs = (await q(`select table_name t, string_agg(column_name, ',') cols,
-    string_agg(column_name, ',') filter (where data_type in ('numeric','integer','bigint','double precision','real')) num
-  from information_schema.columns where table_schema='public' and table_name like 'folha_servidores_%'
-  group by 1 order by 1`)).rows;
-
-const partes = [];
-for (const t of tabs) {
-  const cols = t.cols.split(",");
-  if (!cols.includes("cod_ibge")) continue;
-  const num = (t.num || "").split(",").filter(Boolean);
-  const acha = (lista, re) => lista.find((c) => re.test(c));
-  const val = acha(num, /^(bruto|valor_bruto|remuneracao_bruta|provento|proventos|salario_bruto)$/)
-           || acha(num, /bruto|provento|remunera|salario|vencimento|rendimento/)
-           || acha(num, /^valor$/);
-  const sec = acha(cols, /^(secretaria|lotacao|orgao|setor)$/) || acha(cols, /secretaria|lotacao|organograma|orgao|unidade|setor/);
-  const car = acha(cols, /^(cargo|nome_cargo|descricao_cargo)$/) || acha(cols, /cargo|funcao/);
-  const comp = acha(cols, /^(competencia|anomes|referencia|mes_referencia)$/);
-  const nome = acha(cols, /^nome$/);
-  if (!val) continue;
-  partes.push(`select '${t.t.replace("folha_servidores_", "")}'::text fonte, cod_ibge::text,
-    ${comp ? `nullif(btrim(${comp}::text),'')` : "null::text"} competencia,
-    ${nome ? "nullif(btrim(nome),'')" : "null::text"} nome,
-    ${car ? `nullif(btrim(${car}::text),'')` : "null::text"} cargo,
-    ${sec ? `nullif(btrim(${sec}::text),'')` : "null::text"} secretaria,
-    (${val})::numeric valor
-   from ${t.t} where left(cod_ibge::text,2) = '${COD}'`);
-}
-await q(`drop view if exists vw_folha_es cascade`);
-await q(`create view vw_folha_es as ${partes.join("\nunion all\n")}`);
-console.log(`[${UF}] ${partes.length} fontes de folha na união`);
+const { nome: VW, fontes } = await criaUniaoFolha(q, COD, UF);
+console.log(`[${UF}] ${fontes} fontes de folha na união (${VW})`);
 
 // ── 2. a MELHOR fatia de cada município: fonte + competência com mais servidores ─────────────────────────────────
 // (o mesmo município pode ter várias competências coletadas; misturá-las conta a mesma pessoa N vezes)
@@ -66,7 +39,7 @@ with fatia as (
          count(*) filter (where nome is not null) com_nome,
          sum(valor) filter (where valor > 0) folha,
          percentile_cont(0.5) within group (order by valor) filter (where valor > 0) mediana
-    from vw_folha_es group by 1,2,3
+    from ${VW} group by 1,2,3
 ),
 top as (select distinct on (cod_ibge) * from fatia order by cod_ibge, com_valor desc, linhas desc)
 -- 🚨 a razão contra a RAIS se mede por QUEM FOI PAGO, não por linha: a lista do Portal TP traz **demitidos e
@@ -82,6 +55,36 @@ select m.cod_ibge, m.nome municipio, t.fonte, t.competencia, t.linhas, t.com_val
     on r.cod_ibge6 = left(m.cod_ibge, 6)
  where m.uf = '${UF}'
  order by t.linhas desc nulls last, m.nome`)).rows;
+
+// ── verificação NA FONTE: o que o site do próprio município publica ────────────────────────────────────────────
+// Coletar do agregador responde "o dado chegou?"; abrir o site responde "o município publica?". As duas coisas
+// juntas é o que sustenta o pedido por LAI ([[feedback-verificar-por-portal]]). Vem de verifica_publicacao_folha_uf.mjs.
+const verif = (await q(`select cod_ibge, municipio, veredito, url_pessoal, rotulo_pessoal, erp, plataforma,
+    publica, evidencia from folha_verificacao_site where uf=$1 order by municipio`, [UF]).catch(() => ({ rows: [] }))).rows;
+const porVeredito = [...verif.reduce((m, r) => m.set(r.veredito, [...(m.get(r.veredito) || []), r]), new Map())]
+  .sort((a, b) => b[1].length - a[1].length);
+const VER_TXT = {
+  publica_arquivos: "publica a folha em arquivo no próprio site",
+  publica_tabela_com_valor: "publica tabela com remuneração no próprio site",
+  publica_tabela_sem_valor: "publica lista nominal SEM remuneração",
+  publica_via_agregador: "não hospeda a folha: delega a um agregador (AAM, ANC, Diretório Digital…)",
+  portal_agregador_indisponivel: "delega a um agregador que estava fora do ar na verificação — re-sondar",
+  portal_sem_modulo_de_pessoal: "tem portal de transparência, e nele não existe item de pessoal",
+  site_sem_transparencia: "site no ar sem link de transparência",
+  site_fora_do_ar: "nenhum endereço do município respondeu",
+  so_login_do_servidor: "o único item de pessoal é o contracheque (login do funcionário), não publicação",
+  anexos_que_nao_sao_folha: "o menu de pessoal existe e os anexos não são folha",
+  pagina_de_pessoal_vazia: "o item existe no menu e abre uma página em branco",
+  pagina_de_pessoal_quebrada: "o item existe no menu e o destino não responde",
+  menu_sem_dado: "o item de pessoal abre página sem tabela e sem arquivo",
+  spa_sem_dado: "a página é um SPA: o HTML servido não traz o dado",
+  portal_com_captcha: "o portal exige captcha na entrada",
+  publica_mas_desatualizado: "publica, mas parou de atualizar — o arquivo mais novo tem anos",
+  publica_pdf_sem_texto: "publica a folha em PDF digitalizado — sem camada de texto, só sairia por OCR",
+  menu_sem_edicoes: "o tema de servidores existe no portal e não tem nenhum arquivo publicado",
+  publica_por_consulta_no_portal: "o portal publica, mas só entrega a folha depois de uma consulta — provado pela coleta",
+  sem_site_proprio_dado_vem_do_agregador: "o site do município não entrega a folha; quem publica é o agregador",
+};
 
 const comDado = melhor.filter((r) => r.fonte);
 const semDado = melhor.filter((r) => !r.fonte);
@@ -106,29 +109,29 @@ if (suspeitos.length) {
 // ── 3. recortes que respondem a pergunta do Heitor: secretaria e cargo ───────────────────────────────────────────
 const porFonte = (await q(`with fatia as (
   select fonte, cod_ibge, coalesce(competencia,'-') competencia, count(*) linhas,
-    count(*) filter (where valor>0) com_valor from vw_folha_es group by 1,2,3),
+    count(*) filter (where valor>0) com_valor from ${VW} group by 1,2,3),
  top as (select distinct on (cod_ibge) * from fatia order by cod_ibge, com_valor desc, linhas desc)
  select fonte, count(*) municipios, sum(linhas) servidores from top group by 1 order by 3 desc`)).rows;
 
 const porSecretaria = (await q(`with fatia as (
   select cod_ibge, fonte, coalesce(competencia,'-') competencia, count(*) n, count(*) filter (where valor>0) cv
-    from vw_folha_es group by 1,2,3),
+    from ${VW} group by 1,2,3),
  top as (select distinct on (cod_ibge) * from fatia order by cod_ibge, cv desc, n desc)
  select upper(f.secretaria) secretaria, count(*) servidores, round(sum(f.valor)) folha,
         round(percentile_cont(0.5) within group (order by f.valor) filter (where f.valor>0)) mediana
-   from vw_folha_es f join top t on t.cod_ibge=f.cod_ibge and t.fonte=f.fonte
+   from ${VW} f join top t on t.cod_ibge=f.cod_ibge and t.fonte=f.fonte
         and coalesce(f.competencia,'-')=t.competencia
   where f.secretaria is not null and f.valor > 0
   group by 1 order by 2 desc limit 20`)).rows;
 
 const porCargo = (await q(`with fatia as (
   select cod_ibge, fonte, coalesce(competencia,'-') competencia, count(*) n, count(*) filter (where valor>0) cv
-    from vw_folha_es group by 1,2,3),
+    from ${VW} group by 1,2,3),
  top as (select distinct on (cod_ibge) * from fatia order by cod_ibge, cv desc, n desc)
  select upper(f.cargo) cargo, count(*) servidores,
         round(percentile_cont(0.5) within group (order by f.valor)) mediana,
         round(max(f.valor)) maior
-   from vw_folha_es f join top t on t.cod_ibge=f.cod_ibge and t.fonte=f.fonte
+   from ${VW} f join top t on t.cod_ibge=f.cod_ibge and t.fonte=f.fonte
         and coalesce(f.competencia,'-')=t.competencia
   where f.cargo is not null and f.valor > 0
   group by 1 order by 2 desc limit 20`)).rows;
@@ -161,6 +164,7 @@ h2{font-size:1.35rem;margin:52px 0 6px}p{margin:8px 0 0;color:var(--ink2);max-wi
 .hero{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
 .hero b{display:block;font-size:1.9rem;line-height:1.15;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .hero span{color:var(--ink3);font-size:.85rem}
+.ev{font-size:.82rem;color:var(--ink3);max-width:640px}
 .scroll{overflow-x:auto;margin-top:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
 table{border-collapse:collapse;width:100%;font-size:.92rem}
 th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
@@ -196,6 +200,17 @@ bate com o de linhas; é a RAIS que subdeclara onde há muito contratado tempor�
 <th>Com valor</th><th>Folha bruta</th><th>Mediana</th><th>RAIS 2025</th><th>Razão</th></tr></thead>
 <tbody>${comDado.map(linha).join("")}</tbody></table></div>
 ${semDado.length ? `<div class="aviso"><b>Sem folha coletada (${semDado.length}):</b> ${semDado.map((r) => esc(r.municipio)).join(" · ")}</div>` : ""}
+
+${!verif.length ? "" : `<h2>Verificação na fonte: o que o site de cada município publica</h2>
+<p class="sub">Os ${verif.length} municípios do estado, abertos um a um no endereço oficial. Não é o que o agregador
+entrega — é o que a prefeitura publica. Cada linha tem a URL do item de pessoal e o que foi encontrado nela.</p>
+<div class="scroll"><table><thead><tr><th>Situação</th><th>Municípios</th><th>O que significa</th></tr></thead>
+<tbody>${porVeredito.map(([v, rs]) => `<tr><td><b>${esc(v.replace(/_/g, " "))}</b></td><td class="n">${rs.length}</td>
+  <td>${esc(VER_TXT[v] || "")}</td></tr>`).join("")}</tbody></table></div>
+<div class="scroll"><table><thead><tr><th>Município</th><th>Situação</th><th>Item de pessoal encontrado</th><th>Evidência</th></tr></thead>
+<tbody>${verif.map((r) => `<tr><td>${esc(r.municipio)}</td><td>${esc(r.veredito.replace(/_/g, " "))}</td>
+  <td>${r.url_pessoal ? `<a href="${esc(r.url_pessoal)}">${esc(r.rotulo_pessoal || r.url_pessoal.slice(0, 50))}</a>` : "—"}</td>
+  <td class="ev">${esc(r.evidencia || "")}</td></tr>`).join("")}</tbody></table></div>`}
 
 <h2>De onde vem o dado</h2>
 <div class="scroll"><table><thead><tr><th>Fonte (produto do portal)</th><th>Municípios</th><th>Servidores</th></tr></thead>

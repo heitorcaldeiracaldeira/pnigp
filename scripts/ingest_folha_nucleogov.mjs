@@ -13,10 +13,14 @@
 import crypto from "crypto";
 import { chromium } from "playwright";
 import { pool, withRetry } from "./_cadprev.mjs";
+import { guardaCamara } from "./_folha_guarda_camara.mjs";
 
 const db = pool();
 const q = withRetry(db);
 const SO = process.env.SO || null;
+// ⭐ 21/ago/2026: PODER=legislativo colhe a CÂMARA no mesmo produto. A coluna `poder` mantém a folha do
+//    legislativo FORA da conta da prefeitura (veto em `_folha_filtros.mjs`) e DENTRO de `vw_folha_camara_brasil`.
+const PODER = (process.env.PODER || "executivo").toLowerCase();
 const dorme = (ms) => new Promise((s) => setTimeout(s, ms));
 
 await q(`create table if not exists folha_servidores_nucleogov (
@@ -27,9 +31,20 @@ await q(`create table if not exists folha_servidores_nucleogov (
   _hash text primary key, _coletado_em timestamptz default now()
 )`);
 await q(`create index if not exists ix_folha_ng_mun on folha_servidores_nucleogov (cod_ibge, competencia)`);
+await q(`alter table folha_servidores_nucleogov add column if not exists poder text`);
 await q(`create table if not exists folha_nucleogov_coleta (
   cod_ibge text primary key, municipio text, uf text, host text, linhas int, situacao text, detalhe text, em timestamptz default now()
 )`);
+
+// 🚨 o livro-razão tinha PK só em cod_ibge: a passada do LEGISLATIVO sobrescreveria o veredito do EXECUTIVO.
+await q(`alter table folha_nucleogov_coleta add column if not exists poder text not null default 'executivo'`);
+await q(`do $$ begin
+  if exists (select 1 from pg_constraint where conname = 'folha_nucleogov_coleta_pkey'
+               and (select count(*) from unnest(conkey)) = 1) then
+    alter table folha_nucleogov_coleta drop constraint folha_nucleogov_coleta_pkey;
+    alter table folha_nucleogov_coleta add primary key (cod_ibge, poder);
+  end if;
+end $$`);
 
 const num = (v) => (v == null ? null : (Number.isFinite(+v) ? +v : null));
 // o dialeto servidores_cnt devolve dinheiro já formatado em pt-BR ("2.550,09") — ponto é MILHAR, vírgula é decimal
@@ -60,7 +75,26 @@ const alvos = [
 ].filter((a) => a.host)
   .filter((a, i, arr) => arr.findIndex((x) => x.cod_ibge === a.cod_ibge) === i);
 
-const feitos = new Set((await q(`select cod_ibge from folha_nucleogov_coleta where situacao='ok'`)).rows.map((r) => r.cod_ibge));
+// REFAZ=1 reprocessa quem ja esta ok — sem isso, conserto de campo nao alcanca quem ja foi coletado
+
+// ⭐ PODER=legislativo: a fila passa a ser a dos PORTAIS DE CÂMARA identificados como NucleoGov.
+if (PODER === "legislativo") {
+  alvos.length = 0;
+  for (const p2 of (await q(`select cod_ibge, municipio, uf, coalesce(url_camara, url_camara_2, url_erp_camara) url
+      from folha_camara_fila
+      where coalesce(erp_camara,'') = 'nucleogov' and coalesce(url_erp_camara, url_camara, url_camara_2) is not null
+        ${SO ? "and municipio ilike '%'||$1||'%'" : ""}
+      order by rais_legislativo desc nulls last`, SO ? [SO] : [])).rows) {
+    // 🚨 o host do NucleoGov segue a CONVENÇÃO `acessoainformacao.{domínio}` — o host do site da câmara não
+    //    responde à API. Vale a mesma derivação do executivo; o link achado na página é só o último recurso.
+    let host = hostDe(p2.url);
+    if (!host) { try { host = new URL(p2.url).host; } catch { /* url inválida */ } }
+    if (host) alvos.push({ ...p2, host });
+  }
+  console.log(`[nucleogov] PODER=legislativo · ${alvos.length} câmaras na fila`);
+}
+
+const feitos = process.env.REFAZ === "1" ? new Set() : new Set((await q(`select cod_ibge from folha_nucleogov_coleta where situacao='ok' and poder=$1`, [PODER])).rows.map((r) => r.cod_ibge));
 const fila = alvos.filter((a) => !feitos.has(a.cod_ibge));
 console.log(`[nucleogov] ${alvos.length} municípios · ${fila.length} na fila`);
 
@@ -72,8 +106,8 @@ async function grava(regs) {
     const p = arr.slice(i, i + LOTE); const c = (f) => p.map((x) => x[f]);
     await q(`insert into folha_servidores_nucleogov
       (cod_ibge,municipio,uf,host,competencia,matricula,nome,cpf_masc,cargo,departamento,vinculo,situacao,
-       situacao_pagamento,carga_horaria,data_admissao,proventos,descontos,liquido,_hash)
-      select * from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
+       situacao_pagamento,carga_horaria,data_admissao,proventos,descontos,liquido,_hash,poder)
+      select *, '${PODER}'::text from unnest($1::text[],$2::text[],$3::text[],$4::text[],$5::text[],$6::text[],$7::text[],$8::text[],
         $9::text[],$10::text[],$11::text[],$12::text[],$13::text[],$14::text[],$15::text[],$16::numeric[],$17::numeric[],
         $18::numeric[],$19::text[])
       on conflict (_hash) do update set proventos=excluded.proventos, liquido=excluded.liquido, _coletado_em=now()`,
@@ -169,17 +203,25 @@ async function coleta(ctx, host) {
       // { dados[], total }, paginado por limit "offset, n". Não precisa de listarOrgaos antes — `/listar` já
       // devolve tudo, com `lotacao` (SECRETARIA) e `funcao`.
       if (prefixo) {
-        const dados = []; let off = 0, tot = null, respondeu = false;
-        while (true) {
-          const j = await call({ ano: null, mes: null, order: {}, limit: `${off}, 500`, acao: `${prefixo}/listar` });
-          if (!j || j._waf || !Array.isArray(j.dados)) break;
-          respondeu = true;                       // JSON válido veio, mesmo que vazio
-          if (tot == null) tot = j.total;
-          dados.push(...j.dados);
-          off += j.dados.length;
-          if (!j.dados.length || (tot != null && dados.length >= tot) || off > 200000) break;
+        // mesma correção do servidores_cnt: iterar ÓRGÃO. Sem isso vem só o principal.
+        const orgs = await call({ acao: `${prefixo}/listarOrgaos` });
+        const lista = Array.isArray(orgs) && orgs.length ? orgs.map((o) => o.id) : [null];
+        const dados = []; let respondeu = false;
+        for (const org of lista) {
+          let off = 0, tot = null;
+          while (true) {
+            const p = { ano: null, mes: null, order: {}, limit: `${off}, 500`, acao: `${prefixo}/listar` };
+            if (org != null) p.orgao = String(org);
+            const j = await call(p);
+            if (!j || j._waf || !Array.isArray(j.dados)) break;
+            respondeu = true;                     // JSON válido veio, mesmo que vazio
+            if (tot == null) tot = j.total;
+            dados.push(...j.dados.map((d) => ({ ...d, _orgao: org })));
+            off += j.dados.length;
+            if (!j.dados.length || (tot != null && off >= tot) || off > 200000) break;
+          }
         }
-        if (dados.length) return { dialeto: prefixo, registros: dados, total: tot };
+        if (dados.length) return { dialeto: prefixo, registros: dados, total: dados.length };
         // 🚨 API respondeu com lista VAZIA: anota e SEGUE. Não é veredito.
         // A 1ª versão disto retornava aqui e dava o município por "não publica" — REGRESSÃO GRAVE:
         // em Porangatu o `folhas/listar` devolve 0, e o `megasoft/servidores` do MESMO portal devolve
@@ -189,18 +231,30 @@ async function coleta(ctx, host) {
       }
 
       // ── dialeto NOVO (servidores_cnt): { dados[], total, ultimoMes }, paginado por limit "offset, n"
+      // 🚨🚨 O `listar` SEM `orgao` devolve APENAS UM ÓRGÃO (o principal), não o município inteiro.
+      // Eu buscava a lista de órgãos e NÃO A USAVA — resultado: 54 dos 110 municípios do NucleoGov entraram
+      // com metade ou menos do quadro, e passaram como "ok". Rio Verde: órgão 2 = 2.235, órgão 3 = 1.933,
+      // órgão 6 = 1.661… contra 11.169 vínculos na RAIS. Só o denominador denunciou
+      // ([[pnigp-conferidor-rais-denominador-folha]]).
+      // ⚠️ `codigosDoOrgao` (do dialeto megasoft) NÃO funciona aqui — devolve lista vazia. É `orgao`, um por vez.
       const orgNovo = await call({ acao: "servidores_cnt/listarOrgaos" });
       if (Array.isArray(orgNovo)) {
-        const dados = []; let off = 0, tot = null;
-        while (true) {
-          const j = await call({ ano: null, mes: null, limit: `${off}, 500`, acao: "servidores_cnt/listar" });
-          if (!j || j._waf || !Array.isArray(j.dados)) break;
-          if (tot == null) tot = j.total;
-          dados.push(...j.dados);
-          off += j.dados.length;
-          if (!j.dados.length || (tot != null && dados.length >= tot) || off > 200000) break;
+        const dados = [];
+        const lista = orgNovo.length ? orgNovo.map((o) => o.id) : [null];
+        for (const org of lista) {
+          let off = 0, tot = null;
+          while (true) {
+            const p = { ano: null, mes: null, limit: `${off}, 500`, acao: "servidores_cnt/listar" };
+            if (org != null) p.orgao = String(org);
+            const j = await call(p);
+            if (!j || j._waf || !Array.isArray(j.dados)) break;
+            if (tot == null) tot = j.total;
+            dados.push(...j.dados.map((d) => ({ ...d, _orgao: org })));
+            off += j.dados.length;
+            if (!j.dados.length || (tot != null && off >= tot) || off > 200000) break;
+          }
         }
-        if (dados.length) return { dialeto: "servidores_cnt", registros: dados, total: tot };
+        if (dados.length) return { dialeto: "servidores_cnt", registros: dados, total: dados.length };
       }
 
       // ── dialeto ANTIGO (megasoft/*)
@@ -262,10 +316,10 @@ let totalGeral = 0, ok = 0, vazios = 0, falhas = 0;
 for (let i = 0; i < fila.length; i++) {
   const a = fila[i];
   const marca = (situacao, detalhe, linhas = 0) =>
-    q(`insert into folha_nucleogov_coleta (cod_ibge,municipio,uf,host,linhas,situacao,detalhe,em)
-       values ($1,$2,$3,$4,$5,$6,$7,now()) on conflict (cod_ibge) do update set
+    q(`insert into folha_nucleogov_coleta (cod_ibge,municipio,uf,host,linhas,situacao,detalhe,poder,em)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,now()) on conflict (cod_ibge,poder) do update set
        linhas=excluded.linhas, situacao=excluded.situacao, detalhe=excluded.detalhe, em=now()`,
-      [a.cod_ibge, a.municipio, a.uf, a.host, linhas, situacao, detalhe]);
+      [a.cod_ibge, a.municipio, a.uf, a.host, linhas, situacao, detalhe, PODER]);
   await navegadorVivo();
   let ctx, page;
   try {
@@ -308,7 +362,7 @@ for (let i = 0; i < fila.length; i++) {
         situacao_pagamento: s.tipo,
         carga_horaria: String(s.carga_horaria_semanal ?? s.carga_horaria ?? ""), data_admissao: s.data_admissao,
         proventos: num(s.proventos), descontos: num(s.descontos), liquido: num(s.liquido),
-        _hash: crypto.createHash("md5").update([a.cod_ibge, comp, s.matricula, s.nome, cargo, s.tipo ?? ""].join("¦")).digest("hex"),
+        _hash: crypto.createHash("md5").update([a.cod_ibge, comp, s._orgao ?? "", s.matricula, s.nome, cargo, s.tipo ?? ""].join("¦")).digest("hex"),
       };
       return novo ? {
         cod_ibge: a.cod_ibge, municipio: a.municipio, uf: a.uf, host: a.host, competencia: comp,
@@ -316,14 +370,14 @@ for (let i = 0; i < fila.length; i++) {
         departamento: s.lotacao, vinculo: s.tipo_admissao, situacao: s.situacao, situacao_pagamento: s.tipo_movimentacao,
         carga_horaria: String(s.carga_horaria ?? ""), data_admissao: s.data_admissao,
         proventos: moedaBR(s.total_proventos), descontos: moedaBR(s.total_descontos), liquido: moedaBR(s.total_liquido),
-        _hash: crypto.createHash("md5").update([a.cod_ibge, comp, s.matricula, s.nome, cargo].join("¦")).digest("hex"),
+        _hash: crypto.createHash("md5").update([a.cod_ibge, comp, s._orgao ?? "", s.matricula, s.nome, cargo].join("¦")).digest("hex"),
       } : {
         cod_ibge: a.cod_ibge, municipio: a.municipio, uf: a.uf, host: a.host, competencia: comp,
         matricula: String(s.matricula ?? ""), nome: s.nome, cpf_masc: s.cpf, cargo,
         departamento: s.departamento, vinculo: s.tipoDeVinculo, situacao: s.situacao, situacao_pagamento: s.situacaoPagamento,
         carga_horaria: String(s.cargaHoraria ?? ""), data_admissao: s.dataAdmissao,
         proventos: num(s.proventos), descontos: num(s.descontos), liquido: num(s.totalLiquido),
-        _hash: crypto.createHash("md5").update([a.cod_ibge, comp, s.matricula, s.nome, cargo].join("¦")).digest("hex"),
+        _hash: crypto.createHash("md5").update([a.cod_ibge, comp, s._orgao ?? "", s.matricula, s.nome, cargo].join("¦")).digest("hex"),
       };
     });
     // 🚨 GUARDA DE NOMINALIDADE (16/ago/2026): linha sem nome não é folha nominal — foi assim que 20.736 linhas
@@ -334,6 +388,13 @@ for (let i = 0; i < fila.length; i++) {
         console.log(`  ⚠️ ${regs.length} linhas SEM NOME — não gravado (coluna de nome não reconhecida)`);
         vazios++; continue;
       }
+    }
+    // 🚨 GUARDA DE PODER (22/ago/2026): este portal pode servir o MUNICÍPIO INTEIRO pela URL da câmara.
+    //    Sem esta checagem o coletor grava a folha da prefeitura como legislativa e fecha `ok`.
+    if (PODER === "legislativo") {
+      const pessoas = new Set(regs.map((x) => x.nome).filter(Boolean)).size;
+      const g = await guardaCamara(q, a.cod_ibge, pessoas);
+      if (!g.ok) { await marca("recusado_volume", g.motivo, 0); console.log(`  ⛔ ${g.motivo}`); continue; }
     }
     await grava(regs);
     totalGeral += regs.length; ok++;
