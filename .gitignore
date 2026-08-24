@@ -64,3 +64,23 @@ scratchpad_*
 tmp_*
 scripts/_*
 UsersPCAppDataLocalTempclaudecnet/
+
+# ── EXCEÇÕES: módulos COMPARTILHADOS de scripts/ ──────────────────────────────
+# As regras `_*.mjs` e `scripts/_*` acima guardam ~1.600 arquivos de scratch e
+# dumps de sessão — ficam. Mas um punhado de `_*.mjs` não é scratch: são as
+# BIBLIOTECAS que os coletores importam. Sem elas o repo público publica script
+# que não roda (só o _cadprev.mjs é importado por 196 scripts versionados).
+# Conferidos um a um: nenhum tem credencial escrita no código.
+# (_tcepb.mjs NÃO entra: é sonda de 22 linhas, sem export e sem importador.)
+!scripts/_cadprev.mjs
+!scripts/_uf.mjs
+!scripts/_betha.mjs
+!scripts/_ipm.mjs
+!scripts/_consulente.mjs
+!scripts/_erp_assinaturas.mjs
+!scripts/_folha_contrato.mjs
+!scripts/_folha_filtros.mjs
+!scripts/_folha_guarda_camara.mjs
+!scripts/_folha_pdf_parsers.mjs
+!scripts/_folha_uniao.mjs
+!scripts/_precos_norm.mjs
