@@ -89,3 +89,23 @@ UsersPCAppDataLocalTempclaudecnet/
 !scripts/_farol.mjs
 !scripts/_rais.mjs
 !scripts/_storage.mjs
+
+# ── RAIZ: dumps de sessão (causa do backup automático falhar 8 noites) ────────
+# `scripts/backup_git.cmd` faz `git add -A`. Em 17/ago/2026 dois dumps de portal
+# GeneXus (gx.html, li.html) caíram na raiz; o campo oculto GXState tem um blob
+# que o hook anti-segredo lê como JWT — e o commit passou a abortar TODA noite,
+# das 00:45 de 18/ago em diante, sem avisar ninguém (Last Result = 1).
+# Nenhum .html/.txt/.bin de raiz é código: raspagem de portal é sempre scratch.
+/*.html
+/*.txt
+/*.bin
+/legislativo
+# .json de raiz é ignorado por padrão; os 4 legítimos entram por exceção nominal.
+/*.json
+!/package.json
+!/package-lock.json
+!/tsconfig.json
+!/components.json
+/scratch_*
+# arquivo de 0 byte criado por acidente de aspas no shell (o nome inclui as aspas)
+/'legislativo'
