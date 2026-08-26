@@ -52,7 +52,18 @@ const bloco = (docNorm, off, offs, cap = BLOCO_CAP) => recortaBloco(docNorm, off
 // O carimbo antigo já acertava 81,5% no `alta`; o teto derrubou para 77,7% ao rebaixar linhas que estavam
 // certas. O que fica em aberto — e NÃO se conserta com teto — é que no antigo `media` acerta MAIS que
 // `alta` (86,7% × 81,5%): a escala está invertida, e isso pede outro tratamento, com medição própria.
-const consolida = (n, base) => (n === 0 ? "ausente" : n >= 3 ? "alta" : (n >= 2 && RANK[base] >= 2) ? "alta" : base);
+// ⭐ REGRA R2 (25/ago/2026) — a confiança vem da QUALIDADE do melhor documento (`conf_base`), nunca da
+// contagem. A regra antiga promovia a `alta` por convergência (n>=3), e a convergência mede o CONTRÁRIO:
+// edital, TR e ETP repetem a mesma tabela, então o mesmo recorte errado aparece nos três. Medido em amostra
+// de 6% (cobertura = palavras do item achadas no bloco):
+//         regra                          alta    media   baixa   monotônico?
+//   R0    atual (promove por contagem)   65,8%   70,3%   43,6%   NÃO — invertida
+//   R1    base pura                      68,7%   68,1%   37,6%   sim, por 0,6pp (fraco)
+//   R2    base, rebaixa se >=4 docs      71,0%   66,5%   37,6%   SIM, 4,5pp  <-- adotada
+// `alta` encolhe ~38% em volume e sobe de 65,8% para 71,0% de acerto: o rótulo passa a valer.
+// A tentativa de 08/ago falhou por medir truncamento com "começa em minúscula" — e `norm()` faz toLowerCase,
+// então media 100%. A régua desta vez é a cobertura das palavras do item, e está em mede_escala_confianca.mjs.
+const consolida = (n, base) => (n === 0 ? "ausente" : (n >= 4 && base === "alta") ? "media" : base);
 
 async function main() {
   const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 3, statement_timeout: 120000 });
@@ -71,7 +82,7 @@ async function main() {
     }
   };
   const COLS_EV = ["cnpj","ano","seq","numero","cod_ibge","ordem","fase","tipo_id","sequencial_documento","descricao_no_documento","eh_spec","spec_score","score","conf"];
-  const COLS_EN = ["cnpj","ano","seq","numero","cod_ibge","material_servico","descricao_api","unidade_api","catalogo_api","descricao_documento","descricao_e_spec","catalogo_codigo","confianca","fonte_documento","fonte_tipo_id","n_docs","docs","metodo","trecho_ancora"];
+  const COLS_EN = ["cnpj","ano","seq","numero","cod_ibge","material_servico","descricao_api","unidade_api","catalogo_api","descricao_documento","descricao_e_spec","catalogo_codigo","confianca","conf_base","fonte_documento","fonte_tipo_id","n_docs","docs","metodo","trecho_ancora"];
 
   await q(`CREATE SCHEMA IF NOT EXISTS app`);
   await q(`CREATE TABLE IF NOT EXISTS app.item_enriquecimento (
@@ -81,6 +92,9 @@ async function main() {
     confianca TEXT, fonte_documento TEXT, fonte_tipo_id INT, n_docs INT, docs TEXT, metodo TEXT, trecho_ancora TEXT,
     atualizado timestamptz DEFAULT now(), PRIMARY KEY (cnpj, ano, seq, numero))`);
   await q(`ALTER TABLE app.item_enriquecimento ADD COLUMN IF NOT EXISTS descricao_e_spec BOOLEAN`);
+  // conf_base = a confianca do MELHOR documento, ANTES de `consolida` promover por contagem. Sem ela nao ha
+  // como testar regra alternativa de escala sem re-rodar o motor inteiro. Aditiva: nao muda veredito nenhum.
+  await q(`ALTER TABLE app.item_enriquecimento ADD COLUMN IF NOT EXISTS conf_base TEXT`);
   await q(`CREATE TABLE IF NOT EXISTS app.item_documento_evidencia (
     cnpj TEXT, ano INT, seq INT, numero INT, cod_ibge TEXT,
     ordem INT, fase TEXT, tipo_id INT, sequencial_documento INT,
@@ -103,7 +117,10 @@ async function main() {
   // apagar a tabela. REFAZ=1 troca o anti-join por um filtro de GEOMETRIA: só processos cujo texto-fonte
   // já foi re-extraído (`layout_v=1`), que é a fatia onde o método novo tem efeito.
   const REFAZ = process.env.REFAZ === "1";
-  const filtro = REFAZ
+  // REFAZ=todos — re-processa a fila INTEIRA. Necessario quando muda o que se GRAVA (e nao so o metodo):
+  // o REFAZ=1 filtra por layout_v=1 e alcanca 133k de 239k, entao deixaria coluna nova pela metade.
+  const REFAZ_TODOS = process.env.REFAZ === "todos";
+  const filtro = REFAZ_TODOS ? "TRUE" : REFAZ
     ? `EXISTS (SELECT 1 FROM public.arquivo_texto_sc t
                 WHERE t.cnpj=f.cnpj AND t.ano=f.ano AND t.seq=f.seq AND t.layout_v=1)`
     : `NOT EXISTS (SELECT 1 FROM app.item_enriquecimento e WHERE e.cnpj=f.cnpj AND e.ano=f.ano AND e.seq=f.seq)`;
@@ -111,7 +128,8 @@ async function main() {
     SELECT f.cnpj, f.ano, f.seq, f.nfases FROM app.fila_enriquecimento f
     WHERE ${filtro} ${shardW}
     ORDER BY f.nfases DESC ${lim}`)).rows;
-  if (REFAZ) console.log(`REFAZ=1 - reprocessando processos com texto ja re-extraido (layout_v=1)`);
+  if (REFAZ_TODOS) console.log(`REFAZ=todos - reprocessando a fila inteira`);
+  else if (REFAZ) console.log(`REFAZ=1 - reprocessando processos com texto ja re-extraido (layout_v=1)`);
   console.log(`[shard ${SHARD}/${NSHARD}] enriquecer: ${procs.length.toLocaleString()} processos · conc ${CONC}`);
 
   let i = 0, done = 0, itensOk = 0, comDesc = 0;
@@ -197,13 +215,13 @@ async function main() {
           enrRows.push({ cnpj: p.cnpj, ano: p.ano, seq: p.seq, numero: itens[k].numeroItem, cod_ibge, material_servico: itens[k].material_ou_servico,
             descricao_api: itens[k].descricao, unidade_api: itens[k].unidade, catalogo_api: itens[k].catmat,
             descricao_documento: best ? best.desc : null, descricao_e_spec: best ? best.ehSpec : null, catalogo_codigo: cat,
-            confianca: conf, fonte_documento: best ? best.fase : null, fonte_tipo_id: best ? best.tid : null, n_docs: evid.length,
+            confianca: conf, conf_base: best ? best.conf : null, fonte_documento: best ? best.fase : null, fonte_tipo_id: best ? best.tid : null, n_docs: evid.length,
             docs: fasesDistintas, metodo, trecho_ancora: trecho });
           itensOk++; if (best && best.ehSpec) comDesc++;
         }
         // GRAVA EM LOTE. A DESCRIÇÃO (item_enriquecimento, 1 linha/item) é o objetivo — grava sempre.
         // A evidência (item×doc, ~milhares de linhas/processo) é auditoria — só grava se EVID=1 (senão estrangula o banco).
-        await bulk("app.item_enriquecimento", COLS_EN, enrRows, "cnpj,ano,seq,numero", ["descricao_api","unidade_api","catalogo_api","descricao_documento","descricao_e_spec","catalogo_codigo","confianca","fonte_documento","fonte_tipo_id","n_docs","docs","metodo","trecho_ancora"]);
+        await bulk("app.item_enriquecimento", COLS_EN, enrRows, "cnpj,ano,seq,numero", ["descricao_api","unidade_api","catalogo_api","descricao_documento","descricao_e_spec","catalogo_codigo","confianca","conf_base","fonte_documento","fonte_tipo_id","n_docs","docs","metodo","trecho_ancora"]);
         if (process.env.EVID === "1")
           await bulk("app.item_documento_evidencia", COLS_EV, evidRows, "cnpj,ano,seq,numero,tipo_id,sequencial_documento", ["descricao_no_documento","eh_spec","spec_score","score","conf","ordem","fase"]);
       } catch { /* deixa p/ o próximo run */ }

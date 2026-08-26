@@ -119,3 +119,58 @@ To prepare for this change:
 See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
 (Use `node --trace-warnings ...` to show where the warning was created)
   status: ok
+[2026-08-17T02:30] busca diária do PNCP — ano 2026
+  ✔ compras (25906s)
+  ✔ contratos (12418s)
+  ✔ atas (5s)
+(node:29672) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  status: ok
+[2026-08-18T02:30] busca diária do PNCP — ano 2026
+  ✔ compras (23284s)
+  ✔ contratos (12487s)
+  ✔ atas (7s)
+(node:25268) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  status: ok
+[2026-08-19T02:30] busca diária do PNCP — ano 2026
+  ✔ compras (24226s)
+[2026-08-20T02:30] busca diária do PNCP — ano 2026
+  ✔ compras (28229s)
+[2026-08-21T16:55] busca diária do PNCP — ano 2026
+^C[2026-08-22T02:30] busca diária do PNCP — ano 2026
+  ✔ compras (23137s)
+  ✔ contratos (15108s)
+  ✔ atas (6s)
+(node:9380) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  status: ok
+[2026-08-23T02:30] busca diária do PNCP — ano 2026
+  ✔ compras (25168s)
+[2026-08-24T02:30] busca diária do PNCP — ano 2026
+  ✔ compras (25066s)
+  ✖ contratos (1654s · exit 3221225786)
+[2026-08-25T02:30] busca diária do PNCP — ano 2026
+  ✔ compras (25061s)
+[2026-08-26T02:30] busca diária do PNCP — ano 2026

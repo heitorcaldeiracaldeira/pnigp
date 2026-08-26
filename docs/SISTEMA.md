@@ -1,6 +1,6 @@
 # PNIGP — Documentação do Sistema (gerada automaticamente)
 
-> Gerada em 2026-08-23 07:13 -03 por `scripts/gerar_documentacao.mjs`. Reflete o estado real do código e do banco. **Não editar à mão.**
+> Gerada em 2026-08-25 07:13 -03 por `scripts/gerar_documentacao.mjs`. Reflete o estado real do código e do banco. **Não editar à mão.**
 
 ## 1. Banco de dados (Neon)
 
@@ -27,17 +27,18 @@
 | `apac_sc` | 294 | 7 (cod_ibge, periodo, onco_apac, onco_valor, dialise_apac, dialise_valor, atualizado) |
 | `arboviroses_sc` | 5.900 | 7 (cod_ibge, doenca, ano, casos, incidencia_100k, nivel_max, atualizado) |
 | `arquivo_binario_sc` | 0 | 14 (cnpj, ano, seq, sequencial_documento, cod_ibge, numero_controle, tipo_documento, storage…) |
-| `arquivo_texto_sc` | 652.877 | 17 (cnpj, ano, seq, sequencial_documento, cod_ibge, tipo_documento, titulo, texto…) |
-| `arquivos_proc_feitos` | 252.178 | 3 (numero_controle, n, feito_em) |
-| `arquivos_sc` | 663.594 | 14 (cnpj, ano, seq, sequencial_documento, cod_ibge, tipo_documento_id, tipo_documento, titulo…) |
+| `arquivo_texto_sc` | 652.994 | 17 (cnpj, ano, seq, sequencial_documento, cod_ibge, tipo_documento, titulo, texto…) |
+| `arquivos_proc_feitos` | 252.355 | 3 (numero_controle, n, feito_em) |
+| `arquivos_sc` | 664.167 | 14 (cnpj, ano, seq, sequencial_documento, cod_ibge, tipo_documento_id, tipo_documento, titulo…) |
 | `aspec_diretorio` | 629 | 8 (uf, cid_id, ent_id, municipio_gt, cod_ibge, acessoinfo_id, situacao, em) |
 | `aspec_folha_externa` | 70 | 8 (cod_ibge, municipio, uf, acessoinfo_id, folha_url, erp, leio_nominal, em) |
 | `assistencia_repasse_sc` | 6.177 | 7 (cod_ibge, ano, fnas_total, fnas_psb, fnas_pse, meses, atualizado_em) |
 | `assistencia_social_sc` | 295 | 24 (cod_ibge, municipio, anomes_ref, populacao, cras, creas, acolhimento, hab_por_cras…) |
 | `atas_check` | 882 | 3 (cnpj_orgao, checado, n) |
-| `atas_sc` | 123.401 | 12 (numero_controle_ata, cod_ibge, cnpj_orgao, ano_ata, numero_ata, numero_controle_compra, vigencia_inicio, vigencia_fim…) |
+| `atas_sc` | 123.444 | 12 (numero_controle_ata, cod_ibge, cnpj_orgao, ano_ata, numero_ata, numero_controle_compra, vigencia_inicio, vigencia_fim…) |
 | `aux_camara_com_folha` | 5.570 | 12 (cod_ibge, uf, municipio, linhas, pessoas, linhas_com_valor, competencia, fontes…) |
 | `aux_mun_com_folha` | 4.347 | 1 (cod_ibge) |
+| `aux_mun_so_camara` | 61 | 9 (cod_ibge, uf, municipio, pessoas, fontes, rais_camara, rais_prefeitura, pct_da_prefeitura…) |
 | `aux_subcoleta` | 326 | 5 (cod_ibge, municipio, fonte, competencia, n) |
 | `bancada_estadual_sc` | 40 | 11 (id, nome, partido, votos_total, situacao, atualizado, emendas_total, foto_url…) |
 | `bancada_federal_sc` | 19 | 11 (id, casa, cod_externo, nome, partido, uf, email, telefone…) |
@@ -115,7 +116,7 @@
 | `capital_recon` | 16 | 10 (cod_ibge, municipio, uf, ckan, rota_pessoal, xhr, selects, tabela…) |
 | `captacao_transferegov_sc` | 1.277 | 14 (id_plano, cod_ibge, uf, id_programa, situacao, valor_total_repasse, valor_voluntario, valor_total…) |
 | `car_sc` | 295 | 4 (cod_ibge, imoveis_total, imoveis_ativos, atualizado) |
-| `catalogo_govbr_sc` | 23.468 | 7 (nivel, tipo, cod, nome, classe, grupo, atualizado_em) |
+| `catalogo_govbr_sc` | 23.605 | 7 (nivel, tipo, cod, nome, classe, grupo, atualizado_em) |
 | `catmat_catalogo` | 343.323 | 8 (codigo_item, nome_pdm, nome_classe, descricao, codigo_pdm, codigo_classe, ncm, atualizado) |
 | `catmat_pdm` | 20.332 | 5 (codigo_pdm, nome_pdm, nome_classe, n_itens, item_ex) |
 | `cauc_detalhe_sc` | 8.290 | 5 (cod_ibge, codigo, status, validade, atualizado) |
@@ -135,28 +136,28 @@
 | `cnes_profissionais_estab` | 18.546 | 3 (codigo_cnes, profissionais, atualizado) |
 | `cnes_profissionais_sc` | 885 | 8 (cod_ibge, ano, medicos, enfermeiros, dentistas, tec_enf, acs, atualizado) |
 | `cnes_sc` | 295 | 10 (cod_ibge, total, sus_amb, hospitalar, cirurgico, obstetrico, neonatal, por_tipo…) |
-| `cnpj_loc` | 56.133 | 10 (cnpj, razao_social, municipio, uf, atualizado, situacao, situacao_motivo, abertura…) |
+| `cnpj_loc` | 64.568 | 10 (cnpj, razao_social, municipio, uf, atualizado, situacao, situacao_motivo, abertura…) |
 | `cnpj_municipal_sc` | 930 | 6 (cod_ibge, cnpj, razao_social, tipo, fonte, atualizado) |
 | `cobertura_aps_sc` | 295 | 6 (cod_ibge, populacao, esf, cobertura, competencia, atualizado) |
 | `cobertura_vacinal_sc` | 37.290 | 5 (cod_ibge, ano, vacina, cobertura, atualizado) |
 | `coleta_heartbeat` | 1 | 6 (id, ts, progresso, etapa, reinicios, msg) |
-| `coleta_incremental_log` | 30 | 9 (rodada_em, uf, janela_ini, janela_fim, vistos, mudaram, iguais, novos…) |
+| `coleta_incremental_log` | 31 | 9 (rodada_em, uf, janela_ini, janela_fim, vistos, mudaram, iguais, novos…) |
 | `coleta_qa` | 1 | 6 (id, ts, status, suspeitos, alertas, regras) |
 | `compras_publicas` | 106 | 11 (ente_tipo, ente_id, ano, valor_contratado_pc, pct_pregao_eletronico, pct_dispensa, economia_pregao, fornecedores_mil…) |
 | `compras_sc` | 1.118 | 10 (cod_ibge, ano, n_contratos, valor_estimado, valor_homologado, economia_pct, dispensa_pct, por_modalidade…) |
 | `compras_sc_vazios` | 247 | 1 (cod_ibge) |
 | `contratacao_disputa_sc` | 994 | 10 (cod_ibge, cnpj, ano, seq, n_licitantes, n_lances, n_itens_marca, atualizado…) |
 | `contratacoes` | 1.035 | 13 (id, ente_tipo, ente_id, numero, objeto, orgao, modalidade, valor_estimado…) |
-| `contratacoes_sc` | 252.178 | 35 (cod_ibge, cnpj, ano, seq, esfera, plataforma, modalidade_id, modalidade…) |
+| `contratacoes_sc` | 252.603 | 35 (cod_ibge, cnpj, ano, seq, esfera, plataforma, modalidade_id, modalidade…) |
 | `contrato_sc` | 10.559 | 30 (cnpj, ano, seq, cod_ibge, uf, municipio_nome, numero_controle_pncp, numero_controle_compra…) |
-| `contratos_sc` | 4.818.154 | 14 (id, cod_ibge, numero_controle_compra, cnpj_compra, ano_compra, seq_compra, fornecedor, ni_fornecedor…) |
+| `contratos_sc` | 5.272.110 | 14 (id, cod_ibge, numero_controle_compra, cnpj_compra, ano_compra, seq_compra, fornecedor, ni_fornecedor…) |
 | `contratos_sc_feitos` | 295 | 2 (cod_ibge, n) |
 | `contratos_sc_feitos_inc` | 295 | 2 (cod_ibge, n) |
 | `convenios_captados_sc` | 22.138 | 13 (cod_ibge, id, numero, objeto, orgao, situacao, valor, valor_liberado…) |
 | `convenios_check` | 295 | 2 (cod_ibge, atualizado) |
 | `convenios_sc` | 13.071 | 10 (nr_convenio, id_proposta, cod_ibge, municipio, ano, situacao, vl_global, vl_repasse…) |
 | `crp_alerta_estado` | 296 | 4 (cod_ibge, categoria, dias, atualizado) |
-| `crp_alertas` | 643 | 11 (id, cod_ibge, nome, eh_estado, evento, categoria_de, categoria_para, dias…) |
+| `crp_alertas` | 651 | 11 (id, cod_ibge, nome, eh_estado, evento, categoria_de, categoria_para, dias…) |
 | `cvat_aps_sc` | 1.038 | 9 (cod_ibge, quadrimestre, equipe, otimo, bom, suficiente, regular, total…) |
 | `datatran_sc` | 1.280 | 6 (cod_ibge, ano, n_acidentes, mortos, feridos, atualizado) |
 | `dbseller_portal` | 10 | 6 (cod_ibge, municipio, uf, base, atualizado_em, achado_em) |
@@ -175,7 +176,7 @@
 | `emendas_execucao_sc` | 691 | 14 (codigo_emenda, ano, cod_ibge, localidade, tipo, autor, funcao, subfuncao…) |
 | `emendas_indicacao_sc` | 9.633 | 19 (id_proposta, nr_emenda, cod_ibge, municipio, parlamentar, tipo_parlamentar, impositivo, programa…) |
 | `empenho_sc` | 73 | 10 (cnpj, ano, seq, sequencial_empenho, cod_ibge, numero_empenho, valor, data_emissao…) |
-| `empenhos_check` | 28.764 | 6 (cnpj_compra, ano_compra, seq_compra, checado, n, tentativas) |
+| `empenhos_check` | 34.948 | 6 (cnpj_compra, ano_compra, seq_compra, checado, n, tentativas) |
 | `empenhos_sc` | 0 | 10 (cod_ibge, cnpj_compra, ano_compra, seq_compra, seq_empenho, numero, valor, data…) |
 | `entes_sc` | 296 | 14 (cod_ibge, nome, uf, tipo, populacao, pop_indigena, latitude, longitude…) |
 | `equipamentos_esporte_sc` | 7.213 | 10 (id, cat, nome, tipo, cod_ibge, municipio, latitude, longitude…) |
@@ -232,7 +233,7 @@
 | `folha_betha_coleta` | 1.273 | 10 (portal_id, cod_ibge, municipio, uf, consulta_id, competencia, linhas, situacao…) |
 | `folha_betha_egov_coleta` | 3 | 9 (cod_ibge, municipio, uf, competencia, servidores, com_valor, situacao, detalhe…) |
 | `folha_bsit_coleta` | 84 | 9 (cod_ibge, municipio, uf, host, competencia, linhas, situacao, detalhe…) |
-| `folha_camara_fila` | 3.383 | 18 (cod_ibge, uf, municipio, situacao, pessoas, rais_legislativo, url_camara, erp…) |
+| `folha_camara_fila` | 3.304 | 18 (cod_ibge, uf, municipio, situacao, pessoas, rais_legislativo, url_camara, erp…) |
 | `folha_campinas_coleta` | 1 | 6 (cod_ibge, competencia, linhas, situacao, detalhe, em) |
 | `folha_campogrande_coleta` | 1 | 6 (competencia, linhas, com_valor, situacao, detalhe, em) |
 | `folha_canoas_coleta` | 1 | 10 (cod_ibge, municipio, uf, competencia, servidores, com_valor, paginas, situacao…) |
@@ -249,8 +250,8 @@
 | `folha_datapublic_coleta` | 2 | 10 (cod_ibge, municipio, uf, base, referencia, linhas, declarado, situacao…) |
 | `folha_dbseller_coleta` | 25 | 10 (cod_ibge, instituicao, municipio, uf, competencia, servidores, com_valor, situacao…) |
 | `folha_dd_coleta` | 10 | 10 (cod_ibge, slug, municipio, competencia, edicoes, servidores, layout, situacao…) |
-| `folha_diagnostico_camara` | 2.428 | 13 (cod_ibge, municipio, uf, url_visitada, url_pessoal, produto, tem_menu_pessoal, tem_dados…) |
-| `folha_diagnostico_faltante` | 1.391 | 13 (cod_ibge, municipio, uf, url_visitada, url_pessoal, produto, tem_menu_pessoal, tem_dados…) |
+| `folha_diagnostico_camara` | 2.441 | 13 (cod_ibge, municipio, uf, url_visitada, url_pessoal, produto, tem_menu_pessoal, tem_dados…) |
+| `folha_diagnostico_faltante` | 2.059 | 13 (cod_ibge, municipio, uf, url_visitada, url_pessoal, produto, tem_menu_pessoal, tem_dados…) |
 | `folha_digifred_coleta` | 22 | 10 (cod_ibge, municipio, uf, slug, url, linhas, cargos, situacao…) |
 | `folha_eddydata_coleta` | 6 | 9 (cod_ibge, municipio, uf, host, competencia, linhas, situacao, detalhe…) |
 | `folha_elotech_coleta` | 563 | 10 (slug, entidade_id, cod_ibge, municipio, uf, exercicio, linhas, situacao…) |
@@ -264,17 +265,20 @@
 | `folha_genexus_coleta` | 46 | 9 (cod_ibge, municipio, uf, base_url, versao, linhas, situacao, detalhe…) |
 | `folha_genexus_wwp_coleta` | 52 | 9 (cod_ibge, municipio, uf, host, competencia, linhas, situacao, detalhe…) |
 | `folha_geosiap_coleta` | 40 | 9 (cod_ibge, municipio, uf, competencia, linhas, situacao, detalhe, em…) |
-| `folha_govbrda_coleta` | 341 | 11 (cod_ibge, poder, municipio, uf, host, entidade, exercicio, linhas…) |
+| `folha_govbrda_coleta` | 480 | 11 (cod_ibge, poder, municipio, uf, host, entidade, exercicio, linhas…) |
 | `folha_gpecloud_coleta` | 6 | 10 (cod_ibge, municipio, uf, url, situacao, detalhe, linhas, competencia…) |
 | `folha_gwtransp_coleta` | 1 | 9 (cod_ibge, municipio, uf, host, competencia, linhas, situacao, detalhe…) |
 | `folha_gxrh_coleta` | 10 | 9 (cod_ibge, municipio, uf, base_url, competencia, linhas, situacao, detalhe…) |
 | `folha_hardsoft_coleta` | 1 | 10 (cod_ibge, municipio, uf, host, competencia, servidores, com_valor, situacao…) |
 | `folha_host_candidato` | 346 | 8 (cod_ibge, municipio, uf, produto, host, url, achado_via, em) |
 | `folha_iframe_descoberto` | 14 | 8 (cod_ibge, municipio, uf, url_visitada, iframe_src, host_iframe, produto, em) |
-| `folha_ipm_coleta` | 272 | 9 (cod_ibge, municipio, uf, competencia, linhas, situacao, detalhe, em…) |
+| `folha_ipm_coleta` | 276 | 9 (cod_ibge, municipio, uf, competencia, linhas, situacao, detalhe, em…) |
 | `folha_itsolucoes_coleta` | 46 | 9 (p_i, cod_ibge, entidade, uf, competencia, linhas, situacao, detalhe…) |
 | `folha_lai_pendencia` | 22 | 9 (cod_ibge, municipio, uf, rais, classe, produto, url, evidencia…) |
 | `folha_layout_coleta` | 186 | 10 (entidade_id, codigo, cod_ibge, municipio, uf, competencia, linhas, situacao…) |
+| `folha_ma_camara_coleta` | 11 | 9 (cod_ibge, municipio, uf, competencia, linhas, pessoas, situacao, detalhe…) |
+| `folha_ma_func_coleta` | 12 | 10 (cod_ibge, poder, municipio, uf, competencia, linhas, pessoas, situacao…) |
+| `folha_ma_zeus_coleta` | 9 | 10 (cod_ibge, municipio, uf, competencia, entidade_declarada, linhas, pessoas, situacao…) |
 | `folha_megasoft_coleta` | 348 | 9 (slug, cod_ibge, municipio, uf, competencia, linhas, situacao, detalhe…) |
 | `folha_memory_coleta` | 187 | 9 (cod_ibge, municipio, uf, entidade, linhas, situacao, detalhe, em…) |
 | `folha_minastransp_coleta` | 2 | 11 (cod_ibge, municipio, uf, slug, site, competencia, servidores, com_valor…) |
@@ -285,17 +289,18 @@
 | `folha_parintins_coleta` | 1 | 7 (cod_ibge, competencia, paginas, servidores, situacao, detalhe, em) |
 | `folha_pdfrelacao_coleta` | 1 | 11 (cod_ibge, municipio, uf, competencia, linhas, declarado, soma, soma_declarada…) |
 | `folha_pdtinfo_coleta` | 1 | 9 (cod_ibge, municipio, uf, url, situacao, detalhe, linhas, competencia…) |
+| `folha_pe_leg_coleta` | 16 | 9 (cod_ibge, municipio, uf, competencia, linhas, pessoas, situacao, detalhe…) |
 | `folha_pelotas_coleta` | 1 | 7 (ano, competencia, servidores, linhas_csv, situacao, detalhe, em) |
 | `folha_pitransp_coleta` | 8 | 10 (cod_ibge, municipio, url, competencia, linhas, total_declarado, total_somado, situacao…) |
 | `folha_piv2_coleta` | 13 | 9 (cod_ibge, municipio, url, competencia, linhas, esperado, situacao, detalhe…) |
 | `folha_pjf_coleta` | 11 | 6 (orgao, competencia, linhas, situacao, detalhe, em) |
 | `folha_poa_fila` | 34.191 | 16 (chave, competencia, nome, cargo, orgao, referencia, matricula, bruto…) |
 | `folha_portal_candidato` | 409 | 7 (cod_ibge, municipio, uf, produto, url, achado_via, achado_em) |
-| `folha_portalfacil_api_coleta` | 257 | 10 (id_cliente, cod_ibge, municipio, uf, situacao, detalhe, pessoas, linhas…) |
+| `folha_portalfacil_api_coleta` | 268 | 10 (id_cliente, cod_ibge, municipio, uf, situacao, detalhe, pessoas, linhas…) |
 | `folha_portalfacil_catalogo` | 675 | 12 (id_cliente, nome, tipo, cod_ibge, municipio, uf, competencia_ref, atualizado_em…) |
 | `folha_portalfacil_coleta` | 57 | 10 (cod_ibge, municipio, uf, url, situacao, detalhe, linhas, competencia…) |
 | `folha_portalnovo_coleta` | 26 | 9 (cod_ibge, municipio, host, competencia, entidades, linhas, situacao, detalhe…) |
-| `folha_portaltp_coleta` | 315 | 9 (cod_ibge, municipio, uf, competencia, linhas, situacao, detalhe, em…) |
+| `folha_portaltp_coleta` | 331 | 9 (cod_ibge, municipio, uf, competencia, linhas, situacao, detalhe, em…) |
 | `folha_portaltransp_coleta` | 2 | 10 (cod_ibge, municipio, uf, codigo, competencia, servidores, com_valor, situacao…) |
 | `folha_portovelho_coleta` | 2 | 7 (portal, competencia, listados, com_valor, situacao, detalhe, em) |
 | `folha_pronimgrade_coleta` | 1 | 11 (cod_ibge, municipio, uf, competencia, unidades, servidores, com_valor, paginas…) |
@@ -312,9 +317,9 @@
 | `folha_rpm_coleta` | 88 | 9 (cnpj, cod_ibge, municipio, uf, competencia, linhas, situacao, detalhe…) |
 | `folha_rs_secretaria` | 6.900 | 10 (cod_ibge, municipio, uf, tipo_ente, secretaria, ano, meses, folha_paga…) |
 | `folha_saiio_coleta` | 102 | 10 (cod_ibge, municipio, uf, cod_orgao, orgao, linhas, com_valor, situacao…) |
-| `folha_scpi_coleta` | 694 | 9 (cod_ibge, municipio, uf, host, linhas, situacao, detalhe, em…) |
+| `folha_scpi_coleta` | 723 | 9 (cod_ibge, municipio, uf, host, linhas, situacao, detalhe, em…) |
 | `folha_scpi_competencia_principal` | 368 | 6 (cod_ibge, municipio, mes, pessoas, meses_na_tabela, em) |
-| `folha_scpicsv_coleta` | 194 | 11 (host, cod_ibge, municipio, uf, base, competencia, linhas, meses…) |
+| `folha_scpicsv_coleta` | 320 | 11 (host, cod_ibge, municipio, uf, base, competencia, linhas, meses…) |
 | `folha_scriptcase_coleta` | 1 | 9 (cod_ibge, poder, municipio, uf, competencia, linhas, situacao, detalhe…) |
 | `folha_servidores_7focus` | 7.007 | 18 (cod_ibge, municipio, uf, slug, orgao, competencia, matricula, nome…) |
 | `folha_servidores_abase` | 18.887 | 17 (cod_ibge, municipio, uf, entidade, competencia, matricula, nome, cargo…) |
@@ -331,7 +336,7 @@
 | `folha_servidores_apitransp` | 956 | 21 (cod_ibge, municipio, uf, host, orgao, competencia, matricula, nome…) |
 | `folha_servidores_aplpessoal` | 8.283 | 27 (cod_ibge, municipio, uf, entidade, competencia, nome, cpf_masc, matricula…) |
 | `folha_servidores_aspec` | 60.790 | 18 (cod_ibge, municipio, uf, folha_id, competencia, matricula, nome, orgao…) |
-| `folha_servidores_betha` | 533.283 | 21 (cod_ibge, municipio, uf, entidade, competencia, nome, cargo, classificacao_cargo…) |
+| `folha_servidores_betha` | 533.417 | 21 (cod_ibge, municipio, uf, entidade, competencia, nome, cargo, classificacao_cargo…) |
 | `folha_servidores_betha_egov` | 0 | 15 (cod_ibge, municipio, uf, competencia, matricula, nome, cargo, lotacao…) |
 | `folha_servidores_bsit` | 12.182 | 18 (cod_ibge, municipio, uf, host, entidade, competencia, matricula, nome…) |
 | `folha_servidores_campinas` | 16.023 | 18 (cod_ibge, municipio, uf, competencia, matricula, nome, cargo, secretaria…) |
@@ -359,7 +364,7 @@
 | `folha_servidores_genexus_wwp` | 38.447 | 17 (cod_ibge, municipio, uf, host, orgao, cnpj, competencia, matricula…) |
 | `folha_servidores_geosiap` | 44.922 | 19 (cod_ibge, municipio, uf, entidade, competencia, cpf_masc, chapa, nome…) |
 | `folha_servidores_govbr` | 802.710 | 16 (cod_ibge, municipio, uf, competencia, lotacao, secretaria, cargo, nome…) |
-| `folha_servidores_govbrda` | 274.330 | 19 (cod_ibge, municipio, uf, poder, entidade, competencia, matricula, cpf_masc…) |
+| `folha_servidores_govbrda` | 290.586 | 19 (cod_ibge, municipio, uf, poder, entidade, competencia, matricula, cpf_masc…) |
 | `folha_servidores_gpecloud` | 3.597 | 15 (cod_ibge, municipio, uf, competencia, matricula, nome, cpf_masc, cargo…) |
 | `folha_servidores_gwtransp` | 625 | 19 (cod_ibge, municipio, uf, host, competencia, matricula, nome, documento…) |
 | `folha_servidores_gxrh` | 11.636 | 19 (cod_ibge, municipio, uf, base_url, competencia, orgao, matricula, nome…) |
@@ -368,8 +373,11 @@
 | `folha_servidores_itsolucoes` | 5.513 | 18 (cod_ibge, municipio, uf, poder, entidade, p_i, competencia, matricula…) |
 | `folha_servidores_layout` | 227.404 | 22 (cod_ibge, municipio, uf, entidade_id, codigo, competencia, matricula, nome…) |
 | `folha_servidores_ma` | 324.452 | 24 (ano, mes, cnpj, ente_id, ente, unidade, poder, matricula…) |
+| `folha_servidores_ma_camara` | 87 | 17 (cod_ibge, municipio, uf, entidade, competencia, tipo_folha, matricula, cpf_masc…) |
+| `folha_servidores_ma_func` | 1.535 | 17 (cod_ibge, municipio, uf, poder, competencia, nome, cargo, lotacao…) |
+| `folha_servidores_ma_zeus` | 147 | 18 (cod_ibge, municipio, uf, entidade, competencia, tipo_folha, matricula, servidor_id…) |
 | `folha_servidores_megasoft` | 104.373 | 21 (cod_ibge, municipio, uf, slug, competencia, matricula, nome, cpf_masc…) |
-| `folha_servidores_memory` | 65.217 | 14 (cod_ibge, municipio, uf, entidade, competencia, matricula, nome, cargo…) |
+| `folha_servidores_memory` | 65.625 | 14 (cod_ibge, municipio, uf, entidade, competencia, matricula, nome, cargo…) |
 | `folha_servidores_minastransp` | 425 | 17 (cod_ibge, municipio, uf, competencia, matricula, nome, cargo, lotacao…) |
 | `folha_servidores_montenegro` | 165 | 16 (cod_ibge, municipio, uf, entidade, competencia, nome, matricula, cargo…) |
 | `folha_servidores_multi24` | 41.556 | 13 (cod_ibge, municipio, uf, grupo, competencia, nome, cargo, tipo…) |
@@ -379,12 +387,13 @@
 | `folha_servidores_pdfrelacao` | 279 | 15 (cod_ibge, municipio, uf, competencia, matricula, nome, cargo, classe…) |
 | `folha_servidores_pdtinfo` | 509 | 11 (cod_ibge, municipio, uf, competencia, matricula, nome, funcao, lotacao…) |
 | `folha_servidores_pe` | 1.912.330 | 20 (exercicio, uj_codigo, uj_nome, municipio_cod, municipio, natureza_orgao, nome, cpf_masc…) |
+| `folha_servidores_pe_leg` | 633 | 18 (cod_ibge, municipio, uf, entidade, competencia, matricula, cpf_masc, nome…) |
 | `folha_servidores_pelotas` | 11.972 | 18 (cod_ibge, municipio, uf, competencia, matricula, nome, cargo, regime…) |
 | `folha_servidores_pitransp` | 3.458 | 25 (cod_ibge, municipio, uf, entidade, competencia, nome, cpf_masc, matricula…) |
 | `folha_servidores_piv2` | 5.879 | 25 (cod_ibge, municipio, uf, entidade, competencia, nome, cpf_masc, matricula…) |
 | `folha_servidores_pjf` | 12.509 | 19 (cod_ibge, municipio, uf, orgao, competencia, matricula, nome, cargo…) |
 | `folha_servidores_portalfacil` | 25.047 | 20 (cod_ibge, municipio, uf, competencia, entidade, matricula, nome, unidade…) |
-| `folha_servidores_portalfacil_api` | 124.289 | 21 (cod_ibge, municipio, uf, competencia, id_cliente, entidade, matricula, nome…) |
+| `folha_servidores_portalfacil_api` | 130.974 | 21 (cod_ibge, municipio, uf, competencia, id_cliente, entidade, matricula, nome…) |
 | `folha_servidores_portalnovo` | 19.392 | 27 (cod_ibge, municipio, uf, entidade, competencia, nome, cpf_masc, matricula…) |
 | `folha_servidores_portaltp` | 209.292 | 29 (cod_ibge, municipio, uf, unidade_gestora, competencia, nome, cpf_masc, matricula…) |
 | `folha_servidores_portaltransp` | 3.669 | 16 (cod_ibge, municipio, uf, competencia, matricula, nome, cargo, cpf_masc…) |
@@ -397,17 +406,17 @@
 | `folha_servidores_rpm` | 99.800 | 20 (cod_ibge, municipio, uf, cnpj, competencia, matricula, nome, cpf_masc…) |
 | `folha_servidores_saiio` | 2.941 | 18 (cod_ibge, municipio, uf, cod_orgao, competencia, matricula, nome, cpf_masc…) |
 | `folha_servidores_sc` | 5.491.765 | 17 (anomes, cod_ibge, municipio, orgao, poder, lotacao, cargo, tipo_cargo…) |
-| `folha_servidores_scpi` | 280.472 | 19 (cod_ibge, municipio, uf, host, referencia, matricula, contrato, data_admissao…) |
-| `folha_servidores_scpicsv` | 294.788 | 21 (cod_ibge, municipio, uf, host, competencia, referencia, matricula, contrato…) |
+| `folha_servidores_scpi` | 281.828 | 19 (cod_ibge, municipio, uf, host, referencia, matricula, contrato, data_admissao…) |
+| `folha_servidores_scpicsv` | 538.959 | 21 (cod_ibge, municipio, uf, host, competencia, referencia, matricula, contrato…) |
 | `folha_servidores_scriptcase` | 2.242 | 12 (cod_ibge, municipio, uf, poder, competencia, nome, vinculo, simbolo…) |
-| `folha_servidores_siapapi` | 39.954 | 15 (cod_ibge, municipio, uf, host, entidade, competencia, matricula, nome…) |
+| `folha_servidores_siapapi` | 40.091 | 15 (cod_ibge, municipio, uf, host, entidade, competencia, matricula, nome…) |
 | `folha_servidores_sigafi` | 2.154 | 18 (cod_ibge, municipio, uf, competencia, matricula, nome, cargo, lotacao…) |
 | `folha_servidores_sinsoft` | 8.477 | 19 (cod_ibge, municipio, uf, competencia, matricula, nome, cargo, horas…) |
 | `folha_servidores_siplanweb` | 38.001 | 19 (cod_ibge, municipio, uf, host, competencia, matricula, nome, secretaria…) |
 | `folha_servidores_smarapd` | 121.858 | 16 (cod_ibge, municipio, uf, host, competencia, matricula, nome, cargo…) |
 | `folha_servidores_spapublico` | 36.199 | 21 (cod_ibge, municipio, uf, host, competencia, matricula, nome, cargo…) |
-| `folha_servidores_ss` | 131.234 | 16 (cod_ibge, municipio, uf, entcod, entidade, poder, competencia, secretaria…) |
-| `folha_servidores_sys523` | 9.855 | 14 (cod_ibge, municipio, uf, entidade, competencia, nome, cargo, lotacao…) |
+| `folha_servidores_ss` | 141.922 | 16 (cod_ibge, municipio, uf, entcod, entidade, poder, competencia, secretaria…) |
+| `folha_servidores_sys523` | 9.857 | 14 (cod_ibge, municipio, uf, entidade, competencia, nome, cargo, lotacao…) |
 | `folha_servidores_tcemt` | 181.229 | 18 (cod_ibge, municipio, uf, entidade, competencia, nome, cpf_masc, matricula…) |
 | `folha_servidores_tcepb` | 1.519.456 | 16 (cod_ibge, municipio, uf, competencia, unidade_gestora, codigo_unidade, secretaria, nome…) |
 | `folha_servidores_tcepta` | 17.651 | 18 (cod_ibge, municipio, uf, host, competencia, referencia, matricula_cpf, nome…) |
@@ -419,7 +428,7 @@
 | `folha_servidores_topsolutions` | 51.477 | 21 (cod_ibge, municipio, uf, host, competencia, nome, cpf_masc, matricula…) |
 | `folha_servidores_transpal` | 2.321 | 14 (cod_ibge, municipio, uf, base, competencia, orgao, matricula, nome…) |
 | `folha_servidores_transparenciaweb` | 61.580 | 18 (cod_ibge, municipio, uf, unidade_gestora, competencia, matricula, nome, secretaria…) |
-| `folha_servidores_transpcidadao` | 11.381 | 22 (cod_ibge, municipio, uf, id_cidade, entidade, competencia, matricula, nome…) |
+| `folha_servidores_transpcidadao` | 11.857 | 22 (cod_ibge, municipio, uf, id_cidade, entidade, competencia, matricula, nome…) |
 | `folha_servidores_transpfacil` | 12.570 | 14 (cod_ibge, municipio, uf, database_id, competencia, matricula, nome, secretaria…) |
 | `folha_servidores_transphd` | 1.203 | 18 (cod_ibge, municipio, uf, cod_empre, competencia, matricula, nome, cargo…) |
 | `folha_siapapi_coleta` | 40 | 10 (cod_ibge, municipio, uf, host, entidade, competencia, linhas, situacao…) |
@@ -429,7 +438,7 @@
 | `folha_smarapd_coleta` | 50 | 9 (cod_ibge, municipio, uf, host, linhas, situacao, detalhe, em…) |
 | `folha_sonda_municipal` | 517 | 19 (cod_ibge, municipio, uf, url_base, origem_url, url_pessoal, erp, ckan_host…) |
 | `folha_spapublico_coleta` | 15 | 9 (cod_ibge, municipio, uf, host, competencia, linhas, situacao, detalhe…) |
-| `folha_ss_coleta` | 128 | 10 (entcod, cod_ibge, municipio, uf, entidade, competencia, linhas, situacao…) |
+| `folha_ss_coleta` | 242 | 10 (entcod, cod_ibge, municipio, uf, entidade, competencia, linhas, situacao…) |
 | `folha_sys523_coleta` | 23 | 9 (cod_ibge, municipio, uf, url, competencia, linhas, situacao, detalhe…) |
 | `folha_tcemt_coleta` | 1 | 5 (chave, linhas, situacao, detalhe, em) |
 | `folha_tcemt_nominal_coleta` | 1 | 6 (chave, offset_final, linhas, situacao, detalhe, em) |
@@ -450,7 +459,7 @@
 | `folha_tw_portal` | 6 | 5 (cod_ibge, municipio, uf, base_url, ativo) |
 | `folha_verificacao_municipal` | 541 | 11 (cod_ibge, municipio, uf, host, rota_com_dados, linhas, tem_valor, rotas_testadas…) |
 | `folha_verificacao_site` | 1.551 | 19 (cod_ibge, municipio, uf, site, site_status, url_transparencia, url_pessoal, rotulo_pessoal…) |
-| `frescor_log` | 58 | 6 (id, rodado_em, total, ok, resumo, problemas) |
+| `frescor_log` | 60 | 6 (id, rodado_em, total, ok, resumo, problemas) |
 | `frota_sc` | 289 | 6 (cod_ibge, ano, total, automovel, motocicleta, atualizado) |
 | `fundeb_hist_sc` | 1.142 | 8 (cod_ibge, ano, matriculas, ponderadas, receita, vaaf_calc, breakdown, atualizado) |
 | `fundeb_matriculas_sc` | 295 | 19 (cod_ibge, ano, creche, creche_int, pre, pre_int, fund_ai, fund_ai_int…) |
@@ -485,25 +494,25 @@
 | `indices_pnigp_estados` | 135 | 9 (estado_id, ano, iceb, invp, igp360, cap_planejamento, cap_fiscal, cap_gestao…) |
 | `instrumento_cobranca_sc` | 2.048 | 25 (cnpj, ano, sequencial_contrato, sequencial_instrumento, cod_ibge, uf, municipio_nome, esfera…) |
 | `ipm_item_rotina` | 67 | 10 (cod_ibge, municipio, uf, slug, nome_item, codigo, rot, aca…) |
-| `item_apresentacao_desc_sc` | 48.209 | 7 (chave, unidade_basica, fator, conf, metodo, n_itens, atualizado) |
+| `item_apresentacao_desc_sc` | 48.262 | 7 (chave, unidade_basica, fator, conf, metodo, n_itens, atualizado) |
 | `item_apresentacao_sc` | 3.061 | 9 (unidade, unidade_basica, fator, forma, dimensao, conf, metodo, n_itens…) |
 | `item_catmat_map` | 38.889 | 10 (chave, codigo_pdm, nome_pdm, nome_classe, sim, n_itens, atualizado, aceito…) |
 | `item_especificacao_sc` | 2 | 10 (cnpj, ano, seq, numero, descricao_pncp, especificacao, origem_tipo_documento, origem_sequencial…) |
 | `item_homologado_sc` | 1.125.941 | 31 (cod_ibge, cnpj, ano, seq, numero, municipio_nome, modalidade, srp…) |
 | `item_marca_gabarito_sc` | 1.200 | 12 (cnpj, ano, seq, numero, grupo, modalidade, descricao, tem_marca…) |
-| `item_marca_sc` | 13.108 | 12 (cod_ibge, cnpj, ano, seq, numero, descricao, produto_ata, modelo…) |
+| `item_marca_sc` | 13.192 | 12 (cod_ibge, cnpj, ano, seq, numero, descricao, produto_ata, modelo…) |
 | `item_nota_fiscal_sc` | 484 | 17 (cnpj, ano, sequencial_contrato, sequencial_instrumento, numero_produto, cod_ibge, chave_nfe, numero_controle_compra…) |
-| `item_resultado_sc` | 1.711.603 | 23 (cod_ibge, cnpj, ano, seq, numero, sequencial_resultado, ni_fornecedor, nome_razao_social_fornecedor…) |
-| `itens_classificacao_sc` | 741.906 | 14 (descr_norm, tipo, cat_nivel, cat_cod, cat_nome, cat_classe, shared, cobertura…) |
-| `itens_proc_feitos` | 252.146 | 4 (numero_controle, n, feito_em, versao) |
-| `itens_sc` | 2.301.143 | 49 (cod_ibge, cnpj, ano, seq, numero, descricao, unidade, quantidade…) |
+| `item_resultado_sc` | 1.715.825 | 23 (cod_ibge, cnpj, ano, seq, numero, sequencial_resultado, ni_fornecedor, nome_razao_social_fornecedor…) |
+| `itens_classificacao_sc` | 743.425 | 14 (descr_norm, tipo, cat_nivel, cat_cod, cat_nome, cat_classe, shared, cobertura…) |
+| `itens_proc_feitos` | 252.571 | 4 (numero_controle, n, feito_em, versao) |
+| `itens_sc` | 2.305.698 | 49 (cod_ibge, cnpj, ano, seq, numero, descricao, unidade, quantidade…) |
 | `itens_sc_feitos` | 0 | 2 (cod_ibge, ano) |
 | `itsolucoes_entidade` | 46 | 8 (p_i, entidade, municipio_txt, uf, cod_ibge, tem_remuneracao, linhas_amostra, em) |
 | `lances_sc` | 10.948 | 10 (cnpj, ano, seq, numero, cod_ibge, ordem, fornecedor, valor…) |
-| `lpg_sc` | 0 | 6 (cod_ibge, transferido, saldo, utilizado, pct_utilizado, atualizado) |
-| `marca_ancora_feitas` | 34.407 | 6 (cnpj, ano, seq, n_marca, via_haiku, feito_em) |
-| `marca_ata_feitas` | 79.363 | 6 (cnpj, ano, seq, n_marcas, feito_em, n_propostas) |
-| `marca_tpl_feitas` | 148.759 | 5 (cnpj, ano, seq, n_marca, feito_em) |
+| `lpg_sc` | 286 | 6 (cod_ibge, transferido, saldo, utilizado, pct_utilizado, atualizado) |
+| `marca_ancora_feitas` | 34.577 | 6 (cnpj, ano, seq, n_marca, via_haiku, feito_em) |
+| `marca_ata_feitas` | 89.367 | 6 (cnpj, ano, seq, n_marcas, feito_em, n_propostas) |
+| `marca_tpl_feitas` | 148.842 | 5 (cnpj, ano, seq, n_marca, feito_em) |
 | `mcmv_sc` | 295 | 7 (cod_ibge, uh_financiadas, vlr_financiamento, vlr_subsidio, ano_min, ano_max, atualizado) |
 | `medicamentos_alto_custo_sc` | 295 | 6 (cod_ibge, periodo, valor, quantidade, top_meds, atualizado) |
 | `memory_entidade` | 146 | 6 (cod_ibge, municipio, uf, entidade, situacao, em) |
@@ -522,8 +531,8 @@
 | `nf_check` | 780 | 3 (cnpj_orgao, checado, n) |
 | `nf_sc` | 0 | 11 (cod_ibge, cnpj_orgao, ano, seq_contrato, seq_instrumento, tipo, numero, chave_nfe…) |
 | `notificacao_cadastro` | 1 | 20 (id, cod_ibge, nome, cpf, matricula, cargo, secretaria, perfil…) |
-| `notificacao_impacto` | 380 | 7 (id, cod_ibge, alerta_id, tipo_impacto, valor, descricao, registrado_em) |
-| `notificacao_log` | 8.860 | 11 (id, cod_ibge, alerta_id, chave_delta, destinatario_id, canal, severidade, enviado_em…) |
+| `notificacao_impacto` | 397 | 7 (id, cod_ibge, alerta_id, tipo_impacto, valor, descricao, registrado_em) |
+| `notificacao_log` | 9.244 | 11 (id, cod_ibge, alerta_id, chave_delta, destinatario_id, canal, severidade, enviado_em…) |
 | `notificacao_regras` | 55 | 12 (alerta_id, titulo, secretaria, natureza, severidade, tem_prazo, fonte_dado, solucao_i10…) |
 | `novopac_sc` | 277 | 5 (cod_ibge, projetos, valor_previsto, em_andamento, atualizado) |
 | `obras_sc` | 2.156 | 14 (id_unico, cod_ibge, nome, situacao, especie, natureza, valor, origem…) |
@@ -535,7 +544,7 @@
 | `pca_sc_feitos` | 295 | 2 (cod_ibge, n) |
 | `pdde_saldo_sc` | 295 | 5 (cod_ibge, ano, saldo, escolas, atualizado) |
 | `pdde_sc` | 1.148 | 5 (cod_ibge, ano, vl_total, n_escolas, qt_alunos) |
-| `pg_stat_statements` | 3.116 | 52 (userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time…) |
+| `pg_stat_statements` | 3.230 | 52 (userid, dbid, toplevel, queryid, query, plans, total_plan_time, min_plan_time…) |
 | `pg_stat_statements_info` | 1 | 2 (dealloc, stats_reset) |
 | `pi_appm_sonda` | 109 | 11 (cod_ibge, municipio, slug, url, competencia, linhas, cabecalho, tem_valor…) |
 | `pi_folha_pag_sonda` | 224 | 10 (cod_ibge, municipio, url, linhas, cabecalho, tem_valor, tem_lotacao, situacao…) |
@@ -547,11 +556,11 @@
 | `pib_municipal_sc` | 295 | 8 (cod_ibge, ano, pib, pib_per_capita, atualizado, serie, componentes, componentes_serie) |
 | `pix_municipio_sc` | 7.375 | 8 (cod_ibge, ano_mes, vl_recebido, vl_recebido_pj, vl_pago, qt_recebido, n_pes_receb_pj, atualizado) |
 | `pnae_agri_sc` | 286 | 6 (cod_ibge, ano, valor_transferido, valor_agri, percentual, atualizado) |
-| `pncp_evento` | 162.303 | 22 (cnpj, ano, seq, cod_ibge, categoria, acao, item_numero, resultado_sequencial…) |
+| `pncp_evento` | 171.142 | 22 (cnpj, ano, seq, cod_ibge, categoria, acao, item_numero, resultado_sequencial…) |
 | `pnld_reserva_sc` | 7 | 6 (cod_ibge, ano, qtd_demandada, qtd_autorizada, qtd_atendimento, n_volumes) |
 | `populacao_faixa_sc` | 295 | 11 (cod_ibge, total, pop_0_14, pop_15_59, pop_60, pop_80, pct_idosos, razao_dependencia…) |
 | `populacao_idade_sc` | 295 | 8 (cod_ibge, ano, creche_0_3, pre_4_5, fund_6_14, medio_15_17, pop_0_17, idades) |
-| `portal_produto` | 565 | 8 (cod_ibge, municipio, uf, url, produto, evidencia, em, achado_em) |
+| `portal_produto` | 1.111 | 8 (cod_ibge, municipio, uf, url, produto, evidencia, em, achado_em) |
 | `portal_real_descoberto` | 5.239 | 8 (cod_ibge, erp_radar, municipio, uf, url_site, url_portal_real, fornecedor, em) |
 | `precatorios_entes_sc` | 301 | 7 (cd_entidade, de_entidade, cod_ibge, regime, valor, qtde, atualizado) |
 | `precatorios_sc` | 244 | 5 (cod_ibge, total_valor, total_qtde, n_entes, atualizado) |
@@ -565,7 +574,7 @@
 | `processo_trava` | 3 | 4 (nome, dono, desde, batida) |
 | `processos_ata_sc` | 12.566 | 3 (cnpj, seq, ano) |
 | `processos_feitos` | 55 | 4 (modalidade, ano, n, concluido_em) |
-| `processos_sc` | 252.178 | 11 (cnpj_orgao, ano, sequencial, cod_ibge, numero_controle, modalidade_id, modalidade, objeto…) |
+| `processos_sc` | 252.603 | 11 (cnpj_orgao, ano, sequencial, cod_ibge, numero_controle, modalidade_id, modalidade, objeto…) |
 | `prodes_sc` | 4.347 | 5 (cod_ibge, ano, area_km2, n_poligonos, atualizado) |
 | `producao_aps_serie_sc` | 19.461 | 5 (cod_ibge, competencia, aprovadas, total, atualizado) |
 | `producao_aps_sisab_sc` | 263 | 5 (cod_ibge, fichas_aprovadas, fichas_total, competencia, atualizado) |
@@ -657,6 +666,9 @@
 | `tche_portal` | 13 | 5 (cod_ibge, municipio, uf, url, achado_em) |
 | `tcmba_entidade` | 1.025 | 6 (cod_ibge, cd_entidade, ds_entidade, municipio, populacao, em) |
 | `tenosoft_portal` | 43 | 6 (cod_ibge, municipio, uf, entidade, detalhe, em) |
+| `tmp_571` | 571 | 3 (cod_ibge, uf, municipio) |
+| `tmp_nunca` | 537 | 3 (cod_ibge, uf, municipio) |
+| `tmp_sem_nada` | 1.238 | 3 (cod_ibge, uf, municipio) |
 | `transferencias_cgu_sc` | 87.623 | 7 (cod_ibge, ano_mes, tipo_transferencia, orgao, funcao, valor, atualizado) |
 | `transferencias_sc` | 295 | 8 (cod_ibge, n_instrumentos, valor_total, valor_liberado, por_situacao, por_orgao, top, por_ano) |
 | `transferencias_stn_sc` | 168.075 | 6 (cod_ibge, item, ano, mes, valor, fonte) |
@@ -673,16 +685,16 @@
 | `vw_folha_camara_brasil` | NaN | 21 (fonte, uf, competencia, cod_ibge, municipio, orgao, secretaria, lotacao_fonte…) |
 | `vw_folha_camara_homonimo` | NaN | 7 (cod_ibge, uf, municipio, nome_chave, pessoas_distintas, cpfs, cargos) |
 | `vw_folha_camara_pessoa` | NaN | 20 (cod_ibge, uf, municipio, nome_chave, nome, cpf_visivel, cpf_masc, cpf_padrao…) |
-| `vw_folha_cobertura` | 253 | 10 (fonte, natureza, uf, linhas, municipios, com_secretaria, com_nome, com_salario…) |
+| `vw_folha_cobertura` | 269 | 10 (fonte, natureza, uf, linhas, municipios, com_secretaria, com_nome, com_salario…) |
 | `vw_folha_es` | 205.608 | 7 (fonte, cod_ibge, competencia, nome, cargo, secretaria, valor) |
-| `vw_folha_ja_coletada` | 4.249 | 1 (cod_ibge) |
+| `vw_folha_ja_coletada` | 4.256 | 1 (cod_ibge) |
 | `vw_folha_ma` | 18.478 | 7 (fonte, cod_ibge, competencia, nome, cargo, secretaria, valor) |
-| `vw_folha_mg` | 611.065 | 7 (fonte, cod_ibge, competencia, nome, cargo, secretaria, valor) |
-| `vw_folha_municipal_brasil` | 31.754.031 | 16 (fonte, natureza, uf, competencia, cod_ibge, municipio, orgao, secretaria…) |
+| `vw_folha_mg` | 620.581 | 7 (fonte, cod_ibge, competencia, nome, cargo, secretaria, valor) |
+| `vw_folha_municipal_brasil` | 32.309.746 | 16 (fonte, natureza, uf, competencia, cod_ibge, municipio, orgao, secretaria…) |
 | `vw_folha_municipal_sc` | 4.430.699 | 14 (anomes, cod_ibge, municipio, orgao, poder, lotacao_origem, area, cargo…) |
-| `vw_folha_municipio_qualidade` | 12.361 | 9 (fonte, uf, cod_ibge, municipio, linhas, tem_cargo, tem_salario, tem_secretaria…) |
-| `vw_folha_oficial` | 20.637.500 | 14 (fonte, natureza, uf, competencia, cod_ibge, municipio, orgao, secretaria…) |
-| `vw_folha_pi` | 47.609 | 7 (fonte, cod_ibge, competencia, nome, cargo, secretaria, valor) |
+| `vw_folha_municipio_qualidade` | 12.467 | 9 (fonte, uf, cod_ibge, municipio, linhas, tem_cargo, tem_salario, tem_secretaria…) |
+| `vw_folha_oficial` | 21.193.215 | 14 (fonte, natureza, uf, competencia, cod_ibge, municipio, orgao, secretaria…) |
+| `vw_folha_pi` | 48.225 | 7 (fonte, cod_ibge, competencia, nome, cargo, secretaria, valor) |
 | `vw_folha_rr` | 18.232 | 7 (fonte, cod_ibge, competencia, nome, cargo, secretaria, valor) |
 | `vw_mg_rais` | 853 | 3 (cod_ibge, municipio, ativos) |
 | `vw_mg_situacao` | 853 | 11 (cod_ibge, municipio, vinculos, com_valor, tem_cargo, tem_secretaria, fontes, erps…) |
@@ -1452,51 +1464,122 @@
 | `scripts/_teste_ehresumo2.mjs` | — |
 | `scripts/_teste_limpanome.mjs` | _teste_limpanome.mjs — prova das duas guardas novas contra os casos reais que as motivaram. |
 | `scripts/_teste_parser_q.mjs` | — |
-| `scripts/_tmp_19.mjs` | — |
-| `scripts/_tmp_31.mjs` | — |
-| `scripts/_tmp_abo.mjs` | — |
-| `scripts/_tmp_alp.mjs` | — |
-| `scripts/_tmp_alp2.mjs` | — |
-| `scripts/_tmp_amb.mjs` | — |
-| `scripts/_tmp_amb2.mjs` | — |
-| `scripts/_tmp_conf.mjs` | — |
-| `scripts/_tmp_cu.mjs` | — |
-| `scripts/_tmp_da.mjs` | — |
-| `scripts/_tmp_efeito.mjs` | — |
-| `scripts/_tmp_exec.mjs` | — |
-| `scripts/_tmp_exec2.mjs` | — |
-| `scripts/_tmp_ft.mjs` | — |
-| `scripts/_tmp_gpe.mjs` | — |
-| `scripts/_tmp_gpe2.mjs` | — |
-| `scripts/_tmp_gpemold.mjs` | — |
-| `scripts/_tmp_ipm.mjs` | — |
-| `scripts/_tmp_ipm2.mjs` | — |
-| `scripts/_tmp_ipm3.mjs` | — |
-| `scripts/_tmp_ipm4.mjs` | — |
-| `scripts/_tmp_ipm5.mjs` | — |
-| `scripts/_tmp_ipm6.mjs` | — |
-| `scripts/_tmp_ipm7.mjs` | — |
-| `scripts/_tmp_ipm8.mjs` | — |
-| `scripts/_tmp_mem.mjs` | — |
-| `scripts/_tmp_mem2.mjs` | — |
-| `scripts/_tmp_mem3.mjs` | — |
-| `scripts/_tmp_naque.mjs` | — |
-| `scripts/_tmp_pdti.mjs` | — |
+| `scripts/_tmp_1238.mjs` | — |
+| `scripts/_tmp_1238b.mjs` | — |
+| `scripts/_tmp_24.mjs` | — |
+| `scripts/_tmp_24b.mjs` | — |
+| `scripts/_tmp_36.mjs` | — |
+| `scripts/_tmp_537.mjs` | — |
+| `scripts/_tmp_537b.mjs` | — |
+| `scripts/_tmp_571.mjs` | — |
+| `scripts/_tmp_agora.mjs` | — |
+| `scripts/_tmp_alc.mjs` | — |
+| `scripts/_tmp_alc2.mjs` | — |
+| `scripts/_tmp_and.mjs` | — |
+| `scripts/_tmp_avul.mjs` | — |
+| `scripts/_tmp_avul2.mjs` | — |
+| `scripts/_tmp_blocos.mjs` | — |
+| `scripts/_tmp_brejo.mjs` | — |
+| `scripts/_tmp_c283.mjs` | — |
+| `scripts/_tmp_c360.mjs` | — |
+| `scripts/_tmp_caj.mjs` | — |
+| `scripts/_tmp_caj2.mjs` | — |
+| `scripts/_tmp_camfim.mjs` | — |
+| `scripts/_tmp_ce.mjs` | — |
+| `scripts/_tmp_cf.mjs` | — |
+| `scripts/_tmp_classif.mjs` | — |
+| `scripts/_tmp_col78.mjs` | — |
+| `scripts/_tmp_conf2.mjs` | — |
+| `scripts/_tmp_cons.mjs` | — |
+| `scripts/_tmp_contra.mjs` | — |
+| `scripts/_tmp_desfaz.mjs` | — |
+| `scripts/_tmp_dest.mjs` | — |
+| `scripts/_tmp_diag.mjs` | — |
+| `scripts/_tmp_ef.mjs` | — |
+| `scripts/_tmp_estado.mjs` | — |
+| `scripts/_tmp_execfim.mjs` | — |
+| `scripts/_tmp_falta.mjs` | — |
+| `scripts/_tmp_fim.mjs` | — |
+| `scripts/_tmp_fim2.mjs` | — |
+| `scripts/_tmp_fim3.mjs` | — |
+| `scripts/_tmp_final.mjs` | — |
+| `scripts/_tmp_final2.mjs` | — |
+| `scripts/_tmp_g2.mjs` | — |
+| `scripts/_tmp_ganho.mjs` | — |
+| `scripts/_tmp_gb.mjs` | — |
+| `scripts/_tmp_gb2.mjs` | — |
+| `scripts/_tmp_gb3.mjs` | — |
+| `scripts/_tmp_gb4.mjs` | — |
+| `scripts/_tmp_gbest.mjs` | — |
+| `scripts/_tmp_gbfim.mjs` | — |
+| `scripts/_tmp_gbg.mjs` | — |
+| `scripts/_tmp_http.mjs` | — |
+| `scripts/_tmp_ma.mjs` | — |
+| `scripts/_tmp_ma1.mjs` | — |
+| `scripts/_tmp_ma2.mjs` | — |
+| `scripts/_tmp_ma3.mjs` | — |
+| `scripts/_tmp_ma4.mjs` | — |
+| `scripts/_tmp_ma5.mjs` | — |
+| `scripts/_tmp_marca.mjs` | — |
+| `scripts/_tmp_novo.mjs` | — |
+| `scripts/_tmp_parcial.mjs` | — |
+| `scripts/_tmp_pds.mjs` | — |
+| `scripts/_tmp_pds2.mjs` | — |
+| `scripts/_tmp_pds3.mjs` | — |
+| `scripts/_tmp_pds4.mjs` | — |
+| `scripts/_tmp_pds5.mjs` | — |
 | `scripts/_tmp_pe.mjs` | — |
-| `scripts/_tmp_perda.mjs` | — |
-| `scripts/_tmp_pfval.mjs` | — |
-| `scripts/_tmp_regra.mjs` | — |
-| `scripts/_tmp_sc.mjs` | — |
-| `scripts/_tmp_sigafi.mjs` | — |
-| `scripts/_tmp_sit.mjs` | — |
-| `scripts/_tmp_tpc.mjs` | — |
-| `scripts/_tmp_tpc2.mjs` | — |
-| `scripts/_tmp_tpc3.mjs` | — |
-| `scripts/_tmp_tpc4.mjs` | — |
-| `scripts/_tmp_unai.mjs` | — |
-| `scripts/_tmp_unai2.mjs` | — |
-| `scripts/_tmp_unid.mjs` | — |
-| `scripts/_tmp_vw.mjs` | — |
+| `scripts/_tmp_peapi.mjs` | — |
+| `scripts/_tmp_pehtml.mjs` | — |
+| `scripts/_tmp_pejs.mjs` | — |
+| `scripts/_tmp_pemenu.mjs` | — |
+| `scripts/_tmp_pen.mjs` | — |
+| `scripts/_tmp_pen2.mjs` | — |
+| `scripts/_tmp_pen3.mjs` | — |
+| `scripts/_tmp_pen4.mjs` | — |
+| `scripts/_tmp_pepg.mjs` | — |
+| `scripts/_tmp_pepost.mjs` | — |
+| `scripts/_tmp_peprobe.mjs` | — |
+| `scripts/_tmp_perow.mjs` | — |
+| `scripts/_tmp_pes.mjs` | — |
+| `scripts/_tmp_petipo.mjs` | — |
+| `scripts/_tmp_pi.mjs` | — |
+| `scripts/_tmp_pichk.mjs` | — |
+| `scripts/_tmp_pifim.mjs` | — |
+| `scripts/_tmp_pifim2.mjs` | — |
+| `scripts/_tmp_pifinal.mjs` | — |
+| `scripts/_tmp_placfim.mjs` | — |
+| `scripts/_tmp_pref.mjs` | — |
+| `scripts/_tmp_probe.mjs` | — |
+| `scripts/_tmp_prod.mjs` | — |
+| `scripts/_tmp_ptp.mjs` | — |
+| `scripts/_tmp_ptp2.mjs` | — |
+| `scripts/_tmp_ptp3.mjs` | — |
+| `scripts/_tmp_re.mjs` | — |
+| `scripts/_tmp_rech.mjs` | — |
+| `scripts/_tmp_ret.mjs` | — |
+| `scripts/_tmp_ret2.mjs` | — |
+| `scripts/_tmp_rotas.mjs` | — |
+| `scripts/_tmp_rotas2.mjs` | — |
+| `scripts/_tmp_scpi.mjs` | — |
+| `scripts/_tmp_semnada2.mjs` | — |
+| `scripts/_tmp_siap.mjs` | — |
+| `scripts/_tmp_sp2.mjs` | — |
+| `scripts/_tmp_sp210.mjs` | — |
+| `scripts/_tmp_sr.mjs` | — |
+| `scripts/_tmp_ss.mjs` | — |
+| `scripts/_tmp_st.mjs` | — |
+| `scripts/_tmp_td.mjs` | — |
+| `scripts/_tmp_ultimo.mjs` | — |
+| `scripts/_tmp_url.mjs` | — |
+| `scripts/_tmp_varre.mjs` | — |
+| `scripts/_tmp_why.mjs` | — |
+| `scripts/_tmp_zcampo.mjs` | — |
+| `scripts/_tmp_zero.mjs` | — |
+| `scripts/_tmp_zeus.mjs` | — |
+| `scripts/_tmp_zfim.mjs` | — |
+| `scripts/_tmp_zprog.mjs` | — |
+| `scripts/_tmp_zver.mjs` | — |
 | `scripts/_uf.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ _uf.mjs — FONTE ÚNICA DA VERDADE DA UF (chave-mestra da nacionalizaç |
 | `scripts/_uf_consolida.mjs` | Ponto de partida da folha numa UF: quanto já existe, por fonte, com salário e secretaria. Uso: UFS=52,17 node scripts/_uf_consolida.mjs   (52=GO, 17=TO) |
 | `scripts/_uf_diag.mjs` | _uf_diag.mjs — retrato de uma UF antes de coletar: quem já tem folha, por qual fonte, e o mapa de ERP. Uso: UF_ALVO=AM COD=13 node scripts/_uf_diag.mjs |
@@ -1648,6 +1731,7 @@
 | `scripts/descobre_govbr.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ descobre_govbr.mjs — acha os municípios clientes da GovernançaBrasil |
 | `scripts/descobre_govbr_js.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ descobre_govbr_js.mjs — descoberta com RENDER JS dos clientes Govern |
 | `scripts/descobre_govbr_probe.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ descobre_govbr_probe.mjs — descoberta dos clientes GovernançaBrasil  |
+| `scripts/descobre_host_govbr.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ descobre_host_govbr.mjs — acha o HOST REAL do portal GovBR/PRONIM l |
 | `scripts/descobre_host_porta_pelo_site.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ descobre_host_porta_pelo_site.mjs — acha o portal de transparência q |
 | `scripts/descobre_iframe_folha.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ descobre_iframe_folha.mjs — abre a tela de pessoal de cada município |
 | `scripts/descobre_ipm_rotina.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ descobre_ipm_rotina.mjs — descobre, por município IPM, o CÓDIGO e a  |
@@ -1673,7 +1757,7 @@
 | `scripts/diag_fila_portais.mjs` | DIAGNÓSTICO DA FILA INTEIRA — para cada portal, duas perguntas que levam a caminhos diferentes:   1. quantos processos têm ATA no PNCP?          → vale escrever LEITOR (barato, dad |
 | `scripts/diag_portal_ata.mjs` | O PORTAL ENTREGA ATA AO PNCP? — teste barato, a rodar ANTES de escrever qualquer leitor.  Aprendido no e-lic (05/ago/2026): gastei tempo procurando quadro de vencedores num portal  |
 | `scripts/diag_portal_docs.mjs` | TODOS os documentos que um portal leva ao PNCP, agrupados por título NORMALIZADO.  Aprendido na BNC (05/ago/2026): contar por título exato ESCONDE a ata. Os documentos de resultado |
-| `scripts/diagnostica_faltantes.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ diagnostica_faltantes.mjs — abre o portal de CADA município ainda se |
+| `scripts/diagnostica_faltantes.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ diagnostica_faltantes.mjs — abre o portal de CADA município ainda s |
 | `scripts/diagnostico_gestor.mjs` | MOTOR DE DIAGNÓSTICO DO GESTOR — pontos de análise + sugestões acionáveis. Benchmark por GRUPO DE PARES (porte populacional) e ANO FECHADO (exclui ano em curso). Regras ancoradas e |
 | `scripts/dl_epub_js.mjs` | — |
 | `scripts/dl_tr.mjs` | — |
@@ -1739,7 +1823,7 @@
 | `scripts/identifica_erp_por_pagina.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ identifica_erp_por_pagina.mjs — para cada portal do Radar, VISITA a  |
 | `scripts/identifica_erp_prefeitura_convertida.mjs` | Roda o identificador de ERP por ASSINATURA sobre as prefeituras que `descobre_prefeitura_de_camara.mjs` recuperou. Elas nasceram fora do fluxo normal: o Radar só tinha o portal da  |
 | `scripts/identifica_host_desconhecido.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ identifica_host_desconhecido.mjs — abre o host que a varredura achou |
-| `scripts/identifica_produto_portal.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ identifica_produto_portal.mjs — descobre QUAL PRODUTO roda por trás  |
+| `scripts/identifica_produto_portal.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ identifica_produto_portal.mjs — descobre QUAL PRODUTO roda por trás |
 | `scripts/inep_list.mjs` | — |
 | `scripts/inep_matriculas.mjs` | — |
 | `scripts/inep_parse.mjs` | — |
@@ -1833,7 +1917,7 @@
 | `scripts/ingest_fnde_fundos.mjs` | ETL — FNDE/SIMAD: FUNDOS de educação (municipal/estadual) — versão RÁPIDA. Por município: sonda 2 anos recentes p/ achar CNPJs de FUNDO/MUNICÍPIO (exclui escolas/APPs). Se achar, c |
 | `scripts/ingest_fnde_simad.mjs` | ETL — FNDE/SIMAD liberações por município (educação). Browser-only (WAF F5 bloqueia curl) → Playwright headless. Fluxo: form (tp vazio) → LISTA DE ENTIDADES → enviarFormulario(cnpj |
 | `scripts/ingest_fns_sc.mjs` | ETL — Repasses federais fundo-a-fundo do FNS por bloco/área, por município de SC. Fonte: API REST da Consulta Consolidada do FNS (consultafns.saude.gov.br) — descoberta via app Ang |
-| `scripts/ingest_folha_7focus.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_7focus.mjs — folha nominal do ERP 7Focus (forte no Toca |
+| `scripts/ingest_folha_7focus.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_7focus.mjs — folha nominal do ERP 7Focus (forte no Toc |
 | `scripts/ingest_folha_abase.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_abase.mjs — folha nominal COM salário do bloco `abase`, |
 | `scripts/ingest_folha_abo_mg.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_abo_mg.mjs — portal ABO-MG (ASP.NET MVC), `transparenci |
 | `scripts/ingest_folha_admrh.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_admrh.mjs — folha do portal **ADMRH** (`{host}/rhsyspor |
@@ -1886,7 +1970,7 @@
 | `scripts/ingest_folha_geosiap.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_geosiap.mjs — folha dos municípios que usam o GeoSIAP ( |
 | `scripts/ingest_folha_govbr.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_govbr.mjs — ingere o XML de folha exportado do portal G |
 | `scripts/ingest_folha_govbr_auto.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_govbr_auto.mjs — coletor AUTOMÁTICO da folha Governança |
-| `scripts/ingest_folha_govbr_dadosabertos.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_govbr_dadosabertos.mjs — a folha do PRONIM/Cidade360 (G |
+| `scripts/ingest_folha_govbr_dadosabertos.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_govbr_dadosabertos.mjs — a folha do PRONIM/Cidade360 ( |
 | `scripts/ingest_folha_govbr_gp.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_govbr_gp.mjs — folha nominal dos portais GovernançaBras |
 | `scripts/ingest_folha_gpecloud.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_gpecloud.mjs — GPE Cloud (`{slug}-transparencia.gpeclou |
 | `scripts/ingest_folha_gwtransparencia.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_gwtransparencia.mjs — folha dos portais GW Transparênci |
@@ -1897,6 +1981,9 @@
 | `scripts/ingest_folha_itsolucoes.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_itsolucoes.mjs — folha NOMINAL COM VALOR do portal `por |
 | `scripts/ingest_folha_layout.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_layout.mjs — folha NOMINAL COM SALÁRIO + SECRETARIA dos |
 | `scripts/ingest_folha_londrina.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_londrina.mjs — folha nominal de LONDRINA/PR (2º maior m |
+| `scripts/ingest_folha_ma_camara.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_ma_camara.mjs — folha das CÂMARAS do Maranhão no bloco  |
+| `scripts/ingest_folha_ma_funcionarios.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_ma_funcionarios.mjs — bloco `/funcionarios` do Maranhã |
+| `scripts/ingest_folha_ma_zeus.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_ma_zeus.mjs — folha das CÂMARAS do MA no CMS "zeus-cam" |
 | `scripts/ingest_folha_megasoft.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_megasoft.mjs — folha nominal dos municípios do ERP Mega |
 | `scripts/ingest_folha_memory.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_memory.mjs — folha NOMINAL COM SALÁRIO dos municípios  |
 | `scripts/ingest_folha_minastransparente.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_minastransparente.mjs — portal "MinasTransparente" (Ne |
@@ -1906,6 +1993,7 @@
 | `scripts/ingest_folha_nucleogov.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_nucleogov.mjs — folha nominal dos municípios do ERP Nuc |
 | `scripts/ingest_folha_pdf_relacao.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_pdf_relacao.mjs — folha nominal publicada como PDF de R |
 | `scripts/ingest_folha_pdtinfo.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_pdtinfo.mjs — `{slug}.portaldatransparencia.info`, tema |
+| `scripts/ingest_folha_pe_leg.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_pe_leg.mjs — folha das CÂMARAS de Pernambuco no white-l |
 | `scripts/ingest_folha_pelotas.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_pelotas.mjs — folha nominal de PELOTAS (11.165 vínculos |
 | `scripts/ingest_folha_pi_transparencia.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_pi_transparencia.mjs — FOLHA COMPLETA dos municípios do PI  |
 | `scripts/ingest_folha_pi_v2.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_pi_v2.mjs — FOLHA (com valor) dos municípios do PIAUÍ que r |
@@ -1915,7 +2003,7 @@
 | `scripts/ingest_folha_portalfacil.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_portalfacil.mjs — Portal Fácil (`{site do município}/t |
 | `scripts/ingest_folha_portalfacil_api.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_portalfacil_api.mjs — Portal Fácil pela API central de  |
 | `scripts/ingest_folha_portalnovo.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_portalnovo.mjs — folha do "Portal da Transparência /novo"  |
-| `scripts/ingest_folha_portaltp.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_portaltp.mjs — folha dos municípios que usam o Portal T |
+| `scripts/ingest_folha_portaltp.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_portaltp.mjs — folha dos municípios que usam o Portal  |
 | `scripts/ingest_folha_portaltransp.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_portaltransp.mjs — portal "Portal Transparência" (porta |
 | `scripts/ingest_folha_portovelho.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_portovelho.mjs — folha nominal de PORTO VELHO (capital de R |
 | `scripts/ingest_folha_portovelho_API_HEITOR.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ ingest_folha_portovelho.mjs — folha nominal de PORTO VELHO (RO), cap |
@@ -2072,9 +2160,11 @@
 | `scripts/limpa_camara_contaminada.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ limpa_camara_contaminada.mjs — apaga a folha da PREFEITURA que entro |
 | `scripts/lote_do_item.mjs` | ITEM ↔ LOTE — a lógica, com testes.  ═══ O QUE O USUÁRIO ENSINOU (2026-07-16), e que muda tudo ═══ **O TR vem PRIMEIRO. O sistema publica DEPOIS.** O servidor digita os itens no si |
 | `scripts/mapa_atas_plataformas.mjs` | MAPA DAS ATAS POR PLATAFORMA (SC) — artefato do estudo profundo de 2026-07-15. O tipo_documento do PNCP NÃO distingue a ata (joga quase tudo em "Outros Documentos"); o único discri |
+| `scripts/mapa_camara_por_fonte.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ mapa_camara_por_fonte.mjs — onde a CÂMARA está ao alcance e não foi  |
 | `scripts/mapa_cobertura_folha_uf.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ mapa_cobertura_folha_uf.mjs — quantos municípios, por estado, têm o  |
 | `scripts/mapa_folha_camaras.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ mapa_folha_camaras.mjs — o placar nacional da folha das CÂMARAS e a |
 | `scripts/mapa_folha_nacional.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════ mapa_folha_nacional.mjs — quantos dos 5.570 municípios têm folha nominal |
+| `scripts/mapa_folha_so_camara.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ mapa_folha_so_camara.mjs — os municípios que contam como "prefeitura |
 | `scripts/marca_destravada_por_rota.mjs` | O QUE A ROTA DESTRAVA — quanto de MARCA passa a ser alcançável depois do roteador v3. Separa o que é extraível JÁ (doc de resultado no acervo, custo zero, sem rede) do que vira FIL |
 | `scripts/marca_estado_processo.mjs` | ESTADO da marca por processo (homologado c/ itens) — roteado pelo portal REAL. Mata o falso negativo: nunca "sem marca"; sempre CONFERIDA / doc-no-acervo / a-buscar[portal] / sem-r |
 | `scripts/marca_folha_legislativo.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ marca_folha_legislativo.mjs — acha e MARCA os municípios cuja folha  |
@@ -2298,6 +2388,7 @@
 | `scripts/probe_folha_tcema.mjs` | probe_folha_tcema.mjs — o TCE-MA entrega folha NOMINAL dos 217 municípios com lotação, cargo e salário? A API é Spring paginado (?page=&size=, devolve {content,totalElements}). Med |
 | `scripts/probe_folha_tcs.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ probe_folha_tcs.mjs — MEDE quais tribunais de contas entregam folha  |
 | `scripts/promove_diagnostico_camara.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ promove_diagnostico_camara.mjs — leva o que o diagnóstico com navega |
+| `scripts/promove_diagnostico_executivo.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ promove_diagnostico_executivo.mjs — leva o que o diagnóstico com na |
 | `scripts/prova_completude_emendas_fed.mjs` | PROVA DE COMPLETUDE (FONTE→BASE) — Emendas federais EXECUÇÃO (Portal da Transparência). Risco: o coletor só captura localidadeDoGasto no padrão "Cidade - SC"; emendas de SC com loc |
 | `scripts/prova_real_emendas_fed.mjs` | PROVA REAL — o motor federal (getCaptacaoEmendasSC) não "esquece" dado? Concilia a BASE (emendas_execucao_sc / emendas_indicacao_sc) com o que o MOTOR projeta, linha a linha e valo |
 | `scripts/prova_real_notificacoes.mjs` | PROVA REAL dos motores de notificação/risco — concilia o que o MOTOR gera (notificacao_log) com uma consulta INDEPENDENTE na base. Foco: (a) false-positive (motor flagou quem não d |
@@ -2342,6 +2433,7 @@
 | `scripts/recarimba_gerador.mjs` | RE-CARIMBA arquivo_texto_sc.gerador RODANDO OS PARSERS (não por assinatura de texto).  POR QUE: assinatura não prova leitura. Medido em 800 docs COM MARCA: a assinatura dizia "port |
 | `scripts/reclassifica_host_candidato.mjs` | Reclassifica `folha_host_candidato` pela URL COMPLETA, agora que ela está gravada inteira.  ⭐ A prova costuma estar na própria URL — só é preciso lê-la com a assinatura certa:    ` |
 | `scripts/reclassifica_produto_camara.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ reclassifica_produto_camara.mjs — reconhece o produto pela URL JÁ VI |
+| `scripts/reclassifica_produto_govbr_falso.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ reclassifica_produto_govbr_falso.mjs — conserta o PRODUTO no radar  |
 | `scripts/recon_folha1.mjs` | — |
 | `scripts/reconstroi_view_folha_brasil.mjs` | ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════ reconstroi_view_folha_brasil.mjs — faz `vw_folha_municipal_brasil` e |
 | `scripts/recorte_bloco.mjs` | RECORTE DO BLOCO DE SPEC — a fronteira do trecho que descreve UM item dentro do documento. Módulo próprio (e não uma função solta no enriquece_item_documento) porque o teste precis |
@@ -2568,178 +2660,178 @@
 
 | Fonte | Provedor | Ano + recente | Última coleta | Situação |
 |---|---|---|---|---|
-| Outorgas de uso da água por município (ANA, finalidade+série) | ana | — | há 14d | em dia |
-| Barragens por município (ANA/SNISB — dano potencial + risco) | ana | 2025 | há 5h | em dia |
-| Banda larga fixa por município (ANATEL, série 2007+) | anatel | — | há 5h | em dia |
-| Geração distribuída de energia por município (ANEEL, série) | aneel | — | há 11d | em dia |
-| CFEM — royalties de mineração por município (ANM, distribuição) | anm | 2026 | há 14d | em dia |
-| Preços de combustíveis por município (ANP, semestral, série 2004+) | anp | 2021 | há 14d | em dia |
-| Vendas de combustíveis por município (ANP, série 1990+) | anp | 2024 | há 5h | em dia |
-| Cobertura de planos de saúde por município (ANS — pressão sobre o SUS) | ans | 2026 | há 14d | em dia |
-| CMED/Anvisa PMVG — preço-teto legal de medicamentos (Conformidade Gov, auto-descobre URL); referência nacional p/ sobrepreço em saúde (SC = ICMS 17%) | anvisa | 2025 | há 19d | em dia |
-| Desastres S2ID por município (Atlas Digital CEPED-UFSC/MIDR, série 1991+) | atlas | — | há 5h | em dia |
-| IDHM + subíndices por município (Atlas Brasil PNUD, Censo 2010) | atlasbrasil | 2025 | há 14d | em dia |
-| Sistema financeiro por município (BCB Olinda — agências/cooperativas/correspondentes + Pix série) | bcb | — | há 19d | em dia |
-| ESTBAN — volumes bancários por município (BCB, crédito/poupança, série) | bcb | — | há 19d | em dia |
-| PRONAF / Crédito Rural por município — valor contratado por ano (BCB SICOR/Matriz do Crédito Rural, OData; cdEstado=25) | bcb | 2025 | há 5h | em dia |
-| BNDES desembolsos por município (crédito produtivo, série 1995+) | bndes | 2026 | há 14d | em dia |
-| Espelho completo CADPREV (37 recursos: DAIR/DIPR/DRAA/RPPS_*) | cadprev | — | há 26d | em dia |
-| Alertas de CRP (transições vencido/a vencer — varredura) | cadprev | — | há 5h | em dia |
-| Déficit atuarial RPPS (CADPREV/DRAA) | cadprev | — | há 7d | em dia |
-| Regularidade previdenciária CRP (CADPREV — Consulta Pública) | cadprev | — | há 5h | em dia |
-| Equipamentos SUAS — fallback de geo por CEP (AwesomeAPI) | cadsuas | — | há 2h | pendente |
-| Equipamentos SUAS — endereço/telefone (CadSUAS detalhe, HTTP) | cadsuas | — | há 5h | em dia |
-| Equipamentos SUAS — geocodificação (Nominatim/OSM por endereço) | cadsuas | — | há 5h | em dia |
-| Equipamentos SUAS por unidade (CadSUAS, Playwright): CRAS/CREAS/Centro POP/Acolhimento + nome/nº | cadsuas | — | há 5h | em dia |
-| Estações de monitoramento de risco CEMADEN por município (defesa civil) | cemaden | 2025 | há 5h | em dia |
-| Transferências (CGU) | cgu | — | há 5h | em dia |
-| Transferências federais à prefeitura (CGU download em massa) | cgu | 2025 | há 5h | em dia |
-| Habitação — MCMV (Minha Casa Minha Vida), unidades financiadas por município (Min. Cidades, gov.br/cidades — sem WAF); alimenta o casamento oportunidade×necessidade | cidades | 2025 | há 14d | em dia |
-| Saneamento SINISA por município (água/esgoto/resíduos, Min. Cidades, ref 2024) | cidades | 2024 | há 14d | em dia |
-| CNES — rede de saúde (Min. Saúde) | cnes | 2026 | há 5h | em dia |
-| Unidades de conservação por município (MMA CNUC, interseção PostGIS) | cnuc | — | há 14d | em dia |
-| Catálogo oficial CATMAT/CATSER (Compras.gov.br) — espinha de classificação | compras | — | há 5h | em dia |
-| Referência NACIONAL de preços por CATMAT (Painel de Preços/Compras.gov.br), por unidade e por forma (avulso×escala) — enriquece o Banco de Preços e o sobrepreço | compras | 2025 | há 2h | pendente |
-| PAA compras agricultura familiar por município (Conab) | conab | 2025 | há 5h | em dia |
-| Bancada federal do estado (deputados + senadores) p/ módulo de Captação de Emendas — APIs Câmara + Senado | congresso | 2025 | há 19d | em dia |
-| Lei Paulo Gustavo execução/saldo por município (MinC) | cultura | 2025 | há 5h | em dia |
-| Comunidades quilombolas certificadas por município (Palmares) | cultura | — | há 5h | em dia |
-| Lei Rouanet SALIC — aprovado/captado por município (MinC) | cultura | 2025 | há 16d | em dia |
-| APAC oncologia e diálise por município (SIA-APAC) | datasus | — | há 5h | em dia |
-| Equipamentos médicos por estabelecimento (CNES EQ) | datasus | 2024 | há 14d | em dia |
-| Equipes de saúde (ESF) por município/estabelecimento (CNES EP) | datasus | 2024 | há 14d | em dia |
-| Estabelecimentos de saúde por município (CNES — rede p/ regulação, API DEMAS) | datasus | 2025 | há 5h | em dia |
-| Leitos hospitalares por estabelecimento (CNES LT) | datasus | 2024 | há 14d | em dia |
-| Profissionais de saúde por município/estabelecimento (CNES PF) | datasus | 2024 | há 5h | em dia |
-| Medicamentos de alto custo CEAF por município (SIA grupo 06) | datasus | — | há 5h | em dia |
-| Previne Brasil — indicadores APS (SISAB) | datasus | — | há 19d | em dia |
-| Saúde mental CAPS/RAAS por município (SIA-RAAS-PS) | datasus | — | há 5h | em dia |
-| SIA — produção ambulatorial (DATASUS) | datasus | 2025 | há 5h | em dia |
-| Produção ambulatorial SUS por complexidade (DATASUS SIA + SIGTAP) | datasus | — | há 14d | em dia |
-| Internações SUS por município (DATASUS SIH DBC mensal) | datasus | 2024 | há 14d | em dia |
-| SIH — produção hospitalar (DATASUS TabNet) | datasus | 2025 | há 5h | em dia |
-| Óbitos por município (DATASUS SIM, descompressor DBC próprio) | datasus | 2026 | há 14d | em dia |
-| Agravos de notificação SINAN por município (tuberculose/hanseníase/violência) | datasus | 2024 | há 14d | em dia |
-| Nascimentos por município (DATASUS SINASC DBC) | datasus | 2026 | há 14d | em dia |
-| Apresentação Camada 2 (descrição → quantidade do conteúdo p/ itens-container); derivado de itens_sc + Camada 1, via SQL | derivado | 2025 | há 12d | em dia |
-| Apresentação Camada LLM (Haiku extrai qtd do resíduo ambíguo, com abstenção); derivado, usa ANTHROPIC_API_KEY + cache | derivado | 2025 | há 5h | em dia |
-| Apresentação Camada 1 (rótulo → unidade básica + fator de desempacotamento); derivado de itens_sc, via SQL | derivado | 2025 | há 5h | em dia |
-| Compras por ente/ano — DERIVADA do espelho (contratacoes_sc, sem re-fetch) | derivado | 2026 | há 2h | pendente |
-| Red-flag de unidade trocada no lançamento — item que destoa ≥100× da mediana do grupo CATMAT+base (efeito colateral do Passe 2); derivado | derivado | 2025 | há 5h | em dia |
-| Referência por UNIDADE BÁSICA (Passe 2) — CATMAT+base+forma, mediana + curadoria IQR (IN 65 art.6); derivado de itens_sc + item_catmat_map + apresentação | derivado | 2025 | há 2h | pendente |
-| Análise de compras por PREÇO UNITÁRIO — livro de preços de referência de SC + sobrepreço por município (derivado de itens_sc, via SQL) | derivado | 2025 | há 19d | em dia |
-| Red flags de fornecedores — concentração + sanção (CEIS/CNEP) + sobrepreço por fornecedor (derivado de contratos/itens/sancoes, via SQL) | derivado | 2025 | há 19d | em dia |
-| Re-derivação por fatia (evento → derivadas do ente) | derivado | 2025 | há 2h | pendente |
-| Indícios de sobrepreço em medicamentos (compras do município vs teto legal PMVG, por substância+dosagem); derivado de cmed_pmvg + itens_sc | derivado | 2025 | há 14d | em dia |
-| Reconstrução do sobrepreço com DUPLO benchmark — mediana de SC + referência nacional + desvio/CV (IN 65); derivado de itens_sc + precos_referencia_sc + precos_nacional_ref | derivado | 2025 | há 18d | em dia |
-| Variação INTERNA de preços — mesmo município comprou o mesmo item a preços diferentes (derivado de itens_sc, via SQL) | derivado | 2025 | há 19d | em dia |
-| Bolsa Atleta por município (Min. Esporte — atletas + valor) | esporte | 2025 | há 2h | pendente |
-| Matrículas FUNDEB oficiais (FNDE Antonieta de Barros) | fnde | 2026 | há 14d | em dia |
-| Parâmetros FUNDEB — fatores/VAAT/VAAR (FNDE) | fnde | 2026 | há 14d | em dia |
-| PDDE por município (FNDE — Plataforma Antonieta de Barros) | fnde | 2024 | há 14d | em dia |
-| PDDE saldo parado (verba escolar não executada) por município (FNDE Antonieta de Barros) | fnde | 2025 | há 5h | em dia |
-| PNAE % agricultura familiar (mínimo legal 30%) por município (FNDE) | fnde | 2025 | há 5h | em dia |
-| PNLD reserva técnica — demanda de livros (FNDE — Antonieta de Barros) | fnde | 2025 | há 19d | em dia |
-| Repasses federais FNS por bloco (Consulta Consolidada) | fns | 2026 | há 14d | em dia |
-| Autos de infração ambiental por município (IBAMA, série 1990+) | ibama | — | há 19d | em dia |
-| Áreas embargadas por município (IBAMA CSV) | ibama | — | há 5h | em dia |
-| Agricultura e agricultura familiar por município — Censo Agropecuário 2017 (IBGE/SIDRA t/6778+6883): estabelecimentos + área, familiar vs não-familiar | ibge | 2025 | há 5h | em dia |
-| Taxa de alfabetização 15+ Censo 2022 (IBGE SIDRA 9543) | ibge | 2025 | há 5h | em dia |
-| População por cor/raça Censo 2022 (IBGE SIDRA 9605) | ibge | 2025 | há 14d | em dia |
-| Domicílios + densidade domiciliar Censo 2022 (IBGE SIDRA 4712) | ibge | 2025 | há 5h | em dia |
-| Georreferência dos entes (centroide/área/região — IBGE malhas; base p/ frete e variação de preço) | ibge | 2025 | há 5h | em dia |
-| Indicadores (IBGE/CGU) | ibge | 2024 | há 15d | em dia |
-| População indígena (IBGE Censo 2022) | ibge | — | há 5h | em dia |
-| IBGE MUNIC — instrumentos de gestão (planos/conselhos/fundos/instrumentos legais) por município, da BASE DE DADOS oficial (xlsx), não SIDRA | ibge | 2025 | há 13d | em dia |
-| PIB municipal preços correntes + per capita (IBGE SIDRA 5938) | ibge | 2025 | há 5h | em dia |
-| População por faixa etária Censo 2022 + idosos/dependência (IBGE SIDRA 9514) | ibge | 2025 | há 5h | em dia |
-| Saneamento por município (água/esgoto/lixo) — IBGE Censo 2022 via SIDRA (cobertura por domicílio) | ibge | 2025 | há 14d | em dia |
-| Setores censitários Censo 2022 — perfil intraurbano (IBGE FTP) | ibge | 2025 | há 5h | em dia |
-| % crianças 0-14 por setor → variável do mapa intraurbano (IBGE demografia) | ibge | 2025 | há 14d | em dia |
-| Malha (polígonos) dos setores → mapa choropleth (IBGE GPKG) | ibge | 2025 | há 13d | em dia |
-| % idosos por setor censitário → variável do mapa intraurbano (IBGE demografia) | ibge | 2025 | há 14d | em dia |
-| Museus por município (IBRAM MuseusBr) | ibram | 2025 | há 14d | em dia |
-| Assentamentos reforma agrária por município (INCRA/MDA SIPRA) | incra | — | há 5h | em dia |
-| Censo Escolar — matrículas (INEP Sinopse) | inep | 2025 | há 13d | em dia |
-| Educação especial/AEE por município (INEP Censo microdata) | inep | 2025 | há 5h | em dia |
-| Número de turmas por etapa/rede (INEP Censo Escolar) | inep | 2025 | há 5h | em dia |
-| Escolas por município + infraestrutura (INEP Censo Escolar) | inep | 2025 | há 13d | em dia |
-| Taxa de evasão por etapa (INEP Fluxo/Transição) | inep | 2025 | há 46d | em dia |
-| FNDE liberações por município (SIMAD, Playwright) | inep | 2025 | há 5h | em dia |
-| IDEB — indicadores educacionais (INEP) | inep | 2025 | há 14d | em dia |
-| Indicadores educacionais INEP (AFD/TDI/ATU/rendimento por município) | inep | 2025 | há 13d | em dia |
-| Indicadores INEP por escola (georreferenciado) | inep | 2025 | há 13d | em dia |
-| SAEB proficiência Port/Mat por etapa (INEP) | inep | 2025 | há 5h | em dia |
-| Arboviroses (dengue/zika/chikungunya) por município (InfoDengue/SINAN) | infodengue | 2025 | há 4d | em dia |
-| Dengue por município (SINAN via InfoDengue, série + incidência) | infodengue | 2025 | há 5d | em dia |
-| Desmatamento PRODES por município (INPE, interseção PostGIS) | inpe | 2025 | há 14d | em dia |
-| Focos de calor por município (INPE BDQueimadas, mensal) | inpe | 2026 | há 1d | em dia |
-| IEGM — qualidade da gestão (TCE-SC/IRB, dados abertos) | irb | 2025 | há 14d | em dia |
-| Cobertura vacinal SÉRIE 2015-2026 por município/vacina (SI-PNI LocalizaSUS, engine Qlik set-analysis) | localizasus | 2026 | há 5h | em dia |
-| CAF — Cadastro Nacional da Agricultura Familiar (ex-DAP) por município: nº de agricultores familiares (MDA, XLSX mensal) | mda | 2025 | há 19d | em dia |
-| IGD-M gestão PBF/CadÚnico por município (MDS/SAGI Solr) | mds | — | há 5h | em dia |
-| SUAS repasse+SALDO na mesa por município (MDS/SAGI Solr) — recurso não usado | mds | 2025 | há 19d | em dia |
+| Outorgas de uso da água por município (ANA, finalidade+série) | ana | — | há 16d | em dia |
+| Barragens por município (ANA/SNISB — dano potencial + risco) | ana | 2025 | há 5h | pendente |
+| Banda larga fixa por município (ANATEL, série 2007+) | anatel | — | há 5h | pendente |
+| Geração distribuída de energia por município (ANEEL, série) | aneel | — | há 13d | em dia |
+| CFEM — royalties de mineração por município (ANM, distribuição) | anm | 2026 | há 16d | em dia |
+| Preços de combustíveis por município (ANP, semestral, série 2004+) | anp | 2021 | há 16d | em dia |
+| Vendas de combustíveis por município (ANP, série 1990+) | anp | 2024 | há 5h | pendente |
+| Cobertura de planos de saúde por município (ANS — pressão sobre o SUS) | ans | 2026 | há 16d | em dia |
+| CMED/Anvisa PMVG — preço-teto legal de medicamentos (Conformidade Gov, auto-descobre URL); referência nacional p/ sobrepreço em saúde (SC = ICMS 17%) | anvisa | 2025 | há 21d | em dia |
+| Desastres S2ID por município (Atlas Digital CEPED-UFSC/MIDR, série 1991+) | atlas | — | há 5h | pendente |
+| IDHM + subíndices por município (Atlas Brasil PNUD, Censo 2010) | atlasbrasil | 2025 | há 16d | em dia |
+| Sistema financeiro por município (BCB Olinda — agências/cooperativas/correspondentes + Pix série) | bcb | — | há 21d | em dia |
+| ESTBAN — volumes bancários por município (BCB, crédito/poupança, série) | bcb | — | há 21d | em dia |
+| PRONAF / Crédito Rural por município — valor contratado por ano (BCB SICOR/Matriz do Crédito Rural, OData; cdEstado=25) | bcb | 2025 | há 2d | em dia |
+| BNDES desembolsos por município (crédito produtivo, série 1995+) | bndes | 2026 | há 16d | em dia |
+| Espelho completo CADPREV (37 recursos: DAIR/DIPR/DRAA/RPPS_*) | cadprev | — | há 28d | em dia |
+| Alertas de CRP (transições vencido/a vencer — varredura) | cadprev | — | há 5h | pendente |
+| Déficit atuarial RPPS (CADPREV/DRAA) | cadprev | — | há 9d | em dia |
+| Regularidade previdenciária CRP (CADPREV — Consulta Pública) | cadprev | — | há 5h | pendente |
+| Equipamentos SUAS — fallback de geo por CEP (AwesomeAPI) | cadsuas | — | há 5h | pendente |
+| Equipamentos SUAS — endereço/telefone (CadSUAS detalhe, HTTP) | cadsuas | — | há 5h | pendente |
+| Equipamentos SUAS — geocodificação (Nominatim/OSM por endereço) | cadsuas | — | há 5h | pendente |
+| Equipamentos SUAS por unidade (CadSUAS, Playwright): CRAS/CREAS/Centro POP/Acolhimento + nome/nº | cadsuas | — | há 5h | pendente |
+| Estações de monitoramento de risco CEMADEN por município (defesa civil) | cemaden | 2025 | há 5h | pendente |
+| Transferências (CGU) | cgu | — | há 5h | pendente |
+| Transferências federais à prefeitura (CGU download em massa) | cgu | 2025 | há 5h | pendente |
+| Habitação — MCMV (Minha Casa Minha Vida), unidades financiadas por município (Min. Cidades, gov.br/cidades — sem WAF); alimenta o casamento oportunidade×necessidade | cidades | 2025 | há 16d | em dia |
+| Saneamento SINISA por município (água/esgoto/resíduos, Min. Cidades, ref 2024) | cidades | 2024 | há 16d | em dia |
+| CNES — rede de saúde (Min. Saúde) | cnes | 2026 | há 5h | pendente |
+| Unidades de conservação por município (MMA CNUC, interseção PostGIS) | cnuc | — | há 16d | em dia |
+| Catálogo oficial CATMAT/CATSER (Compras.gov.br) — espinha de classificação | compras | — | há 5h | pendente |
+| Referência NACIONAL de preços por CATMAT (Painel de Preços/Compras.gov.br), por unidade e por forma (avulso×escala) — enriquece o Banco de Preços e o sobrepreço | compras | 2025 | há 5h | pendente |
+| PAA compras agricultura familiar por município (Conab) | conab | 2025 | há 5h | pendente |
+| Bancada federal do estado (deputados + senadores) p/ módulo de Captação de Emendas — APIs Câmara + Senado | congresso | 2025 | há 21d | em dia |
+| Lei Paulo Gustavo execução/saldo por município (MinC) | cultura | 2025 | há 5h | pendente |
+| Comunidades quilombolas certificadas por município (Palmares) | cultura | — | há 5h | pendente |
+| Lei Rouanet SALIC — aprovado/captado por município (MinC) | cultura | 2025 | há 18d | em dia |
+| APAC oncologia e diálise por município (SIA-APAC) | datasus | — | há 5h | pendente |
+| Equipamentos médicos por estabelecimento (CNES EQ) | datasus | 2024 | há 16d | em dia |
+| Equipes de saúde (ESF) por município/estabelecimento (CNES EP) | datasus | 2024 | há 16d | em dia |
+| Estabelecimentos de saúde por município (CNES — rede p/ regulação, API DEMAS) | datasus | 2025 | há 5h | pendente |
+| Leitos hospitalares por estabelecimento (CNES LT) | datasus | 2024 | há 16d | em dia |
+| Profissionais de saúde por município/estabelecimento (CNES PF) | datasus | 2024 | há 5h | pendente |
+| Medicamentos de alto custo CEAF por município (SIA grupo 06) | datasus | — | há 5h | pendente |
+| Previne Brasil — indicadores APS (SISAB) | datasus | — | há 21d | em dia |
+| Saúde mental CAPS/RAAS por município (SIA-RAAS-PS) | datasus | — | há 5h | pendente |
+| SIA — produção ambulatorial (DATASUS) | datasus | 2025 | há 5h | pendente |
+| Produção ambulatorial SUS por complexidade (DATASUS SIA + SIGTAP) | datasus | — | há 16d | em dia |
+| Internações SUS por município (DATASUS SIH DBC mensal) | datasus | 2024 | há 16d | em dia |
+| SIH — produção hospitalar (DATASUS TabNet) | datasus | 2025 | há 5h | pendente |
+| Óbitos por município (DATASUS SIM, descompressor DBC próprio) | datasus | 2026 | há 16d | em dia |
+| Agravos de notificação SINAN por município (tuberculose/hanseníase/violência) | datasus | 2024 | há 16d | em dia |
+| Nascimentos por município (DATASUS SINASC DBC) | datasus | 2026 | há 16d | em dia |
+| Apresentação Camada 2 (descrição → quantidade do conteúdo p/ itens-container); derivado de itens_sc + Camada 1, via SQL | derivado | 2025 | há 14d | em dia |
+| Apresentação Camada LLM (Haiku extrai qtd do resíduo ambíguo, com abstenção); derivado, usa ANTHROPIC_API_KEY + cache | derivado | 2025 | há 5h | pendente |
+| Apresentação Camada 1 (rótulo → unidade básica + fator de desempacotamento); derivado de itens_sc, via SQL | derivado | 2025 | há 5h | pendente |
+| Compras por ente/ano — DERIVADA do espelho (contratacoes_sc, sem re-fetch) | derivado | 2026 | há 5h | pendente |
+| Red-flag de unidade trocada no lançamento — item que destoa ≥100× da mediana do grupo CATMAT+base (efeito colateral do Passe 2); derivado | derivado | 2025 | há 5h | pendente |
+| Referência por UNIDADE BÁSICA (Passe 2) — CATMAT+base+forma, mediana + curadoria IQR (IN 65 art.6); derivado de itens_sc + item_catmat_map + apresentação | derivado | 2025 | há 1d | pendente |
+| Análise de compras por PREÇO UNITÁRIO — livro de preços de referência de SC + sobrepreço por município (derivado de itens_sc, via SQL) | derivado | 2025 | há 21d | em dia |
+| Red flags de fornecedores — concentração + sanção (CEIS/CNEP) + sobrepreço por fornecedor (derivado de contratos/itens/sancoes, via SQL) | derivado | 2025 | há 21d | em dia |
+| Re-derivação por fatia (evento → derivadas do ente) | derivado | 2025 | há 2d | em dia |
+| Indícios de sobrepreço em medicamentos (compras do município vs teto legal PMVG, por substância+dosagem); derivado de cmed_pmvg + itens_sc | derivado | 2025 | há 16d | em dia |
+| Reconstrução do sobrepreço com DUPLO benchmark — mediana de SC + referência nacional + desvio/CV (IN 65); derivado de itens_sc + precos_referencia_sc + precos_nacional_ref | derivado | 2025 | há 20d | em dia |
+| Variação INTERNA de preços — mesmo município comprou o mesmo item a preços diferentes (derivado de itens_sc, via SQL) | derivado | 2025 | há 21d | em dia |
+| Bolsa Atleta por município (Min. Esporte — atletas + valor) | esporte | 2025 | há 5h | pendente |
+| Matrículas FUNDEB oficiais (FNDE Antonieta de Barros) | fnde | 2026 | há 16d | em dia |
+| Parâmetros FUNDEB — fatores/VAAT/VAAR (FNDE) | fnde | 2026 | há 16d | em dia |
+| PDDE por município (FNDE — Plataforma Antonieta de Barros) | fnde | 2024 | há 16d | em dia |
+| PDDE saldo parado (verba escolar não executada) por município (FNDE Antonieta de Barros) | fnde | 2025 | há 5h | pendente |
+| PNAE % agricultura familiar (mínimo legal 30%) por município (FNDE) | fnde | 2025 | há 5h | pendente |
+| PNLD reserva técnica — demanda de livros (FNDE — Antonieta de Barros) | fnde | 2025 | há 21d | em dia |
+| Repasses federais FNS por bloco (Consulta Consolidada) | fns | 2026 | há 16d | em dia |
+| Autos de infração ambiental por município (IBAMA, série 1990+) | ibama | — | há 21d | em dia |
+| Áreas embargadas por município (IBAMA CSV) | ibama | — | há 5h | pendente |
+| Agricultura e agricultura familiar por município — Censo Agropecuário 2017 (IBGE/SIDRA t/6778+6883): estabelecimentos + área, familiar vs não-familiar | ibge | 2025 | há 5h | pendente |
+| Taxa de alfabetização 15+ Censo 2022 (IBGE SIDRA 9543) | ibge | 2025 | há 5h | pendente |
+| População por cor/raça Censo 2022 (IBGE SIDRA 9605) | ibge | 2025 | há 16d | em dia |
+| Domicílios + densidade domiciliar Censo 2022 (IBGE SIDRA 4712) | ibge | 2025 | há 5h | pendente |
+| Georreferência dos entes (centroide/área/região — IBGE malhas; base p/ frete e variação de preço) | ibge | 2025 | há 5h | pendente |
+| Indicadores (IBGE/CGU) | ibge | 2024 | há 17d | em dia |
+| População indígena (IBGE Censo 2022) | ibge | — | há 5h | pendente |
+| IBGE MUNIC — instrumentos de gestão (planos/conselhos/fundos/instrumentos legais) por município, da BASE DE DADOS oficial (xlsx), não SIDRA | ibge | 2025 | há 15d | em dia |
+| PIB municipal preços correntes + per capita (IBGE SIDRA 5938) | ibge | 2025 | há 5h | pendente |
+| População por faixa etária Censo 2022 + idosos/dependência (IBGE SIDRA 9514) | ibge | 2025 | há 5h | pendente |
+| Saneamento por município (água/esgoto/lixo) — IBGE Censo 2022 via SIDRA (cobertura por domicílio) | ibge | 2025 | há 16d | em dia |
+| Setores censitários Censo 2022 — perfil intraurbano (IBGE FTP) | ibge | 2025 | há 5h | pendente |
+| % crianças 0-14 por setor → variável do mapa intraurbano (IBGE demografia) | ibge | 2025 | há 16d | em dia |
+| Malha (polígonos) dos setores → mapa choropleth (IBGE GPKG) | ibge | 2025 | há 15d | em dia |
+| % idosos por setor censitário → variável do mapa intraurbano (IBGE demografia) | ibge | 2025 | há 16d | em dia |
+| Museus por município (IBRAM MuseusBr) | ibram | 2025 | há 16d | em dia |
+| Assentamentos reforma agrária por município (INCRA/MDA SIPRA) | incra | — | há 5h | pendente |
+| Censo Escolar — matrículas (INEP Sinopse) | inep | 2025 | há 15d | em dia |
+| Educação especial/AEE por município (INEP Censo microdata) | inep | 2025 | há 5h | pendente |
+| Número de turmas por etapa/rede (INEP Censo Escolar) | inep | 2025 | há 5h | pendente |
+| Escolas por município + infraestrutura (INEP Censo Escolar) | inep | 2025 | há 15d | em dia |
+| Taxa de evasão por etapa (INEP Fluxo/Transição) | inep | 2025 | há 48d | em dia |
+| FNDE liberações por município (SIMAD, Playwright) | inep | 2025 | há 5h | pendente |
+| IDEB — indicadores educacionais (INEP) | inep | 2025 | há 16d | em dia |
+| Indicadores educacionais INEP (AFD/TDI/ATU/rendimento por município) | inep | 2025 | há 15d | em dia |
+| Indicadores INEP por escola (georreferenciado) | inep | 2025 | há 15d | em dia |
+| SAEB proficiência Port/Mat por etapa (INEP) | inep | 2025 | há 5h | pendente |
+| Arboviroses (dengue/zika/chikungunya) por município (InfoDengue/SINAN) | infodengue | 2025 | há 6d | em dia |
+| Dengue por município (SINAN via InfoDengue, série + incidência) | infodengue | 2025 | há 7d | em dia |
+| Desmatamento PRODES por município (INPE, interseção PostGIS) | inpe | 2025 | há 16d | em dia |
+| Focos de calor por município (INPE BDQueimadas, mensal) | inpe | 2026 | há 3d | em dia |
+| IEGM — qualidade da gestão (TCE-SC/IRB, dados abertos) | irb | 2025 | há 16d | em dia |
+| Cobertura vacinal SÉRIE 2015-2026 por município/vacina (SI-PNI LocalizaSUS, engine Qlik set-analysis) | localizasus | 2026 | há 5h | pendente |
+| CAF — Cadastro Nacional da Agricultura Familiar (ex-DAP) por município: nº de agricultores familiares (MDA, XLSX mensal) | mda | 2025 | há 21d | em dia |
+| IGD-M gestão PBF/CadÚnico por município (MDS/SAGI Solr) | mds | — | há 5h | pendente |
+| SUAS repasse+SALDO na mesa por município (MDS/SAGI Solr) — recurso não usado | mds | 2025 | há 21d | em dia |
 | Guardião de frescor (série + última competência) | meta | — | há 0h | em dia |
-| Saldo de empregos formais por município (Novo CAGED/MTE, mensal) | mte | 2026 | há 19d | em dia |
-| RAIS — estoque de emprego formal por município (MTE, anual) | mte | 2025 | há 13d | em dia |
-| Novo PAC obras por município (ObrasGov/Casa Civil) | obrasgov | 2025 | há 9d | em dia |
-| Obras por município — detalhe (ObrasGov) | obrasgov | 2025 | há 14d | em dia |
-| Equipamentos esportivos georreferenciados (OSM — mapa camada Esporte) | osm | — | há 14d | em dia |
-| Equipamentos segurança/justiça/defesa civil georreferenciados (OSM + SAP/SC): polícia, bombeiros, defesa civil, prisional, socioeducativo | osm | — | há 14d | em dia |
-| Atas de Registro de Preço (PNCP Consulta) | pncp | — | há 19d | em dia |
-| Classificação dos itens → CATMAT/CATSER (dicionário, matcher v2) | pncp | — | há 1d | pendente |
-| Busca diária do PNCP (compras/contratos/atas — ano corrente) | pncp | — | há 21h | em dia |
-| Contratos (PNCP ano corrente, append) | pncp | 2027 | há 37d | pendente |
-| Empenhos por contrato (PNCP Lei 14.133 — acende quando publicarem) | pncp | — | há 16d | pendente |
-| Consumo de eventos → espelho (a fatia que o evento aponta) | pncp | 2025 | há 2h | pendente |
-| Coleta incremental PNCP — o que mudou (enche a fila de eventos) | pncp | 2025 | há 5h | em dia |
-| Itens de TODOS os processos (preço unitário) | pncp | 2025 | há 19d | em dia |
-| Notas fiscais / instrumentos de cobrança (PNCP — acende quando publicarem) | pncp | — | há 14d | em dia |
-| PCA (PNCP) | pncp | — | há 4h | em dia |
-| Preço de referência por item (mediana SC) + classificação ata/efetivada — base da análise de preços | pncp | 2025 | há 61d | em dia |
-| Contratações PNCP — TODAS (entidade Contratação espelhando o PNCP: modalidade/plataforma/SRP/estimado×homologado; via bulk por data) | pncp | 2025 | há 19d | em dia |
-| Sazonalidade de preço por categoria (melhor mês de compra, SC) | pncp | 2025 | há 60d | em dia |
-| Acidentes em rodovias federais por município (PRF DATATRAN, série 2015+) | prf | 2025 | há 19d | em dia |
-| Localidade dos fornecedores (CNPJ→UF/município) | receita | — | há 19d | em dia |
-| Arrecadação federal por município (RFB, série 2019+) | rfb | 2025 | há 14d | em dia |
-| Frota de veículos por município (SENATRAN) | senatran | 2025 | há 14d | em dia |
-| Qualidade (15 indicadores) + Vínculo/CVAT — novo cofinanciamento (SIAPS) | siaps | 2025 | há 5h | em dia |
-| CAR — Cadastro Ambiental Rural: nº de imóveis rurais por município (SICAR GeoServer WFS, contagem por município) | sicar | 2025 | há 14d | em dia |
-| Acompanhamento intra-anual da execução (RREO do bimestre vigente) — receita prevista×realizada e despesa orçada×empenhada por município | siconfi | 2025 | há 15d | em dia |
-| Acompanhamento por função (intra-anual) — orçado×realizado por função até o bimestre vigente (RREO Anexo 02 parcial) | siconfi | 2025 | há 15d | em dia |
-| CNPJs do governo municipal (SICONFI+órgãos+RPPS) | siconfi | 2025 | há 15d | em dia |
-| Despesa por subfunção (RREO an.2 — drill) | siconfi | 2025 | há 5h | em dia |
-| Finanças (SICONFI RREO an.1/2) | siconfi | 2025 | há 5h | em dia |
-| Metas Fiscais LDO (RREO an.6) | siconfi | 2025 | há 5h | em dia |
-| MSC ancorada ao RREO — despesa empenhada por natureza e fonte (forma da MSC × total exato do RREO; reconcilia por construção) | siconfi | 2025 | há 15d | em dia |
-| Receitas detalhadas (ICMS/FPM/IPTU/FUNDEB — RREO an.3) | siconfi | 2025 | há 5h | em dia |
-| Pessoal/DCL (RGF) | siconfi | 2025 | há 4d | em dia |
-| Previdência RPPS (RREO Anexo 04) | siconfi | 2025 | há 5h | em dia |
-| Educação/RCL (RREO an.14/3) | siconfi | 2025 | há 5h | em dia |
-| Salário-Educação por município (SICONFI DCA) | siconfi | 2025 | há 14d | em dia |
-| Estatísticas vitais por município (IBGE Registro Civil — nascidos/óbitos, série) | sidra | 2024 | há 18d | em dia |
-| Produção agropecuária (PAM/PPM) + empresas (CEMPRE) por município (IBGE SIDRA) | sidra | — | há 14d | em dia |
-| Vítimas de crimes violentos letais por município (SINESP/MJSP, dados abertos) | sinesp | — | há 49d | em dia |
-| Catálogo de Ações Orçamentárias Federais (SIOP dados abertos) — o que emenda financia por setor; cruza com acao_orcamentaria da indicação | siop | 2025 | há 14d | em dia |
-| Saúde ASPS (SIOPS) | siops | 2025 | há 5h | em dia |
-| Indicadores Previne + ISF (SISAB indicadorPainel — 10 quadrimestres) | sisab | 2025 | há 14d | em dia |
-| Produção da APS (SISAB — fichas aprovadas, série mensal 2021+) | sisab | 2025 | há 19d | em dia |
-| SNIS Água/Esgoto por município e prestador (atendimento, perdas, tratamento) — app Ministério das Cidades via Playwright; state-agnostic (UF/ANO) | snis | 2025 | há 14d | em dia |
-| CAPAG capacidade de pagamento por município (STN/Tesouro) | tesouro | — | há 5h | em dia |
-| Regularidade fiscal CAUC/CADIN (Tesouro) | tesouro | — | há 2h | pendente |
-| Ranking da Qualidade da Informação Fiscal (Tesouro) por município | tesouro | 2025 | há 14d | em dia |
-| Transferências da União por município, MENSAL (FPM/FUNDEB/ITR/Lei Kandir/CIDE/FEX/IOF/LC176) — CSV oficial STN/Tesouro Transparente; NACIONAL, state-agnostic (UF env) | tesouro | 2025 | há 14d | em dia |
-| Precatórios por município (estoque e quantidade) — API do TJSC, Regime Especial de Precatórios; replicável por UF (CNJ Res. 303) | tjsc | 2025 | há 5h | em dia |
-| Assistência social COMPLETA (MDS MI Social): série anual de repasse FNAS 2005→ + CadÚnico + Bolsa Família | transferegov | 2025 | há 14d | em dia |
-| Convênios e contratos de repasse por município (SICONV/Transferegov, repositório detru — proposta+convenio) | transferegov | 2025 | há 25d | em dia |
-| Emendas — INDICAÇÃO (SICONV/Transferegov, repositório detru: parlamentar, impositivo, valor destinado) | transferegov | 2025 | há 14d | em dia |
-| Emendas — EXECUÇÃO orçamentária federal (Portal da Transparência: empenhado×pago → recurso na mesa) | transferegov | 2026 | há 5h | em dia |
-| Elegibilidade dos programas (Transferegov: quem pode captar cada programa — base do casamento oportunidade×necessidade) | transferegov | 2025 | há 14d | em dia |
-| Catálogo de programas Transferegov — gestão ágil (fundoafundo/programa_gestao_agil); complementa o catálogo unificado de 335 programas | transferegov | 2025 | há 5h | em dia |
-| Programas federais curados de saúde/educação (Novo PAC, Requalifica UBS, Proinfância — casamento com carência; FNS/FNDE sem feed) | transferegov | 2025 | há 5h | em dia |
-| Radar de Captação — programas + planos (Transferegov fundo a fundo, API viva) | transferegov | 2025 | há 5h | em dia |
-| Assistência social / FNAS por município (MDS · MI Social/CadSUAS: CRAS, CREAS — déficit p/ casamento) | transferegov | 2025 | há 5h | em dia |
-| Sanções a empresas/pessoas (CEIS + CNEP) — API Portal da Transparência; cruza com fornecedores (fornecedor sancionado) | transparencia | 2025 | há 4d | em dia |
+| Saldo de empregos formais por município (Novo CAGED/MTE, mensal) | mte | 2026 | há 21d | em dia |
+| RAIS — estoque de emprego formal por município (MTE, anual) | mte | 2025 | há 15d | em dia |
+| Novo PAC obras por município (ObrasGov/Casa Civil) | obrasgov | 2025 | há 11d | em dia |
+| Obras por município — detalhe (ObrasGov) | obrasgov | 2025 | há 16d | em dia |
+| Equipamentos esportivos georreferenciados (OSM — mapa camada Esporte) | osm | — | há 16d | em dia |
+| Equipamentos segurança/justiça/defesa civil georreferenciados (OSM + SAP/SC): polícia, bombeiros, defesa civil, prisional, socioeducativo | osm | — | há 16d | em dia |
+| Atas de Registro de Preço (PNCP Consulta) | pncp | — | há 21d | pendente |
+| Classificação dos itens → CATMAT/CATSER (dicionário, matcher v2) | pncp | — | há 1d | em dia |
+| Busca diária do PNCP (compras/contratos/atas — ano corrente) | pncp | — | há 3d | em dia |
+| Contratos (PNCP ano corrente, append) | pncp | 2027 | há 39d | pendente |
+| Empenhos por contrato (PNCP Lei 14.133 — acende quando publicarem) | pncp | — | há 18d | pendente |
+| Consumo de eventos → espelho (a fatia que o evento aponta) | pncp | 2025 | há 5h | pendente |
+| Coleta incremental PNCP — o que mudou (enche a fila de eventos) | pncp | 2025 | há 5h | pendente |
+| Itens de TODOS os processos (preço unitário) | pncp | 2025 | há 2h | pendente |
+| Notas fiscais / instrumentos de cobrança (PNCP — acende quando publicarem) | pncp | — | há 16d | pendente |
+| PCA (PNCP) | pncp | — | há 4h | pendente |
+| Preço de referência por item (mediana SC) + classificação ata/efetivada — base da análise de preços | pncp | 2025 | há 63d | em dia |
+| Contratações PNCP — TODAS (entidade Contratação espelhando o PNCP: modalidade/plataforma/SRP/estimado×homologado; via bulk por data) | pncp | 2025 | há 21d | pendente |
+| Sazonalidade de preço por categoria (melhor mês de compra, SC) | pncp | 2025 | há 62d | em dia |
+| Acidentes em rodovias federais por município (PRF DATATRAN, série 2015+) | prf | 2025 | há 21d | em dia |
+| Localidade dos fornecedores (CNPJ→UF/município) | receita | — | há 1d | em dia |
+| Arrecadação federal por município (RFB, série 2019+) | rfb | 2025 | há 16d | em dia |
+| Frota de veículos por município (SENATRAN) | senatran | 2025 | há 16d | em dia |
+| Qualidade (15 indicadores) + Vínculo/CVAT — novo cofinanciamento (SIAPS) | siaps | 2025 | há 5h | pendente |
+| CAR — Cadastro Ambiental Rural: nº de imóveis rurais por município (SICAR GeoServer WFS, contagem por município) | sicar | 2025 | há 16d | em dia |
+| Acompanhamento intra-anual da execução (RREO do bimestre vigente) — receita prevista×realizada e despesa orçada×empenhada por município | siconfi | 2025 | há 17d | em dia |
+| Acompanhamento por função (intra-anual) — orçado×realizado por função até o bimestre vigente (RREO Anexo 02 parcial) | siconfi | 2025 | há 17d | em dia |
+| CNPJs do governo municipal (SICONFI+órgãos+RPPS) | siconfi | 2025 | há 17d | em dia |
+| Despesa por subfunção (RREO an.2 — drill) | siconfi | 2025 | há 5h | pendente |
+| Finanças (SICONFI RREO an.1/2) | siconfi | 2025 | há 5h | pendente |
+| Metas Fiscais LDO (RREO an.6) | siconfi | 2025 | há 5h | pendente |
+| MSC ancorada ao RREO — despesa empenhada por natureza e fonte (forma da MSC × total exato do RREO; reconcilia por construção) | siconfi | 2025 | há 17d | em dia |
+| Receitas detalhadas (ICMS/FPM/IPTU/FUNDEB — RREO an.3) | siconfi | 2025 | há 5h | pendente |
+| Pessoal/DCL (RGF) | siconfi | 2025 | há 6d | em dia |
+| Previdência RPPS (RREO Anexo 04) | siconfi | 2025 | há 5h | pendente |
+| Educação/RCL (RREO an.14/3) | siconfi | 2025 | há 5h | pendente |
+| Salário-Educação por município (SICONFI DCA) | siconfi | 2025 | há 16d | em dia |
+| Estatísticas vitais por município (IBGE Registro Civil — nascidos/óbitos, série) | sidra | 2024 | há 20d | em dia |
+| Produção agropecuária (PAM/PPM) + empresas (CEMPRE) por município (IBGE SIDRA) | sidra | — | há 16d | em dia |
+| Vítimas de crimes violentos letais por município (SINESP/MJSP, dados abertos) | sinesp | — | há 51d | em dia |
+| Catálogo de Ações Orçamentárias Federais (SIOP dados abertos) — o que emenda financia por setor; cruza com acao_orcamentaria da indicação | siop | 2025 | há 16d | em dia |
+| Saúde ASPS (SIOPS) | siops | 2025 | há 5h | pendente |
+| Indicadores Previne + ISF (SISAB indicadorPainel — 10 quadrimestres) | sisab | 2025 | há 16d | em dia |
+| Produção da APS (SISAB — fichas aprovadas, série mensal 2021+) | sisab | 2025 | há 21d | em dia |
+| SNIS Água/Esgoto por município e prestador (atendimento, perdas, tratamento) — app Ministério das Cidades via Playwright; state-agnostic (UF/ANO) | snis | 2025 | há 16d | em dia |
+| CAPAG capacidade de pagamento por município (STN/Tesouro) | tesouro | — | há 5h | pendente |
+| Regularidade fiscal CAUC/CADIN (Tesouro) | tesouro | — | há 5h | pendente |
+| Ranking da Qualidade da Informação Fiscal (Tesouro) por município | tesouro | 2025 | há 16d | em dia |
+| Transferências da União por município, MENSAL (FPM/FUNDEB/ITR/Lei Kandir/CIDE/FEX/IOF/LC176) — CSV oficial STN/Tesouro Transparente; NACIONAL, state-agnostic (UF env) | tesouro | 2025 | há 16d | em dia |
+| Precatórios por município (estoque e quantidade) — API do TJSC, Regime Especial de Precatórios; replicável por UF (CNJ Res. 303) | tjsc | 2025 | há 5h | pendente |
+| Assistência social COMPLETA (MDS MI Social): série anual de repasse FNAS 2005→ + CadÚnico + Bolsa Família | transferegov | 2025 | há 16d | em dia |
+| Convênios e contratos de repasse por município (SICONV/Transferegov, repositório detru — proposta+convenio) | transferegov | 2025 | há 27d | em dia |
+| Emendas — INDICAÇÃO (SICONV/Transferegov, repositório detru: parlamentar, impositivo, valor destinado) | transferegov | 2025 | há 16d | em dia |
+| Emendas — EXECUÇÃO orçamentária federal (Portal da Transparência: empenhado×pago → recurso na mesa) | transferegov | 2026 | há 5h | pendente |
+| Elegibilidade dos programas (Transferegov: quem pode captar cada programa — base do casamento oportunidade×necessidade) | transferegov | 2025 | há 5h | pendente |
+| Catálogo de programas Transferegov — gestão ágil (fundoafundo/programa_gestao_agil); complementa o catálogo unificado de 335 programas | transferegov | 2025 | há 5h | pendente |
+| Programas federais curados de saúde/educação (Novo PAC, Requalifica UBS, Proinfância — casamento com carência; FNS/FNDE sem feed) | transferegov | 2025 | há 5h | pendente |
+| Radar de Captação — programas + planos (Transferegov fundo a fundo, API viva) | transferegov | 2025 | há 5h | pendente |
+| Assistência social / FNAS por município (MDS · MI Social/CadSUAS: CRAS, CREAS — déficit p/ casamento) | transferegov | 2025 | há 5h | pendente |
+| Sanções a empresas/pessoas (CEIS + CNEP) — API Portal da Transparência; cruza com fornecedores (fornecedor sancionado) | transparencia | 2025 | há 6d | em dia |
 
 ## 4. Rotas e APIs (Next.js)
 
@@ -2795,7 +2887,7 @@
 
 ## 6. Integridade (última validação)
 
-- status: **ok** · registros suspeitos (excluídos): 6 · sobrepreço unitário: 19083
+- status: **ok** · registros suspeitos (excluídos): 6 · sobrepreço unitário: 19144
 
 ## 7. Fontes oficiais dos dados (proveniência)
 
