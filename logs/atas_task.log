@@ -88813,3 +88813,2084 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 
 ✔ arquivo_texto_sc: 654.236 docs · 628.880 com texto (média 36527 chars)
 ==== 31/08/2026  8:36:36,79 :: DOWNLOAD ==== 
+(node:22432) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C==== 31/08/2026  8:39:44,11 :: DOWNLOAD ==== 
+(node:19064) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C==== 31/08/2026  8:54:44,11 :: DOWNLOAD ==== 
+(node:9028) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C==== 31/08/2026  9:09:43,98 :: DOWNLOAD ==== 
+(node:19516) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.236 docs · 628.880 com texto (média 36527 chars)
+==== 31/08/2026  9:24:43,98 :: DOWNLOAD ==== 
+(node:18044) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.236 docs · 628.880 com texto (média 36527 chars)
+==== 31/08/2026  9:39:44,09 :: DOWNLOAD ==== 
+(node:26320) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.236 docs · 628.880 com texto (média 36527 chars)
+==== 31/08/2026  9:54:44,10 :: DOWNLOAD ==== 
+(node:29216) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.236 docs · 628.880 com texto (média 36527 chars)
+==== 31/08/2026 10:09:43,83 :: DOWNLOAD ==== 
+(node:12972) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.236 docs · 628.880 com texto (média 36527 chars)
+==== 31/08/2026 10:24:43,80 :: DOWNLOAD ==== 
+(node:18536) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.236 docs · 628.880 com texto (média 36527 chars)
+==== 31/08/2026 10:39:43,92 :: DOWNLOAD ==== 
+(node:12820) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.236 docs · 628.880 com texto (média 36527 chars)
+==== 31/08/2026 10:54:43,92 :: DOWNLOAD ==== 
+(node:18872) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.236 docs · 628.880 com texto (média 36527 chars)
+==== 31/08/2026 11:09:43,96 :: DOWNLOAD ==== 
+(node:18868) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.236 docs · 628.880 com texto (média 36527 chars)
+==== 31/08/2026 11:24:43,96 :: DOWNLOAD ==== 
+(node:17516) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.236 docs · 628.880 com texto (média 36527 chars)
+==== 31/08/2026 11:39:45,00 :: DOWNLOAD ==== 
+(node:23804) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C==== 31/08/2026 11:54:43,85 :: DOWNLOAD ==== 
+(node:10056) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.255 docs · 628.899 com texto (média 36526 chars)
+==== 31/08/2026 12:09:43,82 :: DOWNLOAD ==== 
+(node:6892) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.255 docs · 628.899 com texto (média 36526 chars)
+==== 31/08/2026 12:24:43,82 :: DOWNLOAD ==== 
+(node:20616) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.255 docs · 628.899 com texto (média 36526 chars)
+==== 31/08/2026 12:39:43,83 :: DOWNLOAD ==== 
+(node:24392) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.255 docs · 628.899 com texto (média 36526 chars)
+==== 31/08/2026 12:54:43,80 :: DOWNLOAD ==== 
+(node:20528) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.255 docs · 628.899 com texto (média 36526 chars)
+==== 31/08/2026 13:09:43,77 :: DOWNLOAD ==== 
+(node:18140) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.255 docs · 628.899 com texto (média 36526 chars)
+==== 31/08/2026 13:24:43,79 :: DOWNLOAD ==== 
+(node:8008) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.255 docs · 628.899 com texto (média 36526 chars)
+==== 31/08/2026 13:39:43,79 :: DOWNLOAD ==== 
+(node:26676) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.255 docs · 628.899 com texto (média 36526 chars)
+==== 31/08/2026 13:54:43,83 :: DOWNLOAD ==== 
+(node:20752) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.255 docs · 628.899 com texto (média 36526 chars)
+==== 31/08/2026 14:09:43,87 :: DOWNLOAD ==== 
+(node:19400) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+26 documentos a baixar (universo=resultado) · conc 3
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDFEE+Wingdings-Regular
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BAOPPP+CIDFont+F1
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BEWAOU+CIDFont+F2
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AOXXQK+CIDFont+F3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHVPHG+CIDFont+F4
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AAAAAJ+CIDFont+F5
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AAAAAJ+CIDFont+F6
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BKGROJ+CIDFont+F7
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AXBNVX+CIDFont+F8
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUQYIR+CIDFont+F9
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AAAAAJ+CIDFont+F1
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BEWAOU+CIDFont+F2
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ARYPUO+CIDFont+F3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHVPHG+CIDFont+F4
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASKGYR+CIDFont+F5
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AOXXQK+CIDFont+F6
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUQYIR+CIDFont+F7
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUQZCJ+CIDFont+F8
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHVPHG+CIDFont+F1
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BEWAOU+CIDFont+F2
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+PalatinoLinotype-Italic
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUDZYS+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHFD+Calibri-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHBIMW+Calibri-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BAVWZH+CIDFont+F1
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AZOBOC+CIDFont+F2
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AOXUPP+CIDFont+F3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AJAKPG+CIDFont+F4
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AAAAAJ+CIDFont+F5
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AAAAAJ+CIDFont+F6
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BKGROJ+CIDFont+F7
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUQYIR+CIDFont+F8
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AXFGOJ+CIDFont+F9
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BFORDY+CIDFont+F10
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+CIDFont+F11
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+PalatinoLinotype-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+Calibri-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AIXRIB+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AEBXEJ+Arial-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+PalatinoLinotype-Bold
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUYKHD+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+TimesNewRomanPS-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ADSWZL+Arial-ItalicMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ARLPXG+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+PalatinoLinotype-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASYFGB+Calibri-Bold
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ANTPIC+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHBIMW+Calibri-Italic
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHOR+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ACHSHT+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AGGYQX+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+Cambria-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJOYT+Arial-BoldItalicMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUVIOY+TimesNewRomanPS-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ATQVTT+Calibri-Light
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BAAYPB+Calibri-LightItalic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+PalatinoLinotype-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BFNKAI+Cambria-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BFIRJZ+Cambria
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+SegoeUISymbol
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ACHSHT+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUSITH+Cambria-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AJDHIO+Arial
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEX+Wingdings-Regular
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AIOPUT+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+PalatinoLinotype-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASYFGB+Calibri-Bold
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ANTPIC+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHBIMW+Calibri-Italic
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AJDHIO+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ACHSHT+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AIOPUT+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUSITH+Cambria-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUVIOY+TimesNewRomanPS-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ATQVTT+Calibri-Light
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BAAYPB+Calibri-LightItalic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+PalatinoLinotype-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHFD+Calibri-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BDIESK+ArialMT
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AVWQKP+Arial-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AISNUZ+PalatinoLinotype-BoldItalic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AVXGHQ+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUYKQZ+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ARLPXG+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+TimesNewRomanPS-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ATRSVI+Arial-ItalicMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+PalatinoLinotype-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASMEYA+Calibri-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AOMJTI+ArialMT
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+Arial-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AISNUZ+PalatinoLinotype-BoldItalic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: APSNEH+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJOYT+Arial-BoldItalicMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUYKQZ+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ARLPXG+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+TimesNewRomanPS-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ATRSVI+Arial-ItalicMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHBIMX+Calibri-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASYHVW+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUQYIZ+Calibri-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASKGYR+TimesNewRomanPS-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASNANH+DengXian
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ATQVSJ+MSMincho
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: APQYQS+Tahoma-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BDULYF+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHYN+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BAOPPP+CIDFont+F1
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BEWAOU+CIDFont+F2
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BDULYF+CIDFont+F3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHVPHG+CIDFont+F4
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AAAAAJ+CIDFont+F5
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AAAAAJ+CIDFont+F6
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BKGROJ+CIDFont+F7
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AXBNVX+CIDFont+F8
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+CIDFont+F9
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AAAAAJ+CIDFont+F1
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BEWAOU+CIDFont+F2
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: APQYQS+CIDFont+F3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHVPHG+CIDFont+F4
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASKGYR+CIDFont+F5
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BDULYF+CIDFont+F6
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+CIDFont+F7
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHYN+CIDFont+F8
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHVPHG+CIDFont+F1
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BEWAOU+CIDFont+F2
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AOBEGQ+ArialNarrow
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASBTQZ+ArialNarrow-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUQYSX+ArialNarrow-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AAAAAJ+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUQZCJ+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+TimesNewRomanPS-ItalicMT
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ALCOGJ+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHFT+Calibri-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHBIMW+Calibri-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUNEDR+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+Arial-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUYKRH+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ALNDDT+TimesNewRomanPS-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AEYPNB+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AEYPNB+TimesNewRomanPSMT
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AYSUZT+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHFT+Calibri-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHBIMW+Calibri-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+Arial-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUQZNL+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ARMODK+TimesNewRomanPSMT
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AYSUZT+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHFT+Calibri-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHBIMW+Calibri-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BDQEWY+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+Arial-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUREKN+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AGFRTV+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AGFRTV+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ABKZGZ+Arial-BoldItalicMT
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AZAHQR+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHFT+Calibri-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHBIMW+Calibri-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: APPBDJ+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ABOBNK+Arial-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUREKN+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BGFVQI+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ABOBNK+Arial-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCMWTV+TimesNewRomanPS-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BGFVQI+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ATOSVB+Arial-BoldItalicMT
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUDNBW+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHFD+Calibri-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHBIMW+Calibri-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ABUUSG+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AONKYJ+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUQYIR+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+PalatinoLinotype-Italic
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ATLIUK+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUTXUL+Calibri-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AQXZFR+Calibri-Italic
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BJJHBI+CambriaMath
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+SymbolMT
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDFEE+Calibri-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDHEE+Wingdings-Regular
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ASJHEV+PalatinoLinotype-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUDZOS+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AZVSCW+Calibri-Bold
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AHBIMW+Calibri-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BHIAQK+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BGQVQC+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUQYIR+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BGQVQC+TimesNewRomanPSMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: FAAAJG+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: FAAAJG+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+
+✔ arquivo_texto_sc: 654.281 docs · 628.924 com texto (média 36528 chars)
+==== 31/08/2026 14:24:43,82 :: DOWNLOAD ==== 
+(node:23836) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.281 docs · 628.924 com texto (média 36528 chars)
+==== 31/08/2026 14:39:44,07 :: DOWNLOAD ==== 
+(node:11888) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+76 documentos a baixar (universo=resultado) · conc 3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: QNBAAA+ArialNormal
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: QLCAAA+ArialNegrito
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: QFCAAA+TechnicBoldRegular
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: QZBAAA+TechnicBold-0-700
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: QTBAAA+Technic-0-700
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: HPUBVR+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: YRGZZM+Arial-BoldMT
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: FUTKTH+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDFEE+Calibri-Bold
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDHEE+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDJEE+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: invalid function id: 136
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDNEE+CambriaMath
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDGEE+Arial-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDIEE+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDGEE+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDFEE+MalgunGothic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDLEE+Gadugi
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AAAAAA+LiberationSans
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BAAAAA+LiberationSans-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BAAAAA+LiberationSans-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AAAAAA+LiberationSans
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CAAAAA+DejaVuSans
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AAAAAA+Roboto-Regular
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F1
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F2
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F3
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AAAAAA+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BAAAAA+Calibri-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CAAAAA+Calibri-Light
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: DAAAAA+Calibri-Bold
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: EAAAAA+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F1
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F2
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F4
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F5
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F6
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F7
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F1
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F2
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F4
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F5
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F1
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F2
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F1
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F2
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F4
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F1
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F2
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F4
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F5
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDJEE+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDKEE+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDLEE+Arial-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDNEE+CambriaMath
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDHEE+Calibri-Light
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDIEE+Calibri-LightItalic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 32
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDFEE+Calibri-Light
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDHEE+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDJEE+Arial-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: UDGGQQ+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: QCRTDV+Arial-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDHEE+Arial-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDIEE+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F1
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F2
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDGEE+Tahoma-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDHEE+Tahoma
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F1
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F2
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F4
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F5
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F6
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDGEE+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDIEE+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BOQZTX+PalatinoLinotype-Roman
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: AUNYMT+PalatinoLinotype-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: TEYUGI+PalatinoLinotype-Italic
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BFNUBQ+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: TKUZUH+Arial-BoldMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F1
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F2
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F4
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F5
+
+✔ arquivo_texto_sc: 654.357 docs · 628.996 com texto (média 36529 chars)
+==== 31/08/2026 14:54:43,84 :: DOWNLOAD ==== 
+(node:8444) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+23 documentos a baixar (universo=resultado) · conc 3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDGEE+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDHEE+SymbolMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F1
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F2
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F3
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F4
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F5
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F6
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CIDFont+F7
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: TVOIEN+Calibri-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: VMBCQV+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CWLLTB+Arial-BoldMT
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ZLXSHE+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: EDTPCV+Arial-ItalicMT
+Warning: TrueType Collection does not contain "DCWGQU+CambriaMath" font, falling back to "CambriaMath" font instead.
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: DCWGQU+CambriaMath
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: REIMBZ+Arial-BoldItalicMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ABCDEE+Calibri-Bold
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: TVOIEN+Calibri-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: VMBCQV+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: CWLLTB+Arial-BoldMT
+Warning: TT: undefined function: 21
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: ZLXSHE+Calibri
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: EDTPCV+Arial-ItalicMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: BCDGEE+Tahoma-Bold
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: LTHSZC+ArialMT
+Warning: TypeError: Math.sumPrecise is not a function
+Warning: Cannot substitute the font because of its name: RHHXFA+Arial-BoldMT
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 15:09:43,86 :: DOWNLOAD ==== 
+(node:25868) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C==== 31/08/2026 15:24:43,87 :: DOWNLOAD ==== 
+(node:21288) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 15:39:43,91 :: DOWNLOAD ==== 
+(node:13956) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 15:54:43,92 :: DOWNLOAD ==== 
+(node:17528) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 16:09:43,90 :: DOWNLOAD ==== 
+(node:2460) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 16:24:43,90 :: DOWNLOAD ==== 
+(node:19096) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 16:39:43,93 :: DOWNLOAD ==== 
+(node:11796) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 16:54:43,94 :: DOWNLOAD ==== 
+(node:10076) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 17:09:43,95 :: DOWNLOAD ==== 
+(node:17292) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 17:24:43,97 :: DOWNLOAD ==== 
+(node:8572) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 17:39:43,97 :: DOWNLOAD ==== 
+(node:9240) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C==== 31/08/2026 17:54:43,98 :: DOWNLOAD ==== 
+(node:29484) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 18:09:43,97 :: DOWNLOAD ==== 
+(node:26320) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 18:24:43,97 :: DOWNLOAD ==== 
+(node:9756) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 18:39:43,99 :: DOWNLOAD ==== 
+(node:11180) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 18:54:44,02 :: DOWNLOAD ==== 
+(node:10700) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 19:09:44,00 :: DOWNLOAD ==== 
+(node:6724) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 19:24:44,02 :: DOWNLOAD ==== 
+(node:24276) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 19:39:44,03 :: DOWNLOAD ==== 
+(node:28728) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 19:54:44,03 :: DOWNLOAD ==== 
+(node:10704) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 20:09:44,03 :: DOWNLOAD ==== 
+(node:19676) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 20:24:44,04 :: DOWNLOAD ==== 
+(node:1460) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 20:39:44,09 :: DOWNLOAD ==== 
+(node:27788) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 20:54:44,08 :: DOWNLOAD ==== 
+(node:17300) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 21:09:44,07 :: DOWNLOAD ==== 
+(node:23308) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 21:24:44,07 :: DOWNLOAD ==== 
+(node:2712) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 21:39:44,08 :: DOWNLOAD ==== 
+(node:27352) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 21:54:44,10 :: DOWNLOAD ==== 
+(node:28368) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C==== 31/08/2026 22:09:44,11 :: DOWNLOAD ==== 
+(node:1964) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 22:24:44,12 :: DOWNLOAD ==== 
+(node:15316) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 22:39:44,13 :: DOWNLOAD ==== 
+(node:800) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 22:54:44,13 :: DOWNLOAD ==== 
+(node:19504) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 23:09:44,16 :: DOWNLOAD ==== 
+(node:3624) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 23:24:44,15 :: DOWNLOAD ==== 
+(node:23272) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 23:39:44,15 :: DOWNLOAD ==== 
+(node:7640) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 31/08/2026 23:54:44,17 :: DOWNLOAD ==== 
+(node:4600) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 01/09/2026  0:09:43,17 :: DOWNLOAD ==== 
+(node:28780) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 01/09/2026  0:24:43,18 :: DOWNLOAD ==== 
+(node:7620) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)
+==== 01/09/2026  0:39:43,19 :: DOWNLOAD ==== 
+(node:9160) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 documentos a baixar (universo=resultado) · conc 3
+
+✔ arquivo_texto_sc: 654.380 docs · 629.018 com texto (média 36528 chars)

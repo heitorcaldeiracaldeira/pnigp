@@ -123,14 +123,40 @@ async function main() {
   const filtro = REFAZ_TODOS ? "TRUE" : REFAZ
     ? `EXISTS (SELECT 1 FROM public.arquivo_texto_sc t
                 WHERE t.cnpj=f.cnpj AND t.ano=f.ano AND t.seq=f.seq AND t.layout_v=1)`
-    : `NOT EXISTS (SELECT 1 FROM app.item_enriquecimento e WHERE e.cnpj=f.cnpj AND e.ano=f.ano AND e.seq=f.seq)`;
+    // ═══ FILA DIÁRIA — INÉDITO **OU** TEXTO RE-EXTRAÍDO DEPOIS (mudado em 31/ago/2026) ═══
+    // Até aqui o filtro era só o anti-join `NOT EXISTS`, e isso deixava um vão silencioso: a
+    // `PNIGP - Reextrai Layout` roda todo dia e melhora a GEOMETRIA do texto — que é justamente o que
+    // decide a qualidade do recorte (70,8% × 49,0%, medido em 10/ago) — mas processo já enriquecido nunca
+    // voltava. Produtor na cadeia, consumidor fora. Medido em 31/ago: 228 processos com texto mais novo
+    // que o próprio enriquecimento, parados para sempre.
+    //
+    // As duas datas são MATERIALIZADAS pelo constroi_fila (`texto_em`, `enriq_em`), então aqui não há
+    // subconsulta nenhuma — só a comparação de duas colunas numa tabela de 239 k:
+    //   enriq_em IS NULL     → inédito, entra (é o `NOT EXISTS` de antes, agora de graça)
+    //   texto_em > enriq_em  → re-extraído depois de enriquecido, volta
+    // A 1ª versão disto perguntava direto em `item_enriquecimento` por linha da fila e **passou de 120 s**,
+    // vezes 12 shards; o porquê da materialização está no comentário do constroi_fila.
+    // Não há laço: ao re-enriquecer, `atualizado` vira now(), o próximo constroi_fila recarimba `enriq_em`
+    // acima de `texto_em` e o processo sai da fila sozinho.
+    //
+    // ⚠️ O `atualizado` NÃO é confiável como "data em que este processo foi enriquecido" para nada anterior
+    // a 25/ago/2026: o conserto da escala de confiança carimbou now() em 2,23 M de linhas de uma vez. Este
+    // filtro só enxerga re-extração posterior a essa data. O passivo antigo (133.819 processos já
+    // enriquecidos que hoje têm texto com geometria) é do REFAZ=1, não daqui.
+    : `f.enriq_em IS NULL OR f.texto_em > f.enriq_em`;
   const procs = (await q(`
-    SELECT f.cnpj, f.ano, f.seq, f.nfases FROM app.fila_enriquecimento f
+    SELECT f.cnpj, f.ano, f.seq, f.nfases, (f.enriq_em IS NULL) AS inedito
+    FROM app.fila_enriquecimento f
     WHERE ${filtro} ${shardW}
     ORDER BY f.nfases DESC ${lim}`)).rows;
   if (REFAZ_TODOS) console.log(`REFAZ=todos - reprocessando a fila inteira`);
   else if (REFAZ) console.log(`REFAZ=1 - reprocessando processos com texto ja re-extraido (layout_v=1)`);
-  console.log(`[shard ${SHARD}/${NSHARD}] enriquecer: ${procs.length.toLocaleString()} processos · conc ${CONC}`);
+  // O SPLIT é de propósito: "re-extraído" é a fatia nova de 31/ago, e é a que pode virar churn se algum dia
+  // a re-extração passar a carimbar `atualizado` sem mudar o texto. Deixar o número à vista é o que faz
+  // esse defeito aparecer no log em vez de virar custo silencioso de Neon.
+  const nIneditos = procs.filter((p) => p.inedito).length;
+  console.log(`[shard ${SHARD}/${NSHARD}] enriquecer: ${procs.length.toLocaleString()} processos ` +
+    `(${nIneditos.toLocaleString()} inéditos · ${(procs.length - nIneditos).toLocaleString()} re-extraídos) · conc ${CONC}`);
 
   let i = 0, done = 0, itensOk = 0, comDesc = 0;
   await Promise.all(Array.from({ length: CONC }, async () => {

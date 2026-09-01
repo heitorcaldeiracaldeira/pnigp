@@ -189,4 +189,5 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
 (Use `node --trace-warnings ...` to show where the warning was created)
   status: parcial (compras,contratos,atas)
 [2026-08-28T02:30] busca diária do PNCP — ano 2026
+^C[2026-08-31T11:36] busca diária do PNCP — ano 2026
 ^C
