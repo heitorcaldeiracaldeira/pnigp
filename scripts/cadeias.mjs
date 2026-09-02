@@ -124,6 +124,74 @@ export const CADEIAS = {
     ],
   },
 
+  // ═══════════════════════════════════════════════════════════════════════════════════════════════
+  // CATÁLOGOS FEDERAIS — cadência MENSAL, não diária. As taxonomias mudam de competência, não de dia.
+  // A ORDEM aqui não é estética: `build_catmat_pdm` AGREGA o que `ingest_catmat_catalogo` acabou de
+  // escrever, e o motor do CATMAT casa contra o agregado, nunca contra o catálogo cru. Inverter os dois
+  // faria o motor casar contra o retrato anterior — sem erro e sem número piorando.
+  // ═══════════════════════════════════════════════════════════════════════════════════════════════
+  catalogos: {
+    titulo: "Catálogos federais — CATMAT, CATSER e SIGTAP (competência muda todo mês)",
+    log: "pnigp-catalogos.log",
+    trava: { nome: "cadeia_catalogos", toleranciaMin: 20 },
+    aoFalhar: "seguir",   // um catálogo fora do ar não pode impedir os outros dois de atualizarem
+    env: {},
+    passos: [
+      { rotulo: "CATMAT: catálogo federal de material (343k itens, ~700 páginas)", script: "scripts/ingest_catmat_catalogo.mjs", timeoutMin: 120 },
+      { rotulo: "CATMAT: agrega catálogo -> PDM (o alvo do casamento)", script: "scripts/build_catmat_pdm.mjs", timeoutMin: 20 },
+      { rotulo: "CATSER: catálogo federal de serviço", script: "scripts/ingest_catser_catalogo.mjs", timeoutMin: 20 },
+      { rotulo: "SIGTAP: tabela de procedimentos do SUS", script: "scripts/ingest_sigtap.mjs", timeoutMin: 30 },
+    ],
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════════════════════════
+  // CLASSIFICAÇÃO DO ITEM — a ordem foi DERIVADA das dependências reais de cada script (01/set/2026),
+  // lendo o que cada um consulta e escreve, não do que parecia razoável:
+  //   match_item_catmat   lê itens_sc + catmat_pdm            -> escreve item_catmat_map
+  //   match_item_catser   lê itens_sc + catser_catalogo       -> escreve item_catser_map
+  //   casa_item_sigtap    lê OS DOIS MAPAS + sigtap_*         -> escreve item_sigtap_map
+  //   build_item_classificacao  lê os TRÊS mapas              -> escreve app.item_classificacao
+  //   avalia_contra_gabarito    lê os mapas + app.gabarito_item -> PORTÃO (sai 1 se regredir)
+  // O 3º passo é o que prende a ordem: o casamento do SIGTAP tira sua lista de chaves dos dois mapas, então
+  // rodá-lo antes deles produziria um mapa vazio — silenciosamente, porque zero linhas não é erro.
+  //
+  // DEPENDÊNCIA EXTERNA REAL: `itens_sc` fresco, que vem da cadeia `itens`. NÃO depende do enriquecimento
+  // (os motores casam sobre `itens_sc.descricao` CRUA — ver [[pnigp-ab-catmat-enriquecido-piora]]).
+  // aoFalhar "parar": cada passo consome o anterior, então seguir depois de uma falha produz camada
+  // montada sobre mapa velho — pior que não montar, porque parece atual.
+  // ═══════════════════════════════════════════════════════════════════════════════════════════════
+  // ⏰ HORARIO: 01:00, ANTES do PNIGP-ETL-Diario das 02:00 — e nao por gosto. O orquestrador constroi
+  // `precos_referencia_basica_sc` a partir de `item_catmat_map`, e o comentario dele ja declarava
+  // "roda apos apresentacao camadas 1/2/LLM + match CATMAT". Ate 01/set essa dependencia NAO PODIA ser
+  // cumprida: o match nao tinha chamador nenhum. Agora tem, e o relogio reflete a ordem — se esta cadeia
+  // rodasse depois do ETL, o banco de precos sairia todo dia de um mapa de ~20 h antes.
+  classificacao: {
+    titulo: "Classificação do item — CATMAT, CATSER, SIGTAP e a camada única",
+    log: "pnigp-classificacao.log",
+    trava: { nome: "cadeia_classificacao", toleranciaMin: 15 },
+    aoFalhar: "parar",
+    env: {},
+    passos: [
+      { rotulo: "material -> CATMAT (trigrama)", script: "scripts/match_item_catmat.mjs", timeoutMin: 120 },
+      { rotulo: "servico -> CATSER (trigrama)", script: "scripts/match_item_catser.mjs", timeoutMin: 90 },
+      { rotulo: "codigo SIGTAP escrito no texto (deterministico)", script: "scripts/casa_item_sigtap.mjs", timeoutMin: 30 },
+      { rotulo: "camada unica: uma resposta por item", script: "scripts/build_item_classificacao.mjs", timeoutMin: 30 },
+      // O banco de precos de SERVICO consome a camada unica, entao vem DEPOIS dela e ANTES do portao:
+      // se o portao reprovar, a cadeia para e o banco ja foi reconstruido com o mesmo dado que foi medido.
+      // ═══ BANCO DE PRECOS, DIARIO (01/set/2026) ═══
+      // Antes disto os bancos so eram reconstruidos pelo etl_orquestrador com "devido: >30 dias", ou seja
+      // no maximo uma vez por mes e a partir de um item_catmat_map que ninguem reconstruia. Aqui eles
+      // rodam TODO DIA e sempre sobre o mapa que os passos 1-4 acabaram de produzir.
+      // A ordem entre eles e de dependencia: mislabel_unidade compara contra a mediana que precos_basica
+      // acabou de calcular; rodar antes o faria comparar com a mediana de ontem.
+      { rotulo: "livro de precos de BEM + sobrepreco (precos_referencia_sc)", script: "scripts/build_precos_compras.mjs", timeoutMin: 45 },
+      { rotulo: "referencia por UNIDADE BASICA (Passe 2, curadoria IQR)", script: "scripts/build_precos_basica_sc.mjs", timeoutMin: 45 },
+      { rotulo: "red-flag de unidade trocada (depende do Passe 2)", script: "scripts/build_mislabel_unidade_sc.mjs", timeoutMin: 30 },
+      { rotulo: "banco de precos de SERVICO (CATSER+SIGTAP, com referencia do SUS)", script: "scripts/build_precos_servico_sc.mjs", timeoutMin: 45 },
+      { rotulo: "PORTAO: ponto de operacao contra o gabarito", script: "scripts/avalia_contra_gabarito.mjs", timeoutMin: 20 },
+    ],
+  },
+
   marca: {
     titulo: "Cadeia da marca e do modelo",
     log: "pnigp-marca.log",
@@ -246,6 +314,9 @@ export const CADEIAS = {
       { rotulo: "coleta PNCP e fontes devidas", cadeia: "coleta" },
       { rotulo: "consumidor de evento - itens", cadeia: "itens" },
       { rotulo: "enriquecimento do descritivo", cadeia: "enriquecimento" },
+      // classificacao depende de `itens`, nao do enriquecimento; fica aqui por ser o consumidor
+      // seguinte de itens_sc e por deixar a camada pronta antes de marca/TCE lerem o item.
+      { rotulo: "classificacao do item (CATMAT/CATSER/SIGTAP)", cadeia: "classificacao" },
       { rotulo: "cadeia da marca e modelo", cadeia: "marca" },
       // o TCE vem por último porque lê itens_sc e contratos_sc já atualizados pelos dois primeiros
       { rotulo: "casamento TCE e fila", cadeia: "tce" },

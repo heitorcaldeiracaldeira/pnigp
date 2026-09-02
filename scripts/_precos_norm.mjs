@@ -53,3 +53,31 @@ export const CANON = `CASE btrim(regexp_replace(u,'\\s*\\(.*$',''))
   WHEN 'latas' THEN 'lata'
   WHEN 'fl' THEN 'folha'  WHEN 'fls' THEN 'folha'  WHEN 'folhas' THEN 'folha'
   ELSE btrim(regexp_replace(u,'\\s*\\(.*$','')) END`;
+
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════
+// CANON_SERVICO — o IRMÃO do CANON, para o eixo que o banco de MATERIAL exclui a montante (01/set/2026).
+//
+// O CANON acima é declaradamente "só grafias de BENS", porque o build de material filtra
+// `unidade !~* 'serv|mês|diaria|verba|hora'` antes de chegar nele. Com o banco de preços de SERVIÇO essas
+// unidades passam a ser justamente as que interessam — e elas se multiplicam em sinônimos:
+//     serviço · servico · sv · por serviço      (medido: 4 grafias, 34.023 itens)
+//     mês · mes · mensal                        (medido: 9.243 itens partidos em 2 grafias)
+// Partir o mesmo grupo em duas grafias corta a amostra pela metade contra a regra do mínimo de 3 compras.
+//
+// ⚠️ NÃO se aplica FATOR aqui, e isso é a diferença de fundo entre os dois eixos. A camada de apresentação
+// (`item_apresentacao_sc`) existe para DESEMBALAR — "caixa com 12" vira 12 unidades. Serviço não se
+// desembala: 1 hora é 1 hora. Medido em 01/set: a camada cobre 85% dos itens de material e 58,5% dos de
+// serviço, e nesses 58,5% quase tudo é `unidade` com fator 1, ou seja passa direto. Usá-la para serviço
+// daria a impressão de normalizar preço sem normalizar nada.
+//
+// Mantém o 1º passo do CANON — tirar o parêntese, que é ruído do PNCP ("unidade (un)") — e acrescenta os
+// casos de serviço/tempo ANTES de cair no CASE dos bens.
+export const CANON_SERVICO = `CASE
+  WHEN btrim(regexp_replace(u,'\\s*\\(.*$','')) ~ 'servi|^sv$'            THEN 'servico'
+  WHEN btrim(regexp_replace(u,'\\s*\\(.*$','')) ~ '^m[êe]s$|mensal'        THEN 'mes'
+  WHEN btrim(regexp_replace(u,'\\s*\\(.*$','')) ~ '^h$|^hr$|^hora'         THEN 'hora'
+  WHEN btrim(regexp_replace(u,'\\s*\\(.*$','')) ~ 'di[áa]ria|^di[áa]s?$'   THEN 'diaria'
+  WHEN btrim(regexp_replace(u,'\\s*\\(.*$','')) ~ 'verba|global|^vb$'      THEN 'verba'
+  WHEN btrim(regexp_replace(u,'\\s*\\(.*$','')) ~ '^ano|anual'             THEN 'ano'
+  WHEN btrim(regexp_replace(u,'\\s*\\(.*$','')) ~ 'atendimento|consulta|procedimento|exame|sess[ãa]o' THEN 'atendimento'
+  ELSE ${CANON} END`;

@@ -1,3 +1,15 @@
+// ⚠️⚠️ LEIA ANTES DE RODAR COM MODE=apply (nota de 01/set/2026)
+// O ganho de "+2,6 pontos, zero regressão" que motivou este arquivo foi medido em JULHO, em 76 itens, SEM
+// gabarito na língua de SC — porque não existia um. Agora existe (`app.gabarito_item`, 216 rótulos), e o
+// ganho NÃO SE REPRODUZ: medido em 01/set com o envelope não-piora,
+//     CATMAT top-8  delta +0 (Haiku e Opus 5)   ·  CATSER top-8  delta +0
+//     CATMAT top-50 delta +0                     ·  CATSER top-50 delta +1 de 53 (ruído)
+// O LLM não erra — ele SE ABSTÉM, e está certo: os candidatos do top-k não contêm a resposta. O gargalo é
+// RECALL, não rankeamento, e trocar Haiku por Opus não muda nada. Rodar MODE=apply na cauda inteira custaria
+// ~US$ 70 para delta zero. Ver [[pnigp-reranker-nao-ganha-o-gargalo-e-recall]].
+//
+// O que FUNCIONOU para serviço foi remover o retriever: catálogo CATSER inteiro (3.098 nomes, ~46k tokens)
+// no prompt, que achou código para 17 dos 36 que o top-35 dava como perdidos. Outra arquitetura, outro custo.
 // RERANKER-LLM (estágio 2 do retrieve-then-rerank). O retriever trigrama dá top-k candidatos (recall@3=100% no gabarito
 // de SC → o certo está lá); o LLM escolhe o correto usando TODO o contexto, desambiguando a polissemia que a heurística
 // não resolvia ("joelho pvc esgoto" → conexão, não prótese). Testa no gabarito coloquial de SC e compara ao trigrama.

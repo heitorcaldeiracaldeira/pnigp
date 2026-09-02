@@ -21,11 +21,26 @@ try {
   // ninguém viu porque o sistema se declarou concluído.
   // Agora só é DONE quando NÃO HÁ MAIS PENDENTE. Ocioso com pendente é PARADO, e parado pede relance, não
   // desligamento — por isso sai como STALLED, que o vigia trata como "continua ligado".
+  const SQL_PENDENTES = `SELECT count(*)::int n FROM arquivos_sc a
+     WHERE a.uri IS NOT NULL AND NOT EXISTS (SELECT 1 FROM arquivo_texto_sc t
+       WHERE t.cnpj=a.cnpj AND t.ano=a.ano AND t.seq=a.seq AND t.sequencial_documento=a.sequencial_documento)`;
+
+  // ═══ SO_PENDENTES=1 — só o número, para o ALARME do vigia ═══
+  // O vigia precisa do número quando descobre a tarefa da extração DESATIVADA, e nessa hora o
+  // caminho normal não serve: outra porta (PNIGP - Atas PNCP, universo=resultado) grava de 15 em
+  // 15 min, então `writes25 > 0` e a função sai em RUNNING antes de contar. Medido em 01/set/2026:
+  // com 14.946 pendentes e a extração desligada, a saída era `RUNNING writes25=15`.
+  // Esta conta NÃO entra no caminho normal de propósito: é um anti-join sobre arquivos_sc, e pagá-lo
+  // a cada 15 min para sempre é exatamente o que o cabeçalho manda evitar. Aqui ele só roda no
+  // estado quebrado, que é quando o número vale o custo.
+  if (process.env.SO_PENDENTES === "1") {
+    console.log(`PENDENTES ${(await q(SQL_PENDENTES))[0].n}`);
+    await db.end(); process.exit(0);
+  }
+
   const writes25 = (await q(`SELECT count(*)::int n FROM arquivo_texto_sc WHERE atualizado > now() - interval '25 min'`))[0].n;
   if (!process.env.FORCE && writes25 > 0) { console.log(`RUNNING writes25=${writes25}`); await db.end(); process.exit(0); }
-  const pend = (await q(`SELECT count(*)::int n FROM arquivos_sc a
-     WHERE a.uri IS NOT NULL AND NOT EXISTS (SELECT 1 FROM arquivo_texto_sc t
-       WHERE t.cnpj=a.cnpj AND t.ano=a.ano AND t.seq=a.seq AND t.sequencial_documento=a.sequencial_documento)`))[0].n;
+  const pend = (await q(SQL_PENDENTES))[0].n;
   if (!process.env.FORCE && pend > 0) {
     console.log(`STALLED writes25=0 pendentes=${pend} — parado, NAO concluido`);
     await db.end(); process.exit(0);

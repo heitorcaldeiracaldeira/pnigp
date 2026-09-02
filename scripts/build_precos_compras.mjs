@@ -22,8 +22,14 @@ async function main() {
     FROM itens_sc
     WHERE unit_homologado BETWEEN 0.5 AND 100000 AND quantidade>0 AND descricao IS NOT NULL
       AND length(${NORM}) BETWEEN 6 AND 90
-      AND descricao !~* 'obra|constru|servi|loca[çc]|reforma|manuten|consultoria|projeto|implanta|treinamento'
-      AND unidade !~* 'serv|m[êe]s|mes|diaria|verba|global|hora'`);
+      -- BEM x SERVICO pelo CAMPO DA FONTE (01/set/2026), nao mais por regex de palavra. A regex antiga era
+      --   descricao !~* 'obra|constru|servi|loca[cc]|reforma|manuten|consultoria|projeto|implanta|treinamento'
+      --   AND unidade !~* 'serv|mes|diaria|verba|global|hora'
+      -- e, medida contra o material_ou_servico que o PNCP publica: deixava 121.487 linhas de SERVICO
+      -- entrarem num livro de precos de BEM e descartava 67.893 materiais legitimos por terem "manutencao"
+      -- ou "projeto" no nome. Mesma troca ja feita em match_item_catmat.mjs, com A/B e zero regressao.
+      -- Servico agora tem livro proprio: precos_referencia_servico_sc.
+      AND material_ou_servico = 'M'`);
   await c.query(`CREATE INDEX ON _it (chave, un)`);
   const n = await c.query(`SELECT count(*) n, count(distinct un) u FROM _it`); console.log(`  ${n.rows[0].n} itens-bem · ${n.rows[0].u} unidades canônicas (era ~4838 brutas)`);
 
@@ -40,6 +46,34 @@ async function main() {
       AND percentile_cont(0.75) WITHIN GROUP (ORDER BY u) <= percentile_cont(0.25) WITHIN GROUP (ORDER BY u) * 6
     ON CONFLICT (chave,unidade) DO NOTHING`);
   console.log(`  ${ref.rowCount} itens de referência (era 369)`);
+
+  // ═══ COLUNAS QUE O PRODUTO LE E ESTE SCRIPT DEIXAVA VAZIAS (consertado em 01/set/2026) ═══
+  // Este script faz TRUNCATE em precos_referencia_sc e reinsere so 7 colunas. Mas a tabela tem mais quatro
+  // que o getBancoPrecosSC consulta (src/lib/queries.ts: catmat_pdm, catmat_cod, desvio, cv), preenchidas
+  // uma vez em julho e APAGADAS pelo primeiro TRUNCATE seguinte. Medido em 01/set: 2.067 linhas, ZERO com
+  // catmat_cod. O produto lia NULL em todas, sem erro nenhum.
+  // Quem da TRUNCATE numa tabela e dono dela inteira: reencher parcialmente e sair e pior que nao rodar,
+  // porque o resultado parece atual. Ver [[pnigp-produtor-na-cadeia-consumidor-fora]].
+  await c.query(`ALTER TABLE precos_referencia_sc
+    ADD COLUMN IF NOT EXISTS catmat_cod INT, ADD COLUMN IF NOT EXISTS catmat_pdm TEXT,
+    ADD COLUMN IF NOT EXISTS catmat_classe TEXT, ADD COLUMN IF NOT EXISTS catmat_sim NUMERIC,
+    ADD COLUMN IF NOT EXISTS desvio NUMERIC, ADD COLUMN IF NOT EXISTS cv NUMERIC`);
+
+  // dispersao: desvio-padrao e coeficiente de variacao (desvio/mediana), do MESMO conjunto que gerou a mediana
+  const disp = await c.query(`UPDATE precos_referencia_sc r
+    SET desvio = s.d,
+        cv = CASE WHEN r.mediana > 0 THEN round((s.d / r.mediana)::numeric, 4) END
+    FROM (SELECT chave, un, round(stddev_samp(u)::numeric, 4) d FROM _it GROUP BY 1,2) s
+    WHERE s.chave = r.chave AND s.un = r.unidade`);
+  console.log(`  dispersão (desvio/cv) em ${disp.rowCount} refs`);
+
+  // o EIXO: sem isto o Banco de Precos nao consegue agrupar por PDM nem cruzar com a referencia nacional
+  // (a fonte `precos_nacional` do orquestrador declara depender de precos_referencia_sc.catmat_cod).
+  const eixo = await c.query(`UPDATE precos_referencia_sc r
+    SET catmat_cod = m.codigo_pdm, catmat_pdm = m.nome_pdm,
+        catmat_classe = m.nome_classe, catmat_sim = m.sim
+    FROM item_catmat_map m WHERE m.chave = r.chave AND m.aceito`);
+  console.log(`  eixo CATMAT reatado em ${eixo.rowCount} de ${ref.rowCount} refs`);
 
   console.log("constatações de sobrepreço…");
   const find = await c.query(`
