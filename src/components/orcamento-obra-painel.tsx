@@ -32,7 +32,7 @@ export default function OrcamentoObraPainel({ nome }: { nome?: string }) {
       <SinapiPainel onAdicionar={adicionar} />
       <SicroPainel onAdicionar={adicionar} />
       <SiescPainel onAdicionar={adicionar} />
-      <OrcamentoCarrinho itens={itens} desonerado={desonerado} onDesoneradoChange={setDesonerado} onQtdChange={mudarQtd} onRemover={remover} />
+      <OrcamentoCarrinho itens={itens} desonerado={desonerado} onDesoneradoChange={setDesonerado} onQtdChange={mudarQtd} onRemover={remover} onAdicionar={adicionar} />
     </>
   );
 }

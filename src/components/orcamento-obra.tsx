@@ -10,7 +10,7 @@
 import { useState } from "react";
 import { Plus, Trash2, ClipboardList, Copy } from "lucide-react";
 
-export type FonteObra = "PNCP" | "SINAPI" | "SICRO" | "SIE-SC";
+export type FonteObra = "PNCP" | "SINAPI" | "SICRO" | "SIE-SC" | "Manual";
 export type NovoItemOrcamento = {
   fonte: FonteObra; codigo: string; descricao: string; unidade: string;
   precoNaoDesonerado: number | null; precoDesonerado: number | null;
@@ -48,27 +48,92 @@ export function AdicionarQtd({ onAdd }: { onAdd: (quantidade: number) => void })
 }
 
 const corFonte: Record<FonteObra, string> = {
-  PNCP: "bg-teal-50 text-teal-700", SINAPI: "bg-orange-50 text-orange-700", SICRO: "bg-cyan-50 text-cyan-700", "SIE-SC": "bg-emerald-50 text-emerald-700",
+  PNCP: "bg-teal-50 text-teal-700", SINAPI: "bg-orange-50 text-orange-700", SICRO: "bg-cyan-50 text-cyan-700",
+  "SIE-SC": "bg-emerald-50 text-emerald-700", Manual: "bg-slate-200 text-slate-700",
 };
+// Ordem fixa de exibição — não a ordem de chegada, senão o resumo por fonte pula de lugar a cada item novo.
+const ORDEM_FONTES: FonteObra[] = ["PNCP", "SINAPI", "SICRO", "SIE-SC", "Manual"];
+
+// Item que não veio de nenhuma das quatro fontes — um preço que a pessoa já tem (orçamento de fornecedor,
+// negociação, item fora de catálogo) e precisa entrar na mesma soma. Sem isso o orçamento fica refém de só
+// existir o que as tabelas têm; a Lei 14.133 não veda usar outra fonte, só pede que ela apareça no processo.
+export function AdicionarItemManual({ onAdd }: { onAdd: (item: NovoItemOrcamento, quantidade: number) => void }) {
+  const [aberto, setAberto] = useState(false);
+  const [descricao, setDescricao] = useState("");
+  const [unidade, setUnidade] = useState("");
+  const [preco, setPreco] = useState("");
+  const [qtd, setQtd] = useState("");
+  const p = Number(preco.replace(",", "."));
+  const n = Number(qtd.replace(",", "."));
+  const valido = descricao.trim().length >= 2 && p > 0 && n > 0;
+
+  const adicionar = () => {
+    if (!valido) return;
+    onAdd({ fonte: "Manual", codigo: `manual-${Date.now()}`, descricao: descricao.trim(), unidade: unidade.trim() || "un", precoNaoDesonerado: p, precoDesonerado: null }, n);
+    setDescricao(""); setUnidade(""); setPreco(""); setQtd(""); setAberto(false);
+  };
+
+  if (!aberto) return (
+    <button onClick={() => setAberto(true)} className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:underline">
+      <Plus className="h-3 w-3" /> inserir item manual (fora das quatro fontes)
+    </button>
+  );
+  return (
+    <div className="mt-2 flex flex-wrap items-end gap-2 rounded-lg border border-dashed border-slate-300 bg-white p-2">
+      <div className="flex-1 basis-48">
+        <label className="text-[9px] uppercase tracking-wide text-slate-400">Descrição</label>
+        <input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="ex.: cerca de arame, orçamento de fornecedor X"
+          className="w-full rounded border border-slate-200 px-1.5 py-1 text-[11px] outline-none focus:border-slate-400" />
+      </div>
+      <div className="w-16">
+        <label className="text-[9px] uppercase tracking-wide text-slate-400">Un.</label>
+        <input value={unidade} onChange={(e) => setUnidade(e.target.value)} placeholder="m, un…"
+          className="w-full rounded border border-slate-200 px-1.5 py-1 text-[11px] outline-none focus:border-slate-400" />
+      </div>
+      <div className="w-24">
+        <label className="text-[9px] uppercase tracking-wide text-slate-400">Preço unit.</label>
+        <input value={preco} onChange={(e) => setPreco(e.target.value)} inputMode="decimal" placeholder="0,00"
+          className="w-full rounded border border-slate-200 px-1.5 py-1 text-right text-[11px] outline-none focus:border-slate-400" />
+      </div>
+      <div className="w-16">
+        <label className="text-[9px] uppercase tracking-wide text-slate-400">Qtd.</label>
+        <input value={qtd} onChange={(e) => setQtd(e.target.value)} inputMode="decimal" placeholder="0"
+          className="w-full rounded border border-slate-200 px-1.5 py-1 text-right text-[11px] outline-none focus:border-slate-400" />
+      </div>
+      <button onClick={adicionar} disabled={!valido} className="rounded bg-slate-700 px-2 py-1.5 text-[11px] font-semibold text-white disabled:opacity-30">Adicionar</button>
+      <button onClick={() => setAberto(false)} className="text-[11px] text-slate-400 hover:underline">cancelar</button>
+    </div>
+  );
+}
 
 export function OrcamentoCarrinho({
-  itens, desonerado, onDesoneradoChange, onQtdChange, onRemover,
+  itens, desonerado, onDesoneradoChange, onQtdChange, onRemover, onAdicionar,
 }: {
   itens: ItemOrcamento[]; desonerado: boolean; onDesoneradoChange: (v: boolean) => void;
   onQtdChange: (id: string, quantidade: number) => void; onRemover: (id: string) => void;
+  onAdicionar: (item: NovoItemOrcamento, quantidade: number) => void;
 }) {
-  const total = itens.reduce((acc, it) => acc + precoEfetivo(it, desonerado) * it.quantidade, 0);
+  const subtotalItem = (it: ItemOrcamento) => precoEfetivo(it, desonerado) * it.quantidade;
+  const total = itens.reduce((acc, it) => acc + subtotalItem(it), 0);
+  const porFonte = ORDEM_FONTES
+    .map((fonte) => ({ fonte, itens: itens.filter((it) => it.fonte === fonte) }))
+    .filter((g) => g.itens.length)
+    .map((g) => ({ ...g, subtotal: g.itens.reduce((acc, it) => acc + subtotalItem(it), 0) }));
 
   const copiar = () => {
     const L: string[] = [];
     L.push(`ORÇAMENTO DE OBRA (${desonerado ? "desonerado" : "não desonerado"})`);
     L.push("");
-    for (const it of itens) {
-      const p = precoEfetivo(it, desonerado);
-      L.push(`  [${it.fonte} ${it.codigo}] ${it.descricao} — ${it.quantidade} ${it.unidade} × ${brl(p)} = ${brl(p * it.quantidade)}`);
+    for (const g of porFonte) {
+      L.push(`${g.fonte}`);
+      for (const it of g.itens) {
+        const p = precoEfetivo(it, desonerado);
+        L.push(`  [${it.codigo}] ${it.descricao} — ${it.quantidade} ${it.unidade} × ${brl(p)} = ${brl(p * it.quantidade)}`);
+      }
+      L.push(`  Subtotal ${g.fonte}: ${brl(g.subtotal)}`);
+      L.push("");
     }
-    L.push("");
-    L.push(`TOTAL: ${brl(total)}`);
+    L.push(`TOTAL GERAL: ${brl(total)}`);
     navigator.clipboard?.writeText(L.join("\n"));
   };
 
@@ -87,12 +152,13 @@ export function OrcamentoCarrinho({
         </div>
       </div>
       <p className="mt-1 text-[12px] leading-relaxed text-slate-600">
-        Some itens da Referência SINAPI, SICRO e SIE-SC acima informando a quantidade de cada um — o total abaixo
-        é preço unitário × quantidade, somado por item. Nada aqui é salvo: copie o resultado antes de sair da tela.
+        Some itens do Banco de Preços, SINAPI, SICRO e SIE-SC acima informando a quantidade de cada um — o total
+        é preço unitário × quantidade, somado por item e depois por fonte. Nada aqui é salvo: copie antes de sair da tela.
       </p>
+      <AdicionarItemManual onAdd={onAdicionar} />
 
       {!itens.length ? (
-        <p className="mt-3 text-[12px] text-slate-400">Nenhum item ainda. Busque acima e informe a quantidade de cada serviço para somar aqui.</p>
+        <p className="mt-3 text-[12px] text-slate-400">Nenhum item ainda. Busque acima (ou insira um item manual) e informe a quantidade de cada um para somar aqui.</p>
       ) : (
         <>
           <div className="mt-3 max-h-96 overflow-auto rounded-lg border border-slate-200 bg-white">
@@ -128,9 +194,16 @@ export function OrcamentoCarrinho({
               </tbody>
             </table>
           </div>
-          <div className="mt-2 flex justify-end">
-            <div className="rounded-lg bg-slate-800 px-4 py-2 text-right">
-              <div className="text-[9px] uppercase tracking-wide text-slate-300">total do orçamento</div>
+          <div className="mt-3 flex flex-col items-end gap-1.5">
+            {porFonte.map((g) => (
+              <div key={g.fonte} className="flex items-center gap-3 text-[11px]">
+                <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold ${corFonte[g.fonte]}`}>{g.fonte}</span>
+                <span className="text-slate-400">{g.itens.length} item(ns)</span>
+                <span className="w-28 text-right font-semibold tabular-nums text-slate-700">{brl(g.subtotal)}</span>
+              </div>
+            ))}
+            <div className="mt-1 rounded-lg bg-slate-800 px-4 py-2 text-right">
+              <div className="text-[9px] uppercase tracking-wide text-slate-300">total geral do orçamento</div>
               <div className="font-display text-xl font-bold tabular-nums text-white">{brl(total)}</div>
             </div>
           </div>
