@@ -107,3 +107,35 @@ export async function getBuscaSicro(termo: string): Promise<{ composicoes: Sicro
     })),
   };
 }
+
+// SIE-SC (Secretaria de Infraestrutura e Mobilidade) — Referencial de Preços de Obras de EDIFICAÇÕES, a
+// ÚNICA das três réguas calibrada pelo próprio estado especificamente para edificação (SINAPI é federal
+// "demais obras", SICRO é DNIT/transportes). Tabela própria (`siesc_edificacoes_sc`), alimentada por
+// `scripts/ingest_siesc_edificacoes_sc.mjs` — que extrai de PDF (a fonte não publica planilha).
+export const SIESC_COMPETENCIA = "202101"; // janeiro/2021 — a versão mais recente que a SIE-SC publica (03/set/2026)
+
+export type SiescEdificacao = {
+  codigo: string; grupo: string; descricao: string; unidade: string;
+  custoExecucao: number | null; custoMaterial: number | null; custoSubservico: number | null; precoUnitario: number | null;
+};
+
+export async function getBuscaSiescEdificacoes(termo: string): Promise<{ servicos: SiescEdificacao[] }> {
+  const t = String(termo || "").trim();
+  if (t.length < 3) return { servicos: [] };
+  const porCodigo = /^\d+$/.test(t);
+  const rows = await query<Record<string, unknown>>(
+    porCodigo
+      ? `SELECT * FROM siesc_edificacoes_sc WHERE codigo = $1 LIMIT 50`
+      : `SELECT *, similarity(descricao, $1) sim FROM siesc_edificacoes_sc
+          WHERE descricao ILIKE '%' || $1 || '%' OR descricao % $1
+          ORDER BY (descricao ILIKE '%' || $1 || '%') DESC, similarity(descricao, $1) DESC LIMIT 50`,
+    [t],
+  ).catch(() => []);
+  return {
+    servicos: rows.map((r) => ({
+      codigo: String(r.codigo), grupo: String(r.grupo || ""), descricao: String(r.descricao || ""), unidade: String(r.unidade || ""),
+      custoExecucao: num(r.custo_execucao), custoMaterial: num(r.custo_material), custoSubservico: num(r.custo_subservico),
+      precoUnitario: num(r.preco_unitario),
+    })),
+  };
+}

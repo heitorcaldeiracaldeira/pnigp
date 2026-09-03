@@ -23,6 +23,7 @@ import { FornecedoresSancionados } from "@/components/fornecedores-sancionados";
 import BancoPrecosPainel from "@/components/banco-precos-painel";
 import SinapiPainel from "@/components/sinapi-painel";
 import SicroPainel from "@/components/sicro-painel";
+import SiescPainel from "@/components/siesc-painel";
 import { SobreprecoCompras } from "@/components/sobrepreco-compras";
 import { ConstrutorProcesso } from "@/components/construtor-processo";
 import { ProcessoFases } from "@/components/processo-fases";
@@ -421,6 +422,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
       <div className="mb-4"><BancoPrecosPainel nome={ente.nome} /></div>
       <SinapiPainel />
       <SicroPainel />
+      <SiescPainel />
       <div className="mb-4"><ProcessoFases codigo={ente.cod_ibge} /></div>
     </> },
     { id: "criador-documentos", label: "Criador de Documentos para Compras", content: <>
