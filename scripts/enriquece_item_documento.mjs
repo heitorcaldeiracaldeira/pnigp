@@ -66,7 +66,19 @@ const bloco = (docNorm, off, offs, cap = BLOCO_CAP) => recortaBloco(docNorm, off
 const consolida = (n, base) => (n === 0 ? "ausente" : (n >= 4 && base === "alta") ? "media" : base);
 
 async function main() {
-  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 3, statement_timeout: 120000 });
+  // ⏱️ TIMEOUTS DE CLIENTE (02/set/2026) — sem eles o shard PENDURA PARA SEMPRE.
+  // Medido em 02/set: 11 dos 12 shards saíram e o shard 6 ficou VIVO por 2 h — sem CPU, sem consulta em
+  // `pg_stat_activity`, sem gravar nada. Estava bloqueado num socket morto: TCP que não fecha, resposta que
+  // não vem. O `Promise.all` do lançador nunca resolveu, a cadeia nunca terminou, e a trava seguiu batendo —
+  // ou seja, do lado de fora parecia trabalho em curso.
+  // `statement_timeout` NÃO cobre isso: é limite do SERVIDOR para uma query que ele está executando. Se a
+  // resposta nunca chega ao cliente, quem espera é o cliente, e ele espera sem prazo.
+  //   query_timeout ............. prazo do CLIENTE para a resposta de uma query
+  //   connectionTimeoutMillis ... prazo para o handshake (o `q()` deste arquivo já tem 5 retentativas,
+  //                               então falhar rápido é melhor que pendurar: a retentativa reconecta)
+  // Mesma correção aplicada ao roda.mjs no mesmo dia, pelo mesmo sintoma em outro ponto.
+  const db = new pg.Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 3,
+    statement_timeout: 120000, query_timeout: 150000, connectionTimeoutMillis: 20000 });
   db.on("error", () => {});
   const q = async (s, p) => { let u; for (let i = 0; i < 5; i++) { try { return await db.query(s, p); } catch (e) { u = e; if (["22P05", "23502", "42703", "42P10"].includes(e.code)) throw e; await sleep(1000 * (i + 1)); } } throw new Error(`db: ${u?.message}`); };
   // INSERT EM LOTE (multi-row) — 1 round-trip por bloco em vez de 1 por linha (destrava o Neon)

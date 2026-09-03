@@ -176,6 +176,12 @@ export const CADEIAS = {
       { rotulo: "servico -> CATSER (trigrama)", script: "scripts/match_item_catser.mjs", timeoutMin: 90 },
       { rotulo: "codigo SIGTAP escrito no texto (deterministico)", script: "scripts/casa_item_sigtap.mjs", timeoutMin: 30 },
       { rotulo: "camada unica: uma resposta por item", script: "scripts/build_item_classificacao.mjs", timeoutMin: 30 },
+      // ═══ DICIONARIO DA BUSCA (02/set/2026) ═══
+      // Vem DEPOIS da camada unica porque copia dela o eixo de catalogo de cada descricao; e vem ANTES dos
+      // bancos de preco so por afinidade, nao por dependencia. E o que a tela do Banco de Precos consulta:
+      // se parar de rodar, a busca continua funcionando e passa a ignorar tudo que entrou na base depois —
+      // que e a pior forma de falhar, porque nao aparece.
+      { rotulo: "dicionario de busca do Banco de Precos (app.item_busca)", script: "scripts/build_item_busca.mjs", timeoutMin: 30 },
       // O banco de precos de SERVICO consome a camada unica, entao vem DEPOIS dela e ANTES do portao:
       // se o portao reprovar, a cadeia para e o banco ja foi reconstruido com o mesmo dado que foi medido.
       // ═══ BANCO DE PRECOS, DIARIO (01/set/2026) ═══

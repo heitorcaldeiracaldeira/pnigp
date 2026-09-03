@@ -28,7 +28,15 @@ const num = (x) => Number(x || 0);
 // uma tarefa pode estar Ready, sem erro nenhum, e nunca mais disparar.
 let tarefas = [];
 try {
-  const ps = `Get-ScheduledTask | Where-Object { $_.TaskName -like '*PNIGP*' } | ForEach-Object { $i = $_ | Get-ScheduledTaskInfo; '{0}|{1}|{2}|{3}|{4}' -f $_.TaskName, $_.State, $i.LastRunTime, $i.LastTaskResult, $i.NextRunTime }`;
+  // 🚨 DATA EM FORMATO NÃO AMBÍGUO (consertado em 02/set/2026) — este verificador MENTIA todo dia.
+  // O PowerShell formatava a data pela cultura da máquina (pt-BR, dd/MM/yyyy) e o `new Date()` do JS lê
+  // dd/MM como MM/dd: "02/09/2026" (2 de setembro) virava 9 de FEVEREIRO. Resultado: TODA tarefa aparecia
+  // como "não roda há mais de 24h", inclusive as que tinham rodado 15 minutos antes.
+  // Medido em 02/set: 44 alertas, quase todos falsos. E alarme que grita todo dia é alarme desligado —
+  // é a mesma morte do vigia da extração ([[pnigp-vigia-silencio-nao-e-conclusao]]). Um verificador que
+  // sempre acusa não verifica nada: ele só treina quem lê a ignorá-lo.
+  // `yyyy-MM-ddTHH:mm:ss` é lido igual em qualquer cultura, que é o ponto.
+  const ps = `Get-ScheduledTask | Where-Object { $_.TaskName -like '*PNIGP*' } | ForEach-Object { $i = $_ | Get-ScheduledTaskInfo; $u = if ($i.LastRunTime) { $i.LastRunTime.ToString('yyyy-MM-ddTHH:mm:ss') } else { '' }; $p = if ($i.NextRunTime) { $i.NextRunTime.ToString('yyyy-MM-ddTHH:mm:ss') } else { '' }; '{0}|{1}|{2}|{3}|{4}' -f $_.TaskName, $_.State, $u, $i.LastTaskResult, $p }`;
   const out = execSync(`powershell -NoProfile -Command "${ps.replace(/"/g, '\\"')}"`, { encoding: "utf8", timeout: 120000 });
   tarefas = out.split(/\r?\n/).filter(Boolean).map((l) => {
     const [nome, estado, ultima, rc, proxima] = l.split("|");
@@ -43,7 +51,19 @@ for (const t of ativas) {
     // "Rodada completa" é manual por desenho — não tem gatilho e isso está certo.
     if (!/Rodada completa/i.test(t.nome)) alerta(`${t.nome}: ATIVA mas SEM PRÓXIMA EXECUÇÃO (gatilho morto)`);
   }
-  if (t.ultima && t.ultima < limite && t.proxima) alerta(`${t.nome}: não roda há mais de ${HORAS}h (última ${t.ultima.toLocaleString("pt-BR")})`);
+  // ⏳ SÓ COBRA CADÊNCIA DE QUEM TEM CADÊNCIA (02/set/2026). Antes, toda tarefa era julgada por uma janela
+  // de 24h — inclusive as MENSAIS (PNIGP - Catalogos, dia 5) e as ESTACIONADAS de propósito (os
+  // PNIGP_folha_* com gatilho em 01/01/2099, que só rodam quando alguém dispara à mão). Elas apareciam
+  // como falha todo dia, e falha permanente é ruído: some no meio dela o alerta que importa.
+  // A régua honesta é a PRÓPRIA cadência da tarefa: se ela só vai rodar daqui a mais de HORAS, não faz
+  // sentido exigir que tenha rodado nas últimas HORAS.
+  const proximaDentroDaJanela = t.proxima && t.proxima.getTime() - Date.now() < HORAS * 3600e3;
+  const estacionada = t.proxima && t.proxima.getFullYear() >= 2099;
+  if (estacionada) ok(`${t.nome}: ESTACIONADA (gatilho em ${t.proxima.getFullYear()}) — roda só à mão, por desenho`);
+  else if (t.ultima && t.ultima < limite && proximaDentroDaJanela)
+    alerta(`${t.nome}: não roda há mais de ${HORAS}h (última ${t.ultima.toLocaleString("pt-BR")}) e devia rodar até ${t.proxima.toLocaleString("pt-BR")}`);
+  else if (t.ultima && t.ultima < limite && t.proxima)
+    ok(`${t.nome}: cadência maior que ${HORAS}h — próxima ${t.proxima.toLocaleString("pt-BR")}`);
   if (t.rc !== 0 && t.rc !== 267009 && t.rc !== 267011) alerta(`${t.nome}: último resultado ${t.rc} (0x${(t.rc >>> 0).toString(16)})`);
 }
 ok(`${ativas.length} tarefas ativas, ${ativas.filter((t) => t.proxima).length} com próxima execução`);
@@ -147,6 +167,61 @@ try {
   for (const l of linhas) alerta(`LEI DE FUSO violada — ${l}`);
   if (!linhas.length) ok("lei de fuso: checagem não pôde rodar (git indisponível)");
 }
+
+// - 7) O MODULO DE CLASSIFICACAO DO ITEM RODOU E GRAVOU? (acrescentado em 02/set/2026)
+// Este modulo era INVISIVEL aqui: nenhuma das checagens 1-6 mencionava enriquecimento, classificacao ou
+// os bancos de preco. Em 02/set duas falhas passaram inteiras por elas:
+//   04:13  a cadeia do enriquecimento morreu no ARRANQUE (cold start do Neon, sem retentativa) e gravou
+//          ZERO. A secao 5b nao pega: o limiar dela e 45 DIAS, e isto e um buraco de UM dia.
+//   09:43  um shard ficou PENDURADO 2 h num socket morto. A trava seguia BATENDO, entao de fora parecia
+//          trabalho em curso - nenhuma metrica de RESULTADO acusa cadeia viva que nao produz.
+// As perguntas abaixo sao as que eu fiz a mao naquele dia. Automatiza-las e o que faz o silencio valer.
+const modulo = [
+  ["enriquecimento do item", "app.item_enriquecimento", "atualizado"],
+  ["camada de classificacao", "app.item_classificacao", "atualizado"],
+  ["preco de BEM (referencia)", "precos_referencia_sc", null],
+  ["preco por unidade basica", "precos_referencia_basica_sc", "atualizado"],
+  ["preco de SERVICO", "precos_referencia_servico_sc", "atualizado"],
+  // A tela do Banco de Precos le so daqui. Dicionario velho nao quebra a busca - ela responde igual, sem o
+  // que entrou depois. E a falha que nao aparece, entao tem de ser o vigia a dizer.
+  ["dicionario de busca (Banco de Precos)", "app.item_busca", "atualizado"],
+];
+for (const [nome, tab, col] of modulo) {
+  try {
+    if (!col) {
+      const r = await q(`select count(*) n from ${tab}`);
+      if (num(r.n) === 0) alerta(`${nome}: tabela ${tab} VAZIA`);
+      else ok(`${nome}: ${num(r.n)} linhas (sem carimbo para medir frescor)`);
+      continue;
+    }
+    const r = await q(`select count(*) n, count(*) filter (where ${col} > now() - interval '${HORAS} hours') novas,
+                              round(extract(epoch from now()-max(${col}))/3600,1) horas from ${tab}`);
+    if (num(r.n) === 0) alerta(`${nome}: tabela ${tab} VAZIA`);
+    else if (num(r.novas) === 0) alerta(`${nome}: NADA gravado em ${HORAS}h (ultima escrita ha ${r.horas}h) - a cadeia rodou e nao produziu, ou nao rodou`);
+    else ok(`${nome}: ${num(r.novas)} linhas novas em ${HORAS}h`);
+  } catch (e) { alerta(`${nome}: nao consegui medir (${e.message.slice(0, 70)})`); }
+}
+
+// - 7b) TRAVA VIVA + ZERO GRAVACAO = PENDURADO
+// A trava bate de minuto em minuto enquanto o PROCESSO existe, mesmo que ele nao faca mais nada. Foi assim
+// que o shard travado passou 2 h parecendo saudavel. A pergunta que desmascara cruza as duas coisas:
+// dono vivo, tabela parada.
+const PENDURADO_MIN = Number(process.env.PENDURADO_MIN || 45);
+try {
+  const t = await db.query(`select nome, dono, round(extract(epoch from now()-desde)/60) min_vivo
+                              from processo_trava where batida > now() - interval '5 minutes'`);
+  for (const l of t.rows) {
+    if (num(l.min_vivo) < PENDURADO_MIN) { ok(`trava "${l.nome}" viva ha ${l.min_vivo} min (normal)`); continue; }
+    const tab = l.nome === "cadeia_enriquecimento" ? "app.item_enriquecimento"
+              : l.nome === "cadeia_classificacao" ? "app.item_classificacao" : null;
+    if (!tab) { ok(`trava "${l.nome}" viva ha ${l.min_vivo} min (sem tabela conhecida para cruzar)`); continue; }
+    const g = await q(`select round(extract(epoch from now()-max(atualizado))/60) min from ${tab}`);
+    if (num(g.min) > PENDURADO_MIN)
+      alerta(`PENDURADO: trava "${l.nome}" viva ha ${l.min_vivo} min com ${l.dono}, mas ${tab} nao recebe escrita ha ${g.min} min`);
+    else ok(`trava "${l.nome}": viva e gravando (ultima escrita ha ${g.min} min)`);
+  }
+  if (!t.rows.length) ok("nenhuma cadeia em execucao no momento");
+} catch (e) { alerta(`pendurado: nao consegui medir (${e.message.slice(0, 70)})`); }
 
 await db.end();
 

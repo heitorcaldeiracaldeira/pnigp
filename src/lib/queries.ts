@@ -2493,18 +2493,300 @@ export async function getComprasExtraSC(cod: string): Promise<ComprasExtra> {
   };
 }
 
-// Pesquisa de PREÇO DE REFERÊNCIA (Lei 14.133) — gestor digita o item → preço justo (mediana SC + faixa) p/ o edital.
-// Colunas reais de precos_referencia_sc: chave, unidade, mediana, p25, p75, n_itens, n_munis, desvio, cv
-// (não existem `k`, `n_muns`, `n_compras`, `preco_min`, `preco_max` — a query antiga pedia essas e falhava sempre).
-export type PesquisaPreco = { item: string; unidade: string; mediana: number; p25: number; p75: number; nMuns: number; nItens: number; cv: number }[];
-export async function getPesquisaPrecoSC(termo: string): Promise<PesquisaPreco> {
-  const t = String(termo || "").toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
-  const termos = t.split(" ").filter((w) => w.length >= 3).slice(0, 5);
-  if (!termos.length) return [];
-  const conds = termos.map((_, i) => `chave ILIKE '%'||$${i + 1}||'%'`).join(" AND ");
-  const rows = await query<Record<string, unknown>>(`SELECT chave, unidade, mediana, p25, p75, n_munis, n_itens, cv FROM precos_referencia_sc WHERE ${conds} ORDER BY n_itens DESC NULLS LAST LIMIT 40`, termos).catch(() => []);
-  return rows.map((r) => ({ item: String(r.chave || ""), unidade: String(r.unidade || ""), mediana: num(r.mediana), p25: num(r.p25), p75: num(r.p75), nMuns: num(r.n_munis), nItens: num(r.n_itens), cv: num(r.cv) }));
+// A getPesquisaPrecoSC (ILIKE sobre precos_referencia_sc) foi REMOVIDA em 03/set/2026 junto com o
+// componente PesquisaPreco, que estava importado e nunca renderizado. Quem responde a essa pergunta
+// agora é getBuscaBancoPrecos, sobre o dicionário app.item_busca.
+
+// ═══════════════════════════════════════════════════════════════════════════════════════════════════
+// DOCUMENTO DE FORMAÇÃO DO PREÇO DE REFERÊNCIA (02/set/2026)
+// O usuário digita a descrição do produto; a plataforma classifica, busca no banco e devolve os elementos
+// da MEMÓRIA DE CÁLCULO que a IN 65/2021 pede — não uma lista de preços.
+//
+// COMO DIFERE do `getPesquisaPrecoSC`, que já existia: aquele quebra o termo em palavras e faz ILIKE na
+// descrição normalizada. Não passa pela classificação, então "papel a4 75g" não encontra "papel sulfite
+// a4" — são a mesma coisa e textos diferentes. Aqui a busca é pelo EIXO (`app.item_classificacao`), que é
+// o que junta as variantes de escrita sob o mesmo código.
+//
+// ⚠️ NÃO INDICA MARCA, de propósito. O art. 41 da Lei 14.133 VEDA indicação de marca salvo justificativa
+// técnica; um documento que recomendasse marca seria direcionamento e um auditor o barraria. A marca entra
+// ao contrário, quando existir: provar que VÁRIAS marcas competiram naquela faixa legaliza especificar por
+// desempenho. Ver [[pnigp-copiloto-compra]].
+//
+// ⚠️ NÃO confundir com a lei "não usar pesquisa de preços" ([[feedback-nao-usar-pesquisa-de-precos]]):
+// aquela é do COLETOR — proíbe LER documento de pesquisa de preço de terceiro como se fosse resultado da
+// compra, porque cita contratação de outro município. Produzir o documento é o oposto, e é o produto.
+export type DocumentoPrecoReferencia = {
+  termo: string;
+  identificacao: { taxonomia: string; codigo: string; nome: string; classe: string | null; exata: boolean; deterministica: boolean; sim: number | null } | null;
+  amostraSC: { unidade: string; mediana: number; p25: number; p75: number; nCompras: number; nMunicipios: number; nExcluidos: number }[];
+  referenciaNacional: { unidade: string; forma: string; mediana: number; p25: number; p75: number; cv: number; nObs: number }[];
+  rastreabilidade: { numeroControlePNCP: string; municipio: string; descricao: string; unidade: string; quantidade: number; unitario: number }[];
+  metodologia: string[];
+  alertas: string[];
+};
+// ═══ CANDIDATOS — os processos, para a PESSOA escolher quais entram (02/set/2026) ═══
+// A IN 65 não pede um número: pede o critério. O comprador tem de justificar quais preços usou e quais
+// descartou, "fundamentado nos autos". Um sistema que calcula a mediana sozinho entrega o número e tira
+// dele justamente o que o torna defensável. Por isso a lista vem antes do documento.
+//
+// Os campos são os que permitem DECIDIR, não os que enfeitam: modalidade e modo de disputa (pregão com
+// disputa vale mais que dispensa), SRP (ata não é preço praticado), data (preço velho não serve), órgão e
+// município (comparar com quem tem porte parecido), e a descrição INTEIRA — porque duas linhas sob o mesmo
+// código podem ser objetos diferentes, e só o texto revela.
+//
+// `foraDaCurva` é marcação, não exclusão: mostra o que o IQR descartaria, e deixa a decisão com quem assina.
+export type CandidatoPreco = {
+  id: string; numeroControlePNCP: string; controlePublicado: boolean; municipio: string; orgao: string;
+  modalidade: string; modoDisputa: string; srp: boolean; dataPublicacao: string | null;
+  descricao: string; unidade: string; quantidade: number; unitario: number; fornecedor: string;
+  foraDaCurva: boolean;
+};
+// ═══ BUSCA SOBRE TODOS OS PROCESSOS LICITATÓRIOS (02/set/2026) ═══
+// A porta de entrada NÃO é mais o eixo de catálogo. Medido em 02/set: `app.item_classificacao` tem 87.007
+// chaves e a base tem 781.361 descrições distintas — buscar só pelo eixo deixava 89% das descrições fora,
+// e com elas todo item que aparece uma vez só, que é justamente onde o comprador não tem histórico próprio
+// para se apoiar. Agora a busca corre o dicionário `app.item_busca`, que cobre os 255.294 processos.
+// O eixo continua servindo, mas no papel certo: AGRUPAR variantes de escrita, não filtrar a entrada.
+const CHAVE_ITEM = `lower(btrim(regexp_replace(regexp_replace(i.descricao,'<[^>]*>','','g'),'\\s+',' ','g')))`;
+const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+// Data em ISO, venha ela como Date (colunas DATE/timestamptz) ou como texto. Sem isto, `String(date)` dá
+// "Wed Sep 02 2026 …" e o corte por posição produz "Wed " no lugar do ano — que foi o que a tela mostrou.
+const dataISO = (v: unknown): string | null => {
+  if (v == null) return null;
+  if (v instanceof Date) return isNaN(v.getTime()) ? null : `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, "0")}-${String(v.getDate()).padStart(2, "0")}`;
+  const s = String(v).trim();
+  return s ? s.slice(0, 10) : null;
+};
+export type ObjetoBusca = {
+  chave: string; unidade: string; nItens: number; nProcessos: number; nMunicipios: number;
+  mediana: number; p25: number; p75: number; menor: number; maior: number;
+  primeira: string | null; ultima: string | null;
+  taxonomia: string | null; codigo: string | null; nomeCatalogo: string | null; sim: number;
+};
+export async function getBuscaBancoPrecos(termo: string): Promise<{ objetos: ObjetoBusca[]; total: number }> {
+  const t = semAcento(String(termo || "").toLowerCase()).replace(/\s+/g, " ").trim();
+  const palavras = t.split(" ").filter((w) => w.length >= 2).slice(0, 6);
+  if (!palavras.length) return { objetos: [], total: 0 };
+  const conds = palavras.map((_, i) => `chave_busca LIKE $${i + 1}`).join(" AND ");
+  const params = palavras.map((w) => `%${w.replace(/[%_]/g, "")}%`);
+  // Ordem: quem casou por inteiro primeiro, depois quem tem mais lastro (nº de compras) — porque objeto com
+  // 300 compras dá referência e objeto com 1 compra dá indício, e a lista tem de dizer isso pela ordem.
+  const rows = await query<Record<string, unknown>>(
+    `SELECT chave, coalesce(unidade,'') unidade, n_itens, n_processos, n_municipios,
+            mediana, p25, p75, menor, maior, primeira, ultima, taxonomia, codigo, nome_catalogo,
+            similarity(chave_busca, $${palavras.length + 1}) sim
+       FROM app.item_busca
+      WHERE ${conds}
+      ORDER BY (chave_busca = $${palavras.length + 1}) DESC, n_itens DESC, similarity(chave_busca, $${palavras.length + 1}) DESC
+      LIMIT 150`, [...params, t]).catch(() => []);
+  const tot = await query<Record<string, unknown>>(
+    `SELECT count(*) n FROM app.item_busca WHERE ${conds}`, params).catch(() => []);
+  return {
+    total: tot.length ? num(tot[0].n) : rows.length,
+    objetos: rows.map((r) => ({
+      chave: String(r.chave || ""), unidade: String(r.unidade || ""),
+      nItens: num(r.n_itens), nProcessos: num(r.n_processos), nMunicipios: num(r.n_municipios),
+      mediana: num(r.mediana), p25: num(r.p25), p75: num(r.p75), menor: num(r.menor), maior: num(r.maior),
+      primeira: dataISO(r.primeira), ultima: dataISO(r.ultima),
+      taxonomia: r.taxonomia ? String(r.taxonomia) : null, codigo: r.codigo ? String(r.codigo) : null,
+      nomeCatalogo: r.nome_catalogo ? String(r.nome_catalogo) : null, sim: num(r.sim),
+    })),
+  };
 }
+
+// `chaves` = as descrições que a pessoa marcou na busca. Quando vêm, são ELAS que definem o conjunto —
+// é a escolha explícita de quem assina. Sem elas, cai no eixo de catálogo (comportamento antigo).
+export async function getCandidatosPrecoReferencia(termo: string, chaves?: string[]): Promise<{ identificacao: DocumentoPrecoReferencia["identificacao"]; candidatos: CandidatoPreco[] }> {
+  const t = String(termo || "").toLowerCase().replace(/\s+/g, " ").trim();
+  const sel = (chaves || []).filter((c) => typeof c === "string" && c.trim()).slice(0, 40);
+  if (t.length < 3 && !sel.length) return { identificacao: null, candidatos: [] };
+  const ident = await query<Record<string, unknown>>(
+    sel.length
+      // Com chaves escolhidas, o eixo sai delas — e só se TODAS concordarem sob o mesmo código; misturar
+      // objetos de códigos diferentes e carimbar um deles no documento seria identificação falsa.
+      ? `SELECT taxonomia, codigo, nome, classe, exata, deterministica, sim FROM app.item_classificacao
+          WHERE chave = ANY($1::text[]) AND taxonomia IS NOT NULL
+          GROUP BY taxonomia, codigo, nome, classe, exata, deterministica, sim
+          ORDER BY count(*) DESC LIMIT 1`
+      : `SELECT taxonomia, codigo, nome, classe, exata, deterministica, sim FROM app.item_classificacao
+          WHERE taxonomia IS NOT NULL AND chave % $1
+          ORDER BY similarity(chave, $1) DESC, n_itens DESC NULLS LAST LIMIT 1`,
+    [sel.length ? sel : t]).catch(() => []);
+  const id = ident[0];
+  const identificacao = id ? { taxonomia: String(id.taxonomia), codigo: String(id.codigo), nome: String(id.nome || ""),
+    classe: id.classe ? String(id.classe) : null, exata: Boolean(id.exata), deterministica: Boolean(id.deterministica),
+    sim: id.sim == null ? null : num(id.sim) } : null;
+  // Sem chaves e sem eixo não há o que listar. Com chaves, a lista existe mesmo sem eixo nenhum — é
+  // exatamente o caso dos 89% de descrições que o catálogo não alcança.
+  if (!sel.length && !identificacao) return { identificacao: null, candidatos: [] };
+
+  // ═══ OS DOIS CAMINHOS VIRAM UM SÓ: TUDO É LISTA DE CHAVES ═══
+  // O eixo é RESOLVIDO em chaves antes da consulta pesada. Não é elegância: com o eixo dentro da consulta
+  // (JOIN item_classificacao … WHERE taxonomia=$1 AND codigo=$2) o planejador não usava o índice de
+  // expressão e a busca levava 5,4 s; resolvendo antes, cai para ~1 s (medido em 02/set/2026).
+  const chavesAlvo = sel.length ? sel : (await query<Record<string, unknown>>(
+    `SELECT chave FROM app.item_classificacao WHERE taxonomia = $1 AND codigo = $2
+      ORDER BY n_itens DESC NULLS LAST LIMIT 60`,
+    [identificacao!.taxonomia, identificacao!.codigo]).catch(() => [])).map((r) => String(r.chave));
+  if (!chavesAlvo.length) return { identificacao, candidatos: [] };
+
+  // A cerca do IQR é calculada sobre o conjunto INTEIRO e só marca; quem escolhe é a pessoa.
+  // `AS MATERIALIZED` é cerca de otimização, não estilo: sem ela o planejador entra por contratacoes_sc,
+  // varre 255.294 processos e volta 1,2 M de itens antes de filtrar pela descrição.
+  // E `= ANY(array)`, não `JOIN unnest(...)`: com o JOIN o planejador ABANDONA o índice de expressão à
+  // medida que a lista de chaves cresce e cai em varredura paralela — medido em 02/set com as mesmas
+  // chaves: 5→2,4 s · 24→7,7 s · 40→16,0 s no JOIN, contra 0,3–0,5 s no `= ANY`. A forma que degrada com o
+  // tamanho da escolha é a pior possível aqui, porque escolher mais objetos é exatamente o que a pessoa faz.
+  const rows = await query<Record<string, unknown>>(
+    `WITH alvo AS MATERIALIZED (
+       SELECT i.cnpj, i.ano, i.seq, i.numero, i.descricao, i.unidade, i.quantidade, i.unit_homologado,
+              coalesce(i.fornecedor,'') fornecedor, i.cod_ibge
+         FROM itens_sc i
+        WHERE ${CHAVE_ITEM} = ANY($1::text[]) AND i.unit_homologado > 0 AND i.quantidade > 0
+     ), base AS (
+       SELECT a.cnpj, a.ano, a.seq, a.numero, a.descricao, a.unidade, a.quantidade, a.unit_homologado,
+              a.fornecedor,
+              -- 25,7% das contratacoes (65.602 de 255.294) nao publicam numero de controle nem municipio.
+              -- O numero e RECONSTRUIDO, nao chutado: a formula cnpj-1-seq(6)/ano reproduz o valor publicado
+              -- em 189.692 de 189.692 casos onde ele existe, zero divergencia (medido em 02/set/2026).
+              -- A coluna controle_publicado diz qual e qual: documento que vai aos autos nao esconde isso.
+              coalesce(nullif(ct.numero_controle_pncp,''), ct.cnpj||'-1-'||lpad(ct.seq::text,6,'0')||'/'||ct.ano) numero_controle_pncp,
+              (ct.numero_controle_pncp IS NOT NULL AND ct.numero_controle_pncp <> '') controle_publicado,
+              coalesce(nullif(ct.municipio_nome,''), mb.nome, '') municipio,
+              coalesce(ct.orgao_razao_social,'') orgao, coalesce(ct.modalidade,'') modalidade,
+              coalesce(ct.modo_disputa,'') modo_disputa, coalesce(ct.srp,false) srp, ct.data_publicacao
+         FROM alvo a
+         JOIN contratacoes_sc ct ON ct.cnpj=a.cnpj AND ct.ano=a.ano AND ct.seq=a.seq
+         LEFT JOIN municipios_br mb ON mb.cod_ibge = a.cod_ibge
+     ), cerca AS (
+       SELECT percentile_cont(0.25) WITHIN GROUP (ORDER BY unit_homologado) q1,
+              percentile_cont(0.75) WITHIN GROUP (ORDER BY unit_homologado) q3 FROM base
+     )
+     SELECT b.*, (b.unit_homologado < c.q1 - 1.5*(c.q3-c.q1) OR b.unit_homologado > c.q3 + 1.5*(c.q3-c.q1)) fora
+       FROM base b CROSS JOIN cerca c
+      ORDER BY b.data_publicacao DESC NULLS LAST, b.unit_homologado LIMIT 400`,
+    [chavesAlvo]).catch(() => []);
+
+  return { identificacao, candidatos: rows.map((r) => ({
+    id: `${r.cnpj}|${r.ano}|${r.seq}|${r.numero}`,
+    numeroControlePNCP: String(r.numero_controle_pncp || ""), controlePublicado: Boolean(r.controle_publicado),
+    municipio: String(r.municipio || ""), orgao: String(r.orgao || ""),
+    modalidade: String(r.modalidade || ""), modoDisputa: String(r.modo_disputa || ""),
+    srp: Boolean(r.srp), dataPublicacao: dataISO(r.data_publicacao),
+    descricao: String(r.descricao || ""), unidade: String(r.unidade || ""),
+    quantidade: num(r.quantidade), unitario: num(r.unit_homologado),
+    fornecedor: String(r.fornecedor || ""), foraDaCurva: Boolean(r.fora),
+  })) };
+}
+
+// ═══ DOCUMENTO SOBRE A SELECAO DA PESSOA (02/set/2026) ═══
+// Quando vem `selecao`, a estatistica e calculada SOBRE OS ESCOLHIDOS, e o IQR NAO e reaplicado.
+// Reaplicar seria descartar em silencio o que a pessoa decidiu incluir — o oposto do "criterio fundamentado
+// nos autos" que a IN 65 pede. O documento INFORMA quais dos escolhidos o IQR marcaria, e mantem todos:
+// a curadoria passa a ser dela, com o dado a vista, e nao do algoritmo por baixo.
+// Agrupa por UNIDADE porque mediana que mistura "hora" e "servico" nao descreve nada — e avisa quando a
+// selecao mistura unidades, porque ai o numero unico nao existe.
+// ═══ UNIDADE: colapsar SINÔNIMO, jamais colapsar CAPACIDADE (02/set/2026) ═══
+// Medido numa seleção de dipirona: 15 contratações viraram 11 unidades diferentes, quase todas com n=1 —
+// mediana de um item só não é referência de nada. Parte disso é ruído de grafia ("cp" e "comprimido" são a
+// mesma coisa, e o PNCP ainda escreve "unidade (un)", com a sigla repetida entre parênteses).
+//
+// ⚠️ Mas a outra parte NÃO é ruído: "frasco 20,00 ml" e "frasco 50,00 ml" são embalagens DIFERENTES, e
+// juntá-las sob "frasco" produziria a mediana entre um preço de 20 ml e um de 50 ml — o mesmo erro da
+// "caixa com 100" que o banco nacional evita. Por isso o parêntese cai, o sinônimo colapsa, e QUALQUER
+// qualificador de capacidade preserva a unidade inteira, intacta.
+const SINONIMO_UNIDADE: Record<string, string> = {
+  un: "unidade", und: "unidade", unid: "unidade", ud: "unidade", unidades: "unidade", uni: "unidade",
+  pc: "unidade", "pç": "unidade", peca: "unidade", "peça": "unidade", pecas: "unidade", "peças": "unidade",
+  cp: "comprimido", comp: "comprimido", comprimidos: "comprimido", cpr: "comprimido", drageas: "comprimido", "drágea": "comprimido",
+  cap: "cápsula", caps: "cápsula", capsula: "cápsula", capsulas: "cápsula", "cápsulas": "cápsula",
+  cx: "caixa", caixas: "caixa", pct: "pacote", pcte: "pacote", pacotes: "pacote",
+  fr: "frasco", fco: "frasco", frascos: "frasco", amp: "ampola", ampolas: "ampola",
+  quilo: "kg", quilos: "kg", quilograma: "kg", quilogramas: "kg", kilo: "kg", kilograma: "kg",
+  gr: "g", grama: "g", gramas: "g", l: "litro", lt: "litro", litros: "litro", lts: "litro",
+  mililitro: "ml", mililitros: "ml", m: "metro", mt: "metro", mts: "metro", metros: "metro",
+  rolos: "rolo", rl: "rolo", resmas: "resma", pares: "par", pr: "par",
+  sc: "saco", sacos: "saco", tb: "tubo", tubos: "tubo", fl: "folha", fls: "folha", folhas: "folha",
+  cj: "kit", cjt: "kit", kits: "kit", conjunto: "kit", conjuntos: "kit", jogo: "kit",
+};
+function canonUnidade(bruta: string): string {
+  const semParenteses = String(bruta || "").toLowerCase().replace(/\s*\(.*$/, "").trim();
+  if (!semParenteses) return "";
+  // Tem número? É capacidade ("frasco 50,00 ml", "embalagem 1,00 kg") — fica como está, e é para ficar.
+  if (/\d/.test(semParenteses)) return semParenteses;
+  // Serviço e tempo, o irmão de CANON_SERVICO nos scripts: "serviços" e "serviço" partiam o mesmo grupo em
+  // dois (medido: 10 + 6 contratações de troca de pneu viravam duas medianas de amostra curta).
+  if (/servi|^sv$/.test(semParenteses)) return "serviço";
+  if (/^m[êe]s$|^mensal$/.test(semParenteses)) return "mês";
+  if (/^h$|^hr$|^hora/.test(semParenteses)) return "hora";
+  if (/di[áa]ria/.test(semParenteses)) return "diária";
+  if (/^verba$|^global$|^vb$/.test(semParenteses)) return "verba";
+  return SINONIMO_UNIDADE[semParenteses] || semParenteses;
+}
+
+export type DocumentoSelecionado = {
+  identificacao: DocumentoPrecoReferencia["identificacao"];
+  porUnidade: { unidade: string; grafias: string[]; n: number; media: number; mediana: number; p25: number; p75: number; menor: number; maior: number; nMunicipios: number; nForaDaCurva: number }[];
+  itens: CandidatoPreco[];
+  metodologia: string[];
+  alertas: string[];
+};
+export async function getDocumentoSobreSelecao(termo: string, selecao: string[], chaves?: string[]): Promise<DocumentoSelecionado> {
+  const { identificacao, candidatos } = await getCandidatosPrecoReferencia(termo, chaves);
+  const escolhidos = candidatos.filter((c) => selecao.includes(c.id));
+  const alertas: string[] = [];
+  const metodologia: string[] = [];
+  // Objeto FORA do catálogo não impede o documento: a pesquisa da IN 65 é de PREÇO PRATICADO, e o preço
+  // praticado existe com ou sem código de catálogo. O que falta é a identificação padronizada — isso vira
+  // ressalva no documento, não recusa de emiti-lo.
+  if (!escolhidos.length) return { identificacao, porUnidade: [], itens: [], metodologia, alertas: ["nenhum processo selecionado"] };
+
+  const porUn = new Map<string, CandidatoPreco[]>();
+  for (const c of escolhidos) { const u = canonUnidade(c.unidade); if (!porUn.has(u)) porUn.set(u, []); porUn.get(u)!.push(c); }
+  const pct = (arr: number[], q: number) => { const a = [...arr].sort((x, y) => x - y); const i = (a.length - 1) * q; const lo = Math.floor(i), hi = Math.ceil(i); return lo === hi ? a[lo] : a[lo] + (a[hi] - a[lo]) * (i - lo); };
+  const porUnidade = [...porUn.entries()].map(([unidade, itens]) => {
+    const v = itens.map((i) => i.unitario);
+    return { unidade, grafias: [...new Set(itens.map((i) => i.unidade).filter(Boolean))],
+      // Os TRÊS que o art. 6º da IN 65/2021 admite — média, mediana e menor — vão todos, porque a escolha
+      // do método é do responsável e tem de ser feita com os três à vista, não depois de o sistema escolher.
+      n: itens.length, media: v.reduce((a, b) => a + b, 0) / v.length,
+      mediana: pct(v, 0.5), p25: pct(v, 0.25), p75: pct(v, 0.75),
+      menor: Math.min(...v), maior: Math.max(...v),
+      nMunicipios: new Set(itens.map((i) => i.municipio)).size, nForaDaCurva: itens.filter((i) => i.foraDaCurva).length };
+  }).sort((a, b) => b.n - a.n);
+
+  if (identificacao) metodologia.push(`Objeto identificado no catálogo ${identificacao.taxonomia}, código ${identificacao.codigo} (${identificacao.nome}).`);
+  else metodologia.push("Objeto pesquisado pela descrição, sem correspondência em catálogo padronizado (CATMAT/CATSER/SIGTAP); a identificação abaixo é a própria descrição das contratações reunidas.");
+  metodologia.push(`Foram selecionadas ${escolhidos.length} contratações, de ${candidatos.length} apresentadas, por decisão do responsável.`);
+  metodologia.push("Estatística calculada exclusivamente sobre as contratações selecionadas; nenhum preço foi descartado automaticamente.");
+  metodologia.push("Mediana e quartis, não média: a mediana resiste a lançamento errado.");
+  metodologia.push("Cada preço é rastreável ao número de controle PNCP da contratação de origem.");
+  metodologia.push("Fonte: contratações homologadas publicadas no PNCP pelos municípios, item a item (preço praticado, não preço estimado).");
+  if (!identificacao) alertas.push("objeto sem código de catálogo: a comparação se apoia na descrição, e descrições parecidas podem designar objetos diferentes — confira o texto de cada linha antes de assinar");
+
+  const srp = escolhidos.filter((c) => c.srp).length;
+  if (srp) alertas.push(`${srp} das contratações selecionadas são de REGISTRO DE PREÇO (SRP) — preço de ata não é preço praticado`);
+  const fora = escolhidos.filter((c) => c.foraDaCurva).length;
+  if (fora) alertas.push(`${fora} das selecionadas ficam fora do intervalo interquartil do conjunto — mantidas por decisão do responsável, e a justificativa deve constar dos autos`);
+  if (porUnidade.length > 1) alertas.push(`a seleção mistura ${porUnidade.length} unidades de medida distintas (${porUnidade.map((u) => u.unidade).join(", ")}) — não existe um preço único; cada unidade tem sua própria referência`);
+  const semControle = escolhidos.filter((c) => !c.controlePublicado).length;
+  if (semControle) alertas.push(`${semControle} contratações não publicam o número de controle no PNCP; o número exibido foi reconstruído a partir de CNPJ, sequencial e ano`);
+  const disp = escolhidos.filter((c) => !c.srp).length < 3;
+  if (disp) alertas.push("menos de 3 contratações fora de registro de preço: amostra insuficiente para referência (IN SEGES/ME 65/2021, art. 6º)");
+  const muns = new Set(escolhidos.map((c) => c.municipio)).size;
+  if (muns < 3) alertas.push(`seleção concentrada em ${muns} município(s) — reflete a prática local, não o mercado`);
+  const desc = new Set(escolhidos.map((c) => c.descricao.toLowerCase().trim())).size;
+  if (desc > 1) alertas.push(`as ${escolhidos.length} contratações reúnem ${desc} descrições diferentes — confirme que descrevem o mesmo objeto antes de usar a mediana`);
+  alertas.push("não há dado de competitividade (número de licitantes) nesta base — o documento não atesta disputa efetiva");
+
+  return { identificacao, porUnidade, itens: escolhidos, metodologia, alertas };
+}
+
+// A busca por EIXO isolado (getDocumentoPrecoReferencia) foi REMOVIDA em 03/set/2026: ela respondia
+// sobre os 5,2% de descrições com código de catálogo e devolvia um número pronto, sem a escolha das
+// contratações. O fluxo que a substitui é getBuscaBancoPrecos → getCandidatosPrecoReferencia →
+// getDocumentoSobreSelecao, que cobre todas as descrições e deixa a curadoria com quem assina.
+// O TIPO DocumentoPrecoReferencia permanece: é dele que sai a forma de `identificacao`.
 
 // Sazonalidade de PREÇO por categoria (SC) — melhor mês de compra por grupo (índice relativo; 100 = preço típico).
 export type SazonalidadePreco = { categoria: string; meses: { mes: number; indice: number; n: number }[]; melhorMes: number; melhorIndice: number }[];

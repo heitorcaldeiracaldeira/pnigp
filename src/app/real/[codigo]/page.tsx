@@ -18,10 +18,9 @@ import { ComprasSCSection } from "@/components/compras-sc-section";
 import { AnaliseComprasItens } from "@/components/analise-compras-itens";
 import { ComprasCategorias } from "@/components/compras-categorias";
 import { SazonalidadePreco } from "@/components/sazonalidade-preco";
-import { PesquisaPreco } from "@/components/pesquisa-preco";
 import { FornecedoresCard } from "@/components/fornecedores-card";
 import { FornecedoresSancionados } from "@/components/fornecedores-sancionados";
-import BancoPrecos from "@/components/banco-precos";
+import BancoPrecosPainel from "@/components/banco-precos-painel";
 import { SobreprecoCompras } from "@/components/sobrepreco-compras";
 import { ConstrutorProcesso } from "@/components/construtor-processo";
 import { ProcessoFases } from "@/components/processo-fases";
@@ -396,10 +395,14 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     { id: "compras", label: "Compras", content: <>
       <CabecalhoArea titulo="Compras & Contratos" intro="Como o município compra e contrata: o que a Lei 14.133/2021 exige, onde mora o risco (compra sem licitação, sobrepreço) e onde economizar — do total contratado ao preço unitário, item a item." links={[{ label: "PNCP — Portal Nacional de Contratações Públicas", href: "https://pncp.gov.br" }, { label: "Lei 14.133/2021 — Nova Lei de Licitações", href: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" }, { label: "TCE-SC", href: "https://www.tcesc.tc.br" }]} />
       {/* ESTUDOS COMPARATIVOS DE COMPRAS — FORA DO AR (distorção: comparação por valor TOTAL; refazer por VALOR UNITÁRIO item a item).
-          Desativados: ResumoCompras (economia), PesquisaPreco, AnaliseComprasItens (sobrepreço/mais comprados), ComprasExtraCard (dispersão), SazonalidadePreco.
-          Mantidos (dado do próprio município, sem comparação): ComprasSCSection, ComprasCategorias, FornecedoresCard. */}
+          Desativados: ResumoCompras (economia), AnaliseComprasItens (sobrepreço/mais comprados), ComprasExtraCard (dispersão), SazonalidadePreco.
+          Mantidos (dado do próprio município, sem comparação): ComprasSCSection, ComprasCategorias, FornecedoresCard.
+          ⚠️ 03/set/2026 — o protótipo <BancoPrecos/> e o <PesquisaPreco/> (que estava importado e nunca
+          renderizado) foram REMOVIDOS daqui: ambos foram substituídos pelo Banco de Preços da aba
+          "Processo Licitatório", que busca sobre TODAS as descrições compradas e emite o formulário da
+          IN SEGES/ME 65/2021. Dois lugares respondendo a mesma pergunta com números diferentes é pior que
+          um só — e o protótipo respondia sobre 5,2% das descrições. */}
       <Carimbo className="mb-3" fonte="PNCP · Compras.gov.br (Portal Nacional de Contratações Públicas)" competencia="todos os anos publicados" extraido={extracao.itens ?? extracao.processos ?? extracao.compras} />
-      <div className="mb-4"><BancoPrecos /></div>
       <ComprasSCSection codigo={ente.cod_ibge} tipo={ente.tipo} />
       {fornec && <div className="mt-4"><FornecedoresCard dados={fornec} nome={ente.nome} /></div>}
       {sobrepreco && <div className="mt-4"><SobreprecoCompras data={sobrepreco} nome={ente.nome} /></div>}
@@ -412,7 +415,8 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     </> },
     ...(padroesCompras ? [{ id: "padroes-compras", label: "Planejamento de Compras", content: <><AssuntoPadroesCompras dados={padroesCompras} contratos={contratosResumo} pca={pcaResumo} economia={economicidade} nome={ente.nome} /><div className="mt-4"><CatalogoBoasPraticas area="compras" /></div></> }] : []),
     { id: "processo-fases", label: "Processo Licitatório", content: <>
-      <CabecalhoArea titulo="Processo Licitatório — acompanhamento das fases" intro="Como o processo caminha: as fases da Lei 14.133/2021 (DFD → ETP → TR → Edital → Contrato) e onde cada contratação do município está." links={[{ label: "Lei 14.133/2021 — Nova Lei de Licitações", href: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" }, { label: "TCE-SC", href: "https://www.tcesc.tc.br" }]} />
+      <CabecalhoArea titulo="Processo Licitatório — banco de preços e acompanhamento das fases" intro="O preço antes do processo e o processo depois dele: monte o preço de referência a partir das contratações reais publicadas no PNCP e acompanhe as fases da Lei 14.133/2021 (DFD → ETP → TR → Edital → Contrato)." links={[{ label: "Lei 14.133/2021 — Nova Lei de Licitações", href: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" }, { label: "IN SEGES/ME 65/2021 — pesquisa de preços", href: "https://www.gov.br/compras/pt-br" }, { label: "PNCP — Portal Nacional de Contratações Públicas", href: "https://pncp.gov.br" }, { label: "TCE-SC", href: "https://www.tcesc.tc.br" }]} />
+      <div className="mb-4"><BancoPrecosPainel nome={ente.nome} /></div>
       <div className="mb-4"><ProcessoFases codigo={ente.cod_ibge} /></div>
     </> },
     { id: "criador-documentos", label: "Criador de Documentos para Compras", content: <>

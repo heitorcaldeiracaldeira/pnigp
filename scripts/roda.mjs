@@ -87,16 +87,40 @@ if (PLANO) {
 
 // ---- execução -----------------------------------------------------------------------------------
 const U = fs.readFileSync(path.join(ROOT, ".env.local"), "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
-const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }, max: 2, query_timeout: 30000 });
+// ⏱️ connectionTimeoutMillis EXISTE porque sem ele o runner FICA PENDURADO. Em 02/set a cadeia do
+// enriquecimento disparou 04:13 e só morreu 05:00:48 — 47 min pendurada na conexão, com a janela da noite
+// inteira jogada fora. `query_timeout` não cobre isso: ele limita a QUERY, não o handshake.
+const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }, max: 2,
+  query_timeout: 30000, connectionTimeoutMillis: 20000 });
 db.on("error", () => {});
 
 let trava = null;
 const solta = async () => { try { await trava?.solta(); } catch {} };
 for (const s of ["SIGINT", "SIGTERM", "SIGBREAK"]) process.on(s, async () => { await solta(); process.exit(130); });
 
+// ═══ RETENTATIVA NO ARRANQUE — a 1ª batida no banco não pode derrubar a noite (02/set/2026) ═══
+// `pegaTrava` é a PRIMEIRA coisa que toca o banco, e qualquer exceção ali caía direto no catch fatal, sem
+// uma única retentativa: a cadeia morria antes de escrever o INICIO. Aconteceu em 02/set às 04:13 com
+// `permission denied for schema pg_catalog` — erro do Neon durante o cold start do compute, não do nosso
+// código (o usuário é neondb_owner e às 01:00 a mesma credencial tinha funcionado).
+// Compute serverless SUSPENDE: a 1ª conexão da madrugada acorda o banco, e acordar leva ~15 s aqui. Tratar
+// isso como falha definitiva é transformar latência de infraestrutura em noite perdida.
+// A espera cresce (10s, 20s, 40s, 80s) porque cold start não melhora com insistência imediata.
+async function pegaTravaComRetentativa() {
+  const esperas = [10000, 20000, 40000, 80000];
+  for (let t = 0; ; t++) {
+    try { return await pegaTrava(db, cad.trava.nome, { toleranciaMin: cad.trava.toleranciaMin }); }
+    catch (e) {
+      if (t >= esperas.length) throw e;
+      linha("INFO", "RETENTATIVA", "-", `banco indisponível no arranque (${String(e?.message).slice(0, 80)}) — tentativa ${t + 2}/${esperas.length + 1} em ${esperas[t] / 1000}s`);
+      await new Promise((r) => setTimeout(r, esperas[t]));
+    }
+  }
+}
+
 async function main() {
   if (cad.trava) {
-    trava = await pegaTrava(db, cad.trava.nome, { toleranciaMin: cad.trava.toleranciaMin });
+    trava = await pegaTravaComRetentativa();
     if (!trava.ok) {
       // sair com 0: não é falha, é "tem alguém fazendo isso agora". Sair com erro faria quem chamou
       // reportar quebra onde não houve — e numa cadeia que sai calada isso vira noite perdida em silêncio.

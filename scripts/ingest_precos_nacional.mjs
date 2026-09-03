@@ -35,12 +35,36 @@ await db.query("DROP TABLE IF EXISTS precos_nacional_ref");
 await db.query(`CREATE TABLE precos_nacional_ref (codigo_pdm INTEGER, unidade TEXT, forma TEXT, mediana NUMERIC, p25 NUMERIC, p75 NUMERIC, media NUMERIC, desvio NUMERIC, cv NUMERIC, n_obs INTEGER, atualizado TIMESTAMPTZ DEFAULT now(), PRIMARY KEY (codigo_pdm, unidade, forma))`);
 const pdms = (await db.query("SELECT DISTINCT catmat_cod FROM precos_referencia_sc WHERE catmat_cod IS NOT NULL AND catmat_sim >= 0.5")).rows.map((r) => r.catmat_cod);
 console.log(`${pdms.length} PDMs classificados a buscar no Painel de Preços…`);
-const getP = async (item) => { for (let t = 0; t < 3; t++) { try { const r = await fetch(`https://dadosabertos.compras.gov.br/modulo-pesquisa-preco/1_consultarMaterial?pagina=1&tamanhoPagina=100&codigoItemCatalogo=${item}`, { headers: H }); if (!r.ok) throw 0; return (await r.json()).resultado || []; } catch { await sleep(1000 * (t + 1)); } } return []; };
+// ═══ A API MUDOU DE FORMA, E O SCRIPT FALHAVA EM SILÊNCIO (consertado em 02/set/2026) ═══
+// A chamada antiga era `?codigoItemCatalogo=X`. Esse parâmetro NÃO EXISTE MAIS: a API refatorou o antigo
+// NOME de parâmetro em VALOR de um novo par obrigatório — `tipo` (enum codigoItemCatalogo|codigoPdm) +
+// `codigo`. Sem eles a rota devolve 404.
+// O `catch` abaixo engolia esse 404, tentava 3 vezes e devolvia lista vazia. Resultado medido em 02/set:
+// `precos_nacional_ref` VAZIA, o orquestrador re-disparando o script todo ciclo (o `devido` dele dispara
+// justamente quando a tabela está vazia) e ~4.220 chamadas por rodada para não gravar nada — sem UMA
+// mensagem de erro. Retentativa que termina em lista vazia transforma rota morta em resultado legítimo.
+// ⚠️ Um `catch` que devolve vazio precisa DISTINGUIR "não há dado" de "não consegui perguntar".
+// AGORA CONSULTA POR PDM DIRETO. Antes o script pegava 4 itens do catálogo como aproximação do PDM; a API
+// aceita `tipo=codigoPdm`, então é 1 chamada em vez de 4, com cobertura maior e sem a aproximação.
+// tamanhoPagina=500 (o máximo) em vez de 100: mesma chamada, 5× a amostra.
+// ⚠️ Continua sendo a PRIMEIRA página, não o universo — PDM comum tem milhares de registros (FILTRO AR:
+// 6.789). É amostra por ordem da API, e isso limita o que a mediana representa.
+let httpErros = 0;
+const getP = async (pdm) => {
+  for (let t = 0; t < 3; t++) {
+    try {
+      const r = await fetch(`https://dadosabertos.compras.gov.br/modulo-pesquisa-preco/1_consultarMaterial?pagina=1&tamanhoPagina=500&tipo=codigoPdm&codigo=${pdm}`, { headers: H });
+      if (!r.ok) { if (t === 2) httpErros++; throw new Error(`HTTP ${r.status}`); }
+      return (await r.json()).resultado || [];
+    } catch { await sleep(1000 * (t + 1)); }
+  }
+  return [];
+};
 let nRef = 0, done = 0;
 for (const pdm of pdms) {
-  const itens = (await db.query("SELECT codigo_item FROM catmat_catalogo WHERE codigo_pdm=$1 LIMIT 4", [pdm])).rows.map((r) => r.codigo_item);
   const porUn = {};
-  for (const it of itens) { const rows = await getP(it); await sleep(80); for (const x of rows) { const nu = normUn(x.siglaUnidadeFornecimento, x.nomeUnidadeFornecimento, x.capacidadeUnidadeFornecimento, x.siglaUnidadeMedida, x.nomeUnidadeMedida); const v = +x.precoUnitario; if (!nu || !(v > 0)) continue; (porUn[nu.unit + "||" + nu.forma] ||= []).push(v / nu.factor); } }
+  const rows = await getP(pdm); await sleep(80);
+  for (const x of rows) { const nu = normUn(x.siglaUnidadeFornecimento, x.nomeUnidadeFornecimento, x.capacidadeUnidadeFornecimento, x.siglaUnidadeMedida, x.nomeUnidadeMedida); const v = +x.precoUnitario; if (!nu || !(v > 0)) continue; (porUn[nu.unit + "||" + nu.forma] ||= []).push(v / nu.factor); }
   for (const [k, arr] of Object.entries(porUn)) {
     if (arr.length < 5) continue; // mínimo de observações
     const [un, forma] = k.split("||"); const s = stats(arr);
@@ -51,4 +75,19 @@ for (const pdm of pdms) {
 }
 const c = (await db.query("SELECT count(*) n, count(DISTINCT codigo_pdm) p FROM precos_nacional_ref")).rows[0];
 console.log(`✔ precos_nacional_ref: ${c.n} referências (PDM×unidade) · ${c.p} PDMs`);
+
+// ═══ "NÃO HÁ DADO" ≠ "NÃO CONSEGUI PERGUNTAR" (02/set/2026) ═══
+// Foi essa confusão que deixou a tabela vazia sem ninguém ver: a rota morreu, o retry devolveu lista
+// vazia, e zero resultado passou por resposta legítima da fonte. Contar as falhas de HTTP e SAIR COM 1
+// quando elas dominam é o que transforma rota quebrada em erro visível — e faz a cadeia parar em vez de
+// seguir escrevendo nada com cara de sucesso.
 await db.end();
+if (httpErros > 0) {
+  const pct = (100 * httpErros / Math.max(1, pdms.length)).toFixed(1);
+  console.error(`\n🚨 ${httpErros} de ${pdms.length} PDMs (${pct}%) falharam no HTTP após 3 tentativas.`);
+  if (httpErros > pdms.length * 0.5) {
+    console.error("   Mais da METADE falhou: isto não é fonte sem dado, é fonte fora do ar ou rota mudada.");
+    console.error("   Rota atual e parâmetros obrigatórios: https://dadosabertos.compras.gov.br/v3/api-docs");
+    process.exit(1);
+  }
+}
