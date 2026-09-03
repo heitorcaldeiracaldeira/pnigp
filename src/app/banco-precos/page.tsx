@@ -1,4 +1,3 @@
-import BancoPrecosPainel from "@/components/banco-precos-painel";
 import OrcamentoObraPainel from "@/components/orcamento-obra-painel";
 
 // ENDEREÇO PRÓPRIO do Banco de Preços — a MESMA tela que vive na aba "Processo Licitatório" da página do
@@ -19,7 +18,6 @@ export default function Page() {
           metodologia, ressalvas e o número de controle PNCP de cada preço.
         </p>
       </header>
-      <BancoPrecosPainel />
       <OrcamentoObraPainel />
     </main>
   );

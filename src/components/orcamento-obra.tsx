@@ -10,7 +10,7 @@
 import { useState } from "react";
 import { Plus, Trash2, ClipboardList, Copy } from "lucide-react";
 
-export type FonteObra = "SINAPI" | "SICRO" | "SIE-SC";
+export type FonteObra = "PNCP" | "SINAPI" | "SICRO" | "SIE-SC";
 export type NovoItemOrcamento = {
   fonte: FonteObra; codigo: string; descricao: string; unidade: string;
   precoNaoDesonerado: number | null; precoDesonerado: number | null;
@@ -48,7 +48,7 @@ export function AdicionarQtd({ onAdd }: { onAdd: (quantidade: number) => void })
 }
 
 const corFonte: Record<FonteObra, string> = {
-  SINAPI: "bg-orange-50 text-orange-700", SICRO: "bg-cyan-50 text-cyan-700", "SIE-SC": "bg-emerald-50 text-emerald-700",
+  PNCP: "bg-teal-50 text-teal-700", SINAPI: "bg-orange-50 text-orange-700", SICRO: "bg-cyan-50 text-cyan-700", "SIE-SC": "bg-emerald-50 text-emerald-700",
 };
 
 export function OrcamentoCarrinho({

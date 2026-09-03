@@ -15,6 +15,10 @@ import FormularioPrecoReferencia from "@/components/formulario-preco-referencia"
 // casada ao catálogo — que é a pergunta que um auditor faz primeiro. Migrou para cá em 03/set/2026 para não
 // morrer junto com o protótipo.
 import { NotaTecnicaCatmat } from "@/components/nota-tecnica-catmat";
+// O carrinho de orçamento (03/set/2026) — aqui o "preço unitário" que entra é a MEDIANA das contratações
+// SELECIONADAS por unidade (doc.porUnidade), não a de um objeto cru: é o único número que já passou pela
+// curadoria humana que dá título ao Banco de Preços, e é o mesmo padrão de confiança do SINAPI/SICRO/SIE-SC.
+import { AdicionarQtd, type NovoItemOrcamento } from "@/components/orcamento-obra";
 
 type Objeto = {
   chave: string; unidade: string; nItens: number; nProcessos: number; nMunicipios: number;
@@ -38,7 +42,7 @@ const brl = (v: number) => "R$ " + (v ?? 0).toLocaleString("pt-BR", { minimumFra
 const dt = (s: string | null) => (s ? s.slice(8, 10) + "/" + s.slice(5, 7) + "/" + s.slice(0, 4) : "—");
 const nfmt = (n: number) => n.toLocaleString("pt-BR");
 
-export default function BancoPrecosPainel({ nome }: { nome?: string }) {
+export default function BancoPrecosPainel({ nome, onAdicionar }: { nome?: string; onAdicionar?: (item: NovoItemOrcamento, quantidade: number) => void }) {
   const [q, setQ] = useState("");
   const [objetos, setObjetos] = useState<Objeto[]>([]);
   // De qual termo é a lista que está na tela. Sem isto, entre a tecla e a resposta (0,3–1,8 s) a tela mostra
@@ -311,6 +315,16 @@ export default function BancoPrecosPainel({ nome }: { nome?: string }) {
                 <div className="text-[11px] text-slate-500">P25 {brl(u.p25)} · P75 {brl(u.p75)} · faixa {brl(u.menor)}–{brl(u.maior)}</div>
                 <div className="text-[10px] text-slate-400">{u.n} contratação(ões) · {u.nMunicipios} município(s){u.nForaDaCurva ? ` · ${u.nForaDaCurva} fora da curva mantida(s)` : ""}</div>
                 {u.grafias.length > 1 && <div className="mt-0.5 text-[9px] text-slate-400" title="grafias diferentes da mesma unidade, reunidas">grafias reunidas: {u.grafias.join(" · ")}</div>}
+                {onAdicionar && (
+                  <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2">
+                    <span className="text-[10px] text-slate-400">somar ao orçamento (mediana × qtd.)</span>
+                    <AdicionarQtd onAdd={(qtd) => onAdicionar({
+                      fonte: "PNCP", codigo: `${q.trim()}__${u.unidade}`,
+                      descricao: (doc.identificacao?.nome || q.trim()) + (u.unidade ? ` (${u.unidade})` : ""),
+                      unidade: u.unidade, precoNaoDesonerado: u.mediana, precoDesonerado: null,
+                    }, qtd)} />
+                  </div>
+                )}
               </div>
             ))}
           </div>

@@ -1,15 +1,17 @@
 "use client";
-// ═══ ENVELOPE das três referências de obra + o carrinho de orçamento (03/set/2026) ═══
-// Substitui o antigo trio solto <SinapiPainel/><SicroPainel/><SiescPainel/> por este envelope, que segura
-// o estado do orçamento (os itens somados) e distribui `onAdicionar` para os três — é o que permite montar
-// UM orçamento misturando fontes. Ver src/components/orcamento-obra.tsx para o tipo e o carrinho em si.
+// ═══ ENVELOPE do Banco de Preços + as três referências de obra + o carrinho de orçamento (03/set/2026) ═══
+// Substitui o antigo quarteto solto <BancoPrecosPainel/><SinapiPainel/><SicroPainel/><SiescPainel/> por este
+// envelope, que segura o estado do orçamento (os itens somados) e distribui `onAdicionar` para os quatro —
+// é o que permite montar UM orçamento misturando preço PRATICADO (PNCP) com as três referências. Ver
+// src/components/orcamento-obra.tsx para o tipo e o carrinho em si.
 import { useState } from "react";
+import BancoPrecosPainel from "@/components/banco-precos-painel";
 import SinapiPainel from "@/components/sinapi-painel";
 import SicroPainel from "@/components/sicro-painel";
 import SiescPainel from "@/components/siesc-painel";
 import { OrcamentoCarrinho, type ItemOrcamento, type NovoItemOrcamento } from "@/components/orcamento-obra";
 
-export default function OrcamentoObraPainel() {
+export default function OrcamentoObraPainel({ nome }: { nome?: string }) {
   const [itens, setItens] = useState<ItemOrcamento[]>([]);
   const [desonerado, setDesonerado] = useState(false);
 
@@ -26,6 +28,7 @@ export default function OrcamentoObraPainel() {
 
   return (
     <>
+      <BancoPrecosPainel nome={nome} onAdicionar={adicionar} />
       <SinapiPainel onAdicionar={adicionar} />
       <SicroPainel onAdicionar={adicionar} />
       <SiescPainel onAdicionar={adicionar} />
