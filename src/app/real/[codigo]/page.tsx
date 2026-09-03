@@ -21,6 +21,7 @@ import { SazonalidadePreco } from "@/components/sazonalidade-preco";
 import { FornecedoresCard } from "@/components/fornecedores-card";
 import { FornecedoresSancionados } from "@/components/fornecedores-sancionados";
 import BancoPrecosPainel from "@/components/banco-precos-painel";
+import SinapiPainel from "@/components/sinapi-painel";
 import { SobreprecoCompras } from "@/components/sobrepreco-compras";
 import { ConstrutorProcesso } from "@/components/construtor-processo";
 import { ProcessoFases } from "@/components/processo-fases";
@@ -417,6 +418,7 @@ export default async function RealEntePage({ params }: { params: Promise<{ codig
     { id: "processo-fases", label: "Processo Licitatório", content: <>
       <CabecalhoArea titulo="Processo Licitatório — banco de preços e acompanhamento das fases" intro="O preço antes do processo e o processo depois dele: monte o preço de referência a partir das contratações reais publicadas no PNCP e acompanhe as fases da Lei 14.133/2021 (DFD → ETP → TR → Edital → Contrato)." links={[{ label: "Lei 14.133/2021 — Nova Lei de Licitações", href: "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2021/lei/l14133.htm" }, { label: "IN SEGES/ME 65/2021 — pesquisa de preços", href: "https://www.gov.br/compras/pt-br" }, { label: "PNCP — Portal Nacional de Contratações Públicas", href: "https://pncp.gov.br" }, { label: "TCE-SC", href: "https://www.tcesc.tc.br" }]} />
       <div className="mb-4"><BancoPrecosPainel nome={ente.nome} /></div>
+      <SinapiPainel />
       <div className="mb-4"><ProcessoFases codigo={ente.cod_ibge} /></div>
     </> },
     { id: "criador-documentos", label: "Criador de Documentos para Compras", content: <>

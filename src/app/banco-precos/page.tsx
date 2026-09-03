@@ -1,4 +1,5 @@
 import BancoPrecosPainel from "@/components/banco-precos-painel";
+import SinapiPainel from "@/components/sinapi-painel";
 
 // ENDEREÇO PRÓPRIO do Banco de Preços — a MESMA tela que vive na aba "Processo Licitatório" da página do
 // município, servida sozinha. Existe por uma razão medida: a página do município leva ~106 s de SSR (ela
@@ -19,6 +20,7 @@ export default function Page() {
         </p>
       </header>
       <BancoPrecosPainel />
+      <SinapiPainel />
     </main>
   );
 }
