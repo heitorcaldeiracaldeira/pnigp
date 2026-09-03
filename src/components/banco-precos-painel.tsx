@@ -9,8 +9,8 @@
 // exclusão com quem assina — porque o que torna a pesquisa defensável não é a mediana, é a justificativa.
 // E NÃO INDICA MARCA: o art. 41 da Lei 14.133 veda direcionamento.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Search, Database, FileText, Check, AlertTriangle, Loader2, Copy, ChevronRight } from "lucide-react";
-import FormularioPrecoReferencia from "@/components/formulario-preco-referencia";
+import { Search, Database, FileText, Check, AlertTriangle, Loader2, Copy, ChevronRight, ListPlus, X } from "lucide-react";
+import FormularioPrecoReferencia, { type ItemDocumento } from "@/components/formulario-preco-referencia";
 // A nota técnica do CATMAT vinha do protótipo que esta tela substitui. Ela explica COMO a descrição crua é
 // casada ao catálogo — que é a pergunta que um auditor faz primeiro. Migrou para cá em 03/set/2026 para não
 // morrer junto com o protótipo.
@@ -59,6 +59,10 @@ export default function BancoPrecosPainel({ nome, onAdicionar }: { nome?: string
   const [erro, setErro] = useState("");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const termoRef = useRef("");
+  // Itens já confirmados para ESTE documento — a pesquisa de preços é quase sempre de uma lista, não de um
+  // objeto só. Cada confirmação fecha o item atual (com o que foi de fato selecionado, IQR/SRP incluídos) e
+  // reabre a tela para o próximo termo; o documento formal (seção III/IV) some tudo numa tabela só.
+  const [itensConfirmados, setItensConfirmados] = useState<ItemDocumento[]>([]);
 
   // ─── passo 1: busca (debounce). Zera o que vem depois: seleção de outro objeto não pode sobreviver.
   useEffect(() => {
@@ -141,6 +145,21 @@ export default function BancoPrecosPainel({ nome, onAdicionar }: { nome?: string
     const n = new Set(set); if (n.has(k)) n.delete(k); else n.add(k); aplica(n);
   };
 
+  // Fecha o item atual (com a curadoria — seleção, IQR, SRP — já feita) e reabre a tela para o próximo
+  // termo. Duplicar o mesmo termo substitui o anterior: confirmar de novo é reconsiderar, não empilhar.
+  const confirmarItem = useCallback(() => {
+    if (!doc) return;
+    const termo = q.trim();
+    const novo: ItemDocumento = {
+      termo, identificacao: doc.identificacao, porUnidade: doc.porUnidade, itens: doc.itens,
+      descartados: candidatos.filter((c) => !escolhidos.has(c.id)), alertas: doc.alertas,
+    };
+    setItensConfirmados((prev) => [...prev.filter((it) => it.termo !== termo), novo]);
+    setQ(""); setObjetos([]); setTotal(0); setTermoDoResultado(""); setMarcados(new Set());
+    setCandidatos([]); setIdentificacao(null); setEscolhidos(new Set()); setDoc(null);
+  }, [doc, q, candidatos, escolhidos]);
+  const removerItemConfirmado = (termo: string) => setItensConfirmados((prev) => prev.filter((it) => it.termo !== termo));
+
   const copiar = () => {
     if (!doc) return;
     const L: string[] = [];
@@ -174,10 +193,25 @@ export default function BancoPrecosPainel({ nome, onAdicionar }: { nome?: string
         <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700">todos os processos licitatórios da base</span>
       </div>
       <p className="mt-1 text-[12px] leading-relaxed text-slate-600">
-        Busque o material ou serviço, <b>escolha quais contratações entram na conta</b> e gere o documento de formação do
-        preço de referência — com mediana, quartis, metodologia, ressalvas e o número de controle PNCP de cada preço.
-        A busca corre <b>toda descrição comprada</b>, tenha ela código de catálogo ou não.
+        Busque o material ou serviço, <b>escolha quais contratações entram na conta</b> e confirme o item — repita para
+        cada objeto da compra. O documento no fim da tela junta todos numa <b>pesquisa de preços só</b>, com mediana,
+        quartis, metodologia, ressalvas e o número de controle PNCP de cada preço. A busca corre <b>toda descrição
+        comprada</b>, tenha ela código de catálogo ou não.
       </p>
+
+      {!!itensConfirmados.length && (
+        <div className="mt-3 rounded-lg border border-teal-200 bg-teal-50/50 p-2">
+          <p className="text-[11px] font-semibold text-teal-800">{itensConfirmados.length} item(ns) confirmado(s) neste documento:</p>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {itensConfirmados.map((it) => (
+              <span key={it.termo} className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[11px] text-slate-700 ring-1 ring-teal-200">
+                {it.termo}
+                <button onClick={() => removerItemConfirmado(it.termo)} title="Remover este item" className="text-slate-400 hover:text-rose-600"><X className="h-3 w-3" /></button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ─── passo 1 ─── */}
       <div className="mt-3 flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 focus-within:border-teal-500">
@@ -349,19 +383,18 @@ export default function BancoPrecosPainel({ nome, onAdicionar }: { nome?: string
             Números de controle marcados com <b>*</b> foram reconstruídos a partir de CNPJ, sequencial e ano porque o órgão não os publicou.
           </p>
 
-          {/* O formulário do art. 3º da IN 65/2021 — o que de fato vai aos autos. O resumo acima é leitura
-              rápida; o documento é este, com as cinco seções que a norma enumera. */}
-          <FormularioPrecoReferencia
-            termo={q.trim()}
-            identificacao={doc.identificacao}
-            porUnidade={doc.porUnidade}
-            itens={doc.itens}
-            descartados={candidatos.filter((c) => !escolhidos.has(c.id))}
-            alertas={doc.alertas}
-            nomeEnte={nome}
-          />
+          <button onClick={confirmarItem}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-teal-700 px-3 py-1.5 text-[12px] font-semibold text-white">
+            <ListPlus className="h-3.5 w-3.5" /> Confirmar este item{itensConfirmados.length ? " e buscar outro" : " (ou busque outro item antes de gerar o documento)"}
+          </button>
         </div>
       )}
+
+      {/* O formulário do art. 3º da IN 65/2021 — o que de fato vai aos autos, com TODOS os itens confirmados
+          juntos. Fica fora do passo 3 de propósito: sobrevive à confirmação de um item e ao início da busca
+          do próximo, em vez de sumir quando a tela volta pro passo 1. */}
+      {!!itensConfirmados.length && <FormularioPrecoReferencia itens={itensConfirmados} nomeEnte={nome} />}
+
       <div className="nao-imprimir mt-4 border-t border-slate-100 pt-3">
         <NotaTecnicaCatmat compacto />
       </div>

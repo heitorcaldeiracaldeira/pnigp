@@ -19,7 +19,13 @@
 // 14.133/2021 veda direcionamento) e decidir sozinho quais preços cair fora. Ele PROPÕE as exclusões que a
 // estatística sugere e exige que a justificativa seja escrita — porque é a justificativa, não a mediana,
 // que sustenta o preço quando o controle perguntar.
-import { useMemo, useState } from "react";
+//
+// ═══ UM DOCUMENTO, VÁRIOS ITENS (03/set/2026) ═══
+// Uma pesquisa de preços real quase nunca é de um objeto só — é a lista inteira de uma compra. `itens`
+// é agora um ARRAY: um processo, um agente, uma metodologia, N objetos. As seções III e IV viram UMA
+// tabela cada, com a coluna "Item" identificando de qual objeto é cada linha — não uma tabela repetida
+// por item, que é o que "dentro da mesma tabela" pediu.
+import { Fragment, useMemo, useState } from "react";
 import { Printer, FileText } from "lucide-react";
 
 type Item = {
@@ -28,15 +34,15 @@ type Item = {
   descricao: string; unidade: string; quantidade: number; unitario: number; fornecedor: string; foraDaCurva: boolean;
 };
 type PorUnidade = { unidade: string; grafias: string[]; n: number; media: number; mediana: number; p25: number; p75: number; menor: number; maior: number; nMunicipios: number; nForaDaCurva: number };
-type Props = {
+export type ItemDocumento = {
   termo: string;
   identificacao: { taxonomia: string; codigo: string; nome: string; classe: string | null } | null;
   porUnidade: PorUnidade[];
   itens: Item[];
   descartados: Item[];
   alertas: string[];
-  nomeEnte?: string;
 };
+type Props = { itens: ItemDocumento[]; nomeEnte?: string };
 
 const brl = (v: number, casas = 2) => "R$ " + (v ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
 const brlAuto = (v: number) => brl(v, v > 0 && v < 1 ? 4 : 2);
@@ -45,55 +51,61 @@ const hoje = () => new Date().toLocaleDateString("pt-BR");
 type Metodo = "mediana" | "media" | "menor";
 const ROTULO: Record<Metodo, string> = { mediana: "mediana", media: "média", menor: "menor preço" };
 
-export default function FormularioPrecoReferencia({ termo, identificacao, porUnidade, itens, descartados, alertas, nomeEnte }: Props) {
+// Padrão = a unidade cuja série está menos CONCENTRADA (mais municípios), não a mais numerosa — mesmo
+// critério de sempre (ver nota histórica no fim do arquivo).
+const unidadePadrao = (porUnidade: PorUnidade[]) => [...porUnidade].sort((a, b) => b.nMunicipios - a.nMunicipios || b.n - a.n)[0]?.unidade || "";
+
+export default function FormularioPrecoReferencia({ itens, nomeEnte }: Props) {
   const [orgao, setOrgao] = useState(nomeEnte ? `Município de ${nomeEnte}` : "");
   const [setor, setSetor] = useState("");
   const [processo, setProcesso] = useState("");
-  const [objeto, setObjeto] = useState(identificacao?.nome || termo);
   const [agente, setAgente] = useState("");
   const [cargo, setCargo] = useState("");
   const [matricula, setMatricula] = useState("");
+  // Um método só, para o documento inteiro: pesquisa que usa mediana no item 1 e menor preço no item 2, no
+  // mesmo processo, é metodologia inconsistente — o art. 6º admite os três, mas a escolha é uma só por vez.
   const [metodo, setMetodo] = useState<Metodo>("mediana");
-  // ═══ A UNIDADE DE MEDIDA É CAMPO DO FORMULÁRIO, NÃO SÓ COLUNA DA CONTA ═══
-  // O objeto que vai ser contratado tem UMA unidade ("resma", "comprimido", "hora"), e é nela que o preço
-  // estimado precisa estar expresso — o edital vai pedir proposta nessa unidade. Quando a série reúne mais
-  // de uma, a norma não permite somar: o responsável declara qual é a do objeto, e as demais permanecem no
-  // documento como referência apurada, visivelmente separadas.
-  // Padrão = a unidade cuja série está menos CONCENTRADA (mais municípios), e não a mais numerosa. Medido
-  // com "papel a4": por número de preços vinha "unidade" (4 preços, 1 município); por espalhamento vem
-  // "resma" (5 municípios) — e "concentrada em 1 município" é ressalva da própria pesquisa. Continua sendo
-  // só um padrão: a unidade do objeto é declarada por quem assina, no campo acima.
-  const [unidadeRef, setUnidadeRef] = useState(
-    [...porUnidade].sort((a, b) => b.nMunicipios - a.nMunicipios || b.n - a.n)[0]?.unidade || "");
-  const unidadeEscolhida = porUnidade.find((u) => u.unidade === unidadeRef) || porUnidade[0];
+  const [unidadeRefPorItem, setUnidadeRefPorItem] = useState<Record<string, string>>({});
   const [quantidades, setQuantidades] = useState<Record<string, string>>({});
   const [justificativa, setJustificativa] = useState("");
 
+  const unidadeDoItem = (it: ItemDocumento) => unidadeRefPorItem[it.termo] || unidadePadrao(it.porUnidade);
+  const unidadeEscolhidaDoItem = (it: ItemDocumento) => it.porUnidade.find((u) => u.unidade === unidadeDoItem(it)) || it.porUnidade[0];
   const valorDe = (u: PorUnidade) => (metodo === "media" ? u.media : metodo === "menor" ? u.menor : u.mediana);
+  const qtdDoItem = (termo: string) => Number(String(quantidades[termo] ?? "").replace(/\./g, "").replace(",", ".")) || 0;
 
-  // A justificativa nasce escrita com o que a apuração de fato encontrou — e fica EDITÁVEL, porque quem
-  // assina é quem justifica. Texto pronto que não pode ser corrigido é armadilha, não ajuda.
+  const totalGeral = itens.reduce((acc, it) => {
+    const u = unidadeEscolhidaDoItem(it); const q = qtdDoItem(it.termo);
+    return acc + (u && q > 0 ? valorDe(u) * q : 0);
+  }, 0);
+  const alertasTodos = itens.flatMap((it) => it.alertas.map((a) => ({ termo: it.termo, texto: a })));
+
   const justificativaSugerida = useMemo(() => {
     const L: string[] = [];
-    L.push(`Adotou-se como método a ${ROTULO[metodo]} dos preços coletados, na forma do art. 6º da IN SEGES/ME nº 65/2021.`);
+    L.push(`Adotou-se como método a ${ROTULO[metodo]} dos preços coletados, na forma do art. 6º da IN SEGES/ME nº 65/2021, aplicado uniformemente aos ${itens.length} item(ns) desta pesquisa.`);
     if (metodo === "mediana") L.push("A mediana foi preferida à média por ser medida resistente a valores extremos: um único lançamento equivocado desloca a média e não desloca a mediana.");
     if (metodo === "menor") L.push("Adotou-se o menor preço coletado, o que resulta em estimativa conservadora do ponto de vista do erário, observado que o valor permanece exequível por ter sido efetivamente praticado em contratação pública.");
     if (metodo === "media") L.push("Adotou-se a média simples dos preços coletados por se tratar de série homogênea, sem valores extremos que a distorçam.");
-    const fora = descartados.filter((d) => d.foraDaCurva).length;
-    const srp = descartados.filter((d) => d.srp && !d.foraDaCurva).length;
-    const outros = descartados.length - fora - srp;
-    if (fora) L.push(`Foram desconsiderados ${fora} preço(s) situados fora do intervalo interquartil (critério de 1,5×IQR), por se apresentarem inexequíveis ou excessivamente elevados em relação à série, nos termos do art. 6º, §§ da IN SEGES/ME nº 65/2021.`);
-    if (srp) L.push(`Foram desconsiderados ${srp} preço(s) originados de atas de registro de preços, por refletirem valor máximo registrado e não preço efetivamente praticado na contratação.`);
-    if (outros > 0) L.push(`Foram desconsiderados ${outros} preço(s) por decisão fundamentada do responsável, conforme análise das descrições e da compatibilidade do objeto.`);
-    if (!descartados.length) L.push("Não houve desconsideração de preços: todos os valores coletados integram a série utilizada.");
-    if (porUnidade.length > 1) L.push(`A série reúne ${porUnidade.length} unidades de medida distintas, calculadas separadamente por não serem comparáveis entre si; o valor estimado da contratação foi expresso na unidade "${unidadeRef}", que é a do objeto a ser contratado.`);
-    const comGrafias = porUnidade.filter((u) => u.grafias.length > 1);
-    if (comGrafias.length) L.push(`Grafias distintas de uma mesma unidade de medida foram reunidas (${comGrafias.map((u) => `${u.unidade}: ${u.grafias.join(", ")}`).join("; ")}), por designarem a mesma medida; unidades com capacidade declarada (p. ex. "frasco 20 ml" e "frasco 50 ml") foram mantidas separadas, por não serem equivalentes.`);
+    for (const it of itens) {
+      const fora = it.descartados.filter((d) => d.foraDaCurva).length;
+      const srp = it.descartados.filter((d) => d.srp && !d.foraDaCurva).length;
+      const outros = it.descartados.length - fora - srp;
+      const partes: string[] = [];
+      if (fora) partes.push(`${fora} fora do intervalo interquartil (1,5×IQR)`);
+      if (srp) partes.push(`${srp} de ata de registro de preços`);
+      if (outros > 0) partes.push(`${outros} por decisão fundamentada do responsável`);
+      if (partes.length) L.push(`Item "${it.termo}": desconsiderado(s) ${partes.join("; ")}.`);
+      else if (it.descartados.length === 0) L.push(`Item "${it.termo}": nenhum preço desconsiderado.`);
+      if (it.porUnidade.length > 1) L.push(`Item "${it.termo}": a série reúne ${it.porUnidade.length} unidades de medida distintas; o valor estimado foi expresso em "${unidadeDoItem(it)}", a do objeto a ser contratado.`);
+    }
     return L.join(" ");
-  }, [metodo, descartados, porUnidade, unidadeRef]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [metodo, itens, unidadeRefPorItem]);
 
   const textoJustificativa = justificativa.trim() ? justificativa : justificativaSugerida;
   const inputCls = "w-full rounded border border-slate-300 px-2 py-1 text-[12px] outline-none focus:border-teal-500 print:border-0 print:border-b print:border-slate-400 print:px-0";
+
+  if (!itens.length) return null;
 
   return (
     <div className="mt-4">
@@ -107,7 +119,7 @@ export default function FormularioPrecoReferencia({ termo, identificacao, porUni
       }`}</style>
 
       <div className="nao-imprimir mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h4 className="flex items-center gap-1.5 font-display text-sm font-bold text-slate-800"><FileText className="h-4 w-4" /> Formulário de pesquisa de preços — IN SEGES/ME nº 65/2021, art. 3º</h4>
+        <h4 className="flex items-center gap-1.5 font-display text-sm font-bold text-slate-800"><FileText className="h-4 w-4" /> Formulário de pesquisa de preços — IN SEGES/ME nº 65/2021, art. 3º <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700">{itens.length} item(ns)</span></h4>
         <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-[12px] font-semibold text-white">
           <Printer className="h-3.5 w-3.5" /> Imprimir / salvar em PDF
         </button>
@@ -116,7 +128,7 @@ export default function FormularioPrecoReferencia({ termo, identificacao, porUni
       <article className="doc-imprimivel rounded-xl border border-slate-300 bg-white p-5 text-slate-800">
         <header className="border-b border-slate-300 pb-3 text-center">
           <h2 className="font-display text-base font-bold uppercase tracking-wide">Documento de pesquisa de preços</h2>
-          <p className="text-[11px] text-slate-500">Formação do preço estimado da contratação — Lei nº 14.133/2021, art. 23, e IN SEGES/ME nº 65/2021, art. 3º</p>
+          <p className="text-[11px] text-slate-500">Formação do preço estimado da contratação — Lei nº 14.133/2021, art. 23, e IN SEGES/ME nº 65/2021, art. 3º — {itens.length} item(ns)</p>
         </header>
 
         <section className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -128,16 +140,6 @@ export default function FormularioPrecoReferencia({ termo, identificacao, porUni
             <input value={processo} onChange={(e) => setProcesso(e.target.value)} className={inputCls} placeholder="000/2026" /></label>
           <label className="text-[11px]"><span className="font-semibold text-slate-600">Data da pesquisa</span>
             <input value={hoje()} readOnly className={inputCls + " bg-slate-50"} /></label>
-          <label className="text-[11px]"><span className="font-semibold text-slate-600">Objeto</span>
-            <input value={objeto} onChange={(e) => setObjeto(e.target.value)} className={inputCls} /></label>
-          <label className="text-[11px]"><span className="font-semibold text-slate-600">Unidade de medida do objeto</span>
-            {porUnidade.length > 1 ? (
-              <select value={unidadeRef} onChange={(e) => setUnidadeRef(e.target.value)} className={inputCls + " nao-imprimir"}>
-                {porUnidade.map((u) => <option key={u.unidade} value={u.unidade}>{u.unidade || "(não informada)"} — {u.n} preço(s)</option>)}
-              </select>
-            ) : null}
-            <span className={porUnidade.length > 1 ? "mt-0.5 hidden text-[12px] print:block" : "block text-[12px]"}>{unidadeEscolhida?.unidade || "—"}</span>
-          </label>
         </section>
 
         {/* ─── I ─── */}
@@ -152,22 +154,31 @@ export default function FormularioPrecoReferencia({ termo, identificacao, porUni
         </div>
 
         {/* ─── II ─── */}
-        <h3 className="mt-4 border-b border-slate-200 pb-1 text-[12px] font-bold uppercase tracking-wide text-slate-700">II — Caracterização das fontes consultadas</h3>
+        <h3 className="mt-4 border-b border-slate-200 pb-1 text-[12px] font-bold uppercase tracking-wide text-slate-700">II — Objeto(s) e caracterização das fontes consultadas</h3>
         <ul className="mt-2 space-y-1 text-[11px] leading-relaxed">
           <li><b>Parâmetro adotado:</b> art. 5º, inciso II, da IN SEGES/ME nº 65/2021 — contratações similares realizadas por outros entes públicos, em execução ou concluídas nos 1 (um) ano anterior à data da pesquisa, conforme série apresentada na seção III.</li>
           <li><b>Fonte:</b> Portal Nacional de Contratações Públicas (PNCP), dados abertos — itens homologados das contratações publicadas pelos próprios órgãos contratantes. Trata-se de <b>preço efetivamente praticado</b>, e não de preço estimado ou de proposta.</li>
-          <li><b>Identificação do objeto no catálogo:</b> {identificacao ? `${identificacao.taxonomia} nº ${identificacao.codigo} — ${identificacao.nome}${identificacao.classe ? ` (classe ${identificacao.classe})` : ""}` : "objeto sem correspondência em catálogo padronizado; a pesquisa apoia-se na descrição textual das contratações reunidas"}</li>
-          <li><b>Abrangência da série:</b> {itens.length} contratação(ões) utilizada(s), de {new Set(itens.map((i) => i.municipio)).size} município(s){descartados.length ? `; ${descartados.length} preço(s) coletado(s) e desconsiderado(s), com justificativa na seção V` : ""}.</li>
           <li><b>Rastreabilidade:</b> cada preço da seção III é identificado pelo número de controle PNCP da contratação de origem, permitindo verificação direta na fonte.</li>
-          <li><b>Termo de busca utilizado:</b> “{termo}” · <b>data da extração:</b> {hoje()}.</li>
         </ul>
+        <div className="mt-2 space-y-1.5">
+          {itens.map((it, k) => (
+            <p key={it.termo} className="text-[11px] leading-relaxed">
+              <b>Item {k + 1} — “{it.termo}”:</b> {it.identificacao
+                ? `${it.identificacao.taxonomia} nº ${it.identificacao.codigo} — ${it.identificacao.nome}${it.identificacao.classe ? ` (classe ${it.identificacao.classe})` : ""}`
+                : "sem correspondência em catálogo padronizado; a pesquisa apoia-se na descrição textual das contratações reunidas"}
+              {" · "}{it.itens.length} contratação(ões) utilizada(s) de {new Set(it.itens.map((c) => c.municipio)).size} município(s)
+              {it.descartados.length ? `; ${it.descartados.length} preço(s) coletado(s) e desconsiderado(s)` : ""}.
+            </p>
+          ))}
+        </div>
 
-        {/* ─── III ─── */}
+        {/* ─── III — UMA tabela, coluna Item identifica de qual objeto é cada linha ─── */}
         <h3 className="mt-4 border-b border-slate-200 pb-1 text-[12px] font-bold uppercase tracking-wide text-slate-700">III — Série de preços coletados</h3>
         <div className="mt-2 overflow-x-auto">
           <table className="w-full text-left text-[10px]">
             <thead className="bg-slate-50 text-slate-600">
               <tr>
+                <th className="border border-slate-200 p-1">Item</th>
                 <th className="border border-slate-200 p-1">#</th>
                 <th className="border border-slate-200 p-1">Nº controle PNCP</th>
                 <th className="border border-slate-200 p-1">Município / órgão</th>
@@ -179,36 +190,42 @@ export default function FormularioPrecoReferencia({ termo, identificacao, porUni
               </tr>
             </thead>
             <tbody>
-              {itens.map((i, k) => (
-                <tr key={i.id}>
-                  <td className="border border-slate-200 p-1 tabular-nums">{k + 1}</td>
-                  <td className="border border-slate-200 p-1 font-mono">{i.numeroControlePNCP}{i.controlePublicado ? "" : " *"}</td>
-                  <td className="border border-slate-200 p-1">{i.municipio}{i.orgao ? ` — ${i.orgao}` : ""}</td>
-                  <td className="border border-slate-200 p-1 whitespace-nowrap tabular-nums">{dt(i.dataPublicacao)}</td>
-                  <td className="border border-slate-200 p-1">{i.descricao}</td>
-                  <td className="border border-slate-200 p-1">{i.unidade}</td>
-                  <td className="border border-slate-200 p-1 text-right tabular-nums">{i.quantidade.toLocaleString("pt-BR")}</td>
-                  <td className="border border-slate-200 p-1 text-right tabular-nums font-semibold">{brlAuto(i.unitario)}</td>
-                </tr>
-              ))}
-              {descartados.map((i, k) => (
-                <tr key={"d" + i.id} className="text-slate-400 line-through">
-                  <td className="border border-slate-200 p-1 tabular-nums">D{k + 1}</td>
-                  <td className="border border-slate-200 p-1 font-mono">{i.numeroControlePNCP}{i.controlePublicado ? "" : " *"}</td>
-                  <td className="border border-slate-200 p-1">{i.municipio}</td>
-                  <td className="border border-slate-200 p-1 whitespace-nowrap tabular-nums">{dt(i.dataPublicacao)}</td>
-                  <td className="border border-slate-200 p-1">{i.descricao}</td>
-                  <td className="border border-slate-200 p-1">{i.unidade}</td>
-                  <td className="border border-slate-200 p-1 text-right tabular-nums">{i.quantidade.toLocaleString("pt-BR")}</td>
-                  <td className="border border-slate-200 p-1 text-right tabular-nums">{brlAuto(i.unitario)}</td>
-                </tr>
+              {itens.map((it, ik) => (
+                <Fragment key={it.termo}>
+                  {it.itens.map((i, k) => (
+                    <tr key={`${it.termo}-${i.id}`}>
+                      <td className="border border-slate-200 bg-teal-50/40 p-1 font-semibold tabular-nums">{ik + 1}</td>
+                      <td className="border border-slate-200 p-1 tabular-nums">{k + 1}</td>
+                      <td className="border border-slate-200 p-1 font-mono">{i.numeroControlePNCP}{i.controlePublicado ? "" : " *"}</td>
+                      <td className="border border-slate-200 p-1">{i.municipio}{i.orgao ? ` — ${i.orgao}` : ""}</td>
+                      <td className="border border-slate-200 p-1 whitespace-nowrap tabular-nums">{dt(i.dataPublicacao)}</td>
+                      <td className="border border-slate-200 p-1">{i.descricao}</td>
+                      <td className="border border-slate-200 p-1">{i.unidade}</td>
+                      <td className="border border-slate-200 p-1 text-right tabular-nums">{i.quantidade.toLocaleString("pt-BR")}</td>
+                      <td className="border border-slate-200 p-1 text-right tabular-nums font-semibold">{brlAuto(i.unitario)}</td>
+                    </tr>
+                  ))}
+                  {it.descartados.map((i, k) => (
+                    <tr key={`${it.termo}-d${i.id}`} className="text-slate-400 line-through">
+                      <td className="border border-slate-200 bg-teal-50/40 p-1 font-semibold tabular-nums">{ik + 1}</td>
+                      <td className="border border-slate-200 p-1 tabular-nums">D{k + 1}</td>
+                      <td className="border border-slate-200 p-1 font-mono">{i.numeroControlePNCP}{i.controlePublicado ? "" : " *"}</td>
+                      <td className="border border-slate-200 p-1">{i.municipio}</td>
+                      <td className="border border-slate-200 p-1 whitespace-nowrap tabular-nums">{dt(i.dataPublicacao)}</td>
+                      <td className="border border-slate-200 p-1">{i.descricao}</td>
+                      <td className="border border-slate-200 p-1">{i.unidade}</td>
+                      <td className="border border-slate-200 p-1 text-right tabular-nums">{i.quantidade.toLocaleString("pt-BR")}</td>
+                      <td className="border border-slate-200 p-1 text-right tabular-nums">{brlAuto(i.unitario)}</td>
+                    </tr>
+                  ))}
+                </Fragment>
               ))}
             </tbody>
           </table>
         </div>
-        <p className="mt-1 text-[9px] text-slate-500">Linhas riscadas e prefixadas por <b>D</b> = preços coletados e <b>desconsiderados</b>, mantidos no documento para que a exclusão seja auditável (a justificativa está na seção V). <b>*</b> = número de controle reconstruído a partir de CNPJ, sequencial e ano, por não ter sido publicado pelo órgão de origem.</p>
+        <p className="mt-1 text-[9px] text-slate-500">A coluna <b>Item</b> numera os objetos na ordem da seção II. Linhas riscadas e prefixadas por <b>D</b> = preços coletados e <b>desconsiderados</b>, mantidos no documento para que a exclusão seja auditável (justificativa na seção V). <b>*</b> = número de controle reconstruído a partir de CNPJ, sequencial e ano, por não ter sido publicado pelo órgão de origem.</p>
 
-        {/* ─── IV ─── */}
+        {/* ─── IV — UMA tabela, uma linha por item ─── */}
         <h3 className="mt-4 border-b border-slate-200 pb-1 text-[12px] font-bold uppercase tracking-wide text-slate-700">IV — Método matemático aplicado</h3>
         <div className="nao-imprimir mt-2 flex flex-wrap gap-3 text-[11px]">
           {(["mediana", "media", "menor"] as Metodo[]).map((m) => (
@@ -217,13 +234,14 @@ export default function FormularioPrecoReferencia({ termo, identificacao, porUni
               <span className={metodo === m ? "font-semibold text-teal-700" : "text-slate-600"}>{ROTULO[m]}</span>
             </label>
           ))}
-          <span className="text-slate-400">— art. 6º da IN 65/2021 admite os três; informe a quantidade a contratar para obter o valor estimado.</span>
+          <span className="text-slate-400">— art. 6º da IN 65/2021 admite os três; a mesma escolha vale para todos os itens deste documento.</span>
         </div>
-        <p className="mt-2 text-[11px]">Método adotado: <b>{ROTULO[metodo]} dos preços coletados</b>, apurado separadamente por unidade de medida.</p>
+        <p className="mt-2 text-[11px]">Método adotado: <b>{ROTULO[metodo]} dos preços coletados</b>, apurado por item e, quando o objeto reúne mais de uma unidade de medida, pela unidade declarada abaixo.</p>
         <div className="mt-2 overflow-x-auto">
           <table className="w-full text-left text-[10px]">
             <thead className="bg-slate-50 text-slate-600">
               <tr>
+                <th className="border border-slate-200 p-1">Item</th>
                 <th className="border border-slate-200 p-1">Unidade</th>
                 <th className="border border-slate-200 p-1 text-right">Preços</th>
                 <th className="border border-slate-200 p-1 text-right">Menor</th>
@@ -236,14 +254,21 @@ export default function FormularioPrecoReferencia({ termo, identificacao, porUni
               </tr>
             </thead>
             <tbody>
-              {porUnidade.map((u) => {
-                const q = Number(String(quantidades[u.unidade] ?? "").replace(/\./g, "").replace(",", ".")) || 0;
+              {itens.map((it, ik) => {
+                const u = unidadeEscolhidaDoItem(it);
+                const q = qtdDoItem(it.termo);
+                if (!u) return null;
                 return (
-                  <tr key={u.unidade}>
-                    <td className={"border border-slate-200 p-1" + (u.unidade === unidadeEscolhida?.unidade ? " bg-teal-50/60 font-bold" : "")}>
-                      {u.unidade || "(não informada)"}
-                      {u.unidade === unidadeEscolhida?.unidade && <span className="ml-1 rounded bg-teal-600 px-1 text-[8px] font-bold uppercase text-white">objeto</span>}
-                      {u.grafias.length > 1 && <span className="block text-[8px] font-normal text-slate-400">grafias reunidas: {u.grafias.join(" · ")}</span>}
+                  <tr key={it.termo}>
+                    <td className="border border-slate-200 p-1 font-semibold tabular-nums">{ik + 1}<span className="ml-1 font-normal text-slate-400">“{it.termo}”</span></td>
+                    <td className="border border-slate-200 p-1">
+                      {it.porUnidade.length > 1 ? (
+                        <select value={unidadeDoItem(it)} onChange={(e) => setUnidadeRefPorItem({ ...unidadeRefPorItem, [it.termo]: e.target.value })}
+                          className="nao-imprimir rounded border border-slate-300 px-1 py-0.5 text-[10px] outline-none focus:border-teal-500">
+                          {it.porUnidade.map((pu) => <option key={pu.unidade} value={pu.unidade}>{pu.unidade || "(não informada)"} — {pu.n} preço(s)</option>)}
+                        </select>
+                      ) : null}
+                      <span className={it.porUnidade.length > 1 ? "hidden print:inline" : ""}>{u.unidade || "—"}</span>
                     </td>
                     <td className="border border-slate-200 p-1 text-right tabular-nums">{u.n}</td>
                     <td className="border border-slate-200 p-1 text-right tabular-nums">{brlAuto(u.menor)}</td>
@@ -252,7 +277,7 @@ export default function FormularioPrecoReferencia({ termo, identificacao, porUni
                     <td className="border border-slate-200 p-1 text-right tabular-nums">{brlAuto(u.maior)}</td>
                     <td className="border border-slate-200 bg-teal-50/60 p-1 text-right font-bold tabular-nums text-teal-800">{brlAuto(valorDe(u))}</td>
                     <td className="border border-slate-200 p-1 text-right">
-                      <input value={quantidades[u.unidade] ?? ""} onChange={(e) => setQuantidades({ ...quantidades, [u.unidade]: e.target.value })}
+                      <input value={quantidades[it.termo] ?? ""} onChange={(e) => setQuantidades({ ...quantidades, [it.termo]: e.target.value })}
                         className="w-20 rounded border border-slate-300 px-1 py-0.5 text-right text-[10px] outline-none focus:border-teal-500 print:border-0" placeholder="0" />
                     </td>
                     <td className="border border-slate-200 p-1 text-right font-bold tabular-nums">{q > 0 ? brl(valorDe(u) * q) : "—"}</td>
@@ -260,34 +285,31 @@ export default function FormularioPrecoReferencia({ termo, identificacao, porUni
                 );
               })}
             </tbody>
+            {itens.length > 1 && (
+              <tfoot>
+                <tr>
+                  <td colSpan={9} className="border border-slate-200 bg-slate-50 p-1 text-right font-bold uppercase tracking-wide text-slate-600">Total estimado da contratação (itens com quantidade informada)</td>
+                  <td className="border border-slate-200 bg-teal-50 p-1 text-right font-bold tabular-nums text-teal-800">{brl(totalGeral)}</td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
-        {unidadeEscolhida && (() => {
-          const q = Number(String(quantidades[unidadeEscolhida.unidade] ?? "").replace(/\./g, "").replace(",", ".")) || 0;
-          const vu = valorDe(unidadeEscolhida);
-          return (
-            <p className="mt-2 rounded border border-teal-200 bg-teal-50/60 p-2 text-[11px] leading-relaxed">
-              <b>Valor estimado da contratação:</b> {brlAuto(vu)} por <b>{unidadeEscolhida.unidade || "unidade não informada"}</b>
-              {q > 0 ? <> × {q.toLocaleString("pt-BR")} {unidadeEscolhida.unidade} = <b>{brl(vu * q)}</b></> : <> (informe a quantidade a contratar para o total)</>},
-              apurado pela {ROTULO[metodo]} de {unidadeEscolhida.n} preço(s) praticado(s) em {unidadeEscolhida.nMunicipios} município(s).
-            </p>
-          );
-        })()}
-        <p className="mt-1 text-[9px] text-slate-500">Menor, média, mediana e maior são apresentados juntos porque o art. 6º da IN SEGES/ME nº 65/2021 admite os três primeiros como método; a escolha é do responsável e fica registrada acima. Unidades de medida distintas não são somadas entre si.</p>
+        <p className="mt-1 text-[9px] text-slate-500">Menor, média, mediana e maior são apresentados juntos porque o art. 6º da IN SEGES/ME nº 65/2021 admite os três primeiros como método; a escolha é do responsável e vale para todos os itens. Unidades de medida distintas não são somadas entre si; o total geral soma o valor estimado de cada item na sua própria unidade.</p>
 
         {/* ─── V ─── */}
         <h3 className="mt-4 border-b border-slate-200 pb-1 text-[12px] font-bold uppercase tracking-wide text-slate-700">V — Justificativas da metodologia e das desconsiderações</h3>
-        <textarea value={justificativa} onChange={(e) => setJustificativa(e.target.value)} rows={5}
+        <textarea value={justificativa} onChange={(e) => setJustificativa(e.target.value)} rows={6}
           placeholder={justificativaSugerida}
           className="nao-imprimir mt-2 w-full rounded border border-slate-300 p-2 text-[11px] leading-relaxed outline-none focus:border-teal-500" />
         <p className="mt-2 hidden whitespace-pre-wrap text-[11px] leading-relaxed print:block">{textoJustificativa}</p>
-        <p className="nao-imprimir mt-1 text-[9px] text-slate-500">Em branco, o documento imprime a justificativa sugerida acima, montada a partir do que a apuração encontrou. Edite livremente: a responsabilidade pela justificativa é de quem assina.</p>
+        <p className="nao-imprimir mt-1 text-[9px] text-slate-500">Em branco, o documento imprime a justificativa sugerida acima, montada a partir do que a apuração encontrou em cada item. Edite livremente: a responsabilidade pela justificativa é de quem assina.</p>
 
-        {alertas.length > 0 && (
+        {alertasTodos.length > 0 && (
           <>
             <h3 className="mt-4 border-b border-slate-200 pb-1 text-[12px] font-bold uppercase tracking-wide text-slate-700">VI — Ressalvas sobre a suficiência da pesquisa</h3>
             <ul className="mt-2 list-inside list-disc space-y-0.5 text-[11px] leading-relaxed">
-              {alertas.map((a, i) => <li key={i}>{a}</li>)}
+              {alertasTodos.map((a, i) => <li key={i}>{itens.length > 1 ? <><b>“{a.termo}”:</b> {a.texto}</> : a.texto}</li>)}
             </ul>
           </>
         )}
