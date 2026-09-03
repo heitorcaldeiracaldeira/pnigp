@@ -6,6 +6,7 @@
 // pedido do Heitor: "não misture com os arquivos que são gerados do PNCP, deixe em um local próprio".
 import { useEffect, useRef, useState } from "react";
 import { HardHat, Search, Loader2, AlertTriangle } from "lucide-react";
+import { AdicionarQtd, type NovoItemOrcamento } from "@/components/orcamento-obra";
 
 type Composicao = {
   codigo: number; descricao: string; unidade: string; classe: string; siglaClasse: string; tipo1: string;
@@ -18,7 +19,7 @@ type Insumo = {
 
 const brl = (v: number | null) => v == null ? "—" : "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export default function SinapiPainel() {
+export default function SinapiPainel({ onAdicionar }: { onAdicionar?: (item: NovoItemOrcamento, quantidade: number) => void }) {
   const [q, setQ] = useState("");
   const [comp, setComp] = useState<Composicao[]>([]);
   const [ins, setIns] = useState<Insumo[]>([]);
@@ -83,7 +84,7 @@ export default function SinapiPainel() {
           <div className="mt-1.5 max-h-96 overflow-auto rounded-lg border border-slate-100">
             <table className="w-full text-left text-[11px]">
               <thead className="sticky top-0 bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
-                <tr><th className="p-1.5">Código</th><th className="p-1.5">Descrição</th><th className="p-1.5">Grupo</th><th className="p-1.5">Un.</th><th className="p-1.5 text-right">Não desonerado</th><th className="p-1.5 text-right">Desonerado</th></tr>
+                <tr><th className="p-1.5">Código</th><th className="p-1.5">Descrição</th><th className="p-1.5">Grupo</th><th className="p-1.5">Un.</th><th className="p-1.5 text-right">Não desonerado</th><th className="p-1.5 text-right">Desonerado</th>{onAdicionar && <th className="p-1.5"></th>}</tr>
               </thead>
               <tbody>
                 {comp.map((c) => (
@@ -94,6 +95,9 @@ export default function SinapiPainel() {
                     <td className="p-1.5 align-top text-slate-500">{c.unidade}</td>
                     <td className="whitespace-nowrap p-1.5 text-right align-top font-semibold tabular-nums text-orange-700">{brl(c.custoNaoDesonerado)}</td>
                     <td className="whitespace-nowrap p-1.5 text-right align-top tabular-nums text-slate-500">{brl(c.custoDesonerado)}</td>
+                    {onAdicionar && <td className="p-1.5 align-top">
+                      <AdicionarQtd onAdd={(qtd) => onAdicionar({ fonte: "SINAPI", codigo: String(c.codigo), descricao: c.descricao, unidade: c.unidade, precoNaoDesonerado: c.custoNaoDesonerado, precoDesonerado: c.custoDesonerado }, qtd)} />
+                    </td>}
                   </tr>
                 ))}
               </tbody>
@@ -108,7 +112,7 @@ export default function SinapiPainel() {
           <div className="mt-1.5 max-h-72 overflow-auto rounded-lg border border-slate-100">
             <table className="w-full text-left text-[11px]">
               <thead className="sticky top-0 bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
-                <tr><th className="p-1.5">Código</th><th className="p-1.5">Descrição</th><th className="p-1.5">Un.</th><th className="p-1.5 text-right">Não desonerado</th><th className="p-1.5 text-right">Desonerado</th></tr>
+                <tr><th className="p-1.5">Código</th><th className="p-1.5">Descrição</th><th className="p-1.5">Un.</th><th className="p-1.5 text-right">Não desonerado</th><th className="p-1.5 text-right">Desonerado</th>{onAdicionar && <th className="p-1.5"></th>}</tr>
               </thead>
               <tbody>
                 {ins.map((i) => (
@@ -118,6 +122,9 @@ export default function SinapiPainel() {
                     <td className="p-1.5 align-top text-slate-500">{i.unidade}</td>
                     <td className="whitespace-nowrap p-1.5 text-right align-top font-semibold tabular-nums text-orange-700">{brl(i.precoNaoDesonerado)}</td>
                     <td className="whitespace-nowrap p-1.5 text-right align-top tabular-nums text-slate-500">{brl(i.precoDesonerado)}</td>
+                    {onAdicionar && <td className="p-1.5 align-top">
+                      <AdicionarQtd onAdd={(qtd) => onAdicionar({ fonte: "SINAPI", codigo: String(i.codigo), descricao: i.descricao, unidade: i.unidade, precoNaoDesonerado: i.precoNaoDesonerado, precoDesonerado: i.precoDesonerado }, qtd)} />
+                    </td>}
                   </tr>
                 ))}
               </tbody>

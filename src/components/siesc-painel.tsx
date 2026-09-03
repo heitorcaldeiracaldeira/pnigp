@@ -4,6 +4,7 @@
 // para edificação. Fonte é PDF (a SIE-SC não publica planilha) — ver scripts/ingest_siesc_edificacoes_sc.mjs.
 import { useEffect, useRef, useState } from "react";
 import { Building2, Search, Loader2, AlertTriangle } from "lucide-react";
+import { AdicionarQtd, type NovoItemOrcamento } from "@/components/orcamento-obra";
 
 type Servico = {
   codigo: string; grupo: string; descricao: string; unidade: string;
@@ -12,7 +13,7 @@ type Servico = {
 
 const brl = (v: number | null) => v == null ? "—" : "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export default function SiescPainel() {
+export default function SiescPainel({ onAdicionar }: { onAdicionar?: (item: NovoItemOrcamento, quantidade: number) => void }) {
   const [q, setQ] = useState("");
   const [servicos, setServicos] = useState<Servico[]>([]);
   const [competencia, setCompetencia] = useState("");
@@ -78,7 +79,7 @@ export default function SiescPainel() {
           <div className="mt-1.5 max-h-96 overflow-auto rounded-lg border border-slate-100">
             <table className="w-full text-left text-[11px]">
               <thead className="sticky top-0 bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
-                <tr><th className="p-1.5">Código</th><th className="p-1.5">Descrição</th><th className="p-1.5">Grupo</th><th className="p-1.5">Un.</th><th className="p-1.5 text-right">Execução</th><th className="p-1.5 text-right">Material</th><th className="p-1.5 text-right">Preço unitário</th></tr>
+                <tr><th className="p-1.5">Código</th><th className="p-1.5">Descrição</th><th className="p-1.5">Grupo</th><th className="p-1.5">Un.</th><th className="p-1.5 text-right">Execução</th><th className="p-1.5 text-right">Material</th><th className="p-1.5 text-right">Preço unitário</th>{onAdicionar && <th className="p-1.5"></th>}</tr>
               </thead>
               <tbody>
                 {servicos.map((s) => (
@@ -90,6 +91,9 @@ export default function SiescPainel() {
                     <td className="whitespace-nowrap p-1.5 text-right align-top tabular-nums text-slate-500">{brl(s.custoExecucao)}</td>
                     <td className="whitespace-nowrap p-1.5 text-right align-top tabular-nums text-slate-500">{brl(s.custoMaterial)}</td>
                     <td className="whitespace-nowrap p-1.5 text-right align-top font-semibold tabular-nums text-emerald-700">{brl(s.precoUnitario)}</td>
+                    {onAdicionar && <td className="p-1.5 align-top">
+                      <AdicionarQtd onAdd={(qtd) => onAdicionar({ fonte: "SIE-SC", codigo: s.codigo, descricao: s.descricao, unidade: s.unidade, precoNaoDesonerado: s.precoUnitario, precoDesonerado: null }, qtd)} />
+                    </td>}
                   </tr>
                 ))}
               </tbody>

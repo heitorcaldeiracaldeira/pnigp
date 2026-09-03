@@ -5,6 +5,7 @@
 // tabela e rota, nenhum misturado ao que a coleta do PNCP gera. Ver scripts/ingest_sicro_sc.mjs.
 import { useEffect, useRef, useState } from "react";
 import { Truck, Search, Loader2, AlertTriangle } from "lucide-react";
+import { AdicionarQtd, type NovoItemOrcamento } from "@/components/orcamento-obra";
 
 type Composicao = { codigo: string; descricao: string; unidade: string; custo: number | null };
 type Insumo = { codigo: string; descricao: string; tipo: "material" | "mao_de_obra"; unidade: string; precoNaoDesonerado: number | null; precoDesonerado: number | null };
@@ -12,7 +13,7 @@ type Equipamento = { codigo: string; descricao: string; custoProdutivoHora: numb
 
 const brl = (v: number | null) => v == null ? "—" : "R$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export default function SicroPainel() {
+export default function SicroPainel({ onAdicionar }: { onAdicionar?: (item: NovoItemOrcamento, quantidade: number) => void }) {
   const [q, setQ] = useState("");
   const [comp, setComp] = useState<Composicao[]>([]);
   const [ins, setIns] = useState<Insumo[]>([]);
@@ -79,7 +80,7 @@ export default function SicroPainel() {
           <div className="mt-1.5 max-h-96 overflow-auto rounded-lg border border-slate-100">
             <table className="w-full text-left text-[11px]">
               <thead className="sticky top-0 bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
-                <tr><th className="p-1.5">Código</th><th className="p-1.5">Descrição</th><th className="p-1.5">Un.</th><th className="p-1.5 text-right">Custo</th></tr>
+                <tr><th className="p-1.5">Código</th><th className="p-1.5">Descrição</th><th className="p-1.5">Un.</th><th className="p-1.5 text-right">Custo</th>{onAdicionar && <th className="p-1.5"></th>}</tr>
               </thead>
               <tbody>
                 {comp.map((c) => (
@@ -88,6 +89,9 @@ export default function SicroPainel() {
                     <td className="max-w-[30rem] p-1.5 align-top text-slate-700">{c.descricao}</td>
                     <td className="p-1.5 align-top text-slate-500">{c.unidade}</td>
                     <td className="whitespace-nowrap p-1.5 text-right align-top font-semibold tabular-nums text-cyan-700">{brl(c.custo)}</td>
+                    {onAdicionar && <td className="p-1.5 align-top">
+                      <AdicionarQtd onAdd={(qtd) => onAdicionar({ fonte: "SICRO", codigo: c.codigo, descricao: c.descricao, unidade: c.unidade, precoNaoDesonerado: c.custo, precoDesonerado: null }, qtd)} />
+                    </td>}
                   </tr>
                 ))}
               </tbody>
@@ -102,7 +106,7 @@ export default function SicroPainel() {
           <div className="mt-1.5 max-h-72 overflow-auto rounded-lg border border-slate-100">
             <table className="w-full text-left text-[11px]">
               <thead className="sticky top-0 bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
-                <tr><th className="p-1.5">Código</th><th className="p-1.5">Descrição</th><th className="p-1.5">Tipo</th><th className="p-1.5">Un.</th><th className="p-1.5 text-right">Não desonerado</th><th className="p-1.5 text-right">Desonerado</th></tr>
+                <tr><th className="p-1.5">Código</th><th className="p-1.5">Descrição</th><th className="p-1.5">Tipo</th><th className="p-1.5">Un.</th><th className="p-1.5 text-right">Não desonerado</th><th className="p-1.5 text-right">Desonerado</th>{onAdicionar && <th className="p-1.5"></th>}</tr>
               </thead>
               <tbody>
                 {ins.map((i) => (
@@ -113,6 +117,9 @@ export default function SicroPainel() {
                     <td className="p-1.5 align-top text-slate-500">{i.unidade}</td>
                     <td className="whitespace-nowrap p-1.5 text-right align-top font-semibold tabular-nums text-cyan-700">{brl(i.precoNaoDesonerado)}</td>
                     <td className="whitespace-nowrap p-1.5 text-right align-top tabular-nums text-slate-500">{brl(i.precoDesonerado)}</td>
+                    {onAdicionar && <td className="p-1.5 align-top">
+                      <AdicionarQtd onAdd={(qtd) => onAdicionar({ fonte: "SICRO", codigo: i.codigo, descricao: i.descricao, unidade: i.unidade, precoNaoDesonerado: i.precoNaoDesonerado, precoDesonerado: i.precoDesonerado }, qtd)} />
+                    </td>}
                   </tr>
                 ))}
               </tbody>
@@ -127,15 +134,19 @@ export default function SicroPainel() {
           <div className="mt-1.5 max-h-72 overflow-auto rounded-lg border border-slate-100">
             <table className="w-full text-left text-[11px]">
               <thead className="sticky top-0 bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500">
-                <tr><th className="p-1.5">Código</th><th className="p-1.5">Descrição</th><th className="p-1.5 text-right">Custo produtivo/h</th><th className="p-1.5 text-right">Custo improdutivo/h</th></tr>
+                <tr><th className="p-1.5">Código</th><th className="p-1.5">Descrição</th><th className="p-1.5">Un.</th><th className="p-1.5 text-right">Custo produtivo</th><th className="p-1.5 text-right">Custo improdutivo</th>{onAdicionar && <th className="p-1.5"></th>}</tr>
               </thead>
               <tbody>
                 {equip.map((e) => (
                   <tr key={e.codigo} className="border-t border-slate-100">
                     <td className="whitespace-nowrap p-1.5 align-top font-mono text-[10px] text-slate-400">{e.codigo}</td>
                     <td className="max-w-[26rem] p-1.5 align-top text-slate-700">{e.descricao}</td>
+                    <td className="p-1.5 align-top text-slate-500">h</td>
                     <td className="whitespace-nowrap p-1.5 text-right align-top font-semibold tabular-nums text-cyan-700">{brl(e.custoProdutivoHora)}</td>
                     <td className="whitespace-nowrap p-1.5 text-right align-top tabular-nums text-slate-500">{brl(e.custoImprodutivoHora)}</td>
+                    {onAdicionar && <td className="p-1.5 align-top">
+                      <AdicionarQtd onAdd={(qtd) => onAdicionar({ fonte: "SICRO", codigo: e.codigo, descricao: e.descricao, unidade: "h", precoNaoDesonerado: e.custoProdutivoHora, precoDesonerado: null }, qtd)} />
+                    </td>}
                   </tr>
                 ))}
               </tbody>
