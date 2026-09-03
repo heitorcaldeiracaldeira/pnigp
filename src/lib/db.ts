@@ -14,6 +14,15 @@ export const pool =
     max: 8,
   });
 
+// 🚨 03/set/2026: medido em produção — o pooler do Neon às vezes entrega uma conexão nova com
+// `search_path` vazado de outra sessão (veio `pg_catalog` puro), e toda tabela sem prefixo de schema
+// (a imensa maioria daqui) para de resolver: "relation municipios does not exist" com a tabela existindo,
+// e um CREATE TABLE cai em "permission denied for schema pg_catalog" por tentar criar ali dentro. Fixar
+// uma vez por CONEXÃO nova (não por query — `max: 8` faz poucas conexões físicas) é barato e resolve na raiz.
+pool.on("connect", (client) => {
+  client.query("SET search_path TO public").catch(() => {});
+});
+
 if (process.env.NODE_ENV !== "production") globalForPg.pgPool = pool;
 
 export async function query<T = Record<string, unknown>>(
