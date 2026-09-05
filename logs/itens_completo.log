@@ -25572,3 +25572,1082 @@ Itens: 46 processos pendentes (de 255594 no PNCP/SC) · INGEST_VERSAO=4
   …20/46
   …40/46
 Concluído: 0 processos c/ itens nesta rodada | total 2329784 itens em 255562 processos
+(node:22988) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 442 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/442
+  …40/442
+  …60/442
+  …80/442
+  …100/442
+  …120/442
+  …140/442
+  …160/442
+  …180/442
+  …200/442
+  …220/442
+  …240/442
+  …260/442
+  …280/442
+  …300/442
+  …320/442
+  …340/442
+  …360/442
+  …380/442
+  …400/442
+  …420/442
+  …440/442
+Concluído: 396 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:15880) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:33904) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:3224) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:36772) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:9236) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+  ! falha 82926585000130-1-000065/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102830000157-1-000146/2026 (Error: fetch itens falhou (429/time)
+  ! falha 11312860000187-1-000045/2026 (Error: fetch itens falhou (429/time)
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:19756) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:15356) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:36564) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:36780) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:33004) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:31396) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:19376) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:11624) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:31660) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:21976) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:28080) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:10600) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:21180) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:35172) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:2916) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:33188) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:33224) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 82925025000160-1-000024/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102756000179-1-000104/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000162/2026 (Error: fetch itens falhou (429/time)
+  ! falha 84438381000185-1-000191/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000181/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102590000190-1-000054/2026 (Error: fetch itens falhou (429/time)
+  ! falha 97526125000191-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102277000152-1-000426/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:8592) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:12036) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:17168) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:9560) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 95993077000116-1-000093/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000429/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000086/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926593000186-1-000067/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83074302000131-1-000133/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82945718000115-1-000176/2026 (Error: fetch itens falhou (429/time)
+  ! falha 80637457000140-1-000077/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102368000198-1-000108/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95954509000180-1-000076/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83169623000110-1-000352/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83551549000100-1-000065/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  ! falha 82939232000174-1-000276/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82947979000174-1-000197/2026 (Error: fetch itens falhou (429/time)
+  ! falha 10479670000196-1-000039/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83108357000115-1-000368/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01606852000190-1-000244/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102509000172-1-000053/2026 (Error: fetch itens falhou (429/time)
+  ! falha 78510112000180-1-000075/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000073/2026 (Error: fetch itens falhou (429/time)
+  ! falha 12121379000177-1-000017/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82548983000160-1-000079/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000187/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000192/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83451138000134-1-000035/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000065/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01612527000130-1-000078/2026 (Error: fetch itens falhou (429/time)
+  ! falha 02362976000130-1-000062/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82777319000192-1-000072/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81140303000101-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102830000157-1-000146/2026 (Error: fetch itens falhou (429/time)
+  ! falha 03842931000125-1-000003/2026 (Error: fetch itens falhou (429/time)
+  …40/46
+  ! falha 83485458000105-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 11312860000187-1-000045/2026 (Error: fetch itens falhou (429/time)
+  ! falha 07383800000188-1-000151/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000437/2026 (Error: fetch itens falhou (429/time)
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:28300) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:27776) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 84438381000185-1-000191/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000162/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102277000152-1-000426/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102756000179-1-000104/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102368000198-1-000108/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:12784) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 82925025000160-1-000024/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102756000179-1-000104/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000162/2026 (Error: fetch itens falhou (429/time)
+  ! falha 84438381000185-1-000191/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000181/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102590000190-1-000054/2026 (Error: fetch itens falhou (429/time)
+  ! falha 97526125000191-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102277000152-1-000426/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95993077000116-1-000093/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000429/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000086/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926593000186-1-000067/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83074302000131-1-000133/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82945718000115-1-000176/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 80637457000140-1-000077/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102368000198-1-000108/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95954509000180-1-000076/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83169623000110-1-000352/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83551549000100-1-000065/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  ! falha 82939232000174-1-000276/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82947979000174-1-000197/2026 (Error: fetch itens falhou (429/time)
+  ! falha 10479670000196-1-000039/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83108357000115-1-000368/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01606852000190-1-000244/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000073/2026 (Error: fetch itens falhou (429/time)
+  ! falha 12121379000177-1-000017/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82548983000160-1-000079/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000187/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000192/2026 (Error: fetch itens falhou (429/time)
+  ! falha 78510112000180-1-000075/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102509000172-1-000053/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83451138000134-1-000035/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000065/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01612527000130-1-000078/2026 (Error: fetch itens falhou (429/time)
+  ! falha 02362976000130-1-000062/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82777319000192-1-000072/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81140303000101-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102830000157-1-000146/2026 (Error: fetch itens falhou (429/time)
+  ! falha 03842931000125-1-000003/2026 (Error: fetch itens falhou (429/time)
+  …40/46
+  ! falha 83485458000105-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000085/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102541000158-1-000121/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000437/2026 (Error: fetch itens falhou (429/time)
+  ! falha 11312860000187-1-000045/2026 (Error: fetch itens falhou (429/time)
+  ! falha 07383800000188-1-000151/2026 (Error: fetch itens falhou (429/time)
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:22280) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:12072) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:34300) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:23700) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:34768) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C(node:19684) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:13252) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:30252) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 83102798000100-1-000162/2026 (Error: fetch itens falhou (429/time)
+  ! falha 84438381000185-1-000191/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000181/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102590000190-1-000054/2026 (Error: fetch itens falhou (429/time)
+  ! falha 97526125000191-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102277000152-1-000426/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95993077000116-1-000093/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000429/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000086/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926593000186-1-000067/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83074302000131-1-000133/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82945718000115-1-000176/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 80637457000140-1-000077/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102368000198-1-000108/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95954509000180-1-000076/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83169623000110-1-000352/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83551549000100-1-000065/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000276/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82947979000174-1-000197/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  ! falha 10479670000196-1-000039/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83108357000115-1-000368/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01606852000190-1-000244/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000073/2026 (Error: fetch itens falhou (429/time)
+  ! falha 12121379000177-1-000017/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82548983000160-1-000079/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000187/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000192/2026 (Error: fetch itens falhou (429/time)
+  ! falha 78510112000180-1-000075/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102509000172-1-000053/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83451138000134-1-000035/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000065/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01612527000130-1-000078/2026 (Error: fetch itens falhou (429/time)
+  ! falha 02362976000130-1-000062/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82777319000192-1-000072/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81140303000101-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102830000157-1-000146/2026 (Error: fetch itens falhou (429/time)
+  ! falha 03842931000125-1-000003/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83485458000105-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000085/2026 (Error: fetch itens falhou (429/time)
+  …40/46
+  ! falha 83102541000158-1-000121/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000437/2026 (Error: fetch itens falhou (429/time)
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:36336) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:24004) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 83102798000100-1-000162/2026 (Error: fetch itens falhou (429/time)
+  ! falha 84438381000185-1-000191/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000181/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102590000190-1-000054/2026 (Error: fetch itens falhou (429/time)
+  ! falha 97526125000191-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102277000152-1-000426/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95993077000116-1-000093/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000429/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000086/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926593000186-1-000067/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83074302000131-1-000133/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82945718000115-1-000176/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 80637457000140-1-000077/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102368000198-1-000108/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95954509000180-1-000076/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83169623000110-1-000352/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000276/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82947979000174-1-000197/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  ! falha 10479670000196-1-000039/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83108357000115-1-000368/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01606852000190-1-000244/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000073/2026 (Error: fetch itens falhou (429/time)
+  ! falha 12121379000177-1-000017/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82548983000160-1-000079/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000187/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000192/2026 (Error: fetch itens falhou (429/time)
+  ! falha 78510112000180-1-000075/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102509000172-1-000053/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83451138000134-1-000035/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000065/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01612527000130-1-000078/2026 (Error: fetch itens falhou (429/time)
+  ! falha 02362976000130-1-000062/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82777319000192-1-000072/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81140303000101-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102830000157-1-000146/2026 (Error: fetch itens falhou (429/time)
+  ! falha 03842931000125-1-000003/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83485458000105-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000085/2026 (Error: fetch itens falhou (429/time)
+  …40/46
+  ! falha 83102541000158-1-000121/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000437/2026 (Error: fetch itens falhou (429/time)
+  ! falha 11312860000187-1-000045/2026 (Error: fetch itens falhou (429/time)
+  ! falha 07383800000188-1-000151/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82925025000160-1-000024/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102756000179-1-000104/2026 (Error: fetch itens falhou (429/time)
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:25728) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 83102798000100-1-000162/2026 (Error: fetch itens falhou (429/time)
+  ! falha 84438381000185-1-000191/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000181/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102590000190-1-000054/2026 (Error: fetch itens falhou (429/time)
+  ! falha 97526125000191-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102277000152-1-000426/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95993077000116-1-000093/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000429/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:17640) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 83102798000100-1-000162/2026 (Error: fetch itens falhou (429/time)
+  ! falha 84438381000185-1-000191/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000181/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102590000190-1-000054/2026 (Error: fetch itens falhou (429/time)
+  ! falha 97526125000191-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102277000152-1-000426/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95993077000116-1-000093/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000429/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000086/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926593000186-1-000067/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83074302000131-1-000133/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82945718000115-1-000176/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 80637457000140-1-000077/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102368000198-1-000108/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95954509000180-1-000076/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  ! falha 78510112000180-1-000075/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102509000172-1-000053/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83451138000134-1-000035/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000065/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01612527000130-1-000078/2026 (Error: fetch itens falhou (429/time)
+  ! falha 02362976000130-1-000062/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82777319000192-1-000072/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81140303000101-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102830000157-1-000146/2026 (Error: fetch itens falhou (429/time)
+  ! falha 03842931000125-1-000003/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83485458000105-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000085/2026 (Error: fetch itens falhou (429/time)
+  …40/46
+  ! falha 83102541000158-1-000121/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000437/2026 (Error: fetch itens falhou (429/time)
+  ! falha 11312860000187-1-000045/2026 (Error: fetch itens falhou (429/time)
+  ! falha 07383800000188-1-000151/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82925025000160-1-000024/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102756000179-1-000104/2026 (Error: fetch itens falhou (429/time)
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:19724) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:21928) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+^C(node:13640) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 83102798000100-1-000162/2026 (Error: fetch itens falhou (429/time)
+  ! falha 84438381000185-1-000191/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000181/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102590000190-1-000054/2026 (Error: fetch itens falhou (429/time)
+  ! falha 97526125000191-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102277000152-1-000426/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95993077000116-1-000093/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000429/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000086/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926593000186-1-000067/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83074302000131-1-000133/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82945718000115-1-000176/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 80637457000140-1-000077/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102368000198-1-000108/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95954509000180-1-000076/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83169623000110-1-000352/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83551549000100-1-000065/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000276/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82947979000174-1-000197/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  ! falha 10479670000196-1-000039/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83108357000115-1-000368/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01606852000190-1-000244/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000073/2026 (Error: fetch itens falhou (429/time)
+  ! falha 12121379000177-1-000017/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82548983000160-1-000079/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000187/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000192/2026 (Error: fetch itens falhou (429/time)
+  ! falha 78510112000180-1-000075/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102509000172-1-000053/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83451138000134-1-000035/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000065/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01612527000130-1-000078/2026 (Error: fetch itens falhou (429/time)
+  ! falha 02362976000130-1-000062/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82777319000192-1-000072/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81140303000101-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102830000157-1-000146/2026 (Error: fetch itens falhou (429/time)
+  ! falha 03842931000125-1-000003/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83485458000105-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000085/2026 (Error: fetch itens falhou (429/time)
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:34016) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 83102798000100-1-000162/2026 (Error: fetch itens falhou (429/time)
+  ! falha 84438381000185-1-000191/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000181/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102590000190-1-000054/2026 (Error: fetch itens falhou (429/time)
+  ! falha 97526125000191-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102277000152-1-000426/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95993077000116-1-000093/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000429/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000086/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926593000186-1-000067/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83074302000131-1-000133/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82945718000115-1-000176/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 80637457000140-1-000077/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102368000198-1-000108/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95954509000180-1-000076/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83169623000110-1-000352/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83551549000100-1-000065/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000276/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82947979000174-1-000197/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  ! falha 10479670000196-1-000039/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83108357000115-1-000368/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01606852000190-1-000244/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000073/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000192/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000065/2026 (Error: fetch itens falhou (429/time)
+  ! falha 12121379000177-1-000017/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82548983000160-1-000079/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000187/2026 (Error: fetch itens falhou (429/time)
+  ! falha 78510112000180-1-000075/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83451138000134-1-000035/2026 (Error: fetch itens falhou (429/time)
+  ! falha 02362976000130-1-000062/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82777319000192-1-000072/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81140303000101-1-000270/2026 (Error: fetch itens falhou (429/time)
+  …40/46
+  ! falha 83102830000157-1-000146/2026 (Error: fetch itens falhou (429/time)
+  ! falha 03842931000125-1-000003/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83485458000105-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000085/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102541000158-1-000121/2026 (Error: fetch itens falhou (429/time)
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:31828) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 83102798000100-1-000162/2026 (Error: fetch itens falhou (429/time)
+  ! falha 84438381000185-1-000191/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000181/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102590000190-1-000054/2026 (Error: fetch itens falhou (429/time)
+  ! falha 97526125000191-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102277000152-1-000426/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95993077000116-1-000093/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000429/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000086/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926593000186-1-000067/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83074302000131-1-000133/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82945718000115-1-000176/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 80637457000140-1-000077/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95954509000180-1-000076/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83169623000110-1-000352/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000276/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82947979000174-1-000197/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  ! falha 10479670000196-1-000039/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83108357000115-1-000368/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01606852000190-1-000244/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000073/2026 (Error: fetch itens falhou (429/time)
+  ! falha 12121379000177-1-000017/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82548983000160-1-000079/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000065/2026 (Error: fetch itens falhou (429/time)
+  …40/46
+  ! falha 11312860000187-1-000045/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82925025000160-1-000024/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102756000179-1-000104/2026 (Error: fetch itens falhou (429/time)
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:31064) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 83102798000100-1-000162/2026 (Error: fetch itens falhou (429/time)
+  ! falha 84438381000185-1-000191/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000181/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102590000190-1-000054/2026 (Error: fetch itens falhou (429/time)
+  ! falha 97526125000191-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102277000152-1-000426/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95993077000116-1-000093/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000429/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000086/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926593000186-1-000067/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83074302000131-1-000133/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82945718000115-1-000176/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 80637457000140-1-000077/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102368000198-1-000108/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  ! falha 01606852000190-1-000244/2026 (Error: fetch itens falhou (429/time)
+  ! falha 12121379000177-1-000017/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82548983000160-1-000079/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000187/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000192/2026 (Error: fetch itens falhou (429/time)
+  ! falha 78510112000180-1-000075/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000065/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01612527000130-1-000078/2026 (Error: fetch itens falhou (429/time)
+  ! falha 02362976000130-1-000062/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82777319000192-1-000072/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81140303000101-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102830000157-1-000146/2026 (Error: fetch itens falhou (429/time)
+  ! falha 03842931000125-1-000003/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83485458000105-1-000015/2026 (Error: fetch itens falhou (429/time)
+  …40/46
+  ! falha 82925025000160-1-000024/2026 (Error: fetch itens falhou (429/time)
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:34248) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 95993077000116-1-000093/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000429/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000086/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926593000186-1-000067/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83074302000131-1-000133/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82945718000115-1-000176/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 80637457000140-1-000077/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102368000198-1-000108/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95954509000180-1-000076/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83169623000110-1-000352/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83551549000100-1-000065/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  ! falha 82939232000174-1-000276/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82947979000174-1-000197/2026 (Error: fetch itens falhou (429/time)
+  ! falha 10479670000196-1-000039/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83108357000115-1-000368/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01606852000190-1-000244/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000073/2026 (Error: fetch itens falhou (429/time)
+  ! falha 12121379000177-1-000017/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82548983000160-1-000079/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000187/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000192/2026 (Error: fetch itens falhou (429/time)
+  ! falha 78510112000180-1-000075/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102509000172-1-000053/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83451138000134-1-000035/2026 (Error: fetch itens falhou (429/time)
+  ! falha 02362976000130-1-000062/2026 (Error: fetch itens falhou (429/time)
+  …40/46
+  ! falha 07383800000188-1-000151/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83485458000105-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102541000158-1-000121/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000437/2026 (Error: fetch itens falhou (429/time)
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:18624) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
+(node:28968) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 255990 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 97526125000191-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926593000186-1-000067/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83074302000131-1-000133/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82945718000115-1-000176/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 80637457000140-1-000077/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102368000198-1-000108/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95954509000180-1-000076/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83169623000110-1-000352/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  …40/46
+  ! falha 83102830000157-1-000146/2026 (Error: fetch itens falhou (429/time)
+Concluído: 0 processos c/ itens nesta rodada | total 2334258 itens em 255958 processos
