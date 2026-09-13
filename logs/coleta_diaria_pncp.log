@@ -281,3 +281,5 @@ See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode de
   ✔ compras (21961s)
 [2026-09-11T02:30] busca diária do PNCP — ano 2026
   ✔ compras (20383s)
+[2026-09-12T02:30] busca diária do PNCP — ano 2026
+  ✔ compras (19820s)
