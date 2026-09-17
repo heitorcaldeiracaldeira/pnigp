@@ -68,6 +68,12 @@ const ETAPAS = [
   ["extrai_az.mjs",                        { LIMIT: "0" },            "ComprasBR (AZ)"],
   ["extrai_betha.mjs",                     { LIMIT: "0" },            "Betha"],
   ["extrai_ecustomize.mjs",                { LIMIT: "0" },            "ECustomize"],
+  // 2b) A DISPUTA — propostas de TODOS os licitantes e histórico de LANCES, por processo, roteada pelo gerador
+  // (PCP · Compras.gov · Betha/BLL/BNC · AZ · Licitar Digital). Ordem do Heitor em 16/set/2026: "busque sempre
+  // estes dados a partir de agora em todos os processos que leremos". Lê o mesmo acervo local; grava em
+  // app.disputa_proposta_sc / app.disputa_lance_sc / app.disputa_processo_sc. Substitui, para o PCP, o que o
+  // extrai_ecustomize tentava (1,7% de rendimento; a âncora não sobrevivia ao nome quebrado em duas linhas).
+  ["extrai_disputa_fila.mjs",              { LIMIT: "20000" },        "disputa: propostas de todos + lances (fila por gerador)"],
   ["extrai_portal_vencedores.mjs",         { LIMIT: "0" },            "bloco Vencedores do PCP"],
   ["auditoria/extrai_marca_proposta.mjs",  { LIMIT: "0" },            "marca na PROPOSTA (art.41)"],
   ["extrai_marca_ancora.mjs",              { LIMIT: "0" },            "âncora de valor na linha do vencedor"],

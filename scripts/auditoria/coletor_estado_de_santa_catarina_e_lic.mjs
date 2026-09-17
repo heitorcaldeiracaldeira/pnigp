@@ -209,7 +209,26 @@ async function main() {
         if (!atas.length) { status = "sem_ata"; semAta++; }
         else {
           let pares = [];
-          for (const a of atas) { const txt = await getPDFtext(a.url); if (txt) pares.push(...parseAta(txt)); await sleep(200); }
+          let k = 0;
+          for (const a of atas) {
+            const txt = await getPDFtext(a.url);
+            if (txt) pares.push(...parseAta(txt));
+            // ═══ O DOWNLOAD NÃO PODE SER JOGADO FORA (16/set/2026) ═══
+            // A ata de sessão do e-lic é o ÚNICO documento com a disputa inteira deste portal (todos os
+            // licitantes, lance a lance) e ela NÃO está no PNCP — só aqui. Até agora o texto era usado em
+            // memória para a marca e descartado; a fila da disputa (extrai_disputa_fila.mjs) lê o acervo
+            // local e nunca a veria. Persiste no acervo com sequencial sintético (9001+) — o PNCP não numera
+            // documento que ele não hospeda — e sem gerador (o roteador reconhece pelo conteúdo).
+            if (txt && txt.length > 300 && !DRY) {
+              const texto = txt.split(String.fromCharCode(0)).join("").slice(0, 200000);
+              await db.query(`insert into arquivo_texto_${UF} (cnpj,ano,seq,sequencial_documento,cod_ibge,tipo_documento,titulo,texto,chars,gerador)
+                select $1,$2,$3,$4, c.cod_ibge, $5, $6, $7, $8, 'outro' from contratacoes_${UF} c where c.cnpj=$1 and c.ano=$2 and c.seq=$3 limit 1
+                on conflict (cnpj,ano,seq,sequencial_documento) do update set texto=excluded.texto, chars=excluded.chars, titulo=excluded.titulo, atualizado=now()`,
+                [p.cnpj, p.ano, p.seq, 9001 + k, "Ata de Sessão (e-lic)", String(a.tipo || "Ata de Sessão de Pregão").slice(0, 300), texto, texto.length]).catch(() => {});
+            }
+            k++;
+            await sleep(200);
+          }
           const seen = new Set(); pares = pares.filter((r) => { const k = r.valor + "|" + r.marca; if (seen.has(k)) return false; seen.add(k); return true; });
           status = pares.length ? "sem_ancora" : "sem_marca";
           if (!pares.length) semMarca++;
