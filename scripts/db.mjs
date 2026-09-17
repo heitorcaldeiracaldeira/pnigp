@@ -41,7 +41,9 @@ export function abrePool({ max = 3, statementTimeoutMs = 590000, pooler = false 
 // Erros de DADO (PK duplicada, coluna inexistente, tipo errado) falham na hora — retry cego escondeu por horas
 // uma colisão de PK no extrai_ecustomize.
 const TRANSITORIO = /Connection terminated|ECONNRESET|ENOTFOUND|EAI_AGAIN|ETIMEDOUT|timeout|terminating connection|socket hang up|server closed the connection|Client has encountered a connection error/i;
-export async function consulta(db, sql, params, { tentativas = 5 } = {}) {
+// 17/set 14h: um shard morreu com ENOTFOUND (DNS da máquina caiu por mais de 30 s). Queda de rede dura minutos, não
+// segundos: 8 tentativas com espera crescente (3 s … 24 s ≈ 2 min) cobrem o soluço sem esconder falha de verdade.
+export async function consulta(db, sql, params, { tentativas = 8 } = {}) {
   let ultimo;
   for (let t = 0; t < tentativas; t++) {
     try { return await db.query(sql, params); }
@@ -49,7 +51,7 @@ export async function consulta(db, sql, params, { tentativas = 5 } = {}) {
       ultimo = e;
       const sujo = e.code === "42P01";
       if (!sujo && !TRANSITORIO.test(e.message || "")) throw e;
-      await new Promise((r) => setTimeout(r, 2000 * (t + 1)));
+      await new Promise((r) => setTimeout(r, 3000 * (t + 1)));
     }
   }
   throw ultimo;
