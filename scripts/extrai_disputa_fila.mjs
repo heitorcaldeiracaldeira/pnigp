@@ -23,8 +23,7 @@
 // · Grava em LOTE (unnest) e substitui o que havia do processo (DELETE+INSERT) — reprocessar é idempotente.
 // · Livro-razão app.disputa_fila_feitas_sc com VERSÃO: subir DISPUTA_VERSAO reabre a fila sozinho.
 //   'sem_documento' aposenta só enquanto n_docs não mudar (documento chega depois).
-import fs from "fs";
-import pg from "pg";
+import { abrePool, consulta } from "./db.mjs";
 import { leDisputaPcp } from "./parser_disputa_pcp.mjs";
 import { leDisputaComprasGov } from "./parser_disputa_comprasgov.mjs";
 import { leDisputaBetha } from "./parser_disputa_betha.mjs";
@@ -36,8 +35,11 @@ import { carimboBR } from "./hora_br.mjs";
 
 export const DISPUTA_VERSAO = 1;
 
-const U = fs.readFileSync("./.env.local", "utf8").match(/^DATABASE_URL=(.+)$/m)[1].trim();
-const db = new pg.Pool({ connectionString: U, ssl: { rejectUnauthorized: false }, max: 3, statement_timeout: 590000 });
+// ═══ CONEXÃO: db.mjs (endpoint DIRETO, search_path fixo, retry do que é transitório) ═══
+// 17/set/2026 05:38: os três shards morreram de madrugada com `relation "arquivo_texto_sc" does not exist` — a
+// tabela existe; era o pooler do Neon entregando backend com search_path sujo. O porquê e o remédio inteiro
+// estão em scripts/db.mjs; aqui só se usa.
+const db = abrePool({ max: 3 });
 const UF = (process.env.UF || "sc").toLowerCase();
 const DRY = process.env.DRY === "1";
 const LIM = process.env.LIMIT != null ? Number(process.env.LIMIT) : 300;
@@ -60,16 +62,7 @@ const LEITORES = [
   { gerador: "licitar_digital", fn: leDisputaLicitar, teste: (t) => /Licitar Digital\s*::/i.test(t) && /ATA DE PROPOSTAS ENVIADAS|FORNECEDORES HABILITADOS|ATA (?:DE )?PREG[ÃA]O|ATA (?:DE )?DISPENSA/i.test(t) },
 ];
 
-async function q(sql, params) {
-  for (let t = 0; t < 5; t++) {
-    try { return await db.query(sql, params); }
-    catch (e) {
-      const transitorio = /Connection terminated|ECONNRESET|timeout|terminating connection|socket hang up/i.test(e.message || "");
-      if (!transitorio || t === 4) throw e;
-      await new Promise((r) => setTimeout(r, 2000 * (t + 1)));
-    }
-  }
-}
+const q = (sql, params) => consulta(db, sql, params);
 
 async function garanteTabelas() {
   await q(`create table if not exists ${T_PROP}(
