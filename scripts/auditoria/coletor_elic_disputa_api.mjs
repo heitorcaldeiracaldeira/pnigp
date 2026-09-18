@@ -318,6 +318,13 @@ async function gravaFatia(W) {
 
 async function main() {
   const t0 = Date.now();
+  // TRAVA: uma instância por vez. A cadeia `coletores` dispara a cada 3 h e uma varredura completa (LIMIT=0) leva
+  // horas — duas instâncias dobrariam a carga num portal de Estado e leriam os mesmos processos. Advisory lock de
+  // sessão: solta sozinha quando o processo morre. Num cliente DEDICADO do pool — o pool fecha conexão ociosa em
+  // segundos e a trava iria junto.
+  const trava = await db.connect();
+  const { rows: [{ ok }] } = await trava.query(`select pg_try_advisory_lock(hashtext('coletor_elic_disputa_api')) ok`);
+  if (!ok) { console.log(`${carimboBR()} e-lic API: outra instância em curso — saindo`); trava.release(); await db.end(); return; }
   await garanteTabelas();
   const feitas = new Map((await q(`select n_cd_processo, status, versao from ${FEITAS}`)).rows.map((r) => [Number(r.n_cd_processo), r]));
   const pncp = await carregaPncp();
