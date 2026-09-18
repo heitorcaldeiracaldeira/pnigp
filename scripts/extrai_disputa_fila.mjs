@@ -1,5 +1,7 @@
 // FILA DA DISPUTA — propostas de TODOS os licitantes e LANCES, por processo, roteada pelo GERADOR do documento.
-// É a única porta de escrita de app.disputa_proposta_sc / app.disputa_lance_sc / app.disputa_processo_sc.
+// É a porta de escrita de app.disputa_proposta_sc / app.disputa_lance_sc / app.disputa_processo_sc para o que vem do
+// ACERVO (documento). A outra porta é scripts/auditoria/coletor_elic_disputa_api.mjs (gerador 'elic_api'), que lê o
+// mural JSON do e-lic — o único portal cuja ata não chega ao PNCP.
 //
 //   node scripts/extrai_disputa_fila.mjs                 # 300 processos, GRAVA
 //   DRY=1 LIMIT=500 node scripts/extrai_disputa_fila.mjs # mede sem gravar
@@ -130,8 +132,10 @@ async function gravaFatia(W) {
   if (W.apaga.length) {
     const keys = W.apaga.map((_, j) => `($${j * 3 + 1},$${j * 3 + 2},$${j * 3 + 3})`).join(",");
     const params = W.apaga.flatMap((p) => [p.cnpj, p.ano, p.seq]);
-    await q(`delete from ${T_PROP} where (cnpj,ano,seq) in (${keys})`, params);
-    await q(`delete from ${T_LANCE} where (cnpj,ano,seq) in (${keys})`, params);
+    // gerador 'elic_api' NÃO é desta fila: é o coletor_elic_disputa_api.mjs (mural JSON do e-lic), que convive no
+    // mesmo processo. Apagar tudo do processo aqui jogaria fora o que ele coletou (18/set/2026).
+    await q(`delete from ${T_PROP} where gerador <> 'elic_api' and (cnpj,ano,seq) in (${keys})`, params);
+    await q(`delete from ${T_LANCE} where gerador <> 'elic_api' and (cnpj,ano,seq) in (${keys})`, params);
   }
   const P = W.prop;
   if (P.length) await q(`

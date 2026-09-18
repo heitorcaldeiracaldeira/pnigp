@@ -1,3 +1,9 @@
+// ⛔ SUPERADO em 18/set/2026 — saiu da cadeia `coletores`. Rendeu ZERO ata em seis semanas: o portal novo do Estado
+// (origem WEBLIC, tudo desde 2025) NÃO anexa "Ata de Sessão de Pregão" em /arquivos (só os LIC ≤2024 têm), e o
+// `order by ano desc, seq limit 400` com sem_ata/sem_bridge não aposentando fazia toda rodada visitar os MESMOS 400
+// processos de 2026 (dispensas). A paginação de /api/editais também é ignorada pelo portal (devolve o ano inteiro em
+// toda página — pedir 40 páginas era 40 cópias). Substituto: scripts/auditoria/coletor_elic_disputa_api.mjs (mural
+// JSON do e-lic.sc.gov.br: lances, CNPJ, marca, sem PDF). Fica aqui só como registro da rota LIC.
 // COLETOR "Estado de Santa Catarina (e-lic)" — marca do portal PRÓPRIO do Governo de SC (SEA).
 // CRACK (jul/2026): o e-lic velho (WebForms/__VIEWSTATE) e o compras.sc novo TÊM download de doc atrás de
 //   reCAPTCHA no fluxo do navegador — MAS a API Spring do portal novo expõe, SEM captcha e SEM login:

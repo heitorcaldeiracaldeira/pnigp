@@ -285,8 +285,12 @@ export const CADEIAS = {
       { rotulo: "Licitacoes-E BB (acervo + blob PNCP)", script: "scripts/auditoria/coletor_licita_es_e_bb.mjs",
         env: { LIMIT: "0" }, timeoutMin: 90 },
       // ── 2) PORTAL VIVO: saem para a internet. LIMIT/CONC baixos de propósito — o PCP bate rate limit.
-      { rotulo: "e-lic (compras.sc)", script: "scripts/auditoria/coletor_estado_de_santa_catarina_e_lic.mjs",
-        env: { LIMIT: "400" }, timeoutMin: 90 },
+      // e-lic: TROCADO em 18/set/2026. O coletor por PDF (coletor_estado_de_santa_catarina_e_lic.mjs) rodou seis
+      // semanas e rendeu zero — o portal novo (WEBLIC, 2025+) não anexa a ata, e a ordenação fixa repetia os
+      // mesmos 400 processos. O mural JSON do e-lic dá a disputa inteira (lances, CNPJ, marca) sem PDF.
+      // ~5 processos/min com PAUSA 250 ms: 300 por rodada cabem em ~60 min. Detalhe: pnigp-elic-api-json-disputa-inteira.
+      { rotulo: "e-lic (mural JSON: disputa inteira)", script: "scripts/auditoria/coletor_elic_disputa_api.mjs",
+        env: { LIMIT: "300" }, timeoutMin: 80 },
       { rotulo: "PCP", script: "scripts/auditoria/coletor_pcp.mjs",
         env: { LIMIT: "300", CONC: "1" }, timeoutMin: 90 },
       { rotulo: "BLL", script: "scripts/auditoria/coletor_bll.mjs",
