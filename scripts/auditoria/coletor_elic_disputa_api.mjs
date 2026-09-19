@@ -325,23 +325,44 @@ async function main() {
   const trava = await db.connect();
   const { rows: [{ ok }] } = await trava.query(`select pg_try_advisory_lock(hashtext('coletor_elic_disputa_api')) ok`);
   if (!ok) { console.log(`${carimboBR()} e-lic API: outra instância em curso — saindo`); trava.release(); await db.end(); return; }
+  // 18/set à noite a trava NÃO segurou: o Neon derruba conexão ociosa depois de alguns minutos, o cliente da trava
+  // ficou horas sem falar e a sessão morreu levando o advisory lock — a cadeia das 16h/19h/22h entrou junto com a
+  // varredura completa (duas instâncias no portal). Batida de 1 min mantém a sessão viva; se cair, tenta retomar.
+  const batida = setInterval(async () => {
+    try { await trava.query("select 1"); }
+    catch { try { const { rows: [{ ok: de_novo }] } = await q(`select pg_try_advisory_lock(hashtext('coletor_elic_disputa_api')) ok`); console.log(`${carimboBR()} trava caiu; retomada=${de_novo}`); } catch {} }
+  }, 60000);
+  batida.unref();
   await garanteTabelas();
   const feitas = new Map((await q(`select n_cd_processo, status, versao from ${FEITAS}`)).rows.map((r) => [Number(r.n_cd_processo), r]));
   const pncp = await carregaPncp();
   const todos = await listaEncerrados();
   const univ = todos.filter((p) => /homolog|fracass/i.test(p.sDsSituacao || "") && (anoDe(p) || 0) >= ANO_MIN);
   // pendente = nunca visto nesta versão com um status DEFINITIVO ('ok' e 'sem_lances' são fatos sobre o processo)
-  const pend = univ.filter((p) => { const f = feitas.get(Number(p.nCdProcesso)); return !(f && Number(f.versao) === ELIC_API_VERSAO && ["ok", "sem_lances"].includes(f.status)); });
+  const pend = univ.filter((p) => { const f = feitas.get(Number(p.nCdProcesso)); return !(f && Number(f.versao) === ELIC_API_VERSAO && ["ok", "sem_lances", "ponte_duplicada"].includes(f.status)); });
   // ponte primeiro (local, de graça); só o que tem ponte vai ao portal
   const W0 = { feitas: [], apaga: [], prop: [], lance: [], proc: [] };
   const comPonte = [];
+  // Um processo do PNCP só pode receber UMA disputa. O portal lista o mesmo número duas vezes quando o processo foi
+  // republicado (PE-0003/2024 apareceu 2×, ambos homologados) — os dois pontavam para o mesmo (cnpj,ano,seq) e caíam na
+  // mesma fatia: "ON CONFLICT DO UPDATE command cannot affect row a second time" derrubou a varredura em 18/set às
+  // 23h (3.330/3.617). Fica o de maior nCdProcesso (o mais recente no portal); o outro aposenta como 'ponte_duplicada'.
+  const porPncp = new Map();
   for (const p of pend) {
     const b = ponte(p, pncp.idx);
-    if (b) comPonte.push({ p, b });
-    else W0.feitas.push({ id: p.nCdProcesso, numero: p.sNrProcessoDisplay, ano: anoDe(p), orgao: p.sNmEmpresa, cnpj: null, seq: null, status: "sem_ponte", sim: null, nItens: null, nP: null, nL: null, obs: null });
+    if (!b) { W0.feitas.push({ id: p.nCdProcesso, numero: p.sNrProcessoDisplay, ano: anoDe(p), orgao: p.sNmEmpresa, cnpj: null, seq: null, status: "sem_ponte", sim: null, nItens: null, nP: null, nL: null, obs: null }); continue; }
+    const k = `${b.cnpj}|${b.ano}|${b.seq}`;
+    const ant = porPncp.get(k);
+    if (ant && Number(ant.p.nCdProcesso) >= Number(p.nCdProcesso)) { W0.feitas.push({ id: p.nCdProcesso, numero: p.sNrProcessoDisplay, ano: anoDe(p), orgao: p.sNmEmpresa, cnpj: b.cnpj, seq: b.seq, status: "ponte_duplicada", sim: b.sim, nItens: null, nP: null, nL: null, obs: `mesmo PNCP que nCdProcesso ${ant.p.nCdProcesso}` }); continue; }
+    if (ant) W0.feitas.push({ id: ant.p.nCdProcesso, numero: ant.p.sNrProcessoDisplay, ano: anoDe(ant.p), orgao: ant.p.sNmEmpresa, cnpj: b.cnpj, seq: b.seq, status: "ponte_duplicada", sim: ant.b.sim, nItens: null, nP: null, nL: null, obs: `mesmo PNCP que nCdProcesso ${p.nCdProcesso}` });
+    porPncp.set(k, { p, b });
   }
+  comPonte.push(...porPncp.values());
+  // já gravado nesta versão por OUTRO nCdProcesso do portal (a duplicata entrou antes deste conserto): não regrava
+  const jaGravados = new Set((await q(`select cnpj||'|'||ano||'|'||seq k from ${FEITAS} where status='ok' and versao=${ELIC_API_VERSAO}`)).rows.map((r) => r.k));
+  const fila0 = comPonte.filter(({ p, b }) => { const dup = jaGravados.has(`${b.cnpj}|${b.ano}|${b.seq}`); if (dup) W0.feitas.push({ id: p.nCdProcesso, numero: p.sNrProcessoDisplay, ano: anoDe(p), orgao: p.sNmEmpresa, cnpj: b.cnpj, seq: b.seq, status: "ponte_duplicada", sim: b.sim, nItens: null, nP: null, nL: null, obs: "PNCP já gravado por outro nCdProcesso" }); return !dup; });
   await gravaFatia(W0);
-  const fila = LIM > 0 ? comPonte.slice(0, LIM) : comPonte;
+  const fila = LIM > 0 ? fila0.slice(0, LIM) : fila0;
   console.log(`${carimboBR()} e-lic API · encerrados ${todos.length} · universo (≥${ANO_MIN}, homologado/fracassado) ${univ.length} · pendentes ${pend.length} · com ponte ${comPonte.length} (${(100 * comPonte.length / Math.max(1, pend.length)).toFixed(1)}%) · sem ponte ${W0.feitas.length} · PNCP candidatos ${pncp.n} · nesta rodada ${fila.length} · DRY=${DRY ? 1 : 0}`);
   if (!fila.length) { console.log(`${carimboBR()} e-lic API: nada a coletar`); await db.end(); return; }
 
