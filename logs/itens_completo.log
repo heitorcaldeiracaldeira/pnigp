@@ -38792,3 +38792,925 @@ Itens: 46 processos pendentes (de 258343 no PNCP/SC) · INGEST_VERSAO=4
   …20/46
   …40/46
 Concluído: 0 processos c/ itens nesta rodada | total 2353289 itens em 258311 processos
+(node:29252) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 893 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/893
+  …40/893
+  …60/893
+  …80/893
+  …100/893
+  …120/893
+  …140/893
+  …160/893
+  …180/893
+  …200/893
+  …220/893
+  …240/893
+  …260/893
+  …280/893
+  …300/893
+  …320/893
+  …340/893
+  …360/893
+  …380/893
+  …400/893
+  …420/893
+  …440/893
+  …460/893
+  …480/893
+  …500/893
+  …520/893
+  …540/893
+  …560/893
+  …580/893
+  …600/893
+  …620/893
+  …640/893
+  …660/893
+  …680/893
+  …700/893
+  …720/893
+  …740/893
+  …760/893
+  …780/893
+  …800/893
+  …820/893
+  …840/893
+  …860/893
+  …880/893
+Concluído: 0 processos c/ itens nesta rodada | total 2353289 itens em 258311 processos
+(node:19908) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 893 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/893
+  …40/893
+  …60/893
+  …80/893
+  …100/893
+  …120/893
+  …140/893
+  …160/893
+  …180/893
+  …200/893
+  …220/893
+  …240/893
+  …260/893
+  …280/893
+  …300/893
+  …320/893
+  …340/893
+  …360/893
+  …380/893
+  …400/893
+  …420/893
+  …440/893
+  …460/893
+  …480/893
+  …500/893
+  …520/893
+  …540/893
+  …560/893
+  …580/893
+  …600/893
+  …620/893
+  …640/893
+  …660/893
+  …680/893
+  …700/893
+  …720/893
+  …740/893
+  …760/893
+  …780/893
+  …800/893
+  …820/893
+  …840/893
+  …860/893
+  …880/893
+Concluído: 0 processos c/ itens nesta rodada | total 2353289 itens em 258311 processos
+(node:24552) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 893 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/893
+  …40/893
+  …60/893
+  …80/893
+  …100/893
+  …120/893
+  …140/893
+  …160/893
+  …180/893
+  …200/893
+  …220/893
+  …240/893
+  …260/893
+  …280/893
+  …300/893
+  …320/893
+  …340/893
+  …360/893
+  …380/893
+  …400/893
+  …420/893
+  …440/893
+  …460/893
+  …480/893
+  …500/893
+  …520/893
+  …540/893
+  …560/893
+  …580/893
+  …600/893
+  …620/893
+  …640/893
+  …660/893
+  …680/893
+  …700/893
+  …720/893
+  …740/893
+  …760/893
+  …780/893
+  …800/893
+  …820/893
+  …840/893
+  …860/893
+  …880/893
+Concluído: 0 processos c/ itens nesta rodada | total 2353289 itens em 258311 processos
+(node:29652) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 893 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/893
+  …40/893
+  …60/893
+  …80/893
+  …100/893
+  …120/893
+  …140/893
+  …160/893
+  …180/893
+  …200/893
+  …220/893
+  …240/893
+  …260/893
+  …280/893
+  …300/893
+  …320/893
+  …340/893
+  …360/893
+  …380/893
+  …400/893
+  …420/893
+  …440/893
+  …460/893
+  …480/893
+  …500/893
+  …520/893
+  …540/893
+  …560/893
+  …580/893
+  …600/893
+  …620/893
+  …640/893
+  …660/893
+  …680/893
+  …700/893
+  …720/893
+  …740/893
+  …760/893
+  …780/893
+  …800/893
+  …820/893
+  …840/893
+  …860/893
+  …880/893
+Concluído: 847 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:21012) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:14060) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:25440) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:28528) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:4368) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:26968) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:21204) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:31720) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:11332) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:26696) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:29108) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:11204) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:13488) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:28748) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C(node:25076) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C(node:7896) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C(node:2768) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:31008) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C(node:12336) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  ! falha 82925025000160-1-000024/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102756000179-1-000104/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000162/2026 (Error: fetch itens falhou (429/time)
+  ! falha 84438381000185-1-000191/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102798000100-1-000181/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102590000190-1-000054/2026 (Error: fetch itens falhou (429/time)
+  ! falha 97526125000191-1-000015/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102277000152-1-000426/2026 (Error: fetch itens falhou (429/time)
+  ! falha 95993077000116-1-000093/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102574000106-1-000429/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83102244000102-1-000086/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926593000186-1-000067/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83074302000131-1-000133/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82945718000115-1-000176/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82939232000174-1-000270/2026 (Error: fetch itens falhou (429/time)
+  ! falha 80637457000140-1-000077/2026 (Error: fetch itens falhou (429/time)
+  …20/46
+  ! falha 10479670000196-1-000039/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000187/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81531162000158-1-000192/2026 (Error: fetch itens falhou (429/time)
+  ! falha 78510112000180-1-000075/2026 (Error: fetch itens falhou (429/time)
+  ! falha 83451138000134-1-000035/2026 (Error: fetch itens falhou (429/time)
+  ! falha 82926585000130-1-000065/2026 (Error: fetch itens falhou (429/time)
+  ! falha 01612527000130-1-000078/2026 (Error: fetch itens falhou (429/time)
+  ! falha 02362976000130-1-000062/2026 (Error: fetch itens falhou (429/time)
+  …40/46
+  ! falha 82777319000192-1-000072/2026 (Error: fetch itens falhou (429/time)
+  ! falha 81140303000101-1-000270/2026 (Error: fetch itens falhou (429/time)
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:17660) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:16320) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:30964) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:26384) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:7188) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:25320) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:31220) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C(node:11136) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ERRO: Error: Query read timeout
+    at C:\Users\PC\pnigp\node_modules\pg\lib\client.js:646:17
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async main (file:///C:/Users/PC/pnigp/scripts/ingest_itens_sc.mjs:187:18)
+(node:13488) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:27284) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C(node:22352) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:31016) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:22856) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:13876) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:11880) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:6148) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:25284) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:28596) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C(node:7220) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C(node:18084) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C(node:31116) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C(node:12384) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C(node:14068) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:20308) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:6012) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:13920) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+  ! falha 83102244000102-1-000086/2026 (Error: fetch itens falhou (429/time)
+ERRO: Error: Connection terminated unexpectedly
+    at C:\Users\PC\pnigp\node_modules\pg-pool\index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async main (file:///C:/Users/PC/pnigp/scripts/ingest_itens_sc.mjs:265:13)
+(node:12628) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C(node:14160) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+^C(node:15936) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:7800) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:23764) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:23692) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:10556) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:25596) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:11204) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:22128) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
+(node:7688) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Itens: 46 processos pendentes (de 259190 no PNCP/SC) · INGEST_VERSAO=4
+  …20/46
+  …40/46
+Concluído: 0 processos c/ itens nesta rodada | total 2359196 itens em 259158 processos
